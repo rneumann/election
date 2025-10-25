@@ -4,7 +4,7 @@ semi: true
 trailingComma: all
 printWidth: 100
 overrides:
-  - files: ['**/*.{ts,mts,js,mjs,cjs}']
+  - files: ['**/*.{js,mjs,cjs}']
     options:
       tabWidth: 2
 
