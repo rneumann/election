@@ -1,0 +1,10 @@
+singleQuote: true
+tabWidth: 2
+semi: true
+trailingComma: all
+printWidth: 100
+overrides:
+  - files: ['**/*.{js,mjs,cjs}']
+    options:
+      tabWidth: 2
+
