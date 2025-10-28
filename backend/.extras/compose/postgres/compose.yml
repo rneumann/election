@@ -1,10 +1,22 @@
+networks:
+  db_net:
+    driver: bridge
+    internal: true
+  admin_net:
+    driver: bridge
+
 services:
   postgres:
-    image: postgres:latest
+    image: postgres:16
+    container_name: postgres
+    profiles: ["prod"]
     env_file:
       - .env
-    ports:
-      - "5432:5432"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
     volumes:
       - postgres_data:/var/lib/postgresql
       - ./initdb:/docker-entrypoint-initdb.d:ro
@@ -14,9 +26,33 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
+    networks:
+      - db_net
+      - admin_net
+
+  postgres-dev:
+    image: postgres:16
+    container_name: postgres-dev
+    profiles: ["dev"]
+    env_file:
+      - .env
+    volumes:
+      - postgres_data:/var/lib/postgresql
+      - ./initdb:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "5432:5432"         
+    networks:
+      - db_net
+      - admin_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB -h 127.0.0.1"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
 
   pgAdmin:
-    image: dpage/pgadmin4:latest
+    image: dpage/pgadmin4:9.9.0
+    container_name: pgAdmin
     env_file:
       - .pgadmin.env
     ports:
@@ -25,8 +61,11 @@ services:
       - postgres
     volumes:
       - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - admin_net
 
 
 volumes:
   postgres_data:
+  postgres_data_dev:
   pgadmin_data:
