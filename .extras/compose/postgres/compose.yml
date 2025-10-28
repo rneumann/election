@@ -51,7 +51,8 @@ services:
       retries: 6
 
   pgAdmin:
-    image: dpage/pgadmin4:8
+    image: dpage/pgadmin4:9.9.0
+    container_name: pgAdmin
     env_file:
       - .pgadmin.env
     ports:
