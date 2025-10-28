@@ -1,13 +1,13 @@
 networks:
   db_net:
     driver: bridge
-    internal: true
+    internal: true       
   admin_net:
-    driver: bridge
+    driver: bridge       
 
 services:
   postgres:
-    image: postgres:16
+    image: postgres:18
     container_name: postgres
     profiles: ["prod"]
     env_file:
@@ -17,11 +17,15 @@ services:
     cap_drop:
       - ALL
     read_only: true
+    shm_size: "1g"
+    tmpfs:
+      - /var/run/postgresql
+      - /tmp
     volumes:
       - postgres_data:/var/lib/postgresql
       - ./initdb:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U election -d election_db -h localhost"]
+      test: ["CMD", "pg_isready", "-U", "election", "-d", "election_db", "-h", "127.0.0.1"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -31,40 +35,45 @@ services:
       - admin_net
 
   postgres-dev:
-    image: postgres:16
+    image: postgres:18
     container_name: postgres-dev
     profiles: ["dev"]
     env_file:
       - .env
     volumes:
-      - postgres_data:/var/lib/postgresql
+      - postgres_data_dev:/var/lib/postgresql
       - ./initdb:/docker-entrypoint-initdb.d:ro
     ports:
-      - "5432:5432"         
-    networks:
-      - db_net
-      - admin_net
+      - "5432:5432"
+    shm_size: "1g"
+    tmpfs:
+      - /var/run/postgresql
+      - /tmp
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB -h 127.0.0.1"]
+      test: ["CMD", "pg_isready", "-U", "election", "-d", "election_db", "-h", "127.0.0.1"]
       interval: 10s
       timeout: 5s
       retries: 6
+    networks:
+      - db_net
+      - admin_net
 
-  pgAdmin:
-    image: dpage/pgadmin4:8
+  pgadmin-dev:
+    image: dpage/pgadmin4:latest
+    container_name: pgadmin
+    profiles: ["dev"]
     env_file:
       - .pgadmin.env
     ports:
       - "8080:80"
     depends_on:
-      - postgres
+      - postgres-dev
     volumes:
-      - pgadmin_data:/var/lib/pgadmin
+      - pgadmin_data_dev:/var/lib/pgadmin
     networks:
       - admin_net
-
 
 volumes:
   postgres_data:
   postgres_data_dev:
-  pgadmin_data:
+  pgadmin_data_dev:
