@@ -1,6 +1,6 @@
 1. Terminal starten
 2. cd /deinOrdner/.extras/compose/postgres
-3. docker compose up
+3. docker compose up --profile dev | docker compose up --profile prod
 4. in einem Webbrowser deiner Wahl localhost:8080
 5. Email Passwort aus der .pgadmin.env entnehmen
 6. Rechtsklick auf Server und "register" drücken
