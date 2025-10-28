@@ -1,15 +1,15 @@
 networks:
   db_net:
     driver: bridge
-    internal: true       
+    internal: true
   admin_net:
-    driver: bridge       
+    driver: bridge
 
 services:
   postgres:
     image: postgres:18
     container_name: postgres
-    profiles: ["prod"]
+    profiles: ['prod']
     env_file:
       - .env
     security_opt:
@@ -17,7 +17,7 @@ services:
     cap_drop:
       - ALL
     read_only: true
-    shm_size: "1g"
+    shm_size: '1g'
     tmpfs:
       - /var/run/postgresql
       - /tmp
@@ -25,7 +25,7 @@ services:
       - postgres_data:/var/lib/postgresql
       - ./initdb:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD", "pg_isready", "-U", "election", "-d", "election_db", "-h", "127.0.0.1"]
+      test: ['CMD', 'pg_isready', '-U', 'election', '-d', 'election_db', '-h', '127.0.0.1']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -37,20 +37,21 @@ services:
   postgres-dev:
     image: postgres:18
     container_name: postgres-dev
-    profiles: ["dev"]
+    hostname: election
+    profiles: ['dev']
     env_file:
       - .env
     volumes:
       - postgres_data_dev:/var/lib/postgresql
       - ./initdb:/docker-entrypoint-initdb.d:ro
     ports:
-      - "5432:5432"
-    shm_size: "1g"
+      - '5432:5432'
+    shm_size: '1g'
     tmpfs:
       - /var/run/postgresql
       - /tmp
     healthcheck:
-      test: ["CMD", "pg_isready", "-U", "election", "-d", "election_db", "-h", "127.0.0.1"]
+      test: ['CMD', 'pg_isready', '-U', 'election', '-d', 'election_db', '-h', '127.0.0.1']
       interval: 10s
       timeout: 5s
       retries: 6
@@ -61,11 +62,11 @@ services:
   pgadmin-dev:
     image: dpage/pgadmin4:latest
     container_name: pgadmin
-    profiles: ["dev"]
+    profiles: ['dev']
     env_file:
       - .pgadmin.env
     ports:
-      - "8080:80"
+      - '8080:80'
     depends_on:
       - postgres-dev
     volumes:
