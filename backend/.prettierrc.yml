@@ -7,4 +7,3 @@ overrides:
   - files: ['**/*.{js,mjs,cjs}']
     options:
       tabWidth: 2
-

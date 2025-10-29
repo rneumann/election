@@ -9,7 +9,7 @@ services:
   postgres:
     image: postgres:16
     container_name: postgres
-    profiles: ["prod"]
+    profiles: ['prod']
     env_file:
       - .env
     security_opt:
@@ -21,7 +21,7 @@ services:
       - postgres_data:/var/lib/postgresql
       - ./initdb:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U election -d election_db -h localhost"]
+      test: ['CMD-SHELL', 'pg_isready -U election -d election_db -h localhost']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -33,19 +33,19 @@ services:
   postgres-dev:
     image: postgres:16
     container_name: postgres-dev
-    profiles: ["dev"]
+    profiles: ['dev']
     env_file:
       - .env
     volumes:
       - postgres_data:/var/lib/postgresql
       - ./initdb:/docker-entrypoint-initdb.d:ro
     ports:
-      - "5432:5432"         
+      - '5432:5432'
     networks:
       - db_net
       - admin_net
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB -h 127.0.0.1"]
+      test: ['CMD-SHELL', 'pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB -h 127.0.0.1']
       interval: 10s
       timeout: 5s
       retries: 6
@@ -56,14 +56,13 @@ services:
     env_file:
       - .pgadmin.env
     ports:
-      - "8080:80"
+      - '8080:80'
     depends_on:
       - postgres
     volumes:
       - pgadmin_data:/var/lib/pgadmin
     networks:
       - admin_net
-
 
 volumes:
   postgres_data:

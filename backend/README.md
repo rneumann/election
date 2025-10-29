@@ -58,4 +58,4 @@ Diese Wahlarten unterscheiden sich in:
 
 ### Server-Starten
 
-- Der Server kann gestartet werden mit dem cmd: `` npm start ``
+- Der Server kann gestartet werden mit dem cmd: `npm start`

@@ -1,15 +1,25 @@
 {
   "name": "wahlsystem-hka",
   "version": "1.0.0",
+  "description": "wahlsytem für BSI konforme E-Wahlen",
+  "license": "MIT",
+  "type": "module",
   "scripts": {
-    "start": "node node_js_init.js",
-    "eslint": "npx eslint '**/*.js' '**/*.mjs' '**/*.json'"
+    "eslint": "npx eslint '**/*.js' '**/*.mjs' '**/*.json'",
+    "prettier": "npx prettier . --write",
+    "start": "node node_js_init.js"
+  },
+  "dependencies": {
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "uuid": "^13.0.0"
   },
   "devDependencies": {
     "@eslint-community/eslint-plugin-eslint-comments": "^4.5.0",
     "@eslint/js": "^9.38.0",
     "eslint": "^9.38.0",
     "eslint-config-prettier": "^10.1.8",
+    "eslint-import-resolver-node": "^0.3.9",
     "eslint-plugin-import": "^2.32.0",
     "eslint-plugin-jsdoc": "^61.1.11",
     "eslint-plugin-n": "^17.23.1",
@@ -25,9 +35,5 @@
     "eslint-plugin-unicorn": "^62.0.0",
     "globals": "^16.4.0",
     "prettier": "3.6.2"
-  },
-  "dependencies": {
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0"
   }
 }
