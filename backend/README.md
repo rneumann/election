@@ -55,3 +55,7 @@ Diese Wahlarten unterscheiden sich in:
 ---
 
 ## Deployment
+
+### Server-Starten
+
+- Der Server kann gestartet werden mit dem cmd: `` npm start ``
