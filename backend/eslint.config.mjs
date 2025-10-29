@@ -13,6 +13,9 @@ import comments from '@eslint-community/eslint-plugin-eslint-comments/configs';
 import regexp from 'eslint-plugin-regexp';
 import preferArrow from 'eslint-plugin-prefer-arrow';
 import packageJson from 'eslint-plugin-package-json';
+import jsoncParser from 'jsonc-eslint-parser';
+import jsdoc from 'eslint-plugin-jsdoc';
+
 
 export default [
   js.configs.recommended,
@@ -38,6 +41,7 @@ export default [
       },
     },
     plugins: {
+      jsdoc,
       unicorn: unicorn,
       sonarjs: sonarjs,
       security: security,
@@ -81,6 +85,16 @@ export default [
       indent: ['error', 2],
       semi: ['error', 'always'],
       'quote-props': ['error', 'as-needed'],
+      'jsdoc/require-jsdoc': ['error', {
+        require: {
+          FunctionDeclaration: true,
+          MethodDefinition: true,
+          ClassDeclaration: true,
+          ArrowFunctionExpression: false, // optional
+        }
+      }],
+      'jsdoc/require-param': 'error',
+      'jsdoc/require-returns': 'error',
     },
   },
 
@@ -111,12 +125,10 @@ export default [
   // package.json
   {
     files: ['package.json'],
-    plugins: {
-      'package-json': packageJson,
+    languageOptions: {
+      parser: jsoncParser,
     },
-    rules: {
-      ...packageJson.configs.recommended.rules,
-      'package-json/sort-collections': ['error', ['dependencies', 'devDependencies']],
-    },
+    plugins: { 'package-json': packageJson },
+    rules: { ...packageJson.configs.recommended.rules }
   },
 ];

@@ -1,6 +1,9 @@
 {
+  "name": "wahlsystem-hka",
+  "version": "1.0.0",
   "scripts": {
-    "start": "node node_js_init.js"
+    "start": "node node_js_init.js",
+    "eslint": "npx eslint '**/*.js' '**/*.mjs' '**/*.json'"
   },
   "devDependencies": {
     "@eslint-community/eslint-plugin-eslint-comments": "^4.5.0",
@@ -8,6 +11,7 @@
     "eslint": "^9.38.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-jsdoc": "^61.1.11",
     "eslint-plugin-n": "^17.23.1",
     "eslint-plugin-package-json": "^0.59.0",
     "eslint-plugin-prefer-arrow": "^1.2.3",
