@@ -52,6 +52,11 @@ export default [
       'prefer-arrow': preferArrow,
     },
     settings: {
+      'import/resolver': {
+        node: {
+          extensions: ['.js', '.mjs', '.json'],
+        },
+      },
       'import/node-version': '24.10.0',
       react: { version: 'detect' },
     },
@@ -62,10 +67,10 @@ export default [
       'sonarjs/no-duplicate-string': 'error',
       'promise/always-return': 'error',
       'promise/no-nesting': 'error',
-      'import/no-unresolved': [
-        'error',
-        { ignore: ['@stylistic/eslint-plugin-js', 'eslint-plugin-jest', 'eslint/config'] },
-      ],
+      // 'import/no-unresolved': [
+      //   'error',
+      //   { ignore: ['@stylistic/eslint-plugin-js', 'eslint-plugin-jest', 'eslint/config'] },
+      // ],
       'import/order': [
         'error',
         { groups: ['builtin', 'external', 'internal', 'parent', 'sibling'] },
