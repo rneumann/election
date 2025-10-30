@@ -53,9 +53,3 @@ Diese Wahlarten unterscheiden sich in:
 - **Barrierefreiheit:** Nutzung durch alle Wählergruppen
 
 ---
-
-## Deployment
-
-### Server-Starten
-
-- Der Server kann gestartet werden mit dem cmd: `npm start`

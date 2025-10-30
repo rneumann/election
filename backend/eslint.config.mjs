@@ -13,6 +13,8 @@ import comments from '@eslint-community/eslint-plugin-eslint-comments/configs';
 import regexp from 'eslint-plugin-regexp';
 import preferArrow from 'eslint-plugin-prefer-arrow';
 import packageJson from 'eslint-plugin-package-json';
+import jsoncParser from 'jsonc-eslint-parser';
+import jsdoc from 'eslint-plugin-jsdoc';
 
 export default [
   js.configs.recommended,
@@ -38,6 +40,7 @@ export default [
       },
     },
     plugins: {
+      jsdoc,
       unicorn: unicorn,
       sonarjs: sonarjs,
       security: security,
@@ -49,6 +52,11 @@ export default [
       'prefer-arrow': preferArrow,
     },
     settings: {
+      'import/resolver': {
+        node: {
+          extensions: ['.js', '.mjs', '.json'],
+        },
+      },
       'import/node-version': '24.10.0',
       react: { version: 'detect' },
     },
@@ -59,10 +67,10 @@ export default [
       'sonarjs/no-duplicate-string': 'error',
       'promise/always-return': 'error',
       'promise/no-nesting': 'error',
-      'import/no-unresolved': [
-        'error',
-        { ignore: ['@stylistic/eslint-plugin-js', 'eslint-plugin-jest', 'eslint/config'] },
-      ],
+      // 'import/no-unresolved': [
+      //   'error',
+      //   { ignore: ['@stylistic/eslint-plugin-js', 'eslint-plugin-jest', 'eslint/config'] },
+      // ],
       'import/order': [
         'error',
         { groups: ['builtin', 'external', 'internal', 'parent', 'sibling'] },
@@ -81,6 +89,19 @@ export default [
       indent: ['error', 2],
       semi: ['error', 'always'],
       'quote-props': ['error', 'as-needed'],
+      'jsdoc/require-jsdoc': [
+        'error',
+        {
+          require: {
+            FunctionDeclaration: true,
+            MethodDefinition: true,
+            ClassDeclaration: true,
+            ArrowFunctionExpression: false, // optional
+          },
+        },
+      ],
+      'jsdoc/require-param': 'error',
+      'jsdoc/require-returns': 'error',
     },
   },
 
@@ -111,12 +132,10 @@ export default [
   // package.json
   {
     files: ['package.json'],
-    plugins: {
-      'package-json': packageJson,
+    languageOptions: {
+      parser: jsoncParser,
     },
-    rules: {
-      ...packageJson.configs.recommended.rules,
-      'package-json/sort-collections': ['error', ['dependencies', 'devDependencies']],
-    },
+    plugins: { 'package-json': packageJson },
+    rules: { ...packageJson.configs.recommended.rules },
   },
 ];

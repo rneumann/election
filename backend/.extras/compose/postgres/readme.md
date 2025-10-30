@@ -6,6 +6,6 @@
 6. Rechtsklick auf Server und "register" drücken
 7. Name ist egal
 8. Unter Connection: Host name: postgres;
-                     Port: 5432
-                     Maintainance DB: postgres
-                     Username: election
+   Port: 5432
+   Maintainance DB: postgres
+   Username: election
