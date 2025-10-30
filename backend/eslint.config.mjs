@@ -16,7 +16,6 @@ import packageJson from 'eslint-plugin-package-json';
 import jsoncParser from 'jsonc-eslint-parser';
 import jsdoc from 'eslint-plugin-jsdoc';
 
-
 export default [
   js.configs.recommended,
   {
@@ -85,14 +84,17 @@ export default [
       indent: ['error', 2],
       semi: ['error', 'always'],
       'quote-props': ['error', 'as-needed'],
-      'jsdoc/require-jsdoc': ['error', {
-        require: {
-          FunctionDeclaration: true,
-          MethodDefinition: true,
-          ClassDeclaration: true,
-          ArrowFunctionExpression: false, // optional
-        }
-      }],
+      'jsdoc/require-jsdoc': [
+        'error',
+        {
+          require: {
+            FunctionDeclaration: true,
+            MethodDefinition: true,
+            ClassDeclaration: true,
+            ArrowFunctionExpression: false, // optional
+          },
+        },
+      ],
       'jsdoc/require-param': 'error',
       'jsdoc/require-returns': 'error',
     },
@@ -129,6 +131,6 @@ export default [
       parser: jsoncParser,
     },
     plugins: { 'package-json': packageJson },
-    rules: { ...packageJson.configs.recommended.rules }
+    rules: { ...packageJson.configs.recommended.rules },
   },
 ];
