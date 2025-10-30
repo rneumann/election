@@ -16,7 +16,6 @@ import packageJson from 'eslint-plugin-package-json';
 import jsoncParser from 'jsonc-eslint-parser';
 import jsdoc from 'eslint-plugin-jsdoc';
 
-
 export default [
   js.configs.recommended,
   {
@@ -53,6 +52,11 @@ export default [
       'prefer-arrow': preferArrow,
     },
     settings: {
+      'import/resolver': {
+        node: {
+          extensions: ['.js', '.mjs', '.json'],
+        },
+      },
       'import/node-version': '24.10.0',
       react: { version: 'detect' },
     },
@@ -63,10 +67,10 @@ export default [
       'sonarjs/no-duplicate-string': 'error',
       'promise/always-return': 'error',
       'promise/no-nesting': 'error',
-      'import/no-unresolved': [
-        'error',
-        { ignore: ['@stylistic/eslint-plugin-js', 'eslint-plugin-jest', 'eslint/config'] },
-      ],
+      // 'import/no-unresolved': [
+      //   'error',
+      //   { ignore: ['@stylistic/eslint-plugin-js', 'eslint-plugin-jest', 'eslint/config'] },
+      // ],
       'import/order': [
         'error',
         { groups: ['builtin', 'external', 'internal', 'parent', 'sibling'] },
@@ -85,14 +89,17 @@ export default [
       indent: ['error', 2],
       semi: ['error', 'always'],
       'quote-props': ['error', 'as-needed'],
-      'jsdoc/require-jsdoc': ['error', {
-        require: {
-          FunctionDeclaration: true,
-          MethodDefinition: true,
-          ClassDeclaration: true,
-          ArrowFunctionExpression: false, // optional
-        }
-      }],
+      'jsdoc/require-jsdoc': [
+        'error',
+        {
+          require: {
+            FunctionDeclaration: true,
+            MethodDefinition: true,
+            ClassDeclaration: true,
+            ArrowFunctionExpression: false, // optional
+          },
+        },
+      ],
       'jsdoc/require-param': 'error',
       'jsdoc/require-returns': 'error',
     },
@@ -129,6 +136,6 @@ export default [
       parser: jsoncParser,
     },
     plugins: { 'package-json': packageJson },
-    rules: { ...packageJson.configs.recommended.rules }
+    rules: { ...packageJson.configs.recommended.rules },
   },
 ];

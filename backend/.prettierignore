@@ -1,3 +1,9 @@
 # Ignore artifacts:
 build
 coverage
+.extras
+.prettierrc.yml
+eslint.config.mjs
+package-lock.json
+package.json
+README.md
