@@ -53,7 +53,7 @@ export const login = async (username, password) => {
   });
 
   try {
-    await client.bind(`${AD_DOMAIN}\\${username}`, password);
+    await client.bind(`cn=${username},cn=users,${AD_BASE_DN}`, password);
     logger.debug(`User ${username} authenticated successfully via LDAP.`);
     return { username, role: 'voter' };
   } catch (error) {
