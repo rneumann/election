@@ -4,19 +4,28 @@
   "description": "wahlsytem für BSI konforme E-Wahlen",
   "license": "MIT",
   "type": "module",
+  "main": "server.js",
   "scripts": {
     "eslint": "npx eslint '**/*.js' '**/*.mjs' '**/*.json'",
     "prettier": "npx prettier . --write",
-    "start": "node node_js_init.js"
+    "start": "node server.js"
   },
   "dependencies": {
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "helmet": "^8.1.0",
+    "ldapts": "^8.0.9",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "uuid": "^13.0.0"
+    "uuid": "^13.0.0",
+    "winston": "^3.18.3"
   },
   "devDependencies": {
     "@eslint-community/eslint-plugin-eslint-comments": "^4.5.0",
     "@eslint/js": "^9.38.0",
+    "@types/node": "^24.9.2",
+    "@types/uuid": "^10.0.0",
+    "@types/winston": "^2.4.4",
     "eslint": "^9.38.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-import-resolver-node": "^0.3.9",
