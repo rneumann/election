@@ -1,6 +1,15 @@
 import { login } from '../auth/auth.js';
 import { logger } from '../conf/logger/logger.js';
 
+/**
+ * Login route for users, admin and committee.
+ * This route expects a POST request with a request body containing
+ * the username and password.
+ * @param req - The Express request object
+ * @param res - The Express response object
+ * @param next - The Express next function
+ * @returns {Promise<Response>} A Promise resolving to an Express response object
+ */
 export const loginRoute = async (req, res, next) => {
   logger.debug('Login route accessed');
   try {

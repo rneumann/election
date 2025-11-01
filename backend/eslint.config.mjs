@@ -84,7 +84,7 @@ export default [
             FunctionDeclaration: true,
             MethodDefinition: true,
             ClassDeclaration: true,
-            ArrowFunctionExpression: false, // optional
+            ArrowFunctionExpression: true, // optional
           },
         },
       ],
