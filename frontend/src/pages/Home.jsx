@@ -1,18 +1,32 @@
+import { useAuth } from '../context/AuthContext.jsx';
+
 /**
- * Home-Seite nach erfolgreicher Authentifizierung
- * @param {Object} props - Komponenten-Props
- * @param {Function} props.onLogout - Callback-Funktion für Logout
- * @returns {JSX.Element} Home-Komponente mit Dashboard
+ * Home page after successful authentication.
+ * Displays user dashboard with current elections and user information.
+ *
+ * @returns {React.ReactElement} Home component with dashboard
  */
-const Home = ({ onLogout }) => {
+const Home = () => {
+  const { user, logout } = useAuth();
   return (
     <div className="min-h-screen bg-hka-light-gray">
       {/* Header */}
       <header className="bg-hka-red text-white shadow-lg">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <h1 className="text-2xl font-bold"> HKA Wahlsystem</h1>
+          <div>
+            <h1 className="text-2xl font-bold">HKA Wahlsystem</h1>
+            <p className="text-sm opacity-90">
+              Angemeldet als: <span className="font-semibold">{user?.username}</span> (
+              {user?.role === 'admin'
+                ? 'Administrator'
+                : user?.role === 'committee'
+                  ? 'Wahlausschuss'
+                  : 'Wähler'}
+              )
+            </p>
+          </div>
           <button
-            onClick={onLogout}
+            onClick={logout}
             className="bg-white text-hka-red px-4 py-2 rounded-lg font-semibold hover:bg-gray-100 transition"
           >
             Abmelden
@@ -27,6 +41,16 @@ const Home = ({ onLogout }) => {
           <p className="text-hka-gray mb-6">
             BSI-konformes Online-Wahlsystem für hochschulinterne Wahlen
           </p>
+
+          {/* User Role Info */}
+          <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
+            <p className="text-sm text-blue-700">
+              <strong>Ihre Rolle:</strong>{' '}
+              {user?.role === 'admin' && 'Sie haben vollständigen Administrationszugriff.'}
+              {user?.role === 'committee' && 'Sie können Wahlen verwalten und Ergebnisse einsehen.'}
+              {user?.role === 'voter' && 'Sie können an verfügbaren Wahlen teilnehmen.'}
+            </p>
+          </div>
 
           {/* Info Cards */}
           <div className="grid md:grid-cols-3 gap-6 mt-8">

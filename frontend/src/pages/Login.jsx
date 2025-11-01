@@ -1,41 +1,69 @@
 import { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext.jsx';
 
 /**
- * Login-Seite für RZ-Authentifizierung
- * @param {Object} props - Komponenten-Props
- * @param {Function} props.onLogin - Callback-Funktion bei erfolgreicher Anmeldung
- * @returns {JSX.Element} Login-Komponente mit Formular
+ * Login page for RZ authentication.
+ * Handles user login with backend API integration.
+ *
+ * @returns {React.ReactElement} Login component with form
  */
-const Login = ({ onLogin }) => {
+const Login = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState(false);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const usernameRef = useRef(null);
+  const navigate = useNavigate();
+  const { login } = useAuth();
 
-  // Auto-Focus auf Username-Feld beim Laden
+  /**
+   * Auto-focus on username field when component mounts.
+   */
   useEffect(() => {
     usernameRef.current?.focus();
   }, []);
 
-  // Fehler nach 2 Sekunden ausblenden
+  /**
+   * Clear error message after 5 seconds.
+   */
   useEffect(() => {
     if (error) {
       const timer = setTimeout(() => {
-        return setError(false);
-      }, 2000);
+        return setError('');
+      }, 5000);
       return () => {
         return clearTimeout(timer);
       };
     }
   }, [error]);
 
-  const handleSubmit = (e) => {
+  /**
+   * Handle login form submission.
+   * Calls backend API via AuthContext and redirects on success.
+   *
+   * @param {React.FormEvent} e - Form submit event
+   * @returns {Promise<void>}
+   */
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    //muss noch verbunden werden mit Backend Authentifizierung
-    if (username && password) {
-      onLogin();
-    } else {
-      setError(true);
+    setError('');
+    setLoading(true);
+
+    try {
+      const result = await login(username, password);
+
+      if (result.success) {
+        // Redirect to home page on successful login
+        navigate('/home');
+      } else {
+        // Show error message from backend
+        setError(result.message || 'Login failed. Please try again.');
+      }
+    } catch {
+      setError('An unexpected error occurred. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -54,7 +82,7 @@ const Login = ({ onLogin }) => {
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
             <p className="font-semibold">Fehler bei der Anmeldung</p>
-            <p className="text-sm">Ihr Benutzername oder Passwort ist falsch.</p>
+            <p className="text-sm">{error}</p>
           </div>
         )}
 
@@ -95,9 +123,10 @@ const Login = ({ onLogin }) => {
 
           <button
             type="submit"
-            className="w-full bg-hka-red text-white py-3 rounded-lg font-semibold hover:bg-red-700 transition duration-200 shadow-lg"
+            disabled={loading}
+            className="w-full bg-hka-red text-white py-3 rounded-lg font-semibold hover:bg-red-700 transition duration-200 shadow-lg disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
-            Anmelden
+            {loading ? 'Wird angemeldet...' : 'Anmelden'}
           </button>
         </form>
 

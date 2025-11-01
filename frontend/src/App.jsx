@@ -1,41 +1,70 @@
-import { useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './context/AuthContext.jsx';
 import Login from './pages/Login';
 import Home from './pages/Home';
 
 /**
- * Hauptkomponente der Anwendung mit Authentifizierungs-Routing
- * @returns {JSX.Element} App-Komponente mit geschützten Routen
+ * Protected route component that redirects to login if not authenticated.
+ *
+ * @param {object} props - Component props
+ * @param {React.ReactNode} props.children - Child components to render if authenticated
+ * @returns {React.ReactElement} Protected content or redirect
  */
-const App = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+const ProtectedRoute = ({ children }) => {
+  const { isAuthenticated, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-hka-light-gray">
+        <div className="text-hka-red text-xl font-semibold">Loading...</div>
+      </div>
+    );
+  }
+
+  return isAuthenticated ? children : <Navigate to="/login" replace />;
+};
+
+/**
+ * Application routes component.
+ * Manages routing between login and protected pages.
+ *
+ * @returns {React.ReactElement} Routes component
+ */
+const AppRoutes = () => {
+  const { isAuthenticated } = useAuth();
 
   return (
-    <div className="min-h-screen bg-hka-light-gray">
-      <Routes>
-        <Route
-          path="/login"
-          element={
-            isAuthenticated ? (
-              <Navigate to="/home" replace />
-            ) : (
-              <Login onLogin={() => setIsAuthenticated(true)} />
-            )
-          }
-        />
-        <Route
-          path="/home"
-          element={
-            isAuthenticated ? (
-              <Home onLogout={() => setIsAuthenticated(false)} />
-            ) : (
-              <Navigate to="/login" replace />
-            )
-          }
-        />
-        <Route path="*" element={<Navigate to="/login" replace />} />
-      </Routes>
-    </div>
+    <Routes>
+      <Route
+        path="/login"
+        element={isAuthenticated ? <Navigate to="/home" replace /> : <Login />}
+      />
+      <Route
+        path="/home"
+        element={
+          <ProtectedRoute>
+            <Home />
+          </ProtectedRoute>
+        }
+      />
+      <Route path="*" element={<Navigate to="/login" replace />} />
+    </Routes>
+  );
+};
+
+/**
+ * Main application component with authentication context.
+ * Wraps entire app with AuthProvider for global auth state.
+ *
+ * @returns {React.ReactElement} App component with routes
+ */
+const App = () => {
+  return (
+    <AuthProvider>
+      <div className="min-h-screen bg-hka-light-gray">
+        <AppRoutes />
+      </div>
+    </AuthProvider>
   );
 };
 
