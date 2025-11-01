@@ -1,8 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { Client } from 'ldapts';
-import dotenv from 'dotenv';
+import 'dotenv/config';
 import { logger } from '../conf/logger/logger.js';
-dotenv.config();
 
 const { AD_URL, AD_BASE_DN, AD_DOMAIN } = process.env;
 
@@ -44,7 +43,7 @@ export const login = async (username, password) => {
   // Normal user via LDAP
   if (!AD_URL || !AD_BASE_DN || !AD_DOMAIN) {
     logger.error('LDAP configuration is missing. Cannot authenticate user.');
-    return null;
+    return undefined;
   }
 
   const client = new Client({
@@ -59,7 +58,7 @@ export const login = async (username, password) => {
     return { username, role: 'voter' };
   } catch (error) {
     logger.error(`Error authenticating user ${username} via LDAP: ${error.message}`);
-    return { isAuthenticated: false, message: 'Invalid credentials' };
+    return undefined;
   } finally {
     await client.unbind();
   }

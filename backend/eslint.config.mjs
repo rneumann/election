@@ -69,7 +69,7 @@ export default [
       'regexp/no-empty-group': 'error',
       'no-console': 'warn',
       'no-unused-vars': 'warn',
-      'no-magic-numbers': ['error', { ignore: [0, 1, -1, 2] }],
+      'no-magic-numbers': ['error', { ignore: [0, 1, -1, 2, 200, 400, 401, 405, 500] }],
       curly: ['error', 'all'],
       'prefer-template': 'error',
       'react/jsx-uses-react': 'off',

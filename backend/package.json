@@ -4,14 +4,16 @@
   "description": "wahlsytem für BSI konforme E-Wahlen",
   "license": "MIT",
   "type": "module",
-  "main": "node_js_init.js",
+  "main": "server.js",
   "scripts": {
     "eslint": "npx eslint '**/*.js' '**/*.mjs' '**/*.json'",
     "prettier": "npx prettier . --write",
-    "start": "node node_js_init.js"
+    "start": "node server.js"
   },
   "dependencies": {
     "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "helmet": "^8.1.0",
     "ldapts": "^8.0.9",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
