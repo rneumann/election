@@ -25,12 +25,20 @@ export const loginRoute = async (req, res, next) => {
       logger.warn('Request body is missing');
       return res.status(400).json({ message: 'Request body is required' });
     }
+
+    /**
+     * Extract username and password from request body
+     */
     const { username, password } = req.body;
 
     if (!username || !password) {
       logger.warn('Username or password missing in request body');
       return res.status(400).json({ message: 'Username and password are required' });
     }
+
+    /**
+     *  Try to authenticate the user
+     */
     const user = await login(username, password);
     if (!user) {
       logger.warn(`Authentication failed for user: ${username}`);
