@@ -1,6 +1,7 @@
 import express from 'express';
 import helmet from 'helmet';
 import { router } from './routes/index.routes.js';
+import { errorHandler } from './conf/logger/error-handler.middleware.js';
 export const app = express();
 
 /**
@@ -31,3 +32,8 @@ app.get('/health', (req, res) => res.json({ status: 'ok' }));
  * Binding API routes
  */
 app.use('/api', router);
+
+/**
+ * Error handling middleware
+ */
+app.use(errorHandler);

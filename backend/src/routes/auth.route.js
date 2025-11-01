@@ -17,6 +17,10 @@ export const loginRoute = async (req, res, next) => {
       logger.warn(`Invalid HTTP method: ${req.method}`);
       return res.status(405).json({ message: 'Method Not Allowed' });
     }
+    if (req.headers['content-type'] !== 'application/json') {
+      logger.warn('Invalid Content-Type header');
+      return res.status(415).json({ message: 'Content-Type must be application/json' });
+    }
     if (!req.body) {
       logger.warn('Request body is missing');
       return res.status(400).json({ message: 'Request body is required' });
@@ -36,6 +40,6 @@ export const loginRoute = async (req, res, next) => {
     return res.status(200).json({ username: user.username, role: user.role });
   } catch (error) {
     logger.error('Error occurred during login', error);
-    return res.status(500).json({ message: 'Internal server error' });
+    next(error);
   }
 };
