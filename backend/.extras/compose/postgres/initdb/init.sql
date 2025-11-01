@@ -7,8 +7,7 @@ CREATE TABLE IF NOT EXISTS voters (
   uid             TEXT UNIQUE,
   lastname        TEXT NOT NULL,
   firstname       TEXT NOT NULL,
-  mtknr           TEXT UNIQUE,
-  courseofstudies TEXT NOT NULL,
+  mtknr            UNIQUE,
   faculty         TEXT,
   notes           TEXT
 );
@@ -18,7 +17,6 @@ CREATE TABLE IF NOT EXISTS candidates (
   lastname        TEXT NOT NULL,
   firstname       TEXT NOT NULL,
   mtknr           TEXT,
-  courseofstudies TEXT NOT NULL,
   faculty         TEXT,
   keyword         TEXT,
   notes           TEXT
@@ -70,8 +68,6 @@ CREATE TABLE IF NOT EXISTS votingnotes (
   PRIMARY KEY (voterId, electionId)
 );
 
-CREATE INDEX IF NOT EXISTS idx_voters_course     ON voters(courseofstudies);
-CREATE INDEX IF NOT EXISTS idx_candidates_course ON candidates(courseofstudies);
 CREATE INDEX IF NOT EXISTS idx_ballots_election  ON ballots(election);
 CREATE INDEX IF NOT EXISTS idx_ballotvotes_list  ON ballotvotes(election, listnum);
 
@@ -81,7 +77,6 @@ SELECT
   c.id   AS cid,
   c.firstname,
   c.lastname,
-  c.courseofstudies,
   c.faculty,
   e.id   AS electionid,
   e.info
@@ -95,7 +90,6 @@ SELECT
   ec.listnum,
   c.firstname,
   c.lastname,
-  c.courseofstudies,
   c.faculty,
   SUM(bv.votes) AS votes,
   e.id AS electionid,
@@ -104,7 +98,7 @@ FROM ballotvotes bv
 JOIN electioncandidates ec ON bv.listnum = ec.listnum AND bv.election = ec.electionId
 JOIN candidates c ON ec.candidateId = c.id
 JOIN elections e ON ec.electionId = e.id
-GROUP BY e.id, ec.listnum, c.firstname, c.lastname, c.courseofstudies, c.faculty, e.info;
+GROUP BY e.id, ec.listnum, c.firstname, c.lastname, c.faculty, e.info;
 
 CREATE OR REPLACE VIEW votingcounts AS
 SELECT 
@@ -151,7 +145,6 @@ SELECT
   v.lastname,
   v.firstname,
   v.mtknr,
-  v.courseofstudies,
   v.faculty,
   e.id AS eid,
   e.info,
@@ -164,7 +157,6 @@ LEFT JOIN votingnotes vn ON vn.voterid = v.id AND vn.electionid = e.id;
 CREATE OR REPLACE VIEW voterregistry AS
 SELECT 
   faculty,
-  courseofstudies AS course,
   lastname,
   firstname,
   mtknr
