@@ -15,8 +15,8 @@ const ProtectedRoute = ({ children }) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-hka-light-gray">
-        <div className="text-hka-red text-xl font-semibold">Loading...</div>
+      <div className="min-h-screen flex items-center justify-center bg-brand-light">
+        <div className="text-brand-primary text-xl font-semibold">Loading...</div>
       </div>
     );
   }
@@ -61,7 +61,7 @@ const AppRoutes = () => {
 const App = () => {
   return (
     <AuthProvider>
-      <div className="min-h-screen bg-hka-light-gray">
+      <div className="min-h-screen bg-brand-light">
         <AppRoutes />
       </div>
     </AuthProvider>

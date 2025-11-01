@@ -1,5 +1,6 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
 import authService from '../services/authService.js';
+import api from '../services/api.js';
 
 /**
  * Authentication context for managing global auth state.
@@ -33,7 +34,46 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => authService.getCurrentUser());
   const [isAuthenticated, setIsAuthenticated] = useState(() => authService.isAuthenticated());
-  const [loading] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  /**
+   * Logout current user.
+   * Clears session storage and resets auth state.
+   *
+   * @returns {void}
+   */
+  const logout = () => {
+    authService.logout();
+    setUser(null);
+    setIsAuthenticated(false);
+  };
+
+  /**
+   * Validate existing session on mount.
+   * Checks if backend is reachable and session is still valid.
+   * If backend is down or session invalid, logout user.
+   */
+  useEffect(() => {
+    const validateSession = async () => {
+      if (isAuthenticated) {
+        try {
+          // Check if backend is reachable
+          await api.get('/health');
+          // Backend is up, session is valid
+          setLoading(false);
+        } catch {
+          // Backend is down or unreachable -> logout
+          logout();
+          setLoading(false);
+        }
+      } else {
+        setLoading(false);
+      }
+    };
+
+    validateSession();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   /**
    * Login user with username and password.
@@ -62,18 +102,6 @@ export const AuthProvider = ({ children }) => {
         message: error.message || 'Login failed. Please try again.',
       };
     }
-  };
-
-  /**
-   * Logout current user.
-   * Clears session storage and resets auth state.
-   *
-   * @returns {void}
-   */
-  const logout = () => {
-    authService.logout();
-    setUser(null);
-    setIsAuthenticated(false);
   };
 
   const value = {

@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
+import { useTheme } from '../hooks/useTheme.js';
 
 /**
  * Login page for RZ authentication.
@@ -16,6 +17,7 @@ const Login = () => {
   const usernameRef = useRef(null);
   const navigate = useNavigate();
   const { login } = useAuth();
+  const theme = useTheme();
 
   /**
    * Auto-focus on username field when component mounts.
@@ -68,14 +70,14 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-hka-light-gray to-white">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-brand-light to-white">
       <div className="bg-white p-8 rounded-lg shadow-2xl w-full max-w-md">
         {/* Logo/Header */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-hka-red mb-2">HKA Wahlsystem</h1>
-          <p className="text-hka-gray text-sm">
-            Bitte melden Sie sich mit Ihrem normalen RZ-Benutzerkürzel an
-          </p>
+          <h1 className="text-3xl font-bold text-brand-primary mb-2">
+            {theme.institution.name} {theme.text.appTitle}
+          </h1>
+          <p className="text-brand-gray text-sm">{theme.text.loginSubtitle}</p>
         </div>
 
         {/* Error Message */}
@@ -89,7 +91,7 @@ const Login = () => {
         {/* Login Form */}
         <form onSubmit={handleSubmit} className="space-y-6" autoComplete="off">
           <div>
-            <label htmlFor="username" className="block text-sm font-medium text-hka-dark mb-2">
+            <label htmlFor="username" className="block text-sm font-medium text-brand-dark mb-2">
               Benutzerkürzel
             </label>
             <input
@@ -99,14 +101,14 @@ const Login = () => {
               ref={usernameRef}
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-hka-red focus:border-transparent outline-none"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent outline-none"
               placeholder="RZ-Benutzerkürzel"
               required
             />
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-hka-dark mb-2">
+            <label htmlFor="password" className="block text-sm font-medium text-brand-dark mb-2">
               RZ-Passwort
             </label>
             <input
@@ -115,7 +117,7 @@ const Login = () => {
               name="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-hka-red focus:border-transparent outline-none"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent outline-none"
               placeholder="Ihr RZ-Passwort"
               required
             />
@@ -124,14 +126,14 @@ const Login = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-hka-red text-white py-3 rounded-lg font-semibold hover:bg-red-700 transition duration-200 shadow-lg disabled:bg-gray-400 disabled:cursor-not-allowed"
+            className="w-full bg-brand-primary text-white py-3 rounded-lg font-semibold hover:opacity-90 transition duration-200 shadow-lg disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
             {loading ? 'Wird angemeldet...' : 'Anmelden'}
           </button>
         </form>
 
         {/* Footer */}
-        <p className="text-center text-xs text-hka-gray mt-6">© 2025 Hochschule Karlsruhe</p>
+        <p className="text-center text-xs text-brand-gray mt-6">{theme.text.copyright}</p>
       </div>
     </div>
   );
