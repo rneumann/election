@@ -66,3 +66,10 @@ PHPLDAPADMIN_LOGIN_DN – DN des Admins zum Login in phpLDAPadmin.
 
 PHPLDAPADMIN_LDAP_ADMIN_PASSWORD – Passwort des Admins (muss identisch mit LDAP_Admin_Password sein).
 ```
+
+## Server-Start
+
+```bash
++ docker compose up   #starten des docker containers
+- docker compose down #stoppen des docker containers
+```
