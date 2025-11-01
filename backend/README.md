@@ -1,61 +1,138 @@
-# 🗳️ Online-Wahlsystem HKA
+# 🗳️ Online-Wahlsystem HKA Backend
 
 ## Überblick
 
-Das Projekt **Online-Wahlsystem für die Hochschule Karlsruhe (HKA)** dient der Entwicklung einer sicheren, BSI-konformen Plattform zur Durchführung hochschulinterner Wahlen (nicht-politische E-Wahlen).
+Dieses Projekt stellt das Backend für das Online-Wahlsystem der HKA bereit. Es basiert auf **Node.js** und **Express.js** und bietet Authentifizierung, Routen für Benutzerinteraktionen sowie Logging und zentralisierte Fehlerbehandlung.
 
-Die Plattform wird **modular**, **dockerized** und **open-source** bereitgestellt, sodass sie auch an anderen Hochschulen eingesetzt werden kann.
+### Features
 
----
+- REST-API für Authentifizierung und weitere Endpunkte
+- Sicherheit über **Helmet**-Middleware
+- Zentralisierte Fehlerbehandlung (Error-Handler-Middleware)
+- Health-Check Route
+- Logging über konfigurierbaren Logger
+- Unterstützung für JSON- und URL-encoded Body-Parsing
 
-## 🏛️ Wahlarten an der HKA
+## Voraussetzungen
 
-Laut Wahlsystematik der Hochschule umfasst das System folgende Wahlarten:
+- Node.js >= 18.x
+- npm >= 9.x
+- `.env` Datei im Projektstamm mit mindestens:
 
-...
+```env
+PORT=3000
+NODE_ENV=development
 
-Diese Wahlarten unterscheiden sich in:
+AD_URL={...}
+AD_BASE_DN={...}
+AD_DOMAIN={...}
 
-- Wählergruppen (Studierende, Mitarbeitende)
-- Wahlmodus (Direktwahl, Listenwahl)
-- Auszählungslogik (nach Satzung und Wahlordnung)
 
----
+ADMIN_PASSWORD={...}
+COMMITTEE_PASSWORD={...}
+```
 
-## 🧩 Systemarchitektur
+## Installation
 
-- **Backend:** Node.js + PostgreSQL
-- **Frontend:** React + TailwindCSS (responsive Web-App)
-- **Containerisierung:** Docker
-- **Umgebungen:** Entwicklung / Produktion
+```bash
+git clone <REPOSITORY_URL>
+cd <PROJECT_FOLDER>
+npm install
+```
 
----
+Erstelle eine `.env` Datei im Projektstamm und füge die notwendigen Umgebungsvariablen hinzu (siehe [Vorraussetzungen](#voraussetzungen))
 
-## ⚙️ Funktionale Kernmodule
+## Deployment / Server starten
 
-| Modul                    | Beschreibung                                             |
-| ------------------------ | -------------------------------------------------------- |
-| **Benutzermanagement**   | Authentifizierung, Rollen- und Rechteverwaltung          |
-| **Wahlverwaltung**       | Erstellung, Konfiguration und Terminierung von Wahlen    |
-| **Kandidatenmanagement** | Verwaltung von Listen und Einzelkandidaturen             |
-| **Stimmabgabe**          | Verschlüsselte, verifizierbare Online-Stimmabgabe        |
-| **Auswertung**           | Automatisierte und nachvollziehbare Auszählung           |
-| **Audit & Logging**      | Nachvollziehbarkeit, Integrität und Export der Wahldaten |
-| **Testmodus**            | Simulierte Wahlumgebung zu Prüf- und Demo-Zwecken        |
+```bash
+npm start -> um den Server zu starten.
+npm run prettier -> um den code zu formatieren.
+npm run eslint -> um auf codesmell zu prüfen.
+```
 
----
+Der Server startet mit dem in `.env` konfigurierten `PORT`. Standard-Health-Check:
 
-## 🧠 Compliance und Konformität
+```bash
+GET http://localhost:<PORT>/health
+```
 
-- **BSI-CC-PP-0121:** Schutzprofil für nicht-politische E-Wahlen
-- **DSGVO-Konformität:** Verarbeitung personenbezogener Daten nur zweckgebunden
-- **Nachvollziehbarkeit:** Protokollierung aller sicherheitsrelevanten Ereignisse
-- **Barrierefreiheit:** Nutzung durch alle Wählergruppen
+## Projektstruktur (Beispiel)
 
----
+```bash
+├─ server.js
+├─ src/
+│  ├─ app.js
+│  ├─ conf/
+│  │  ├─ logger/
+│  │  │  ├─ logger.js
+│  │  │  └─ error-handler.middleware.js
+│  ├─ auth/
+│  │  ├─ auth.js
+│  │  └─ auth.route.js
+│  └─ routes/
+│     └─ index.routes.js
+```
 
-## Deployment
+## API Endpunkte
 
-### Server-Starten
+### Health Check
 
-- Der Server kann gestartet werden mit dem cmd: `npm start`
+```bash
+GET /health
+```
+
+Antwort:
+
+```json
+{ "status": "ok" }
+```
+
+### Login
+
+```bash
+POST /api/auth/login
+Content-Type: application/json
+```
+
+Body:
+
+```json
+{
+  "username": "user",
+  "password": "pass"
+}
+```
+
+Erfolgreiche Antwort:
+
+```json
+{
+  "username": "user",
+  "role": "admin"
+}
+```
+
+Mögliche Fehlercodes:
+
+- `400` – Fehlende Felder
+- `401` – Ungültiger Benutzername oder Passwort
+- `405` – Falsche HTTP-Methode
+- `415` – Falscher Content-Type
+- `500` – Interner Serverfehler
+
+### Logging
+
+- Alle Routen und Fehler werden über den konfigurierten Logger protokolliert.
+- Die Error-Handler-Middleware loggt unhandled Errors und liefert eine einheitliche Fehlerantwort.
+
+### Sicherheit
+
+- Helmet setzt sichere HTTP-Header.
+- Body-Parser prüft JSON- und URL-encoded Requests.
+- Content-Type- und Method-Checks sollten serverseitig validiert werden.
+
+### Entwicklungstipps
+
+- Nutze die `eslint`- und `prettier`-Scripts vor Commits.
+- Lege zusätzliche Umgebungsvariablen für DB, Secrets oder Monitoring in `.env` ab.
+- Fehler mit `next(error)` an die zentrale Error-Middleware weiterleiten.

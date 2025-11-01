@@ -1,8 +1,6 @@
 // eslint.config.mjs
 import js from '@eslint/js';
 import globals from 'globals';
-import pluginReact from 'eslint-plugin-react';
-import pluginReactHooks from 'eslint-plugin-react-hooks';
 import unicorn from 'eslint-plugin-unicorn';
 import sonarjs from 'eslint-plugin-sonarjs';
 import security from 'eslint-plugin-security';
@@ -18,16 +16,6 @@ import jsdoc from 'eslint-plugin-jsdoc';
 
 export default [
   js.configs.recommended,
-  {
-    plugins: {
-      react: pluginReact,
-      'react-hooks': pluginReactHooks,
-    },
-    rules: {
-      ...pluginReact.configs.flat.recommended.rules,
-      ...pluginReactHooks.configs.recommended.rules,
-    },
-  },
 
   // Allgemeine Konfig für JS-Dateien
   {
@@ -81,7 +69,7 @@ export default [
       'regexp/no-empty-group': 'error',
       'no-console': 'warn',
       'no-unused-vars': 'warn',
-      'no-magic-numbers': ['error', { ignore: [0, 1, -1, 2] }],
+      'no-magic-numbers': ['error', { ignore: [0, 1, -1, 2, 200, 400, 401, 405, 415, 500] }],
       curly: ['error', 'all'],
       'prefer-template': 'error',
       'react/jsx-uses-react': 'off',
@@ -96,36 +84,12 @@ export default [
             FunctionDeclaration: true,
             MethodDefinition: true,
             ClassDeclaration: true,
-            ArrowFunctionExpression: false, // optional
+            ArrowFunctionExpression: true, // optional
           },
         },
       ],
       'jsdoc/require-param': 'error',
       'jsdoc/require-returns': 'error',
-    },
-  },
-
-  // React/Frontend-Dateien
-  {
-    files: ['**/*.jsx'],
-    languageOptions: {
-      ecmaVersion: 2025,
-      sourceType: 'module',
-      globals: {
-        ...globals.browser,
-      },
-    },
-    plugins: {
-      react: pluginReact,
-      'react-hooks': pluginReactHooks,
-    },
-    rules: {
-      'react/prop-types': 'off',
-      'react/jsx-filename-extension': ['error', { extensions: ['.jsx'] }],
-      'react-hooks/exhaustive-deps': 'warn',
-      indent: ['error', 2],
-      semi: ['error', 'always'],
-      'quote-props': ['error', 'as-needed'],
     },
   },
 
