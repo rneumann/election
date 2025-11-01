@@ -1,0 +1,11 @@
+{
+  "compilerOptions": {
+    "module": "nodenext",
+    "target": "ES2024",
+    "checkJs": true,
+    "allowSyntheticDefaultImports": true,
+    "moduleResolution": "nodenext",
+    "paths": {}
+  },
+  "exclude": ["node_modules"]
+}
