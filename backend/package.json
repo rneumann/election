@@ -8,7 +8,8 @@
   "scripts": {
     "eslint": "npx eslint '**/*.js' '**/*.mjs' '**/*.json'",
     "prettier": "npx prettier . --write",
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "vitest"
   },
   "dependencies": {
     "dotenv": "^17.2.3",
@@ -43,6 +44,7 @@
     "eslint-plugin-sonarjs": "^3.0.5",
     "eslint-plugin-unicorn": "^62.0.0",
     "globals": "^16.4.0",
-    "prettier": "3.6.2"
+    "prettier": "3.6.2",
+    "vitest": "^4.0.6"
   }
 }
