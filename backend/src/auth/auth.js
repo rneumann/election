@@ -3,23 +3,27 @@ import { Client } from 'ldapts';
 import 'dotenv/config';
 import { logger } from '../conf/logger/logger.js';
 
-const { AD_URL, AD_BASE_DN, AD_DOMAIN } = process.env;
-
 /**
- * Special admin user
+ * Returns an object with the admin user's username and password.
+ * The password is set to the value of the ADMIN_PASSWORD environment variable,
+ * or a randomly generated UUID v4 if this variable is not set.
+ * @returns {object} an object with the admin user's username and password
  */
-const adminUser = {
+const getAdminUser = () => ({
   username: 'admin',
   password: process.env.ADMIN_PASSWORD || uuidv4(),
-};
+});
 
 /**
- * Special committee user
+ * Returns an object with the committee user's username and password.
+ * The password is set to the value of the COMMITTEE_PASSWORD environment variable,
+ * or a randomly generated UUID v4 if this variable is not set.
+ * @returns {object} an object with the committee user's username and password
  */
-const committeeUser = {
+const getCommitteeUser = () => ({
   username: 'committee',
   password: process.env.COMMITTEE_PASSWORD || uuidv4(),
-};
+});
 
 /**
  * Login functionality for users, admin and committee.
@@ -29,16 +33,18 @@ const committeeUser = {
  * @returns {Promise<object>} a user object with username and role or null
  */
 export const login = async (username, password) => {
+  const { AD_URL, AD_BASE_DN, AD_DOMAIN } = process.env;
+
   username = username.trim();
   password = password.trim();
   // Check for special admin user
-  if (username === adminUser.username && password === adminUser.password) {
+  if (username === getAdminUser().username && password === getAdminUser().password) {
     logger.debug('Admin user authenticated successfully.');
-    return { username: adminUser.username, role: 'admin' };
+    return { username: getAdminUser().username, role: 'admin' };
   }
-  if (username === committeeUser.username && password === committeeUser.password) {
+  if (username === getCommitteeUser().username && password === getCommitteeUser().password) {
     logger.debug('Committee user authenticated successfully.');
-    return { username: committeeUser.username, role: 'committee' };
+    return { username: getCommitteeUser().username, role: 'committee' };
   }
   // Normal user via LDAP
   if (!AD_URL || !AD_BASE_DN || !AD_DOMAIN) {
@@ -53,7 +59,7 @@ export const login = async (username, password) => {
   });
 
   try {
-    await client.bind(`${AD_DOMAIN}\\${username}`, password);
+    await client.bind(`cn=${username},cn=users,${AD_BASE_DN}`, password);
     logger.debug(`User ${username} authenticated successfully via LDAP.`);
     return { username, role: 'voter' };
   } catch (error) {
