@@ -1,7 +1,10 @@
 # 🐘 PostgreSQL + pgAdmin Setup
 
-Dieses Setup stellt eine lokale PostgreSQL-Datenbank inklusive pgAdmin-Interface über **Docker Compose** bereit.  
-Es unterstützt zwei Profile: **dev** (Entwicklung) und **prod** (Produktion).
+Dieses Setup stellt eine lokale **PostgreSQL-Datenbank** mit **pgAdmin-Webinterface** via **Docker Compose** bereit.  
+Es unterstützt zwei Profile:
+
+- **dev** → Entwicklungsumgebung
+- **prod** → Produktivumgebung
 
 ---
 
@@ -12,114 +15,126 @@ Es unterstützt zwei Profile: **dev** (Entwicklung) und **prod** (Produktion).
 
 ---
 
-## 🚀 Starten der Container
+## 🚀 Container starten
 
-### 1. **Terminal öffnen**
-
-### 2. In das Projektverzeichnis wechseln:
+### 1️⃣ Projektverzeichnis öffnen
 
 ```bash
 cd /deinOrdner/.extras/compose/postgres
 ```
 
-### 3. Container starten
+### 2️⃣ Container hochfahren
 
-#### Für Entwicklung:
+**Entwicklung:**
 
 ```bash
 docker compose --profile dev up -d
 ```
 
-#### Für Produktion:
+**Produktion:**
 
 ```bash
-docker compose up
+docker compose up -d
 ```
 
-4. pgAdmin öffnen
-   → http://localhost:8080
+### 3️⃣ pgAdmin im Browser öffnen
 
-## 🔑 Login-Daten
+👉 [http://localhost:8080](http://localhost:8080)
 
-Die Anmeldedaten für pgAdmin findest du in der Datei:
+---
 
-.pgadmin.env
+## 🔑 Login
 
-Dort stehen z. B.:
+Die Zugangsdaten stehen in **.pgadmin.env**, z. B.:
 
+```bash
 PGADMIN_DEFAULT_EMAIL=election@acme.com
 PGADMIN_DEFAULT_PASSWORD=p
+```
+
+---
 
 ## 🗄️ Server in pgAdmin registrieren
 
-### _In pgAdmin Rechtsklick auf „Servers“ → Register → Server..._
+In pgAdmin:  
+**Rechtsklick auf „Servers“ → Register → Server...**
 
-### Im Reiter General:
+**Reiter „General“**
 
 ```
-Name: beliebig (z. B. ElectionDB)
+Name: ElectionDB (frei wählbar)
 ```
 
-### Im Reiter Connection:
+**Reiter „Connection“**
 
 ```
 Host name/address: election
-
 Port: 5432
-
 Maintenance database: election_db
-
 Username: election
-
-Password: ist aus der .env zu entnehmen
-
-Save klicken → Verbindung ist aktiv
+Password: (aus .env)
 ```
 
-## 🧹 Container stoppen & aufräumen
+✅ **Save** → Verbindung aktiv.
 
-Zum Stoppen der Container:
+---
+
+## 🧹 Container stoppen & bereinigen
+
+**Stoppen:**
 
 ```bash
-docker compose down
+docker compose --profile dev/prod down
 ```
 
-Wenn du zusätzlich Volumes löschen willst (z. B. für einen kompletten Reset):
+**Kompletter Reset (inkl. Volumes):**
 
 ```bash
-docker compose down -v
+docker compose --profile dev/prod down -v
 ```
 
-📁 Hinweise
+💡 **Hinweis:**  
+Daten in den Volumes bleiben erhalten, solange du **nicht** `-v` angibst.  
+Das gewählte **Profil** (`--profile dev` oder `--profile prod`) bestimmt, welche Dienste gestartet werden.
 
-Die Datenbankdaten bleiben in den definierten Docker-Volumes erhalten, solange du sie nicht mit -v entfernst.
+---
 
-Das Profil (--profile dev oder --profile prod) steuert, welche Dienste gestartet werden.
+## 🧩 Beispiel .env
 
-## .env Beispiel
-
-### Für PostgreSQL:
+### PostgreSQL
 
 ```bash
 POSTGRES_USER=election
-POSTGRES_PASSWORD=p
 POSTGRES_DB=election_db
 
-# Zeitzone & Locale
+# Zeitzone
 TZ=Europe/Berlin
 PGTZ=Europe/Berlin
 
-# Authentifizierung (unsicher, nur Dev!)
+# Authentifizierung (nur für lokale Entwicklung!)
 POSTGRES_HOST_AUTH_METHOD=trust
 ```
 
-### Für PgAdmin:
+### pgAdmin
 
 ```bash
 PGADMIN_DEFAULT_EMAIL=election@acme.com
 PGADMIN_DEFAULT_PASSWORD=p
-# Um zu vermeiden das PgAdmin nach einem Masterpwd fragt, nervt nur.
+
+# Master-Passwort-Dialog deaktivieren
 PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED=False
 PGADMIN_CONFIG_SERVER_MODE=False
+
 TZ=Europe/Berlin
 ```
+
+---
+
+## 🧠 Kurzüberblick
+
+| Umgebung | Befehl                                | Ports       | Ziel               |
+| -------- | ------------------------------------- | ----------- | ------------------ |
+| Dev      | `docker compose --profile dev up -d`  | 5432 / 8080 | Lokales Test-Setup |
+| Prod     | `docker compose --profile prod up -d` | 5432 / 8080 | Produktivsystem    |
+| Stop     | `docker compose --profile prod down`  | –           | Container stoppen  |
+| Reset    | `docker compose --profile . down -v`  | –           | Alles löschen      |

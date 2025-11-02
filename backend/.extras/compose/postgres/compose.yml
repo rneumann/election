@@ -10,6 +10,7 @@ services:
   postgres:
     image: postgres:18
     container_name: postgres
+    profiles: ['prod']
     env_file:
       - .env
     security_opt:
