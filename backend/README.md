@@ -1,5 +1,14 @@
 # 🗳️ Online-Wahlsystem HKA Backend
 
+## Gliederung
+
+- [Überblick](#überblick)
+- [Features](#features)
+- [Voraussetzungen](#voraussetzungen)
+- [Installation](#installation)
+- [Deployment & Konfiguration](#deployment--server-starten)
+- [API-Dokumentation](#api-endpunkte)
+
 ## Überblick
 
 Dieses Projekt stellt das Backend für das Online-Wahlsystem der HKA bereit. Es basiert auf **Node.js** und **Express.js** und bietet Authentifizierung, Routen für Benutzerinteraktionen sowie Logging und zentralisierte Fehlerbehandlung.
@@ -44,10 +53,51 @@ Erstelle eine `.env` Datei im Projektstamm und füge die notwendigen Umgebungsva
 
 ## Deployment / Server starten
 
+### Lokal
+
 ```bash
 npm start -> um den Server zu starten.
 npm run prettier -> um den code zu formatieren.
 npm run eslint -> um auf codesmell zu prüfen.
+```
+
+### Dockerized
+
+#### Vorraussetzungen
+
+- running **Docker-Desktop**
+
+#### Starten
+
+um die Anwendung via **Docker** zu starten sind folgende Schritte notwendig:
+
+**1. Docker Image bauen:**
+
+```bash
+  cd election/backend # Root Vezeichnis des Backends
+  docker build -t backend_image . # Bauen des Image basierend auf dem Dockerfile
+```
+
+**2. Environments anlegen:**
+
+```bash
+  cd election/backend/.extras/compose/backend # zum compose.yml file navigieren
+
+  touch .env
+    - NODE_ENV=development # Level des starts
+    - PORT=3000 # port auf dem der Server intern laufen soll
+    - AD_URL={...} # LDAP URL
+    - AD_BASE_DN={...} # LDAP Base DN
+    - AD_DOMAIN={...} # LDAP Domain
+
+  mkdir secrets # Erstellung eines Ordners Secrets
+
+  cd secrets # Navigieren
+
+  touch admin_pw.txt # Erstellen einer .txt Datei mit selbst definierten PW für den Admin. Als File für Security in Docker
+  touch comitee.txt # Erstellen einer .txt Datei mit selbst definierten PW für das Comitee. Als File für Security in Docker
+
+  docker compose up # Start des Docker-Containers basierend auf dem Backend-Image
 ```
 
 Der Server startet mit dem in `.env` konfigurierten `PORT`. Standard-Health-Check:
