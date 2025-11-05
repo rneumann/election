@@ -47,6 +47,7 @@ services:
     volumes:
       - postgres_data_dev:/var/lib/postgresql
       - ./initdb:/docker-entrypoint-initdb.d:ro
+      - ./data/csv:/data/csv:ro
     ports:
       - '5432:5432'
     shm_size: '1g'
