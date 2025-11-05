@@ -1,5 +1,5 @@
 #=============Builder Stage ==================#
-FROM node:25.1.0-alpine3.21 AS builder
+FROM node:24.11.0-alpine3.21 AS builder
 
 WORKDIR /app
 
@@ -10,7 +10,7 @@ RUN npm ci --omit=dev && npm cache clean --force
 
 
 #=============Production Stage ==================#
-FROM node:25.1.0-alpine3.21 AS production
+FROM node:24.11.0-alpine3.21 AS production
 
 # Change the working directory to /build
 WORKDIR /app
