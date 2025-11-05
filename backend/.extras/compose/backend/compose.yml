@@ -6,6 +6,7 @@ secrets:
 
 services:
   backend:
+    container_name: backend
     image: backend_image
     env_file:
       - .env
@@ -14,3 +15,9 @@ services:
     secrets:
       - ADMIN_PASSWORD
       - COMMITTEE_PASSWORD
+    networks:
+      - election-network
+
+networks:
+  election-network:
+    driver: bridge

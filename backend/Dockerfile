@@ -12,10 +12,10 @@ RUN npm ci --omit=dev && npm cache clean --force
 #=============Production Stage ==================#
 FROM node:24.11.0-alpine3.21 AS production
 
-# Change the working directory to /build
+# Change the working directory to /app
 WORKDIR /app
 
-# Copy the package.json and package-lock.json files to the /build directory
+# Copy the package.json and package-lock.json files to the /app directory
 COPY --from=builder /app/node_modules/ /app/node_modules/
 COPY package*.json ./
 COPY server.js ./
