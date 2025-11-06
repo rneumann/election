@@ -1,5 +1,6 @@
 import dotenv from 'dotenv';
 import { Client } from 'pg';
+import { logger } from '../conf/logger/logger.js';
 
 dotenv.config();
 
@@ -14,12 +15,12 @@ const client = new Client({
 export async function connectDb() {
   try {
     await client.connect();
-    console.log('Connected to the database successfully');
+    logger.info('Connected to the database successfully');
 
     const { rows } = await client.query('SELECT NOW() AS now');
-    console.log('Database time:', rows[0].now);
+    logger.info('Database time:', rows[0].now);
   } catch (err) {
-    console.error('Database connection error:', err.stack);
+    logger.info('Database connection error:', err.stack);
     process.exit(1);
   }
 }
