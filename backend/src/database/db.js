@@ -30,8 +30,6 @@ const client = new Client({
  * - Executes a simple `SELECT NOW()` query to confirm the connection.
  * - Logs success or failure messages via the Winston logger.
  *
- * @async
- * @function connectDb
  * @returns {Promise<void>} Resolves when the connection is successfully established.
  * @throws Terminates the process with exit code 1 if a connection error occurs.
  */
@@ -51,11 +49,5 @@ export async function connectDb() {
 /**
  * Exported PostgreSQL client instance.
  * Can be imported throughout the application to execute queries.
- *
- * Example usage:
- * ```js
- * import { client } from './db.js';
- * const result = await client.query('SELECT * FROM users');
- * ```
  */
 export { client };
