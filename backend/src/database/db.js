@@ -15,9 +15,11 @@ dotenv.config();
  * - DB_PASSWORD: Password for authentication
  * - DB_NAME: Name of the target database
  */
+const port = 5432;
+
 const client = new Client({
   host: process.env.DB_HOST,
-  port: process.env.DB_PORT ? parseInt(process.env.DB_PORT) : 5432,
+  port: process.env.DB_PORT ? parseInt(process.env.DB_PORT) : port,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
@@ -33,7 +35,7 @@ const client = new Client({
  * @returns {Promise<void>} Resolves when the connection is successfully established.
  * @throws Terminates the process with exit code 1 if a connection error occurs.
  */
-export async function connectDb() {
+export const connectDb = async () => {
   try {
     await client.connect();
     logger.info('Connected to the database successfully');
@@ -44,7 +46,7 @@ export async function connectDb() {
     logger.error(`Database connection error: ${err.stack}`);
     process.exit(1);
   }
-}
+};
 
 /**
  * Exported PostgreSQL client instance.
