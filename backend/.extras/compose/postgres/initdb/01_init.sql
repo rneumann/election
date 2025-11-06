@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS voters (
   firstname TEXT NOT NULL,
   mtknr     TEXT UNIQUE,
   faculty   TEXT,
+  votergroup   TEXT NOT NULL,
   notes     TEXT
 );
 
@@ -17,9 +18,11 @@ CREATE TABLE IF NOT EXISTS candidates (
   lastname  TEXT NOT NULL,
   firstname TEXT NOT NULL,
   mtknr     TEXT,
+  votergroup   TEXT,
   faculty   TEXT,
   keyword   TEXT,
-  notes     TEXT
+  notes     TEXT,
+  approved  TEXT
 );
 
 CREATE TABLE IF NOT EXISTS elections (

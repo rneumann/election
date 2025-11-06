@@ -1,4 +1,4 @@
-id,lastname,firstname,mtknr,faculty,keyword,notes
-2c9e57f4-543b-4b78-9301-b4363df31a4d,Müller,Max,9876543,Informatik,IT Security,Sehr engagiert
-42b1fbd1-7c42-4b42-8260-2f9f19824fcb,Schmidt,Anna,8765432,Maschinenbau,Robotik,Gute Führungskompetenz
-4b9a5353-e080-493b-a3e1-82908f8504c7,Weber,Julia,7654321,Wirtschaft,Marketing,Sehr erfahren
+id,lastname,firstname,mtknr,faculty,keyword,notes,votergroup
+2c9e57f4-543b-4b78-9301-b4363df31a4d,Müller,Max,9876543,Informatik,IT Security,Sehr engagiert,Studierende
+42b1fbd1-7c42-4b42-8260-2f9f19824fcb,Schmidt,Anna,8765432,Maschinenbau,Robotik,Gute Führungskompetenz,Mitarbeitende
+4b9a5353-e080-493b-a3e1-82908f8504c7,Weber,Julia,7654321,Wirtschaft,Marketing,Sehr erfahren,Studierende
