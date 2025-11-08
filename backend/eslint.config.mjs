@@ -74,7 +74,7 @@ export default [
       'no-unused-vars': 'warn',
       'no-magic-numbers': [
         'error',
-        { ignore: [0, 1, -1, 2, 60, 200, 400, 401, 405, 415, 500, 1000] },
+        { ignore: [0, 1, -1, 2, 60, 200, 400, 401, 403, 405, 415, 500, 1000] },
       ],
       curly: ['error', 'all'],
       'prefer-template': 'error',

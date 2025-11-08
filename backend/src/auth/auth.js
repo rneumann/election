@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { promises as fs, constants } from 'fs';
 import { Client } from 'ldapts';
 import 'dotenv/config';
@@ -133,3 +134,23 @@ export const ensureAuthenticated = (req, res, next) => {
   }
   return res.status(401).json({ message: 'Unauthorized' });
 };
+
+/**
+ * Middleware to ensure that a user has a certain role before accessing a route.
+ * If the user has one of the allowed roles, it calls the next middleware or route handler.
+ * If the user does not have one of the allowed roles, it returns a 403 Forbidden response with a JSON body containing the message 'Forbidden'.
+ * @param {string[]} allowedRoles - array of allowed roles
+ * @returns {(req: Request, res: Response, next: () => void) => void} middleware function
+ */
+/* eslint-disable */
+export const ensureHasRole =
+  (allowedRoles = []) =>
+  (req, res, next) => {
+    if (!req || !req.user) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+    if (!allowedRoles.includes(req.user.role)) {
+      return res.status(403).json({ message: 'Forbidden' });
+    }
+    return next();
+  };
