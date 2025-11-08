@@ -1,5 +1,12 @@
 {
   "dependencies": {
-    "passport": "^0.7.0"
+    "express-session": "^1.18.2",
+    "passport": "^0.7.0",
+    "passport-local": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/express-session": "^1.18.2",
+    "@types/passport": "^1.0.17",
+    "@types/passport-local": "^1.0.38"
   }
 }
