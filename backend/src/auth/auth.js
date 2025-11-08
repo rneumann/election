@@ -100,3 +100,36 @@ export const login = async (username, password) => {
     await client.unbind();
   }
 };
+
+/**
+ * retrieve role information for the given user
+ * @param {String} username the user to look up
+ * @returns a user object with username and role
+ */
+export const getUserInfo = async (username) => {
+  const adminUser = await getAdminUser();
+  const committeeUser = await getCommitteeUser();
+  if (username === adminUser.username) {
+    return { username: adminUser.username, role: 'admin' };
+  }
+  if (username === committeeUser.username) {
+    return { username: committeeUser.username, role: 'committee' };
+  }
+  return { username: username, role: 'voter' };
+};
+
+/**
+ * Middleware to ensure that a user is authenticated before accessing a route.
+ * If the user is authenticated, it calls the next middleware or route handler.
+ * If the user is not authenticated, it returns a 401 Unauthorized response with a JSON body containing the message 'Unauthorized'.
+ * @param req
+ * @param res
+ * @param next
+ * @returns {Promise<void>}
+ */
+export const ensureAuthenticated = (req, res, next) => {
+  if (req.isAuthenticated()) {
+    return next();
+  }
+  return res.status(401).json({ message: 'Unauthorized' });
+};
