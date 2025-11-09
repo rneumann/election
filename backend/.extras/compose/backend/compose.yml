@@ -3,6 +3,8 @@ secrets:
     file: ./secrets/admin_pw.txt
   COMMITTEE_PASSWORD:
     file: ./secrets/comitee_pw.txt
+  SESSION_SECRET:
+    file: ./secrets/session_secret.txt
 
 services:
   backend:
@@ -15,6 +17,7 @@ services:
     secrets:
       - ADMIN_PASSWORD
       - COMMITTEE_PASSWORD
+      - SESSION_SECRET
     networks:
       - election-network
 

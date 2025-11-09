@@ -39,6 +39,9 @@ AD_DOMAIN={...}
 
 ADMIN_PASSWORD={...}
 COMMITTEE_PASSWORD={...}
+
+SECRET={...} # Secret Key für die cookie-session, man kann ihn generieren mit -> node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
+
 ```
 
 ## Installation
@@ -96,6 +99,7 @@ um die Anwendung via **Docker** zu starten sind folgende Schritte notwendig:
 
   touch admin_pw.txt # Erstellen einer .txt Datei mit selbst definierten PW für den Admin. Als File für Security in Docker
   touch comitee.txt # Erstellen einer .txt Datei mit selbst definierten PW für das Comitee. Als File für Security in Docker
+  touch session_secret.txt # Erstellen einer .txt Datei mit selbst definierten Secret Key für Sessions. Als File fuer Security in Docker
 
   docker compose up # Start des Docker-Containers basierend auf dem Backend-Image
 ```

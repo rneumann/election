@@ -48,6 +48,7 @@ app.use(
 
 /**
  * Passport middleware
+ * @see https://medium.com/@prashantramnyc/node-js-with-passport-authentication-simplified-76ca65ee91e5
  */
 app.use(passport.initialize());
 app.use(passport.session());
