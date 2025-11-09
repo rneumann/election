@@ -16,7 +16,7 @@ vi.mock('../src/conf/logger/logger.js', () => ({
   },
 }));
 
-import { login } from '../src/auth/auth.js';
+import { ensureHasRole, login } from '../src/auth/auth.js';
 import { logger } from '../src/conf/logger/logger.js';
 
 // Mock für LDAP Client
@@ -68,5 +68,48 @@ describe('login', () => {
     expect(bindMock).toHaveBeenCalledWith('cn=user1,cn=users,dc=example,dc=com', 'pass1');
     expect(unbindMock).toHaveBeenCalled();
     expect(logger.debug).toHaveBeenCalledWith('User user1 authenticated successfully via LDAP.');
+  });
+
+  test('sollte next rufen wenn Rolle erfüllt ist', async () => {
+    const next = vi.fn();
+    const res = {
+      status: vi.fn().mockReturnThis(),
+      json: vi.fn(),
+    };
+    const req = {
+      user: {
+        role: 'admin',
+      },
+    };
+
+    ensureHasRole(['admin'])(req, res, next);
+    expect(next).toHaveBeenCalled();
+  });
+
+  test('sollte unauthorized rufen wenn req.user nicht vorhanden ist', async () => {
+    const next = vi.fn();
+    const res = {
+      status: vi.fn().mockReturnThis(),
+      json: vi.fn(),
+    };
+    const req = {};
+
+    ensureHasRole(['admin'])(req, res, next);
+    expect(res.status).toHaveBeenCalledWith(401);
+  });
+
+  test('sollte Forbidde rufen wenn user nicht admin ist', async () => {
+    const next = vi.fn();
+    const res = {
+      status: vi.fn().mockReturnThis(),
+      json: vi.fn(),
+    };
+    const req = {
+      user: {
+        role: 'committee',
+      },
+    };
+    ensureHasRole(['admin'])(req, res, next);
+    expect(res.status).toHaveBeenCalledWith(403);
   });
 });
