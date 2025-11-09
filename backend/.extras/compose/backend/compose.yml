@@ -2,7 +2,7 @@ secrets:
   ADMIN_PASSWORD:
     file: ./secrets/admin_pw.txt
   COMMITTEE_PASSWORD:
-    file: ./secrets/comitee_pw.txt
+    file: ./secrets/committee_pw.txt
   SESSION_SECRET:
     file: ./secrets/session_secret.txt
 
