@@ -1,9 +1,10 @@
 import express from 'express';
 import { ensureAuthenticated, ensureHasRole } from '../auth/auth.js';
-import { loginRoute } from './auth.route.js';
+import { loginRoute, logoutRoute } from './auth.route.js';
 export const router = express.Router();
 
 router.post('/auth/login', loginRoute);
+router.delete('/auth/logout', logoutRoute);
 router.get('/protected', ensureAuthenticated, (req, res) => {
   // @ts-ignore
   res.json({ message: `Protected route accessed with user: ${req.user.username}` });

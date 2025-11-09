@@ -57,3 +57,33 @@ export const loginRoute = async (req, res, next) => {
     });
   })(req, res, next);
 };
+
+/**
+ * Logout route for users.
+ * This route expects a GET request and logs out the current user.
+ * @param req - The Express request object
+ * @param res - The Express response object
+ * @returns A Promise resolving to an Express response object
+ */
+export const logoutRoute = (req, res) => {
+  logger.debug('Logout route accessed');
+  req.logout((err) => {
+    if (err) {
+      logger.error('Logout error:', err);
+      return res.status(500).json({ message: 'error while logging out' });
+    }
+
+    req.session.destroy((err) => {
+      if (err) {
+        logger.error('Session destroy error:', err);
+        return res.status(500).json({ message: 'Session destroy error' });
+      }
+      res.clearCookie('connect.sid', { path: '/' });
+
+      logger.debug('User logged out successfully and session destroyed');
+      return res.status(200).json({ message: 'Logout successful' });
+    });
+  });
+  logger.error('Logout error');
+  return res.status(500).json({ message: 'error while logging out' });
+};
