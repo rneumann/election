@@ -6,9 +6,8 @@ import { Strategy as LocalStrategy } from 'passport-local';
 import { router } from './routes/index.routes.js';
 import { errorHandler } from './conf/logger/error-handler.middleware.js';
 import { getUserInfo, login } from './auth/auth.js';
+import { readSecret } from './security/secret-reader.js';
 export const app = express();
-
-const { SECRET } = process.env;
 
 /**
  * Setup Express middlewares and routes
@@ -34,7 +33,7 @@ app.use(express.urlencoded({ extended: true }));
  */
 app.use(
   session({
-    secret: SECRET,
+    secret: await readSecret('SESSION_SECRET'),
     resave: false,
     saveUninitialized: false,
     cookie: {
