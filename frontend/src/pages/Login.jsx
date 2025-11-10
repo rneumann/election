@@ -5,7 +5,7 @@ import { useTheme } from '../hooks/useTheme.js';
 import ResponsiveButton from '../components/ResponsiveButton.jsx';
 
 /**
- * Login page for RZ authentication.
+ * Login page for user authentication.
  * Handles user login with backend API integration.
  *
  * @returns {React.ReactElement} Login component with form
@@ -121,7 +121,7 @@ const Login = () => {
         <form onSubmit={handleSubmit} className="space-y-6" autoComplete="off">
           <div>
             <label htmlFor="username" className="block text-sm font-medium text-brand-dark mb-2">
-              Benutzerkürzel
+              Benutzername
             </label>
             <input
               type="text"
@@ -131,14 +131,14 @@ const Login = () => {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               className="w-full px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent outline-none transition-shadow duration-200 hover:border-brand-primary"
-              placeholder="RZ-Benutzerkürzel"
+              placeholder="Ihr Benutzername"
               required
             />
           </div>
 
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-brand-dark mb-2">
-              RZ-Passwort
+              Passwort
             </label>
             <input
               type="password"
@@ -147,7 +147,7 @@ const Login = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent outline-none transition-shadow duration-200 hover:border-brand-primary"
-              placeholder="Ihr RZ-Passwort"
+              placeholder="Ihr Passwort"
               required
             />
           </div>

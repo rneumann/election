@@ -79,7 +79,7 @@ export const AuthProvider = ({ children }) => {
    * Login user with username and password.
    * Calls backend API and stores user data in session.
    *
-   * @param {string} username - User's RZ-Benutzerkürzel
+   * @param {string} username - User's username
    * @param {string} password - User's password
    * @returns {Promise<{success: boolean, message?: string}>} Login result
    */
