@@ -98,7 +98,7 @@ um die Anwendung via **Docker** zu starten sind folgende Schritte notwendig:
   cd secrets # Navigieren
 
   touch admin_pw.txt # Erstellen einer .txt Datei mit selbst definierten PW für den Admin. Als File für Security in Docker
-  touch comitee.txt # Erstellen einer .txt Datei mit selbst definierten PW für das Comitee. Als File für Security in Docker
+  touch committee.txt # Erstellen einer .txt Datei mit selbst definierten PW für das Comitee. Als File für Security in Docker
   touch session_secret.txt # Erstellen einer .txt Datei mit selbst definierten Secret Key für Sessions. Als File fuer Security in Docker
 
   docker compose up # Start des Docker-Containers basierend auf dem Backend-Image

@@ -16,7 +16,44 @@ export const app = express();
 /**
  * Helmet for setting various HTTP headers for app security
  */
-app.use(helmet());
+app.use(
+  helmet({
+    // to avoid clickjacking
+    frameguard: {
+      action: 'deny',
+    },
+    xssFilter: true,
+    // hide what version of Express is running
+    hidePoweredBy: true,
+
+    // to avoid using of sources from other domains
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'"],
+        styleSrc: ["'self'"],
+        imgSrc: ["'self'"],
+        connectSrc: ["'self'"],
+      },
+    },
+    // noSniff to hide the MIME type
+    noSniff: true,
+    // disable the referrer policy
+    referrerPolicy: {
+      policy: 'no-referrer',
+    },
+    crossOriginResourcePolicy: {
+      // eslint-disable-next-line
+      policy: 'same-origin',
+    },
+    crossOriginEmbedderPolicy: {
+      policy: 'same-origin',
+    },
+    crossOriginOpenerPolicy: {
+      policy: 'same-origin',
+    },
+  }),
+);
 
 /**
  * Body parsers
@@ -39,7 +76,7 @@ app.use(
     cookie: {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: 'strict', // need to have the same origin
       maxAge: 1000 * 60 * 60, // 1 hour
     },
   }),
