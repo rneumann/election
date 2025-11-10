@@ -2,7 +2,7 @@
   "compilerOptions": {
     "module": "nodenext",
     "target": "ES2024",
-    "checkJs": true,
+    "checkJs": false,
     "allowSyntheticDefaultImports": true,
     "moduleResolution": "nodenext",
     "paths": {}

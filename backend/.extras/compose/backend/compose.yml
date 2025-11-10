@@ -1,0 +1,26 @@
+secrets:
+  ADMIN_PASSWORD:
+    file: ./secrets/admin_pw.txt
+  COMMITTEE_PASSWORD:
+    file: ./secrets/committee_pw.txt
+  SESSION_SECRET:
+    file: ./secrets/session_secret.txt
+
+services:
+  backend:
+    container_name: backend
+    image: backend_image
+    env_file:
+      - .env
+    ports:
+      - '3000:3000'
+    secrets:
+      - ADMIN_PASSWORD
+      - COMMITTEE_PASSWORD
+      - SESSION_SECRET
+    networks:
+      - election-network
+
+networks:
+  election-network:
+    external: true
