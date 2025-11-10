@@ -3,10 +3,13 @@ import helmet from 'helmet';
 import session from 'express-session';
 import passport from 'passport';
 import { Strategy as LocalStrategy } from 'passport-local';
+import swaggerUiExpress from 'swagger-ui-express';
 import { router } from './routes/index.routes.js';
 import { errorHandler } from './conf/logger/error-handler.middleware.js';
 import { getUserInfo, login } from './auth/auth.js';
 import { readSecret } from './security/secret-reader.js';
+import { swaggerSpec } from './conf/swagger/swagger.js';
+import { healthRouter } from './routes/health.route.js';
 export const app = express();
 
 /**
@@ -43,11 +46,10 @@ app.use(
       policy: 'no-referrer',
     },
     crossOriginResourcePolicy: {
-      // eslint-disable-next-line
       policy: 'same-origin',
     },
     crossOriginEmbedderPolicy: {
-      policy: 'same-origin',
+      policy: 'require-corp',
     },
     crossOriginOpenerPolicy: {
       policy: 'same-origin',
@@ -113,9 +115,9 @@ passport.deserializeUser(async (username, done) => {
 });
 
 /**
- * Health check route
+ * Health route
  */
-app.get('/health', (req, res) => res.json({ status: 'ok' }));
+app.use('/', healthRouter);
 
 /**
  * Binding API routes
@@ -126,3 +128,8 @@ app.use('/api', router);
  * Error handling middleware
  */
 app.use(errorHandler);
+
+/**
+ * Swagger UI
+ */
+app.use('/api-docs', swaggerUiExpress.serve, swaggerUiExpress.setup(swaggerSpec));

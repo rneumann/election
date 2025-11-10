@@ -84,6 +84,4 @@ export const logoutRoute = (req, res) => {
       return res.status(200).json({ message: 'Logout successful' });
     });
   });
-  logger.error('Logout error');
-  return res.status(500).json({ message: 'error while logging out' });
 };
