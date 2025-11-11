@@ -1,15 +1,13 @@
 import express from 'express';
 import helmet from 'helmet';
 import session from 'express-session';
-import passport from 'passport';
-import { Strategy as LocalStrategy } from 'passport-local';
 import swaggerUiExpress from 'swagger-ui-express';
 import { router } from './routes/index.routes.js';
 import { errorHandler } from './conf/logger/error-handler.middleware.js';
-import { getUserInfo, login } from './auth/auth.js';
 import { readSecret } from './security/secret-reader.js';
 import { swaggerSpec } from './conf/swagger/swagger.js';
 import { healthRouter } from './routes/health.route.js';
+import passport from './auth/passport.js';
 export const app = express();
 
 /**
@@ -90,29 +88,6 @@ app.use(
  */
 app.use(passport.initialize());
 app.use(passport.session());
-
-/**
- * Passport strategy
- */
-passport.use(
-  new LocalStrategy(async (username, password, done) => {
-    const user = await login(username, password);
-    if (!user) {
-      return done(null, false);
-    }
-    return done(null, user);
-  }),
-);
-
-/**
- * Passport serialization and deserialization
- */
-// @ts-ignore
-passport.serializeUser((user, done) => done(null, user.username));
-passport.deserializeUser(async (username, done) => {
-  const user = await getUserInfo(username);
-  done(null, user);
-});
 
 /**
  * Health route

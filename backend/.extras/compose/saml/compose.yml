@@ -1,0 +1,14 @@
+services:
+  saml-idp:
+    image: kristophjunge/test-saml-idp
+    platform: linux/amd64
+    env_file:
+      - .env
+    ports:
+      - '8081:8080'
+    networks:
+      - election-network
+
+networks:
+  election-network:
+    external: true

@@ -1,5 +1,6 @@
 import express from 'express';
 import { ensureAuthenticated, ensureHasRole } from '../auth/auth.js';
+import passport from '../auth/passport.js';
 import { loginRoute, logoutRoute } from './auth.route.js';
 export const router = express.Router();
 
@@ -29,8 +30,18 @@ export const router = express.Router();
  *       401:
  *         description: Unauthorized
  */
-router.post('/auth/login', loginRoute);
+router.post('/auth/login/ldap', loginRoute('ldap'));
+// SAML-Login → GET für Redirect zum IdP
+router.get('/auth/login/saml', passport.authenticate('saml'));
 
+// SAML Callback → POST vom IdP, Passport-SAML verarbeitet es direkt
+router.post(
+  '/auth/saml/callback',
+  passport.authenticate('saml', {
+    failureRedirect: '/login',
+    successRedirect: '/',
+  }),
+);
 /**
  * @openapi
  * /api/auth/logout:
