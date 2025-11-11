@@ -1,5 +1,3 @@
-// @ts-nocheck
-import { Client } from 'ldapts';
 import 'dotenv/config';
 import { logger } from '../conf/logger/logger.js';
 import { readSecret } from '../security/secret-reader.js';
@@ -27,14 +25,14 @@ const getCommitteeUser = async () => ({
 });
 
 /**
- * Login functionality for users, admin and committee.
- * using LDAP for normal users.
- * @param {string} username the username to be validated
- * @param {string} password the password to be validated
- * @returns {Promise<object>} a user object with username and role or null
+ * Checks if the given username and password match the special admin or committee user.
+ * The special users are retrieved from the getAdminUser and getCommitteeUser functions.
+ * If a match is found, returns an object with the username and role (admin or committee).
+ * @param {string} username - The username to check
+ * @param {string} password - The password to check
+ * @returns {Promise<object>} An object with the username and role, or null if no match is found
  */
-export const login = async (username, password) => {
-  const { AD_URL, AD_BASE_DN, AD_DOMAIN } = process.env;
+export const checkAdminOrCommittee = async (username, password) => {
   const adminUser = await getAdminUser();
   const committeeUser = await getCommitteeUser();
 
@@ -47,29 +45,6 @@ export const login = async (username, password) => {
   if (username === committeeUser.username && password === committeeUser.password) {
     logger.debug('Committee user authenticated successfully.');
     return { username: committeeUser.username, role: 'committee' };
-  }
-  // Normal user via LDAP
-  if (!AD_URL || !AD_BASE_DN || !AD_DOMAIN) {
-    logger.error('LDAP configuration is missing. Cannot authenticate user.');
-    return undefined;
-  }
-
-  const client = new Client({
-    url: AD_URL,
-    timeout: 5000,
-    connectTimeout: 5000,
-  });
-
-  try {
-    logger.debug(`Authenticating user via LDAP with: cn=${username},cn=users,${AD_BASE_DN}`);
-    await client.bind(`cn=${username},cn=users,${AD_BASE_DN}`, password);
-    logger.debug(`User ${username} authenticated successfully via LDAP.`);
-    return { username, role: 'voter' };
-  } catch (error) {
-    logger.error(`Error authenticating user ${username} via LDAP: ${error.message}`);
-    return undefined;
-  } finally {
-    await client.unbind();
   }
 };
 
