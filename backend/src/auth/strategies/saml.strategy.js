@@ -1,15 +1,17 @@
 import fs from 'fs/promises';
 import { Strategy } from '@node-saml/passport-saml';
 
+const { CALLBACK_URL_SAML, ENTRY_POINT_SAML, ISSUER_SAML } = process.env;
+
 const idpCert = await fs.readFile(
   new URL('../../../.extras/compose/saml/server.crt', import.meta.url),
   'utf-8',
 );
 export const samlStrategy = new Strategy(
   {
-    callbackUrl: 'http://localhost:3000/auth/saml/callback',
-    entryPoint: 'http://localhost:8081/simplesaml/saml2/idp/SSOService.php',
-    issuer: 'election',
+    callbackUrl: CALLBACK_URL_SAML,
+    entryPoint: ENTRY_POINT_SAML,
+    issuer: ISSUER_SAML,
     idpCert: idpCert,
   },
   (profile, done) => {
