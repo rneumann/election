@@ -11,7 +11,7 @@ export const router = express.Router();
 
 /**
  * @openapi
- * /api/auth/login:
+ * /api/auth/login/ldap:
  *   post:
  *     summary: Login a user
  *     requestBody:
@@ -44,6 +44,29 @@ router.post(
   }),
 );
 
+/**
+ * @openapi
+ * /api/auth/me:
+ *   get:
+ *     summary: Get current user
+ *     responses:
+ *       200:
+ *         description: Current user information
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 authenticated:
+ *                   type: boolean
+ *                 user:
+ *                   type: object
+ *                   properties:
+ *                     username:
+ *                       type: string
+ *                     role:
+ *                       type: string
+ */
 router.get('/auth/me', (req, res) => {
   logger.debug('Me route accessed');
   if (req.isAuthenticated()) {
@@ -68,6 +91,17 @@ router.delete('/auth/logout', logoutRoute);
 
 /**
  * Testing routes for protection
+ * @openapi
+ * /api/protected:
+ *   get:
+ *     summary: Protected route
+ *     responses:
+ *       200:
+ *         description: Protected route accessed
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
  */
 router.get('/protected', ensureAuthenticated, (req, res) => {
   // @ts-ignore
