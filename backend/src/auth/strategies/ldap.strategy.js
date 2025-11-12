@@ -43,7 +43,7 @@ export const login = async (username, password) => {
     logger.debug(`Authenticating user via LDAP with: cn=${username},cn=users,${AD_BASE_DN}`);
     await client.bind(`cn=${username},cn=users,${AD_BASE_DN}`, password);
     logger.debug(`User ${username} authenticated successfully via LDAP.`);
-    return { username, role: 'voter' };
+    return { username, role: 'voter', authProvider: 'ldap' };
   } catch (error) {
     logger.error(`Error authenticating user ${username} via LDAP: ${error.message}`);
     return undefined;

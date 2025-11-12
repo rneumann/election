@@ -139,6 +139,13 @@ const Login = () => {
           {'Anmelden mit SAML'}
         </button>
 
+        <button
+          onClick={() => (window.location.href = '/api/auth/login/kc')}
+          className="mt-4 w-full bg-brand-primary text-white py-3 rounded-lg font-semibold hover:opacity-90 transition duration-200 shadow-lg"
+        >
+          Anmelden mit Keycloak
+        </button>
+
         {/* Footer */}
         <p className="text-center text-xs text-brand-gray mt-6">{theme.text.copyright}</p>
       </div>

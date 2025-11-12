@@ -21,6 +21,7 @@ export const samlStrategy = new Strategy(
     const user = {
       username: profile.uid || profile.email,
       role: 'voter',
+      authProvider: 'saml',
     };
     return done(null, user);
   },

@@ -14,6 +14,7 @@
   "dependencies": {
     "@node-saml/passport-saml": "^5.1.0",
     "@types/cors": "^2.8.19",
+    "axios": "^1.13.2",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
@@ -22,6 +23,8 @@
     "ldapts": "^8.0.9",
     "passport": "^0.7.0",
     "passport-local": "^1.0.0",
+    "passport-oauth2": "^1.8.0",
+    "passport-openidconnect-keycloak-idp": "^0.1.6",
     "pg": "^8.16.3",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",

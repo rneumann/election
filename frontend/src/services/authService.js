@@ -29,12 +29,14 @@ const authService = {
    * @returns {void}
    */
   logout: async () => {
-    const response = await api.delete('/auth/logout');
+    const response = await api.delete('/auth/logout', {
+      withCredentials: true,
+    });
     if (response.status !== 200) {
       throw new Error('Logout failed');
     }
-    sessionStorage.removeItem('user');
-    sessionStorage.removeItem('isAuthenticated');
+    console.log(response.data.redirectUrl);
+    return response.data.redirectUrl;
   },
 
   /**

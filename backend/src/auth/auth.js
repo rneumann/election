@@ -51,18 +51,19 @@ export const checkAdminOrCommittee = async (username, password) => {
 /**
  * retrieve role information for the given user
  * @param {String} username the user to look up
+ * @param authProvider
  * @returns a user object with username and role
  */
-export const getUserInfo = async (username) => {
+export const getUserInfo = async (username, authProvider) => {
   const adminUser = await getAdminUser();
   const committeeUser = await getCommitteeUser();
   if (username === adminUser.username) {
-    return { username: adminUser.username, role: 'admin' };
+    return { username: adminUser.username, role: 'admin', authProvider: authProvider };
   }
   if (username === committeeUser.username) {
-    return { username: committeeUser.username, role: 'committee' };
+    return { username: committeeUser.username, role: 'committee', authProvider: authProvider };
   }
-  return { username: username, role: 'voter' };
+  return { username: username, role: 'voter', authProvider: authProvider };
 };
 
 /**

@@ -1,5 +1,7 @@
 import passport from 'passport';
 import { logger } from '../conf/logger/logger.js';
+const { KC_BASE_URL, KC_REALM, CLIENT_ID } = process.env;
+
 /* eslint-disable */
 /**
  * Login route for users, admin and committee.
@@ -68,8 +70,11 @@ export const loginRoute =
  * @param res - The Express response object
  * @returns A Promise resolving to an Express response object
  */
-export const logoutRoute = (req, res) => {
+export const logoutRoute = async (req, res) => {
+  const user = req.user;
   logger.debug('Logout route accessed');
+  logger.debug(`Logging out user: ${JSON.stringify(user)}`);
+  logger.debug(`Identity provider: ${user?.authProvider}`);
   req.logout((err) => {
     if (err) {
       logger.error('Logout error:', err);
@@ -82,9 +87,28 @@ export const logoutRoute = (req, res) => {
         return res.status(500).json({ message: 'Session destroy error' });
       }
       res.clearCookie('connect.sid', { path: '/', httpOnly: true });
-      res.clearCookie('PHPSESSIDIDP', { path: '/', httpOnly: true });
-      res.clearCookie('SimpleSAMLAuthTokenIdp', { path: '/', httpOnly: true });
 
+      if (user?.authProvider === 'ldap') {
+        res.clearCookie('PHPSESSID', { path: '/', httpOnly: true });
+        res.clearCookie('SimpleSAMLAuthToken', { path: '/', httpOnly: true });
+        logger.debug('LDAP user logged out successfully');
+        return res.status(200).json({ message: 'Logout successful' });
+      }
+
+      if (user?.authProvider === 'keycloak') {
+        logger.debug(
+          `Try to logout user from Keycloak with redirect_uri: ${KC_BASE_URL}/realms/${KC_REALM}/protocol/openid-connect/logout?redirect_uri=${encodeURIComponent('http://localhost:5173/login')}`,
+        );
+        //const logoutUrl = `${KC_BASE_URL}/realms/${KC_REALM}/protocol/openid-connect/logout?redirect_uri='http://localhost:5173/login'`;
+        const logoutUrl =
+          `${KC_BASE_URL}/realms/${KC_REALM}/protocol/openid-connect/logout` +
+          `?post_logout_redirect_uri=${encodeURIComponent('http://localhost:5173/login')}` +
+          `&client_id=${CLIENT_ID}`;
+        logger.debug('Keycloak user logged out locally, redirecting to Keycloak logout');
+        return res.status(200).json({ redirectUrl: logoutUrl });
+      }
+
+      // Fallback für andere Auth-Provider
       logger.debug('User logged out successfully and session destroyed');
       return res.status(200).json({ message: 'Logout successful' });
     });

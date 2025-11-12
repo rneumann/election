@@ -32,13 +32,26 @@ export const router = express.Router();
  *         description: Unauthorized
  */
 router.post('/auth/login/ldap', loginRoute('ldap'));
-// SAML-Login → GET für Redirect zum IdP
+
+// SAML Login
 router.get('/auth/login/saml', passport.authenticate('saml'));
 
-// SAML Callback → POST vom IdP, Passport-SAML verarbeitet es direkt
+// SAML Callback
 router.post(
   '/auth/saml/callback',
   passport.authenticate('saml', {
+    failureRedirect: 'http://localhost:5173/login',
+    successRedirect: 'http://localhost:5173/home',
+  }),
+);
+
+// Keycloak Login
+router.get('/auth/login/kc', passport.authenticate('oidc_kc'));
+
+// Keycloak Callback
+router.get(
+  '/auth/callback/kc',
+  passport.authenticate('oidc_kc', {
     failureRedirect: 'http://localhost:5173/login',
     successRedirect: 'http://localhost:5173/home',
   }),
@@ -69,6 +82,7 @@ router.post(
  */
 router.get('/auth/me', (req, res) => {
   logger.debug('Me route accessed');
+  logger.debug(`Identity provider: ${JSON.stringify(req.user?.authProvider)}`);
   if (req.isAuthenticated()) {
     res.json({ authenticated: true, user: req.user });
   } else {
