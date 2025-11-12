@@ -14,11 +14,11 @@ const authService = {
    * @throws {Error} When authentication fails
    */
   login: async (username, password) => {
-    const response = await api.post('/auth/login', {
+    const { data } = await api.post('/auth/login/ldap', {
       username: username.trim(),
       password: password.trim(),
     });
-    return response.data;
+    return data.user;
   },
 
   /**
@@ -28,7 +28,11 @@ const authService = {
    *
    * @returns {void}
    */
-  logout: () => {
+  logout: async () => {
+    const response = await api.delete('/auth/logout');
+    if (response.status !== 200) {
+      throw new Error('Logout failed');
+    }
     sessionStorage.removeItem('user');
     sessionStorage.removeItem('isAuthenticated');
   },
@@ -38,9 +42,11 @@ const authService = {
    *
    * @returns {{username: string, role: string} | null} Current user or null
    */
-  getCurrentUser: () => {
-    const user = sessionStorage.getItem('user');
-    return user ? JSON.parse(user) : null;
+  getCurrentUser: async () => {
+    const { data } = await api.get('/auth/me', {
+      withCredentials: true,
+    });
+    return data.user;
   },
 
   /**

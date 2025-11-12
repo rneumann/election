@@ -44,7 +44,7 @@ export const AuthProvider = ({ children }) => {
    */
   const logout = () => {
     authService.logout();
-    setUser(null);
+    setUser(undefined);
     setIsAuthenticated(false);
   };
 
@@ -55,24 +55,24 @@ export const AuthProvider = ({ children }) => {
    */
   useEffect(() => {
     const validateSession = async () => {
-      if (isAuthenticated) {
-        try {
-          // Check if backend is reachable
-          await api.get('/health');
-          // Backend is up, session is valid
-          setLoading(false);
-        } catch {
-          // Backend is down or unreachable -> logout
-          logout();
-          setLoading(false);
+      try {
+        const me = await fetchMe();
+        if (me.authenticated) {
+          setUser(me.user);
+          setIsAuthenticated(true);
+        } else {
+          setUser(undefined);
+          setIsAuthenticated(false);
         }
-      } else {
+      } catch {
+        setUser(undefined);
+        setIsAuthenticated(false);
+      } finally {
         setLoading(false);
       }
     };
 
     validateSession();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /**
@@ -85,14 +85,8 @@ export const AuthProvider = ({ children }) => {
    */
   const login = async (username, password) => {
     try {
-      const userData = await authService.login(username, password);
-
-      // Store in session storage
-      sessionStorage.setItem('user', JSON.stringify(userData));
-      sessionStorage.setItem('isAuthenticated', 'true');
-
-      // Update state
-      setUser(userData);
+      const user = await authService.login(username, password);
+      setUser(user);
       setIsAuthenticated(true);
 
       return { success: true };
@@ -102,6 +96,13 @@ export const AuthProvider = ({ children }) => {
         message: error.message || 'Login failed. Please try again.',
       };
     }
+  };
+
+  const fetchMe = async () => {
+    const { data } = await api.get('http://localhost:3000/api/auth/me', {
+      withCredentials: true,
+    });
+    return data;
   };
 
   const value = {

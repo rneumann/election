@@ -2,6 +2,7 @@ import express from 'express';
 import helmet from 'helmet';
 import session from 'express-session';
 import swaggerUiExpress from 'swagger-ui-express';
+import cors from 'cors';
 import { router } from './routes/index.routes.js';
 import { errorHandler } from './conf/logger/error-handler.middleware.js';
 import { readSecret } from './security/secret-reader.js';
@@ -55,6 +56,13 @@ app.use(
   }),
 );
 
+app.use(
+  cors({
+    origin: 'http://localhost:5173',
+    credentials: true,
+  }),
+);
+
 /**
  * Body parsers
  */
@@ -77,7 +85,7 @@ app.use(
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict', // need to have the same origin
-      maxAge: 1000 * 60 * 60, // 1 hour
+      maxAge: 1000 * 60 * 60,
     },
   }),
 );

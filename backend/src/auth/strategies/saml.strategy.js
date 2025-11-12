@@ -8,7 +8,7 @@ const idpCert = await fs.readFile(
 export const samlStrategy = new Strategy(
   {
     callbackUrl: 'http://localhost:3000/auth/saml/callback',
-    entryPoint: 'http://localhost:8081/simplesaml/module.php/core/loginuserpass.php',
+    entryPoint: 'http://localhost:8081/simplesaml/saml2/idp/SSOService.php',
     issuer: 'election',
     idpCert: idpCert,
   },

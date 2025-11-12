@@ -81,7 +81,9 @@ export const logoutRoute = (req, res) => {
         logger.error('Session destroy error:', err);
         return res.status(500).json({ message: 'Session destroy error' });
       }
-      res.clearCookie('connect.sid', { path: '/' });
+      res.clearCookie('connect.sid', { path: '/', httpOnly: true });
+      res.clearCookie('PHPSESSIDIDP', { path: '/', httpOnly: true });
+      res.clearCookie('SimpleSAMLAuthTokenIdp', { path: '/', httpOnly: true });
 
       logger.debug('User logged out successfully and session destroyed');
       return res.status(200).json({ message: 'Logout successful' });

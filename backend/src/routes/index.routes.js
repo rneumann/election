@@ -1,6 +1,7 @@
 import express from 'express';
 import { ensureAuthenticated, ensureHasRole } from '../auth/auth.js';
 import passport from '../auth/passport.js';
+import { logger } from '../conf/logger/logger.js';
 import { loginRoute, logoutRoute } from './auth.route.js';
 export const router = express.Router();
 
@@ -38,10 +39,20 @@ router.get('/auth/login/saml', passport.authenticate('saml'));
 router.post(
   '/auth/saml/callback',
   passport.authenticate('saml', {
-    failureRedirect: '/login',
-    successRedirect: '/',
+    failureRedirect: 'http://localhost:5173/login',
+    successRedirect: 'http://localhost:5173/home',
   }),
 );
+
+router.get('/auth/me', (req, res) => {
+  logger.debug('Me route accessed');
+  if (req.isAuthenticated()) {
+    res.json({ authenticated: true, user: req.user });
+  } else {
+    res.json({ authenticated: false });
+  }
+});
+
 /**
  * @openapi
  * /api/auth/logout:
