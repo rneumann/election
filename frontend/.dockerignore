@@ -1,0 +1,30 @@
+# Node modules & logs
+node_modules
+npm-debug.log
+yarn-error.log
+pnpm-debug.log
+
+# Git / Version control
+.git
+.gitignore
+
+# IDEs / Editors
+.vscode
+.idea
+.DS_Store
+.editorconfig
+
+# Tests / Build artifacts
+coverage
+__tests__
+dist
+
+# Environment / Credentials
+.env
+*.local
+.aws
+*secrets*
+
+# Docs & misc
+README.md
+LICENSE

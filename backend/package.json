@@ -8,15 +8,28 @@
   "scripts": {
     "eslint": "npx eslint '**/*.js' '**/*.mjs' '**/*.json'",
     "prettier": "npx prettier . --write",
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "vitest"
   },
   "dependencies": {
+    "@node-saml/passport-saml": "^5.1.0",
+    "@types/cors": "^2.8.19",
+    "axios": "^1.13.2",
+    "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
+    "express-session": "^1.18.2",
     "helmet": "^8.1.0",
     "ldapts": "^8.0.9",
+    "passport": "^0.7.0",
+    "passport-local": "^1.0.0",
+    "passport-oauth2": "^1.8.0",
+    "passport-openidconnect-keycloak-idp": "^0.1.6",
+    "pg": "^8.16.3",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1",
     "uuid": "^13.0.0",
     "winston": "^3.18.3"
   },
@@ -43,6 +56,7 @@
     "eslint-plugin-sonarjs": "^3.0.5",
     "eslint-plugin-unicorn": "^62.0.0",
     "globals": "^16.4.0",
-    "prettier": "3.6.2"
+    "prettier": "3.6.2",
+    "vitest": "^4.0.6"
   }
 }

@@ -15,6 +15,9 @@ import jsoncParser from 'jsonc-eslint-parser';
 import jsdoc from 'eslint-plugin-jsdoc';
 
 export default [
+  {
+    ignores: ['__tests__/**/*.js'],
+  },
   js.configs.recommended,
 
   // Allgemeine Konfig für JS-Dateien
@@ -57,7 +60,7 @@ export default [
       'promise/no-nesting': 'error',
       // 'import/no-unresolved': [
       //   'error',
-      //   { ignore: ['@stylistic/eslint-plugin-js', 'eslint-plugin-jest', 'eslint/config'] },
+      //   { ignore: ['@stylistic/eslint-plugin-js', 'eslint/config'] },
       // ],
       'import/order': [
         'error',
@@ -69,7 +72,10 @@ export default [
       'regexp/no-empty-group': 'error',
       'no-console': 'warn',
       'no-unused-vars': 'warn',
-      'no-magic-numbers': ['error', { ignore: [0, 1, -1, 2, 200, 400, 401, 405, 415, 500] }],
+      'no-magic-numbers': [
+        'error',
+        { ignore: [0, 1, -1, 2, 60, 200, 400, 401, 403, 405, 415, 500, 1000] },
+      ],
       curly: ['error', 'all'],
       'prefer-template': 'error',
       'react/jsx-uses-react': 'off',

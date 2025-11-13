@@ -163,6 +163,20 @@ const Login = () => {
           </ResponsiveButton>
         </form>
 
+        <button
+          onClick={() => (window.location.href = '/api/auth/login/saml')}
+          className="mt-4 w-full bg-brand-primary text-white py-3 rounded-lg font-semibold hover:opacity-90 transition duration-200 shadow-lg disabled:bg-gray-400 disabled:cursor-not-allowed"
+        >
+          {'Anmelden mit SAML'}
+        </button>
+
+        <button
+          onClick={() => (window.location.href = '/api/auth/login/kc')}
+          className="mt-4 w-full bg-brand-primary text-white py-3 rounded-lg font-semibold hover:opacity-90 transition duration-200 shadow-lg"
+        >
+          Anmelden mit Keycloak
+        </button>
+
         {/* Footer */}
         <p className="text-center text-xs sm:text-sm text-brand-gray mt-4 sm:mt-6">
           {theme.text.copyright}
