@@ -90,8 +90,15 @@ export const logoutRoute = async (req, res) => {
 
       if (user?.authProvider === 'ldap') {
         res.clearCookie('PHPSESSID', { path: '/', httpOnly: true });
-        res.clearCookie('SimpleSAMLAuthToken', { path: '/', httpOnly: true });
+        res.clearCookie('PHPSESSIDIDP', { path: '/', httpOnly: true });
+        res.clearCookie('PGADMIN_LANGUAGE', { path: '/', httpOnly: true });
         logger.debug('LDAP user logged out successfully');
+        return res.status(200).json({ message: 'Logout successful' });
+      }
+
+      if (user?.authProvider === 'saml') {
+        res.clearCookie('SimpleSAMLAuthTokenIdp', { path: '/', httpOnly: true });
+        logger.debug('SAML user logged out successfully');
         return res.status(200).json({ message: 'Logout successful' });
       }
 

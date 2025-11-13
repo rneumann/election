@@ -31,7 +31,7 @@ export const keycloakStrategy = new OAuth2Strategy(
 
       const user = {
         username: userinfo.preferred_username || userinfo.sub,
-        accessToken,
+        //accessToken,
         profile: userinfo,
         authProvider: 'keycloak',
       };
