@@ -1,14 +1,15 @@
 import PropTypes from 'prop-types';
 
 /**
- * Responsive container component with consistent padding and max-width.
- * Provides mobile-optimized spacing across all screen sizes.
+ * Centered container with responsive horizontal padding and max-width constraints.
+ * Ensures consistent content margins across mobile, tablet, and desktop viewports.
+ * Uses Tailwind's container utility for automatic max-width breakpoints.
  *
  * @param {object} props - Component props
- * @param {React.ReactNode} props.children - Child components
- * @param {string} [props.className] - Additional CSS classes
- * @param {boolean} [props.noPadding] - Remove default padding
- * @returns {React.ReactElement} Responsive container
+ * @param {React.ReactNode} props.children - Content to constrain within container
+ * @param {string} [props.className=''] - Additional Tailwind CSS classes
+ * @param {boolean} [props.noPadding=false] - Remove default horizontal padding
+ * @returns Centered container with responsive width and padding
  */
 const ResponsiveContainer = ({ children, className = '', noPadding = false }) => {
   const baseClasses = 'container mx-auto';

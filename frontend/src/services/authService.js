@@ -5,13 +5,13 @@ import api from './api.js';
  */
 const authService = {
   /**
-   * Login user with username and password.
-   * Sends credentials to backend /api/auth/login endpoint.
-   *
-   * @param {string} username - User's RZ-Benutzerkürzel
+   * Authenticates user via LDAP with username and password.
+  
+  
+   * @param {string} username - User's LDAP username (RZ-Benutzerkürzel)
    * @param {string} password - User's password
-   * @returns {Promise<{username: string, role: string}>} User data with role (admin, committee, voter)
-   * @throws {Error} When authentication fails
+   * @returns {Promise<{username: string, role: string, authProvider: string}>} Authenticated user object with role
+   * @throws {Error} When authentication fails or network error occurs
    */
   login: async (username, password) => {
     const { data } = await api.post('/auth/login/ldap', {
@@ -22,11 +22,11 @@ const authService = {
   },
 
   /**
-   * Logout user and clear session data.
-   * Currently only clears local storage.
-   * Future: May need to call backend logout endpoint.
+   * Terminates user session on backend and returns provider-specific logout URL.
    *
-   * @returns {void}
+   *
+   * @returns {Promise<string|undefined>} Logout redirect URL for external providers, undefined for internal auth
+   * @throws {Error} When backend logout request fails
    */
   logout: async () => {
     const response = await api.delete('/auth/logout', {
@@ -35,14 +35,14 @@ const authService = {
     if (response.status !== 200) {
       throw new Error('Logout failed');
     }
-    console.log(response.data.redirectUrl);
     return response.data.redirectUrl;
   },
 
   /**
-   * Get current user from session storage.
+   * Retrieves current authenticated user from backend session.
+   * Calls /api/auth/me endpoint to verify session validity and get user data.
    *
-   * @returns {{username: string, role: string} | null} Current user or null
+   * @returns {Promise<{username: string, role: string, authProvider: string}|null>} User object if authenticated, null otherwise
    */
   getCurrentUser: async () => {
     const { data } = await api.get('/auth/me', {
@@ -52,9 +52,10 @@ const authService = {
   },
 
   /**
-   * Check if user is authenticated.
+   * Checks if user has valid authentication session.
+ 
    *
-   * @returns {boolean} True if user is authenticated
+   * @returns {boolean} True if session storage indicates authenticated state
    */
   isAuthenticated: () => sessionStorage.getItem('isAuthenticated') === 'true',
 };

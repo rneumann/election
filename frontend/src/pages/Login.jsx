@@ -8,7 +8,7 @@ import ResponsiveButton from '../components/ResponsiveButton.jsx';
  * Login page for user authentication.
  * Handles user login with backend API integration.
  *
- * @returns {React.ReactElement} Login component with form
+ * @returns Login form with LDAP, SAML, and Keycloak authentication options
  */
 const Login = () => {
   const [username, setUsername] = useState('');

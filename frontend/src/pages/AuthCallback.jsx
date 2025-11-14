@@ -4,16 +4,11 @@ import api from '../services/api';
 import { useTheme } from '../hooks/useTheme';
 
 /**
- * Authentication callback handler for external auth providers (SAML, Keycloak).
- * Validates session after successful authentication and provides user feedback.
+
  *
- * Flow:
- * 1. Backend redirects here after external auth
- * 2. Validate session via /api/auth/me
- * 3. Show success/error feedback
- * 4. Redirect to appropriate destination
+ 
  *
- * @returns {React.ReactElement} Callback component with status feedback
+ * @returns Callback page with validation states and user feedback
  */
 const AuthCallback = () => {
   const navigate = useNavigate();

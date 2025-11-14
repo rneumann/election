@@ -1,19 +1,20 @@
 import PropTypes from 'prop-types';
 
 /**
- * Responsive button component with touch-optimized sizing.
- * Provides consistent button styling across all screen sizes.
+ * Touch-optimized button component with responsive sizing and variant styles.
+ * Provides consistent button styling across mobile and desktop with minimum touch target sizes.
+ * Supports multiple style variants (primary, secondary, danger, outline) and sizes.
  *
  * @param {object} props - Component props
- * @param {React.ReactNode} props.children - Button content
- * @param {string} [props.variant='primary'] - Button style variant (primary, secondary, danger)
- * @param {string} [props.size='medium'] - Button size (small, medium, large)
- * @param {boolean} [props.fullWidth] - Make button full width
- * @param {boolean} [props.disabled] - Disable button
- * @param {Function} [props.onClick] - Click handler
- * @param {string} [props.type='button'] - Button type
- * @param {string} [props.className] - Additional CSS classes
- * @returns {React.ReactElement} Responsive button
+ * @param {React.ReactNode} props.children - Button label or content
+ * @param {string} [props.variant='primary'] - Style variant (primary, secondary, danger, outline)
+ * @param {string} [props.size='medium'] - Size preset (small, medium, large)
+ * @param {boolean} [props.fullWidth=false] - Expand to full container width
+ * @param {boolean} [props.disabled=false] - Disable button interaction
+ * @param {Function} [props.onClick] - Click event handler
+ * @param {string} [props.type='button'] - HTML button type attribute
+ * @param {string} [props.className=''] - Additional Tailwind CSS classes
+ * @returns Styled button element with variant-specific appearance and responsive sizing
  */
 const ResponsiveButton = ({
   children,

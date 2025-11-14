@@ -1,15 +1,16 @@
 import PropTypes from 'prop-types';
 
 /**
- * Responsive card component with mobile-optimized padding and spacing.
- * Provides consistent card styling across all screen sizes.
+ * Responsive card container with mobile-optimized spacing and optional hover effects.
+ * Provides consistent shadow, rounded corners, and padding across screen sizes.
+ * Supports hoverable variant with elevation animation for interactive elements.
  *
  * @param {object} props - Component props
  * @param {React.ReactNode} props.children - Card content
- * @param {string} [props.className] - Additional CSS classes
- * @param {boolean} [props.noPadding] - Remove default padding
- * @param {boolean} [props.hoverable] - Add hover effect
- * @returns {React.ReactElement} Responsive card
+ * @param {string} [props.className=''] - Additional Tailwind CSS classes
+ * @param {boolean} [props.noPadding=false] - Remove default padding for custom layouts
+ * @param {boolean} [props.hoverable=false] - Enable hover animation and pointer cursor
+ * @returns White card container with responsive padding and optional interactions
  */
 const ResponsiveCard = ({ children, className = '', noPadding = false, hoverable = false }) => {
   const baseClasses = 'bg-white rounded-lg shadow-lg';

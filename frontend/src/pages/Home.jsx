@@ -3,10 +3,9 @@ import { useTheme } from '../hooks/useTheme.js';
 import ResponsiveButton from '../components/ResponsiveButton.jsx';
 
 /**
- * Home page after successful authentication.
- * Displays user dashboard with current elections and user information.
+ * Main dashboard for authenticated users.
  *
- * @returns {React.ReactElement} Home component with dashboard
+ * @returns User dashboard with election overview and navigation
  */
 const Home = () => {
   const { user, logout } = useAuth();

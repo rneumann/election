@@ -5,11 +5,13 @@ import Home from './pages/Home';
 import AuthCallback from './pages/AuthCallback';
 
 /**
- * Protected route component that redirects to login if not authenticated.
+ * Protected route wrapper that enforces authentication.
+ * Displays loading state during session validation,
+ * renders children if authenticated, or redirects to login page.
  *
  * @param {object} props - Component props
- * @param {React.ReactNode} props.children - Child components to render if authenticated
- * @returns {React.ReactElement} Protected content or redirect
+ * @param {React.ReactNode} props.children - Child components to render when authenticated
+ * @returns Authenticated content, loading spinner, or redirect to /login
  */
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
@@ -26,10 +28,11 @@ const ProtectedRoute = ({ children }) => {
 };
 
 /**
- * Application routes component.
- * Manages routing between login and protected pages.
+ * Application routing configuration.
+ * Defines all application routes: /login, /auth/callback, /home, and catch-all redirect.
+ * Applies ProtectedRoute wrapper to authenticated pages.
  *
- * @returns {React.ReactElement} Routes component
+ * @returns Configured React Router routes with authentication guards
  */
 const AppRoutes = () => {
   const { isAuthenticated } = useAuth();
@@ -55,10 +58,11 @@ const AppRoutes = () => {
 };
 
 /**
- * Main application component with authentication context.
- * Wraps entire app with AuthProvider for global auth state.
+ * Root application component.
+ * Initializes authentication context provider and renders routing structure.
+ * Provides global auth state management to all child components.
  *
- * @returns {React.ReactElement} App component with routes
+ * @returns Application root with AuthProvider and routing configuration
  */
 const App = () => {
   return (

@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import authService from '../services/authService.js';
 import api from '../services/api.js';
+import { logger } from '../conf/logger/logger.js';
 
 /**
  * Authentication context for managing global auth state.
@@ -48,7 +49,7 @@ export const AuthProvider = ({ children }) => {
       const redirectUrl = response.data.redirectUrl;
       window.location.href = redirectUrl; // Browser folgt Redirect → Keycloak-Session wird beendet
     } catch (error) {
-      console.error('Logout failed:', error);
+      logger.error('Logout failed:', error);
     } finally {
       setUser(undefined);
       setIsAuthenticated(false);
