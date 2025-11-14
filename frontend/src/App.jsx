@@ -25,7 +25,13 @@ const ProtectedRoute = ({ children }) => {
     );
   }
 
-  return isAuthenticated ? children : <Navigate to="/login" replace />;
+  // If not authenticated, redirect to login with current location as returnUrl
+  if (!isAuthenticated) {
+    const currentPath = window.location.pathname;
+    return <Navigate to={`/login?returnUrl=${encodeURIComponent(currentPath)}`} replace />;
+  }
+
+  return children;
 };
 
 /**

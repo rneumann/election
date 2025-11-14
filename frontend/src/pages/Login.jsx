@@ -59,6 +59,7 @@ const Login = () => {
   /**
    * Handle login form submission.
    * Calls backend API via AuthContext and redirects on success.
+   * Redirects to returnUrl from query params if present, otherwise to /home.
    *
    * @param {React.FormEvent} e - Form submit event
    * @returns {Promise<void>}
@@ -72,8 +73,12 @@ const Login = () => {
       const result = await login(username, password);
 
       if (result.success) {
-        // Redirect to home page on successful login
-        navigate('/home');
+        // Check if there's a return URL from query params
+        const returnUrl = searchParams.get('returnUrl');
+        const destination = returnUrl && returnUrl.startsWith('/') ? returnUrl : '/home';
+
+        // Redirect to destination on successful login
+        navigate(destination, { replace: true });
       } else {
         // Show error message from backend
         setError(result.message || 'Login failed. Please try again.');

@@ -58,9 +58,13 @@ const AuthCallback = () => {
         if (data.authenticated && data.user) {
           setStatus('success');
 
+          // Get return URL from query params or default to /home
+          const returnUrl = searchParams.get('returnUrl');
+          const destination = returnUrl && returnUrl.startsWith('/') ? returnUrl : '/home';
+
           // Short delay for better UX - let user see success message
           setTimeout(() => {
-            navigate('/home', { replace: true });
+            navigate(destination, { replace: true });
           }, 1500);
         } else {
           // Session not established despite successful OAuth flow

@@ -40,19 +40,30 @@ export const AuthProvider = ({ children }) => {
   /**
    * Logout current user.
    * Clears session storage and resets auth state.
+   * For Keycloak/external providers, follows backend redirect URL.
    *
-   * @returns {void}
+   * @returns {Promise<void>}
    */
   const logout = async () => {
     try {
-      const response = await api.delete('/auth/logout', { withCredentials: true });
-      const redirectUrl = response.data.redirectUrl;
-      window.location.href = redirectUrl; // Browser folgt Redirect → Keycloak-Session wird beendet
-    } catch (error) {
-      logger.error('Logout failed:', error);
-    } finally {
+      // Clear local state first
       setUser(undefined);
       setIsAuthenticated(false);
+
+      // Call backend logout endpoint
+      const response = await api.delete('/auth/logout', { withCredentials: true });
+
+      // If backend returns a redirect URL (Keycloak), follow it
+      if (response.data.redirectUrl) {
+        window.location.href = response.data.redirectUrl;
+      } else {
+        // For LDAP/SAML, just redirect to login page
+        window.location.href = '/login';
+      }
+    } catch (error) {
+      logger.error('Logout failed:', error);
+      // Even if logout fails on backend, redirect to login
+      window.location.href = '/login';
     }
   };
 
