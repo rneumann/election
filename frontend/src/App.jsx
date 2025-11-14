@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext.jsx';
 import Login from './pages/Login';
 import Home from './pages/Home';
+import AuthCallback from './pages/AuthCallback';
 
 /**
  * Protected route component that redirects to login if not authenticated.
@@ -39,6 +40,7 @@ const AppRoutes = () => {
         path="/login"
         element={isAuthenticated ? <Navigate to="/home" replace /> : <Login />}
       />
+      <Route path="/auth/callback" element={<AuthCallback />} />
       <Route
         path="/home"
         element={

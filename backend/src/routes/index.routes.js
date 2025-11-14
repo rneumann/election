@@ -40,8 +40,8 @@ router.get('/auth/login/saml', passport.authenticate('saml'));
 router.post(
   '/auth/saml/callback',
   passport.authenticate('saml', {
-    failureRedirect: 'http://localhost:5173/login',
-    successRedirect: 'http://localhost:5173/home',
+    failureRedirect: 'http://localhost:5173/login?error=saml_failed',
+    successRedirect: 'http://localhost:5173/auth/callback?provider=saml',
   }),
 );
 
@@ -52,8 +52,8 @@ router.get('/auth/login/kc', passport.authenticate('oidc_kc'));
 router.get(
   '/auth/callback/kc',
   passport.authenticate('oidc_kc', {
-    failureRedirect: 'http://localhost:5173/login',
-    successRedirect: 'http://localhost:5173/home',
+    failureRedirect: 'http://localhost:5173/login?error=keycloak_failed',
+    successRedirect: 'http://localhost:5173/auth/callback?provider=keycloak',
   }),
 );
 

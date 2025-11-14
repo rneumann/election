@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useTheme } from '../hooks/useTheme.js';
 import ResponsiveButton from '../components/ResponsiveButton.jsx';
@@ -17,6 +17,7 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const usernameRef = useRef(null);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { login } = useAuth();
   const theme = useTheme();
 
@@ -26,6 +27,20 @@ const Login = () => {
   useEffect(() => {
     usernameRef.current?.focus();
   }, []);
+
+  /**
+   * Handle technical errors from URL parameters (from AuthCallback).
+   * Only displays errors for technical issues, not auth provider failures
+   * (those are already shown by the external auth provider).
+   */
+  useEffect(() => {
+    const errorParam = searchParams.get('error');
+
+    // Only show technical errors - auth provider errors are already displayed by provider
+    if (errorParam === 'session_invalid' || errorParam === 'validation_failed') {
+      setError('Ein technischer Fehler ist aufgetreten. Bitte versuchen Sie es erneut.');
+    }
+  }, [searchParams]);
 
   /**
    * Clear error message after 5 seconds.
