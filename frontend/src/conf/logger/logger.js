@@ -1,22 +1,31 @@
-import winston from 'winston';
-const { combine, timestamp, printf, colorize, align } = winston.format;
-const { NODE_ENV } = import.meta.env;
+import log from 'loglevel';
 
 /**
- * Logger-Konfiguration mit Winston
+ * Logger-Konfiguration mit loglevel
  * - In der Produktionsumgebung werden nur 'info' und höher geloggt.
  * - In der Entwicklungsumgebung werden 'debug' und höher geloggt.
- * - Log-Nachrichten enthalten Zeitstempel und sind farbig formatiert.
+ * - Browser-kompatibel und mit Zeitstempel
  */
-export const logger = winston.createLogger({
-  level: NODE_ENV === 'production' ? 'info' : 'debug',
-  format: combine(
-    colorize({ all: true }),
-    timestamp({
-      format: 'YYYY-MM-DD hh:mm:ss.SSS A',
-    }),
-    align(),
-    printf((info) => `[${info.timestamp}] ${info.level}: ${info.message}`),
-  ),
-  transports: [new winston.transports.Console()],
-});
+
+// Set log level based on environment
+if (import.meta.env.MODE === 'production') {
+  log.setLevel('info');
+} else {
+  log.setLevel('debug');
+}
+
+// Optional: Custom formatting with timestamp
+const originalFactory = log.methodFactory;
+log.methodFactory = (methodName, logLevel, loggerName) => {
+  const rawMethod = originalFactory(methodName, logLevel, loggerName);
+
+  return (...args) => {
+    const timestamp = new Date().toISOString();
+    rawMethod(`[${timestamp}]`, ...args);
+  };
+};
+
+// Apply the custom method factory
+log.setLevel(log.getLevel());
+
+export const logger = log;

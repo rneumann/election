@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from './context/AuthContext.jsx';
 import Login from './pages/Login';
 import Home from './pages/Home';
 import AuthCallback from './pages/AuthCallback';
+import AdminUpload from './pages/AdminUpload';
 
 /**
  * Protected route wrapper that enforces authentication.
@@ -49,6 +50,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <Home />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/upload"
+        element={
+          <ProtectedRoute>
+            <AdminUpload />
           </ProtectedRoute>
         }
       />
