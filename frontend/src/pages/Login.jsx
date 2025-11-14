@@ -59,7 +59,7 @@ const Login = () => {
   /**
    * Handle login form submission.
    * Calls backend API via AuthContext and redirects on success.
-   * Redirects to returnUrl from query params if present, otherwise to /home.
+   * Redirects to returnUrl from query params if present, otherwise to /home for users or /admin for admins.
    *
    * @param {React.FormEvent} e - Form submit event
    * @returns {Promise<void>}
@@ -75,7 +75,14 @@ const Login = () => {
       if (result.success) {
         // Check if there's a return URL from query params
         const returnUrl = searchParams.get('returnUrl');
-        const destination = returnUrl && returnUrl.startsWith('/') ? returnUrl : '/home';
+
+        // Determine destination based on role if no returnUrl
+        let destination = '/home';
+        if (returnUrl && returnUrl.startsWith('/')) {
+          destination = returnUrl;
+        } else if (result.user?.role === 'admin') {
+          destination = '/admin';
+        }
 
         // Redirect to destination on successful login
         navigate(destination, { replace: true });

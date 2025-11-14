@@ -3,7 +3,7 @@ import { AuthProvider, useAuth } from './context/AuthContext.jsx';
 import Login from './pages/Login';
 import Home from './pages/Home';
 import AuthCallback from './pages/AuthCallback';
-import AdminUpload from './pages/AdminUpload';
+import Admin from './pages/Admin';
 
 /**
  * Protected route wrapper that enforces authentication.
@@ -42,13 +42,19 @@ const ProtectedRoute = ({ children }) => {
  * @returns Configured React Router routes with authentication guards
  */
 const AppRoutes = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
 
   return (
     <Routes>
       <Route
         path="/login"
-        element={isAuthenticated ? <Navigate to="/home" replace /> : <Login />}
+        element={
+          isAuthenticated ? (
+            <Navigate to={user?.role === 'admin' ? '/admin' : '/home'} replace />
+          ) : (
+            <Login />
+          )
+        }
       />
       <Route path="/auth/callback" element={<AuthCallback />} />
       <Route
@@ -60,10 +66,10 @@ const AppRoutes = () => {
         }
       />
       <Route
-        path="/admin/upload"
+        path="/admin"
         element={
           <ProtectedRoute>
-            <AdminUpload />
+            <Admin />
           </ProtectedRoute>
         }
       />

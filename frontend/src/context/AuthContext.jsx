@@ -100,7 +100,7 @@ export const AuthProvider = ({ children }) => {
    *
    * @param {string} username - User's username
    * @param {string} password - User's password
-   * @returns {Promise<{success: boolean, message?: string}>} Login result
+   * @returns {Promise<{success: boolean, user?: object, message?: string}>} Login result with user data
    */
   const login = async (username, password) => {
     try {
@@ -108,7 +108,7 @@ export const AuthProvider = ({ children }) => {
       setUser(user);
       setIsAuthenticated(true);
 
-      return { success: true };
+      return { success: true, user };
     } catch (error) {
       return {
         success: false,

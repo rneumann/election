@@ -58,9 +58,15 @@ const AuthCallback = () => {
         if (data.authenticated && data.user) {
           setStatus('success');
 
-          // Get return URL from query params or default to /home
+          // Get return URL from query params or determine based on role
           const returnUrl = searchParams.get('returnUrl');
-          const destination = returnUrl && returnUrl.startsWith('/') ? returnUrl : '/home';
+          let destination = '/home';
+
+          if (returnUrl && returnUrl.startsWith('/')) {
+            destination = returnUrl;
+          } else if (data.user.role === 'admin') {
+            destination = '/admin';
+          }
 
           // Short delay for better UX - let user see success message
           setTimeout(() => {
