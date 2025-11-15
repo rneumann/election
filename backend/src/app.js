@@ -86,7 +86,7 @@ app.use(
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict', // need to have the same origin
-      maxAge: 1000 * 60 * 60,
+      maxAge: 1000 * 60 * 2, // 2 minutes
     },
   }),
 );

@@ -61,7 +61,7 @@
       "clientId": "react-app",
       "enabled": true,
       "publicClient": false,
-      "redirectUris": ["http://localhost:5173/*"],
+      "redirectUris": ["http://localhost:5173/*", ["http://localhost:3000/api/auth/callback/kc"]],
       "webOrigins": ["http://localhost:5173"],
       "protocol": "openid-connect",
       "standardFlowEnabled": true,
