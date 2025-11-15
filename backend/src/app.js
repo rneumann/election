@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import express from 'express';
 import helmet from 'helmet';
 import session from 'express-session';
@@ -9,6 +10,7 @@ import { readSecret } from './security/secret-reader.js';
 import { swaggerSpec } from './conf/swagger/swagger.js';
 import { healthRouter } from './routes/health.route.js';
 import passport from './auth/passport.js';
+import { logger } from './conf/logger/logger.js';
 export const app = express();
 
 /**
@@ -97,6 +99,47 @@ app.use(
  */
 app.use(passport.initialize());
 app.use(passport.session());
+
+/**
+ * Session fingerprint for protection against hijacking
+ */
+app.use((req, res, next) => {
+  logger.debug('Checking session fingerprint');
+  logger.debug(`req.Session: ${JSON.stringify(req.session)}`);
+  if (!req.session) {
+    logger.debug('No session found');
+    return next();
+  }
+
+  if (!req.user) {
+    logger.debug('No user found');
+    return next();
+  }
+
+  const ip = req.ip;
+  const ua = req.headers['user-agent'];
+
+  const fingerprint = crypto
+    .createHash('sha256')
+    .update(ip + ua)
+    .digest('hex');
+
+  if (req.session.freshUser) {
+    logger.debug('Fresh user detected');
+    req.session.fingerprint = fingerprint;
+    logger.debug(`Session fingerprint set to: ${fingerprint}`);
+    logger.debug(`Req.Session after fingerprint check: ${JSON.stringify(req.session)}`);
+    delete req.session.freshUser;
+    return next();
+  }
+
+  if (req.session.fingerprint !== fingerprint) {
+    logger.warn('Session fingerprint mismatch');
+    req.session.destroy(() => {});
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+  next();
+});
 
 /**
  * Health route

@@ -41,8 +41,12 @@ router.post(
   '/auth/saml/callback',
   passport.authenticate('saml', {
     failureRedirect: 'http://localhost:5173/login',
-    successRedirect: 'http://localhost:5173/home',
   }),
+  (req, res) => {
+    req.session.freshUser = true;
+    logger.debug('SAML set freshUser to true');
+    res.redirect('http://localhost:5173/home');
+  },
 );
 
 // Keycloak Login
@@ -53,8 +57,12 @@ router.get(
   '/auth/callback/kc',
   passport.authenticate('oidc_kc', {
     failureRedirect: 'http://localhost:5173/login',
-    successRedirect: 'http://localhost:5173/home',
   }),
+  (req, res) => {
+    req.session.freshUser = true;
+    logger.debug('Keycloak set freshUser to true');
+    res.redirect('http://localhost:5173/home');
+  },
 );
 
 /**

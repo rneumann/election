@@ -58,6 +58,8 @@ export const loginRoute =
           return res.status(500).json({ message: 'Login error' });
         }
         logger.debug('User authenticated successfully:', username);
+        req.session.freshUser = true;
+        logger.debug('LDAP set freshUser to true');
         return res.status(200).json({ message: 'Login successful', user });
       });
     })(req, res, next);
