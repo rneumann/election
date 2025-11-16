@@ -3,6 +3,7 @@ import { ensureAuthenticated, ensureHasRole } from '../auth/auth.js';
 import passport from '../auth/passport.js';
 import { logger } from '../conf/logger/logger.js';
 import { loginRoute, logoutRoute } from './auth.route.js';
+import { importWahlerRoute } from './upload.route.js';
 export const router = express.Router();
 
 /**
@@ -102,6 +103,41 @@ router.get('/auth/me', (req, res) => {
  *         description: Internal Server Error
  */
 router.delete('/auth/logout', logoutRoute);
+
+/**
+ * @openapi
+ * /api/upload/voters:
+ * post:
+ * summary: Upload voter list (Admin only)
+ * description: Uploads a CSV or Excel file with voter data.
+ * security:
+ * - cookieAuth: []
+ * requestBody:
+ * required: true
+ * content:
+ * multipart/form-data:
+ * schema:
+ * type: object
+ * properties:
+ * file:
+ * type: string
+ * format: binary
+ * responses:
+ * 200:
+ * description: File uploaded successfully
+ * 400:
+ * description: Bad request (no file, invalid file type/size)
+ * 401:
+ * description: Unauthorized (not logged in)
+ * 403:
+ * description: Forbidden (not an admin)
+ */
+router.post(
+  '/upload/voters',
+  ensureAuthenticated,
+  ensureHasRole(['admin']),
+  importWahlerRoute
+);
 
 /**
  * Testing routes for protection
