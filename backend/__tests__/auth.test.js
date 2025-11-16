@@ -16,7 +16,7 @@ vi.mock('../src/conf/logger/logger.js', () => ({
   },
 }));
 
-import { login } from '../src/auth/auth.js';
+import { ensureHasRole, login } from '../src/auth/auth.js';
 import { logger } from '../src/conf/logger/logger.js';
 
 // Mock für LDAP Client
@@ -38,19 +38,19 @@ describe('login', () => {
     vi.clearAllMocks();
   });
 
-  test('sollte admin user zurueckgeben', async () => {
+  test('should return admin user', async () => {
     const result = await login('admin', 'admin123');
     expect(result).toEqual({ username: 'admin', role: 'admin' });
     expect(logger.debug).toHaveBeenCalledWith('Admin user authenticated successfully.');
   });
 
-  test('sollte committee user zurueckgeben', async () => {
+  test('should return committee user', async () => {
     const result = await login('committee', 'committee123');
     expect(result).toEqual({ username: 'committee', role: 'committee' });
     expect(logger.debug).toHaveBeenCalledWith('Committee user authenticated successfully.');
   });
 
-  test('sollte undefinierten user zurueckgeben bei falschen LDAP credentials', async () => {
+  test('should return undefined for invalid credentials', async () => {
     const username = 'user1';
     const password = 'wrongpass';
     const result = await login(username, password);
@@ -62,11 +62,54 @@ describe('login', () => {
     );
   });
 
-  test('sollte LDAP user zurückgeben bei korrekten credentials', async () => {
+  test('should return LDAP-user with correct credentials', async () => {
     const result = await login('user1', 'pass1');
     expect(result).toEqual({ username: 'user1', role: 'voter' });
     expect(bindMock).toHaveBeenCalledWith('cn=user1,cn=users,dc=example,dc=com', 'pass1');
     expect(unbindMock).toHaveBeenCalled();
     expect(logger.debug).toHaveBeenCalledWith('User user1 authenticated successfully via LDAP.');
+  });
+
+  test('should call next middleware', async () => {
+    const next = vi.fn();
+    const res = {
+      status: vi.fn().mockReturnThis(),
+      json: vi.fn(),
+    };
+    const req = {
+      user: {
+        role: 'admin',
+      },
+    };
+
+    ensureHasRole(['admin'])(req, res, next);
+    expect(next).toHaveBeenCalled();
+  });
+
+  test('should call unauthorized if user is not authenticated', async () => {
+    const next = vi.fn();
+    const res = {
+      status: vi.fn().mockReturnThis(),
+      json: vi.fn(),
+    };
+    const req = {};
+
+    ensureHasRole(['admin'])(req, res, next);
+    expect(res.status).toHaveBeenCalledWith(401);
+  });
+
+  test('should call forbidden if user is not authorized', async () => {
+    const next = vi.fn();
+    const res = {
+      status: vi.fn().mockReturnThis(),
+      json: vi.fn(),
+    };
+    const req = {
+      user: {
+        role: 'committee',
+      },
+    };
+    ensureHasRole(['admin'])(req, res, next);
+    expect(res.status).toHaveBeenCalledWith(403);
   });
 });

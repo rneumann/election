@@ -1,0 +1,5 @@
+include:
+  - ./ldap/compose.yml
+  #- ./postgres/compose.yml
+  - ./backend/compose.yml
+  - ./frontend/compose.yml

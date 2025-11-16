@@ -10,6 +10,8 @@ services:
     ports:
       - 389:389
       - 636:636
+    networks:
+      - election-network
 
   ldap-admin-ui:
     image: osixia/phpldapadmin:0.9.0
@@ -20,6 +22,12 @@ services:
       - 6443:80
     depends_on:
       - ldap
+    networks:
+      - election-network
+
+networks:
+  election-network:
+    external: true
 
 volumes:
   ldap-data:
