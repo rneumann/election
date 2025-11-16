@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import express from 'express';
 import { ensureAuthenticated, ensureHasRole } from '../auth/auth.js';
 import passport from '../auth/passport.js';
@@ -43,6 +44,7 @@ router.post(
     failureRedirect: 'http://localhost:5173/login',
   }),
   (req, res) => {
+    req.session.sessionSecret = crypto.randomBytes(32).toString('hex');
     req.session.freshUser = true;
     logger.debug('SAML set freshUser to true');
     res.redirect('http://localhost:5173/home');
@@ -59,6 +61,7 @@ router.get(
     failureRedirect: 'http://localhost:5173/login',
   }),
   (req, res) => {
+    req.session.sessionSecret = crypto.randomBytes(32).toString('hex');
     req.session.freshUser = true;
     logger.debug('Keycloak set freshUser to true');
     res.redirect('http://localhost:5173/home');

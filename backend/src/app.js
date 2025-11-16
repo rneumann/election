@@ -83,6 +83,7 @@ app.use(
   session({
     secret: await readSecret('SESSION_SECRET'),
     resave: false,
+    rolling: true,
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
@@ -116,12 +117,13 @@ app.use((req, res, next) => {
     return next();
   }
 
-  const ip = req.ip;
+  const ip = (req.headers['x-forwarded-for'] || '').split(',')[0]?.trim() || req.ip;
   const ua = req.headers['user-agent'];
+  logger.debug(`IP: ${ip} UA: ${ua}`);
 
   const fingerprint = crypto
     .createHash('sha256')
-    .update(ip + ua)
+    .update(req.session.sessionSecret + ip + ua)
     .digest('hex');
 
   if (req.session.freshUser) {
@@ -133,7 +135,12 @@ app.use((req, res, next) => {
     return next();
   }
 
-  if (req.session.fingerprint !== fingerprint) {
+  const expected = crypto
+    .createHash('sha256')
+    .update(req.session.sessionSecret + ip + ua)
+    .digest('hex');
+
+  if (expected !== req.session.fingerprint) {
     logger.warn('Session fingerprint mismatch');
     req.session.destroy(() => {});
     return res.status(401).json({ message: 'Unauthorized' });

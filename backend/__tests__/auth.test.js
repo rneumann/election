@@ -16,8 +16,9 @@ vi.mock('../src/conf/logger/logger.js', () => ({
   },
 }));
 
-import { ensureHasRole, login } from '../src/auth/auth.js';
+import { ensureHasRole } from '../src/auth/auth.js';
 import { logger } from '../src/conf/logger/logger.js';
+import { login } from '../src/auth/strategies/ldap.strategy.js';
 
 // Mock für LDAP Client
 const bindMock = vi.fn(async (dn, pw) => {
@@ -64,7 +65,7 @@ describe('login', () => {
 
   test('should return LDAP-user with correct credentials', async () => {
     const result = await login('user1', 'pass1');
-    expect(result).toEqual({ username: 'user1', role: 'voter' });
+    expect(result).toEqual({ username: 'user1', role: 'voter', authProvider: 'ldap' });
     expect(bindMock).toHaveBeenCalledWith('cn=user1,cn=users,dc=example,dc=com', 'pass1');
     expect(unbindMock).toHaveBeenCalled();
     expect(logger.debug).toHaveBeenCalledWith('User user1 authenticated successfully via LDAP.');

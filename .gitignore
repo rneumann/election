@@ -72,6 +72,7 @@ web_modules/
 *secrets*
 *crt
 *pem
+*xml*
 
 # dotenv configuration files
 .*.env

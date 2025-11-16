@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import passport from 'passport';
 import { logger } from '../conf/logger/logger.js';
 const { KC_BASE_URL, KC_REALM, CLIENT_ID } = process.env;
@@ -58,6 +59,7 @@ export const loginRoute =
           return res.status(500).json({ message: 'Login error' });
         }
         logger.debug('User authenticated successfully:', username);
+        req.session.sessionSecret = crypto.randomBytes(32).toString('hex');
         req.session.freshUser = true;
         logger.debug('LDAP set freshUser to true');
         return res.status(200).json({ message: 'Login successful', user });
