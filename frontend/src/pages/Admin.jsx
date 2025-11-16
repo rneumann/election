@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useTheme } from '../hooks/useTheme.js';
 import ResponsiveButton from '../components/ResponsiveButton.jsx';
+import ValidationErrors from '../components/ValidationErrors.jsx';
+import { validateVoterCSV } from '../utils/validators/csvValidator.js';
+import { validateElectionExcel } from '../utils/validators/excelValidator.js';
 
 /**
  * Admin page for uploading election definitions via Excel file.
@@ -25,9 +28,9 @@ const AdminUpload = () => {
   const [success, setSuccess] = useState('');
   const [activeSection, setActiveSection] = useState('upload'); // 'upload' | 'manage' | 'export'
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  // CSS Classes - removed, using inline styles with theme instead
-  const hoverClass = 'hover:bg-gray-50';
+  const [validationErrors, setValidationErrors] = useState([]);
+  const [validationStats, setValidationStats] = useState(null);
+  const [isValidating, setIsValidating] = useState(false);
 
   // Redirect non-admins
   if (user?.role !== 'admin') {
@@ -39,18 +42,31 @@ const AdminUpload = () => {
    * Validate file type and size.
    *
    * @param {File} file - File to validate
+   * @param {string} fileType - Expected file type ('csv' or 'excel')
    * @returns {boolean} True if file is valid
    */
-  const validateFile = (file) => {
-    const validTypes = [
+  const validateFile = (file, fileType) => {
+    const csvTypes = ['text/csv', 'application/vnd.ms-excel'];
+    const excelTypes = [
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       'application/vnd.ms-excel',
     ];
     const maxSize = 10 * 1024 * 1024; // 10MB
 
-    if (!validTypes.includes(file.type)) {
-      setError('Bitte laden Sie eine Excel-Datei hoch (.xlsx oder .xls)');
-      return false;
+    if (fileType === 'csv') {
+      if (!csvTypes.includes(file.type) && !file.name.endsWith('.csv')) {
+        setError('Bitte laden Sie eine CSV-Datei hoch (.csv)');
+        return false;
+      }
+    } else if (fileType === 'excel') {
+      if (
+        !excelTypes.includes(file.type) &&
+        !file.name.endsWith('.xlsx') &&
+        !file.name.endsWith('.xls')
+      ) {
+        setError('Bitte laden Sie eine Excel-Datei hoch (.xlsx oder .xls)');
+        return false;
+      }
     }
 
     if (file.size > maxSize) {
@@ -63,15 +79,50 @@ const AdminUpload = () => {
 
   /**
    * Handle file selection from input or drag & drop.
+   * Performs immediate validation using Zod.
    *
    * @param {File} file - Selected file
    */
-  const handleFileSelect = (file) => {
+  const handleFileSelect = async (file) => {
     setError('');
     setSuccess('');
+    setValidationErrors([]);
+    setValidationStats(null);
 
-    if (validateFile(file)) {
-      setSelectedFile(file);
+    // Determine file type based on active section
+    const fileType = activeSection === 'upload' ? 'csv' : 'excel';
+
+    if (!validateFile(file, fileType)) {
+      return;
+    }
+
+    setIsValidating(true);
+
+    try {
+      let validationResult;
+
+      if (fileType === 'csv') {
+        validationResult = await validateVoterCSV(file);
+      } else {
+        validationResult = await validateElectionExcel(file);
+      }
+
+      if (!validationResult.success) {
+        setValidationErrors(validationResult.errors);
+        setSelectedFile(null); // Don't set file if validation fails
+        setError(
+          'Die Datei enthält Validierungsfehler. Bitte korrigieren Sie diese und versuchen Sie es erneut.',
+        );
+      } else {
+        setSelectedFile(file); // Only set file if validation succeeds
+        setValidationStats(validationResult.stats);
+        setSuccess('Datei erfolgreich validiert! Sie können nun hochladen.');
+      }
+    } catch (validationError) {
+      setSelectedFile(null); // Don't set file on validation error
+      setError(`Validierungsfehler: ${validationError.message}`);
+    } finally {
+      setIsValidating(false);
     }
   };
 
@@ -128,10 +179,16 @@ const AdminUpload = () => {
 
   /**
    * Handle file upload to backend.
-   * Simulates upload progress and backend communication.
+   * Only proceeds if file passed validation.
    */
   const handleUpload = async () => {
     if (!selectedFile) {
+      return;
+    }
+
+    // Prevent upload if validation errors exist
+    if (validationErrors.length > 0) {
+      setError('Bitte korrigieren Sie zuerst die Validierungsfehler.');
       return;
     }
 
@@ -152,6 +209,12 @@ const AdminUpload = () => {
         });
       }, 200);
 
+      // TODO: Replace with actual backend API call
+      // Example:
+      // const formData = new FormData();
+      // formData.append('file', selectedFile);
+      // const response = await api.post('/upload/voters', formData);
+
       // Simulate backend call
       await new Promise((resolve) => {
         return setTimeout(resolve, 2000);
@@ -160,11 +223,13 @@ const AdminUpload = () => {
       clearInterval(progressInterval);
       setUploadProgress(100);
 
-      setSuccess('Excel-Datei erfolgreich hochgeladen und verarbeitet!');
+      setSuccess('Datei erfolgreich hochgeladen und verarbeitet!');
       setTimeout(() => {
         setSelectedFile(null);
         setUploadProgress(0);
-        navigate('/home'); // Redirect to home to see the new election
+        setValidationErrors([]);
+        setValidationStats(null);
+        navigate('/home'); // Redirect to home to see the new data
       }, 2000);
     } catch {
       setError('Fehler beim Hochladen der Datei. Bitte versuchen Sie es erneut.');
@@ -174,13 +239,15 @@ const AdminUpload = () => {
   };
 
   /**
-   * Reset file selection.
+   * Reset file selection and validation state.
    */
   const handleReset = () => {
     setSelectedFile(null);
     setError('');
     setSuccess('');
     setUploadProgress(0);
+    setValidationErrors([]);
+    setValidationStats(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -280,9 +347,7 @@ const AdminUpload = () => {
                         activeSection === 'clear' ? theme.colors.primary : 'transparent',
                       color: activeSection === 'clear' ? '#ffffff' : theme.colors.dark,
                     }}
-                    className={`w-full text-left px-3 py-2.5 text-sm font-medium transition-colors ${
-                      activeSection === 'clear' ? '' : hoverClass
-                    }`}
+                    className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
                   >
                     <div className="flex items-center justify-between">
                       <span>Datenbank leeren</span>
@@ -305,9 +370,7 @@ const AdminUpload = () => {
                         activeSection === 'upload' ? theme.colors.primary : 'transparent',
                       color: activeSection === 'upload' ? '#ffffff' : theme.colors.dark,
                     }}
-                    className={`w-full text-left px-3 py-2.5 text-sm font-medium transition-colors ${
-                      activeSection === 'upload' ? '' : hoverClass
-                    }`}
+                    className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
                   >
                     <div className="flex items-center justify-between">
                       <span>CSV-Datei hochladen</span>
@@ -324,9 +387,7 @@ const AdminUpload = () => {
                         activeSection === 'download' ? theme.colors.primary : 'transparent',
                       color: activeSection === 'download' ? '#ffffff' : theme.colors.dark,
                     }}
-                    className={`w-full text-left px-3 py-2.5 text-sm font-medium transition-colors ${
-                      activeSection === 'download' ? '' : hoverClass
-                    }`}
+                    className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
                   >
                     <div className="flex items-center justify-between">
                       <span>Wählerverzeichnis herunterladen</span>
@@ -349,9 +410,7 @@ const AdminUpload = () => {
                         activeSection === 'template' ? theme.colors.primary : 'transparent',
                       color: activeSection === 'template' ? '#ffffff' : theme.colors.dark,
                     }}
-                    className={`w-full text-left px-3 py-2.5 text-sm font-medium transition-colors ${
-                      activeSection === 'template' ? '' : hoverClass
-                    }`}
+                    className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
                   >
                     <div className="flex items-center justify-between">
                       <span>Excel-Vorlage herunterladen</span>
@@ -368,9 +427,7 @@ const AdminUpload = () => {
                         activeSection === 'definition' ? theme.colors.primary : 'transparent',
                       color: activeSection === 'definition' ? '#ffffff' : theme.colors.dark,
                     }}
-                    className={`w-full text-left px-3 py-2.5 text-sm font-medium transition-colors ${
-                      activeSection === 'definition' ? '' : hoverClass
-                    }`}
+                    className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
                   >
                     <div className="flex items-center justify-between">
                       <span>Wahleinstellung hochladen</span>
@@ -387,9 +444,7 @@ const AdminUpload = () => {
                         activeSection === 'load' ? theme.colors.primary : 'transparent',
                       color: activeSection === 'load' ? '#ffffff' : theme.colors.dark,
                     }}
-                    className={`w-full text-left px-3 py-2.5 text-sm font-medium transition-colors ${
-                      activeSection === 'load' ? '' : hoverClass
-                    }`}
+                    className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
                   >
                     <div className="flex items-center justify-between">
                       <span>Einstellungen laden</span>
@@ -412,9 +467,7 @@ const AdminUpload = () => {
                         activeSection === 'export' ? theme.colors.primary : 'transparent',
                       color: activeSection === 'export' ? '#ffffff' : theme.colors.dark,
                     }}
-                    className={`w-full text-left px-3 py-2.5 text-sm font-medium transition-colors ${
-                      activeSection === 'export' ? '' : hoverClass
-                    }`}
+                    className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
                   >
                     <div className="flex items-center justify-between">
                       <span>Wahldaten exportieren</span>
@@ -524,6 +577,76 @@ const AdminUpload = () => {
                     />
                   </div>
 
+                  {/* Validation in Progress */}
+                  {isValidating && (
+                    <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                      <div className="flex items-center gap-3">
+                        <svg
+                          className="animate-spin h-5 w-5 text-blue-600"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          />
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          />
+                        </svg>
+                        <span className="text-sm font-medium text-blue-900">
+                          Datei wird validiert...
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Validation Stats */}
+                  {validationStats && validationErrors.length === 0 && (
+                    <div className="mt-6 p-4 bg-green-50 rounded-lg border border-green-200">
+                      <h4 className="text-sm font-bold text-green-900 mb-3">
+                        ✓ Validierung erfolgreich
+                      </h4>
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        {validationStats.totalVoters !== undefined && (
+                          <div>
+                            <span className="text-green-700 font-medium">Wähler:</span>
+                            <span className="ml-2 text-green-900 font-bold">
+                              {validationStats.totalVoters}
+                            </span>
+                          </div>
+                        )}
+                        {validationStats.faculties !== undefined && (
+                          <div>
+                            <span className="text-green-700 font-medium">Fakultäten:</span>
+                            <span className="ml-2 text-green-900 font-bold">
+                              {validationStats.faculties}
+                            </span>
+                          </div>
+                        )}
+                        {validationStats.voterGroups !== undefined && (
+                          <div>
+                            <span className="text-green-700 font-medium">Studiengänge:</span>
+                            <span className="ml-2 text-green-900 font-bold">
+                              {validationStats.voterGroups}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Validation Errors */}
+                  {validationErrors.length > 0 && (
+                    <ValidationErrors errors={validationErrors} fileType="CSV" />
+                  )}
+
                   {/* Progress Bar */}
                   {uploading && uploadProgress > 0 && (
                     <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
@@ -591,7 +714,7 @@ const AdminUpload = () => {
                           variant="primary"
                           size="large"
                           onClick={handleUpload}
-                          disabled={uploading}
+                          disabled={uploading || isValidating || validationErrors.length > 0}
                           className="flex-1"
                         >
                           {uploading ? (
@@ -613,6 +736,8 @@ const AdminUpload = () => {
                               </svg>
                               <span>Wird hochgeladen...</span>
                             </div>
+                          ) : validationErrors.length > 0 ? (
+                            'Fehler beheben'
                           ) : (
                             'Hochladen'
                           )}
@@ -621,7 +746,7 @@ const AdminUpload = () => {
                           variant="outline"
                           size="large"
                           onClick={handleReset}
-                          disabled={uploading}
+                          disabled={uploading || isValidating}
                         >
                           Abbrechen
                         </ResponsiveButton>
@@ -729,6 +854,92 @@ const AdminUpload = () => {
                     />
                   </div>
 
+                  {/* Validation in Progress */}
+                  {isValidating && (
+                    <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                      <div className="flex items-center gap-3">
+                        <svg
+                          className="animate-spin h-5 w-5 text-blue-600"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          />
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          />
+                        </svg>
+                        <span className="text-sm font-medium text-blue-900">
+                          Datei wird validiert...
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Validation Stats for Excel */}
+                  {validationStats && validationErrors.length === 0 && (
+                    <div className="mt-6 p-4 bg-green-50 rounded-lg border border-green-200">
+                      <h4 className="text-sm font-bold text-green-900 mb-3">
+                        ✓ Validierung erfolgreich
+                      </h4>
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        {validationStats.electionName && (
+                          <div className="col-span-2">
+                            <span className="text-green-700 font-medium">Wahlbezeichnung:</span>
+                            <span className="ml-2 text-green-900 font-bold">
+                              {validationStats.electionName}
+                            </span>
+                          </div>
+                        )}
+                        {validationStats.totalCandidates !== undefined && (
+                          <div>
+                            <span className="text-green-700 font-medium">Kandidaten:</span>
+                            <span className="ml-2 text-green-900 font-bold">
+                              {validationStats.totalCandidates}
+                            </span>
+                          </div>
+                        )}
+                        {validationStats.votesPerBallot !== undefined && (
+                          <div>
+                            <span className="text-green-700 font-medium">Stimmen/Wahlzettel:</span>
+                            <span className="ml-2 text-green-900 font-bold">
+                              {validationStats.votesPerBallot}
+                            </span>
+                          </div>
+                        )}
+                        {validationStats.startDate && (
+                          <div>
+                            <span className="text-green-700 font-medium">Startdatum:</span>
+                            <span className="ml-2 text-green-900 font-bold">
+                              {validationStats.startDate}
+                            </span>
+                          </div>
+                        )}
+                        {validationStats.endDate && (
+                          <div>
+                            <span className="text-green-700 font-medium">Enddatum:</span>
+                            <span className="ml-2 text-green-900 font-bold">
+                              {validationStats.endDate}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Validation Errors for Excel */}
+                  {validationErrors.length > 0 && (
+                    <ValidationErrors errors={validationErrors} fileType="Excel" />
+                  )}
+
                   {/* Progress Bar */}
                   {uploading && uploadProgress > 0 && (
                     <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
@@ -796,7 +1007,7 @@ const AdminUpload = () => {
                           variant="primary"
                           size="large"
                           onClick={handleUpload}
-                          disabled={uploading}
+                          disabled={uploading || isValidating || validationErrors.length > 0}
                           className="flex-1"
                         >
                           {uploading ? (
@@ -818,6 +1029,8 @@ const AdminUpload = () => {
                               </svg>
                               <span>Wird hochgeladen...</span>
                             </div>
+                          ) : validationErrors.length > 0 ? (
+                            'Fehler beheben'
                           ) : (
                             'Hochladen'
                           )}
@@ -826,7 +1039,7 @@ const AdminUpload = () => {
                           variant="outline"
                           size="large"
                           onClick={handleReset}
-                          disabled={uploading}
+                          disabled={uploading || isValidating}
                         >
                           Abbrechen
                         </ResponsiveButton>

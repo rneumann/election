@@ -1,3 +1,4 @@
+import { logger } from '../conf/logger/logger.js';
 import api from './api.js';
 
 /**
@@ -14,11 +15,18 @@ const authService = {
    * @throws {Error} When authentication fails or network error occurs
    */
   login: async (username, password) => {
-    const { data } = await api.post('/auth/login/ldap', {
-      username: username.trim(),
-      password: password.trim(),
-    });
-    return data.user;
+    try {
+      logger.info(`Login attempt for user: ${username}`);
+      const { data } = await api.post('/auth/login/ldap', {
+        username: username.trim(),
+        password: password.trim(),
+      });
+      logger.info(`Login successful for user: ${username}`);
+      return data.user;
+    } catch (error) {
+      logger.error(`Login failed for user: ${username}`, error);
+      throw error;
+    }
   },
 
   /**
@@ -29,13 +37,20 @@ const authService = {
    * @throws {Error} When backend logout request fails
    */
   logout: async () => {
-    const response = await api.delete('/auth/logout', {
-      withCredentials: true,
-    });
-    if (response.status !== 200) {
-      throw new Error('Logout failed');
+    try {
+      logger.info('Logout initiated');
+      const response = await api.delete('/auth/logout', {
+        withCredentials: true,
+      });
+      if (response.status !== 200) {
+        throw new Error('Logout failed');
+      }
+      logger.info('Logout successful');
+      return response.data.redirectUrl;
+    } catch (error) {
+      logger.error('Logout failed:', error);
+      throw error;
     }
-    return response.data.redirectUrl;
   },
 
   /**
@@ -45,10 +60,17 @@ const authService = {
    * @returns {Promise<{username: string, role: string, authProvider: string}|null>} User object if authenticated, null otherwise
    */
   getCurrentUser: async () => {
-    const { data } = await api.get('/auth/me', {
-      withCredentials: true,
-    });
-    return data.user;
+    try {
+      logger.debug('Fetching current user');
+      const { data } = await api.get('/auth/me', {
+        withCredentials: true,
+      });
+      logger.debug('Current user fetched:', data.user?.username);
+      return data.user;
+    } catch (error) {
+      logger.error('Failed to get current user:', error);
+      throw error;
+    }
   },
 
   /**

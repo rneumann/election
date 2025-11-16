@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useTheme } from '../hooks/useTheme.js';
 import ResponsiveButton from '../components/ResponsiveButton.jsx';
+import { logger } from '../conf/logger/logger.js';
 
 /**
  * Login page for user authentication.
@@ -69,6 +70,7 @@ const Login = () => {
     setError('');
     setLoading(true);
 
+    logger.info('Login form submitted');
     try {
       const result = await login(username, password);
 
