@@ -1,5 +1,5 @@
 import { logger } from '../conf/logger/logger.js';
-import { pool } from '../database/db.js';
+import { client } from '../database/db.js';
 
 /**
  * Route handler for exporting aggregated election results.
@@ -52,7 +52,7 @@ export const exportTotalResultsRoute = async (req, res, next) => {
         votes DESC;
     `;
 
-    const dbResult = await pool.query(query, [electionId]);
+    const dbResult = await client.query(query, [electionId]);
 
     if (dbResult.rows.length === 0) {
       logger.warn(`No results found for electionId: ${electionId}`);
@@ -130,7 +130,7 @@ export const exportBallotsRoute = async (req, res, next) => {
         c.electionId = $1;
     `;
 
-    const dbResult = await pool.query(query, [electionId]);
+    const dbResult = await client.query(query, [electionId]);
 
     if (dbResult.rows.length === 0) {
       logger.warn(`No ballots found for electionId: ${electionId}`);
