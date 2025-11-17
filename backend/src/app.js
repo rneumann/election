@@ -13,6 +13,8 @@ import passport from './auth/passport.js';
 import { logger } from './conf/logger/logger.js';
 export const app = express();
 
+const { KC_BASE_URL, CLIENT_ID, APP_URL, KC_REALM } = process.env;
+
 /**
  * Setup Express middlewares and routes
  */
@@ -83,7 +85,7 @@ app.use(
   session({
     secret: await readSecret('SESSION_SECRET'),
     resave: false,
-    rolling: true,
+    rolling: false,
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
@@ -145,6 +147,53 @@ app.use((req, res, next) => {
     req.session.destroy(() => {});
     return res.status(401).json({ message: 'Unauthorized' });
   }
+  next();
+});
+
+/** Session Timeout */
+app.use((req, res, next) => {
+  if (!req.session) {
+    return next();
+  }
+
+  const now = Date.now();
+  const lastActivity = req.session.lastActivity || now;
+  const diff = now - lastActivity;
+
+  logger.debug('Session timeout check');
+  logger.debug(`Last activity: ${lastActivity}`);
+  logger.debug(`Current time: ${now}`);
+
+  logger.info(`The if condition: ${diff > 2 * 60 * 1000}, ${diff} > ${2 * 60 * 1000}`);
+  if (diff > 2 * 60 * 1000) {
+    logger.debug('Session timeout detected logging out user');
+    req.session.destroy(() => {});
+    res.clearCookie('connect.sid', { path: '/', httpOnly: true });
+
+    if (req.user?.authProvider === 'ldap') {
+      res.clearCookie('PHPSESSID', { path: '/', httpOnly: true });
+      res.clearCookie('PHPSESSIDIDP', { path: '/', httpOnly: true });
+      res.clearCookie('PGADMIN_LANGUAGE', { path: '/', httpOnly: true });
+    }
+
+    if (req.user?.authProvider === 'saml') {
+      res.clearCookie('SimpleSAMLAuthTokenIdp', { path: '/', httpOnly: true });
+    }
+
+    if (req.user?.authProvider === 'keycloak') {
+      const logoutUrl =
+        `${KC_BASE_URL}/realms/${KC_REALM}/protocol/openid-connect/logout` +
+        `?post_logout_redirect_uri=${encodeURIComponent(APP_URL)}` +
+        `&client_id=${CLIENT_ID}`;
+      return res.status(401).json({ redirectUrl: logoutUrl });
+    }
+    logger.debug('User logged out successfully');
+    return res.status(401).json({ message: 'Session expired' });
+  }
+
+  logger.debug('Last activity updated');
+  req.session.lastActivity = now;
+  req.session.touch();
   next();
 });
 
