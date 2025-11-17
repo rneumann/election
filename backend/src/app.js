@@ -85,13 +85,13 @@ app.use(
   session({
     secret: await readSecret('SESSION_SECRET'),
     resave: false,
-    rolling: false,
+    rolling: true,
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict', // need to have the same origin
-      maxAge: 1000 * 60 * 2, // 2 minutes
+      maxAge: 1000 * 60 * 5,
     },
   }),
 );
@@ -152,17 +152,13 @@ app.use((req, res, next) => {
 
 /** Session Timeout */
 app.use((req, res, next) => {
-  if (!req.session) {
+  if (!req.session || !req.user) {
     return next();
   }
 
   const now = Date.now();
   const lastActivity = req.session.lastActivity || now;
   const diff = now - lastActivity;
-
-  logger.debug('Session timeout check');
-  logger.debug(`Last activity: ${lastActivity}`);
-  logger.debug(`Current time: ${now}`);
 
   logger.info(`The if condition: ${diff > 2 * 60 * 1000}, ${diff} > ${2 * 60 * 1000}`);
   if (diff > 2 * 60 * 1000) {

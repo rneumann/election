@@ -1,9 +1,8 @@
 import crypto from 'crypto';
 import express from 'express';
-import { ensureAuthenticated, ensureHasRole } from '../auth/auth.js';
+import { ensureAuthenticated, ensureHasRole, loginRoute, logoutRoute } from '../auth/auth.js';
 import passport from '../auth/passport.js';
 import { logger } from '../conf/logger/logger.js';
-import { loginRoute, logoutRoute } from './auth.route.js';
 export const router = express.Router();
 
 /**
@@ -46,6 +45,7 @@ router.post(
   (req, res) => {
     req.session.sessionSecret = crypto.randomBytes(32).toString('hex');
     req.session.freshUser = true;
+    req.session.lastActivity = Date.now();
     logger.debug('SAML set freshUser to true');
     res.redirect('http://localhost:5173/home');
   },
@@ -63,6 +63,7 @@ router.get(
   (req, res) => {
     req.session.sessionSecret = crypto.randomBytes(32).toString('hex');
     req.session.freshUser = true;
+    req.session.lastActivity = Date.now();
     logger.debug('Keycloak set freshUser to true');
     res.redirect('http://localhost:5173/home');
   },
