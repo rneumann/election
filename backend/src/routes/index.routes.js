@@ -4,7 +4,7 @@ import passport from '../auth/passport.js';
 import { logger } from '../conf/logger/logger.js';
 import { loginRoute, logoutRoute } from './auth.route.js';
 import { importWahlerRoute } from './upload.route.js';
-import { exportResultsRoute } from './download.route.js';
+import { exportTotalResultsRoute, exportBallotsRoute } from './download.route.js';
 export const router = express.Router();
 
 /**
