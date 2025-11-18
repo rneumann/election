@@ -1,8 +1,11 @@
-// @ts-nocheck
-import { Client } from 'ldapts';
 import 'dotenv/config';
+import crypto from 'crypto';
+import passport from 'passport';
+import axios from 'axios';
+import qs from 'qs';
 import { logger } from '../conf/logger/logger.js';
 import { readSecret } from '../security/secret-reader.js';
+const { KC_BASE_URL, KC_REALM, CLIENT_ID, CLIENT_SECRET } = process.env;
 
 /**
  * Returns an object with the admin user's username and password.
@@ -27,14 +30,14 @@ const getCommitteeUser = async () => ({
 });
 
 /**
- * Login functionality for users, admin and committee.
- * using LDAP for normal users.
- * @param {string} username the username to be validated
- * @param {string} password the password to be validated
- * @returns {Promise<object>} a user object with username and role or null
+ * Checks if the given username and password match the special admin or committee user.
+ * The special users are retrieved from the getAdminUser and getCommitteeUser functions.
+ * If a match is found, returns an object with the username and role (admin or committee).
+ * @param {string} username - The username to check
+ * @param {string} password - The password to check
+ * @returns {Promise<object>} An object with the username and role, or null if no match is found
  */
-export const login = async (username, password) => {
-  const { AD_URL, AD_BASE_DN, AD_DOMAIN } = process.env;
+export const checkAdminOrCommittee = async (username, password) => {
   const adminUser = await getAdminUser();
   const committeeUser = await getCommitteeUser();
 
@@ -48,46 +51,160 @@ export const login = async (username, password) => {
     logger.debug('Committee user authenticated successfully.');
     return { username: committeeUser.username, role: 'committee' };
   }
-  // Normal user via LDAP
-  if (!AD_URL || !AD_BASE_DN || !AD_DOMAIN) {
-    logger.error('LDAP configuration is missing. Cannot authenticate user.');
-    return undefined;
-  }
+};
 
-  const client = new Client({
-    url: AD_URL,
-    timeout: 5000,
-    connectTimeout: 5000,
+/* eslint-disable */
+/**
+ * Login route for users, admin and committee.
+ * This route expects a POST request with a request body containing
+ * the username and password.
+ * @param req - The Express request object
+ * @param res - The Express response object
+ * @param next - The Express next function
+ * @param strategy
+ * @returns {Promise<Response>} A Promise resolving to an Express response object
+ */
+export const loginRoute =
+  (strategy = 'ldap') =>
+  async (req, res, next) => {
+    logger.debug(`Login route accessed with strategy: ${strategy}`);
+    if (req.method !== 'POST') {
+      logger.warn(`Invalid HTTP method: ${req.method}`);
+      return res.status(405).json({ message: 'Method Not Allowed' });
+    }
+    if (req.headers['content-type'] !== 'application/json') {
+      logger.warn('Invalid Content-Type header');
+      return res.status(415).json({ message: 'Content-Type must be application/json' });
+    }
+    if (!req.body) {
+      logger.warn('Request body is missing');
+      return res.status(400).json({ message: 'Request body is required' });
+    }
+
+    /**
+     * Extract username and password from request body
+     */
+    const { username, password } = req.body;
+
+    if (!username || !password) {
+      logger.warn('Username or password missing in request body');
+      return res.status(400).json({ message: 'Username and password are required' });
+    }
+
+    /**
+     *  Try to authenticate the user via passport
+     */
+    passport.authenticate(strategy, (err, user) => {
+      if (err) {
+        logger.error('Authentication error:', err);
+        return res.status(500).json({ message: 'Authentication error' });
+      }
+      if (!user) {
+        logger.warn('Authentication failed for user:', username);
+        return res.status(401).json({ message: 'Authentication failed' });
+      }
+      req.logIn(user, (err) => {
+        if (err) {
+          logger.error('Login error:', err);
+          return res.status(500).json({ message: 'Login error' });
+        }
+        logger.debug('User authenticated successfully:', username);
+        req.session.sessionSecret = crypto.randomBytes(32).toString('hex');
+        req.session.freshUser = true;
+        req.session.lastActivity = Date.now();
+        logger.debug('LDAP set freshUser to true');
+        return res.status(200).json({ message: 'Login successful', user });
+      });
+    })(req, res, next);
+  };
+
+/**
+ * Logout route for users.
+ * This route expects a GET request and logs out the current user.
+ * @param req - The Express request object
+ * @param res - The Express response object
+ * @returns A Promise resolving to an Express response object
+ */
+export const logoutRoute = async (req, res) => {
+  const user = req.user;
+  logger.debug('Logout route accessed');
+  logger.debug(`Logging out user: ${JSON.stringify(user)}`);
+  req.logout(async (err) => {
+    if (err) {
+      logger.error('Logout error:', err);
+      return res.status(500).json({ message: 'error while logging out' });
+    }
+
+    req.session.destroy(async (err) => {
+      if (err) {
+        logger.error('Session destroy error:', err);
+        return res.status(500).json({ message: 'Session destroy error' });
+      }
+      res.clearCookie('connect.sid', { path: '/', httpOnly: true });
+
+      if (user?.authProvider === 'ldap') {
+        res.clearCookie('PHPSESSID', { path: '/', httpOnly: true });
+        res.clearCookie('PHPSESSIDIDP', { path: '/', httpOnly: true });
+        res.clearCookie('PGADMIN_LANGUAGE', { path: '/', httpOnly: true });
+        logger.debug('LDAP user logged out successfully');
+        return res.status(200).json({ message: 'Logout successful' });
+      }
+
+      // if (user?.authProvider === 'saml') {
+      //   res.clearCookie('SimpleSAMLAuthTokenIdp', { path: '/', httpOnly: true });
+      //   res.clearCookie('PHPSESSIDIDP', { path: '/', httpOnly: true });
+      //   logger.debug('SAML user logged out successfully');
+      //   return res.status(200).json({ message: 'Logout successful' });
+      // }
+
+      if (user?.authProvider === 'keycloak' && user?.refreshToken) {
+        logger.debug(
+          `Try to logout user from Keycloak with redirect_uri: ${KC_BASE_URL}/realms/${KC_REALM}/protocol/openid-connect/logout?redirect_uri=${encodeURIComponent('http://localhost:5173/login')}`,
+        );
+
+        const response = await axios.post(
+          `${KC_BASE_URL}/realms/${KC_REALM}/protocol/openid-connect/logout`,
+          qs.stringify({
+            client_id: CLIENT_ID,
+            client_secret: CLIENT_SECRET,
+            refresh_token: user.refreshToken,
+          }),
+          {
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+            },
+          },
+        );
+        logger.debug(`Keycloak user logged out successfully: ${response.status}`);
+        if (response.status !== 200) {
+          return res.status(500).json({ message: 'Logout error' });
+        }
+        return res.status(200).json({ message: 'Logout successful' });
+      }
+
+      // Fallback für andere Auth-Provider
+      logger.debug('User logged out successfully and session destroyed');
+      return res.status(200).json({ message: 'Logout successful' });
+    });
   });
-
-  try {
-    logger.debug(`Authenticating user via LDAP with: cn=${username},cn=users,${AD_BASE_DN}`);
-    await client.bind(`cn=${username},cn=users,${AD_BASE_DN}`, password);
-    logger.debug(`User ${username} authenticated successfully via LDAP.`);
-    return { username, role: 'voter' };
-  } catch (error) {
-    logger.error(`Error authenticating user ${username} via LDAP: ${error.message}`);
-    return undefined;
-  } finally {
-    await client.unbind();
-  }
 };
 
 /**
  * retrieve role information for the given user
  * @param {String} username the user to look up
+ * @param authProvider
  * @returns a user object with username and role
  */
-export const getUserInfo = async (username) => {
+export const getUserInfo = async (username, authProvider) => {
   const adminUser = await getAdminUser();
   const committeeUser = await getCommitteeUser();
   if (username === adminUser.username) {
-    return { username: adminUser.username, role: 'admin' };
+    return { username: adminUser.username, role: 'admin', authProvider: authProvider };
   }
   if (username === committeeUser.username) {
-    return { username: committeeUser.username, role: 'committee' };
+    return { username: committeeUser.username, role: 'committee', authProvider: authProvider };
   }
-  return { username: username, role: 'voter' };
+  return { username: username, role: 'voter', authProvider: authProvider };
 };
 
 /**
