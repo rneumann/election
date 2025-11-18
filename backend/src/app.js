@@ -13,8 +13,6 @@ import passport from './auth/passport.js';
 import { logger } from './conf/logger/logger.js';
 export const app = express();
 
-const { KC_BASE_URL, CLIENT_ID, APP_URL, KC_REALM } = process.env;
-
 /**
  * Setup Express middlewares and routes
  */
@@ -91,7 +89,7 @@ app.use(
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict', // need to have the same origin
-      maxAge: 1000 * 60 * 5,
+      maxAge: 1000 * 60 * 3,
     },
   }),
 );
@@ -131,8 +129,8 @@ app.use((req, res, next) => {
   if (req.session.freshUser) {
     logger.debug('Fresh user detected');
     req.session.fingerprint = fingerprint;
-    logger.debug(`Session fingerprint set to: ${fingerprint}`);
-    logger.debug(`Req.Session after fingerprint check: ${JSON.stringify(req.session)}`);
+    //logger.debug(`Session fingerprint set to: ${fingerprint}`);
+    //logger.debug(`Req.Session after fingerprint check: ${JSON.stringify(req.session)}`);
     delete req.session.freshUser;
     return next();
   }
@@ -151,11 +149,11 @@ app.use((req, res, next) => {
 });
 
 /** Session Timeout */
-app.use((req, res, next) => {
+app.use(async (req, res, next) => {
   if (!req.session || !req.user) {
     return next();
   }
-
+  const user = req.user;
   const now = Date.now();
   const lastActivity = req.session.lastActivity || now;
   const diff = now - lastActivity;
@@ -166,23 +164,17 @@ app.use((req, res, next) => {
     req.session.destroy(() => {});
     res.clearCookie('connect.sid', { path: '/', httpOnly: true });
 
-    if (req.user?.authProvider === 'ldap') {
+    if (user?.authProvider === 'ldap') {
       res.clearCookie('PHPSESSID', { path: '/', httpOnly: true });
       res.clearCookie('PHPSESSIDIDP', { path: '/', httpOnly: true });
       res.clearCookie('PGADMIN_LANGUAGE', { path: '/', httpOnly: true });
     }
 
-    if (req.user?.authProvider === 'saml') {
-      res.clearCookie('SimpleSAMLAuthTokenIdp', { path: '/', httpOnly: true });
-    }
+    // if (user?.authProvider === 'saml') {
+    //   res.clearCookie('SimpleSAMLAuthTokenIdp', { path: '/', httpOnly: true });
+    //   res.clearCookie('PHPSESSIDIDP', { path: '/', httpOnly: true });
+    // }
 
-    if (req.user?.authProvider === 'keycloak') {
-      const logoutUrl =
-        `${KC_BASE_URL}/realms/${KC_REALM}/protocol/openid-connect/logout` +
-        `?post_logout_redirect_uri=${encodeURIComponent(APP_URL)}` +
-        `&client_id=${CLIENT_ID}`;
-      return res.status(401).json({ redirectUrl: logoutUrl });
-    }
     logger.debug('User logged out successfully');
     return res.status(401).json({ message: 'Session expired' });
   }

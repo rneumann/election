@@ -9,7 +9,7 @@ import { logger } from './logger.js';
  * @param {Response} res - the Express response object
  * @param {() => void} next - the Express next function
  */
-export const errorHandler = (err, req, res, next) => {
+export const errorHandler = (err, req, res) => {
   logger.error('Unhandled error:', {
     message: err.message,
     stack: err.stack,

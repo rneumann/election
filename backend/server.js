@@ -9,7 +9,7 @@ dotenv.config();
 
 const { PORT, NODE_ENV } = process.env;
 
-//await connectDb();
+await connectDb();
 
 app.listen(PORT, () => {
   logger.info(String.raw`

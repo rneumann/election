@@ -1,9 +1,11 @@
 import 'dotenv/config';
 import crypto from 'crypto';
 import passport from 'passport';
+import axios from 'axios';
+import qs from 'qs';
 import { logger } from '../conf/logger/logger.js';
 import { readSecret } from '../security/secret-reader.js';
-const { KC_BASE_URL, KC_REALM, CLIENT_ID } = process.env;
+const { KC_BASE_URL, KC_REALM, CLIENT_ID, CLIENT_SECRET } = process.env;
 
 /**
  * Returns an object with the admin user's username and password.
@@ -127,14 +129,13 @@ export const logoutRoute = async (req, res) => {
   const user = req.user;
   logger.debug('Logout route accessed');
   logger.debug(`Logging out user: ${JSON.stringify(user)}`);
-  logger.debug(`Identity provider: ${user?.authProvider}`);
-  req.logout((err) => {
+  req.logout(async (err) => {
     if (err) {
       logger.error('Logout error:', err);
       return res.status(500).json({ message: 'error while logging out' });
     }
 
-    req.session.destroy((err) => {
+    req.session.destroy(async (err) => {
       if (err) {
         logger.error('Session destroy error:', err);
         return res.status(500).json({ message: 'Session destroy error' });
@@ -149,24 +150,36 @@ export const logoutRoute = async (req, res) => {
         return res.status(200).json({ message: 'Logout successful' });
       }
 
-      if (user?.authProvider === 'saml') {
-        res.clearCookie('SimpleSAMLAuthTokenIdp', { path: '/', httpOnly: true });
-        res.clearCookie('PHPSESSIDIDP', { path: '/', httpOnly: true });
-        logger.debug('SAML user logged out successfully');
-        return res.status(200).json({ message: 'Logout successful' });
-      }
+      // if (user?.authProvider === 'saml') {
+      //   res.clearCookie('SimpleSAMLAuthTokenIdp', { path: '/', httpOnly: true });
+      //   res.clearCookie('PHPSESSIDIDP', { path: '/', httpOnly: true });
+      //   logger.debug('SAML user logged out successfully');
+      //   return res.status(200).json({ message: 'Logout successful' });
+      // }
 
-      if (user?.authProvider === 'keycloak') {
+      if (user?.authProvider === 'keycloak' && user?.refreshToken) {
         logger.debug(
           `Try to logout user from Keycloak with redirect_uri: ${KC_BASE_URL}/realms/${KC_REALM}/protocol/openid-connect/logout?redirect_uri=${encodeURIComponent('http://localhost:5173/login')}`,
         );
-        //const logoutUrl = `${KC_BASE_URL}/realms/${KC_REALM}/protocol/openid-connect/logout?redirect_uri='http://localhost:5173/login'`;
-        const logoutUrl =
-          `${KC_BASE_URL}/realms/${KC_REALM}/protocol/openid-connect/logout` +
-          `?post_logout_redirect_uri=${encodeURIComponent('http://localhost:5173/login')}` +
-          `&client_id=${CLIENT_ID}`;
-        logger.debug('Keycloak user logged out locally, redirecting to Keycloak logout');
-        return res.status(200).json({ redirectUrl: logoutUrl });
+
+        const response = await axios.post(
+          `${KC_BASE_URL}/realms/${KC_REALM}/protocol/openid-connect/logout`,
+          qs.stringify({
+            client_id: CLIENT_ID,
+            client_secret: CLIENT_SECRET,
+            refresh_token: user.refreshToken,
+          }),
+          {
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+            },
+          },
+        );
+        logger.debug(`Keycloak user logged out successfully: ${response.status}`);
+        if (response.status !== 200) {
+          return res.status(500).json({ message: 'Logout error' });
+        }
+        return res.status(200).json({ message: 'Logout successful' });
       }
 
       // Fallback für andere Auth-Provider
