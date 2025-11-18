@@ -9,6 +9,7 @@ import { logger } from './logger.js';
  * @param {Response} res - the Express response object
  * @param {() => void} next - the Express next function
  */
+/* eslint-disable */
 export const errorHandler = (err, req, res, next) => {
   logger.error('Unhandled error:', {
     message: err.message,

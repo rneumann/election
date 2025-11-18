@@ -1,0 +1,74 @@
+{
+  "id": "testrealm",
+  "realm": "TestRealm",
+  "enabled": true,
+  "users": [
+    {
+      "username": "admin",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Admin123!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["admin"]
+    },
+    {
+      "username": "committee",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Committee123!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["committee"]
+    },
+    {
+      "username": "voter1",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Voter123!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["voter"]
+    }
+  ],
+  "roles": {
+    "realm": [
+      {
+        "name": "admin"
+      },
+      {
+        "name": "committee"
+      },
+      {
+        "name": "voter"
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "react-app",
+      "enabled": true,
+      "publicClient": false,
+      "redirectUris": ["http://localhost:5173/*", ["http://localhost:3000/api/auth/callback/kc"]],
+      "webOrigins": ["http://localhost:5173"],
+      "protocol": "openid-connect",
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": false,
+      "authorizationServicesEnabled": false
+    }
+  ]
+}
