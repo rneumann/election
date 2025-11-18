@@ -35,7 +35,6 @@ const authService = {
     if (response.status !== 200) {
       throw new Error('Logout failed');
     }
-    console.log(response.data.redirectUrl);
     return response.data.redirectUrl;
   },
 

@@ -47,8 +47,8 @@ export const AuthProvider = ({ children }) => {
       const response = await api.delete('/auth/logout', { withCredentials: true });
       const redirectUrl = response.data.redirectUrl;
       window.location.href = redirectUrl; // Browser folgt Redirect → Keycloak-Session wird beendet
-    } catch (error) {
-      console.error('Logout failed:', error);
+    } catch {
+      throw new Error('Logout failed');
     } finally {
       setUser(undefined);
       setIsAuthenticated(false);
