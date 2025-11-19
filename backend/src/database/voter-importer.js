@@ -11,6 +11,16 @@ import { client } from './db.js';
 
 const allowedColumns = ['uid', 'lastname', 'firstname', 'mtknr', 'faculty', 'votergroup', 'notes'];
 
+const safeRow = (row) => ({
+  uid: row.uid ?? null,
+  lastname: row.lastname ?? null,
+  firstname: row.firstname ?? null,
+  mtknr: row.mtknr ?? null,
+  faculty: row.faculty ?? null,
+  votergroup: row.votergroup ?? null,
+  notes: row.notes ?? null,
+});
+
 /**
  * Parses a CSV file and returns an array of objects.
  * @param {string} path - The path to the CSV file.
@@ -22,11 +32,7 @@ const parseCsv = (path) => {
     fs.createReadStream(path)
       .pipe(csv())
       .on('data', (data) => {
-        const safe = {};
-        for (const col of allowedColumns) {
-          safe[col] = data[col] ?? null;
-        }
-        results.push(safe);
+        results.push(safeRow(data));
       })
       .on('end', () => resolve(results))
       .on('error', reject);
@@ -37,18 +43,13 @@ const parseCsv = (path) => {
  * Parses an Excel file (first sheet) and returns an array of objects.
  * @param {string} path - The path to the Excel file.
  * @returns {Object[]} The parsed data.
- */
+ *  */
 const parseExcel = (path) => {
   const workbook = xlsx.readFile(path);
   const sheetName = workbook.SheetNames[0];
   const worksheet = workbook.Sheets[sheetName];
-  return xlsx.utils.sheet_to_json(worksheet).map((row) => {
-    const safe = {};
-    for (const col of allowedColumns) {
-      safe[col] = row[col] ?? null;
-    }
-    return safe;
-  });
+
+  return xlsx.utils.sheet_to_json(worksheet).map((row) => safeRow(row));
 };
 
 /**
@@ -76,14 +77,16 @@ const insertVoters = async (data) => {
     })
     .join(', ');
 
-  const allValues = data.flatMap((row) =>
-    allowedColumns.map((c) => {
-      if (Object.prototype.hasOwnProperty.call(row, c)) {
-        return row[c];
-      }
-      return null;
-    }),
-  );
+  const allValues = data.flatMap((row) => [
+    row.uid,
+    row.lastname,
+    row.firstname,
+    row.mtknr,
+    row.faculty,
+    row.votergroup,
+    row.notes,
+  ]);
+
   const query = {
     text: `INSERT INTO voters (${columns}) VALUES ${valuePlaceholders}`,
     values: allValues,
