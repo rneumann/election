@@ -11,6 +11,7 @@ import { swaggerSpec } from './conf/swagger/swagger.js';
 import { healthRouter } from './routes/health.route.js';
 import passport from './auth/passport.js';
 import { logger } from './conf/logger/logger.js';
+import { voterRouter } from './routes/voter.routes.js';
 export const app = express();
 
 /**
@@ -194,6 +195,7 @@ app.use('/', healthRouter);
  * Binding API routes
  */
 app.use('/api', router);
+app.use('/voter', voterRouter);
 
 /**
  * Error handling middleware
