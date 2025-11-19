@@ -1,6 +1,5 @@
 // auth/passport.js
 import passport from 'passport';
-import { logger } from '../conf/logger/logger.js';
 import { ldapStrategy } from './strategies/ldap.strategy.js';
 import { getUserInfo } from './auth.js';
 import { samlStrategy } from './strategies/saml.strategy.js';
@@ -15,13 +14,18 @@ passport.serializeUser((user, done) => {
   done(null, {
     username: user.username,
     authProvider: user.authProvider,
+    accessToken: user.accessToken,
+    refreshToken: user.refreshToken,
     role: user.role,
   });
 });
 
 passport.deserializeUser(async (obj, done) => {
-  const user = await getUserInfo(obj.username, obj.authProvider);
-  logger.debug(`Deserialized user: ${JSON.stringify(user)}`);
+  let user = await getUserInfo(obj.username, obj.authProvider);
+  if (obj.authProvider === 'keycloak') {
+    user.accessToken = obj.accessToken;
+    user.refreshToken = obj.refreshToken;
+  }
   done(null, user);
 });
 

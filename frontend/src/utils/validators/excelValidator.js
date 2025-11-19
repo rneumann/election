@@ -142,7 +142,7 @@ export const validateElectionExcel = async (file) => {
   const candidateCount = validationResult.data.candidates.length;
   const seats = validationResult.data.info.Plätze;
   const isReferendum = candidateCount === 0;
-
+  /*eslint-disable*/
   return {
     success: true,
     data: validationResult.data,

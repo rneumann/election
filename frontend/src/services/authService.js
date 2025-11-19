@@ -6,78 +6,63 @@ import api from './api.js';
  */
 const authService = {
   /**
-   * Authenticates user via LDAP with username and password.
-  
-  
-   * @param {string} username - User's LDAP username (RZ-Benutzerkürzel)
+   * Login user with username and password.
+   * Sends credentials to backend /api/auth/login endpoint.
+   *
+   * @param {string} username - User's RZ-Benutzerkürzel
    * @param {string} password - User's password
-   * @returns {Promise<{username: string, role: string, authProvider: string}>} Authenticated user object with role
-   * @throws {Error} When authentication fails or network error occurs
+   * @returns {Promise<{username: string, role: string}>} User data with role (admin, committee, voter)
+   * @throws {Error} When authentication fails
    */
   login: async (username, password) => {
-    try {
-      logger.info(`Login attempt for user: ${username}`);
-      const { data } = await api.post('/auth/login/ldap', {
-        username: username.trim(),
-        password: password.trim(),
-      });
-      logger.info(`Login successful for user: ${username}`);
-      return data.user;
-    } catch (error) {
-      logger.error(`Login failed for user: ${username}`, error);
-      throw error;
-    }
+    const { data } = await api.post('/auth/login/ldap', {
+      username: username.trim(),
+      password: password.trim(),
+    });
+    return data.user;
   },
 
   /**
-   * Terminates user session on backend and returns provider-specific logout URL.
+   * Logout user and clear session data.
+   * Currently only clears local storage.
+   * Future: May need to call backend logout endpoint.
    *
-   *
-   * @returns {Promise<string|undefined>} Logout redirect URL for external providers, undefined for internal auth
-   * @throws {Error} When backend logout request fails
+   * @returns {void}
    */
   logout: async () => {
-    try {
-      logger.info('Logout initiated');
-      const response = await api.delete('/auth/logout', {
-        withCredentials: true,
-      });
-      if (response.status !== 200) {
-        throw new Error('Logout failed');
-      }
-      logger.info('Logout successful');
-      return response.data.redirectUrl;
-    } catch (error) {
-      logger.error('Logout failed:', error);
-      throw error;
+    const response = await api.delete('/auth/logout', {
+      withCredentials: true,
+    });
+    if (response.status !== 200) {
+      throw new Error('Logout failed');
     }
+    return response.data.redirectUrl;
   },
 
   /**
-   * Retrieves current authenticated user from backend session.
-   * Calls /api/auth/me endpoint to verify session validity and get user data.
+   * Get current user from session storage.
    *
-   * @returns {Promise<{username: string, role: string, authProvider: string}|null>} User object if authenticated, null otherwise
+   * @returns {{username: string, role: string} | null} Current user or null
    */
   getCurrentUser: async () => {
-    try {
-      logger.debug('Fetching current user');
-      const { data } = await api.get('/auth/me', {
-        withCredentials: true,
-      });
-      logger.debug('Current user fetched:', data.user?.username);
-      return data.user;
-    } catch (error) {
-      logger.error('Failed to get current user:', error);
-      throw error;
+    const response = await api.get('/auth/me', {
+      withCredentials: true,
+    });
+    if (!response.status !== 200) {
+      if (response.status === 401) {
+        logger.debug('No current user');
+        return undefined;
+      }
+      logger.error('Error getting current user');
+      return undefined;
     }
+    return response.data;
   },
 
   /**
-   * Checks if user has valid authentication session.
- 
+   * Check if user is authenticated.
    *
-   * @returns {boolean} True if session storage indicates authenticated state
+   * @returns {boolean} True if user is authenticated
    */
   isAuthenticated: () => sessionStorage.getItem('isAuthenticated') === 'true',
 };

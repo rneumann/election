@@ -1,8 +1,11 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useTheme } from '../hooks/useTheme.js';
 import ResponsiveButton from '../components/ResponsiveButton.jsx';
+import { voterApi } from '../services/voterApi.js';
+import { Modal } from '../components/Modal.jsx';
+import { logger } from '../conf/logger/logger.js';
 
 /**
  * Main dashboard for authenticated users.
@@ -10,6 +13,9 @@ import ResponsiveButton from '../components/ResponsiveButton.jsx';
  * @returns User dashboard with election overview and navigation
  */
 const Home = () => {
+  const [elections, setElections] = useState([]);
+  const [open, setOpen] = useState(false);
+  const [selectedElectionId, setSelectedElectionId] = useState(undefined);
   const { user, logout } = useAuth();
   const theme = useTheme();
   const navigate = useNavigate();
@@ -21,6 +27,22 @@ const Home = () => {
     }
   }, [user, navigate]);
 
+  useEffect(() => {
+    const fetchElections = async () => {
+      const response = await voterApi.getElections();
+      setElections(response);
+    };
+    fetchElections();
+  }, []);
+
+  const dateOptions = {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  };
   return (
     <div className="min-h-screen flex flex-col bg-brand-light">
       {/* Header - Sticky on scroll */}
@@ -66,9 +88,9 @@ const Home = () => {
           </div>
 
           {/* Info Cards - For all users */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mt-6 sm:mt-8">
+          <div className="grid grid-cols-1 sm:grid-cols-1 lg:grid-cols-1 gap-4 sm:gap-6 mt-6 sm:mt-8">
             {/* Card 1: Aktuelle Wahlen */}
-            <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 sm:p-6 rounded-lg border border-blue-200 hover:shadow-lg transition-shadow duration-200">
+            <div className="bg-gradient-to-br from-blue-100 to-blue-200 p-4 sm:p-6 rounded-lg border border-blue-200 hover:shadow-lg transition-shadow duration-200">
               <div className="flex items-start gap-3 mb-3">
                 <div className="bg-blue-600 text-white rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -90,8 +112,52 @@ const Home = () => {
                 </div>
               </div>
               <div className="mt-4 pt-4 border-t border-blue-200">
-                <span className="text-2xl font-bold text-blue-600">0</span>
-                <span className="text-xs text-blue-600 ml-1">verfügbar</span>
+                {elections.length === 0 ? (
+                  <p className="text-sm text-blue-600">Keine verfügbaren Wahlen gefunden.</p>
+                ) : (
+                  <ul className="space-y-4">
+                    {elections.map((election) => (
+                      <li
+                        key={election.id}
+                        className="p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors flex flex-col gap-2"
+                      >
+                        {/* Wahlart */}
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-1">
+                          <span className="font-semibold text-sm text-blue-600">Wahlart:</span>
+                          <span className="text-sm text-blue-600">{election.description}</span>
+                        </div>
+
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-1">
+                          <span className="font-semibold text-sm text-blue-600">Datum:</span>
+                          <span className="text-sm text-blue-600">
+                            <span className="block sm:inline">
+                              von: {new Date(election.start).toLocaleString('de-DE', dateOptions)}
+                            </span>
+                            <span className="hidden sm:inline"> - </span>
+                            <span className="block sm:inline">
+                              bis: {new Date(election.end).toLocaleString('de-DE', dateOptions)}
+                            </span>
+                          </span>
+                        </div>
+
+                        {/* Button to start voting */}
+                        <div>
+                          <ResponsiveButton
+                            size="small"
+                            onClick={() => {
+                              setOpen(true);
+                              logger.debug(`current election id settet to: ${election.id}`);
+                              setSelectedElectionId(election.id);
+                            }}
+                          >
+                            Wahl starten
+                          </ResponsiveButton>
+                        </div>
+                      </li>
+                    ))}
+                    <Modal open={open} setOpen={setOpen} electionId={selectedElectionId}></Modal>
+                  </ul>
+                )}
               </div>
             </div>
 

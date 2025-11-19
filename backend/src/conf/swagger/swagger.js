@@ -12,7 +12,7 @@ const swaggerOptionsb = {
     info: {
       title: 'Election API',
       version: '1.0.0',
-      description: 'API Dokumentation für die Wahlverwaltung',
+      description: 'API Dokumentation für die Wahlverwaltung + Login & Logout',
     },
     servers: [
       {

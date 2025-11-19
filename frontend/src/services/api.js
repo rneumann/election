@@ -7,7 +7,6 @@ import { logger } from '../conf/logger/logger.js';
  * For local development, Vite proxy will forward /api requests to backend.
  */
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
-
 /**
  * Axios instance with default configuration.
  * All API requests should use this instance.
