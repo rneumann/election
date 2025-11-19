@@ -123,6 +123,8 @@ voterRouter.get('/elections', async (req, res) => {
  *                        type: string
  *                      listnum:
  *                        type: number
+ *      400:
+ *        description: Election id is required
  *      404:
  *        description: No election found
  *      405:
@@ -131,10 +133,15 @@ voterRouter.get('/elections', async (req, res) => {
  *        description: Internal Server Error
  */
 voterRouter.get('/elections/:id', async (req, res) => {
-  logger.debug(`Election route accessed with id: ${req.params.id}`);
+  const id = req.params.id;
+  logger.debug(`Election route accessed with id: ${id}`);
   if (req.method !== 'GET') {
     logger.warn(`Invalid HTTP method: ${req.method}`);
     return res.status(405).json({ message: 'Method Not Allowed' });
+  }
+  if (!id || id === 'undefined') {
+    logger.warn('Election id is missing');
+    return res.status(400).json({ message: 'Election id is required' });
   }
   const { ok, data } = await getElectionById(req.params.id);
   if (!ok) {

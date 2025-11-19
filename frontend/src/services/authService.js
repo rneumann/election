@@ -1,3 +1,4 @@
+import { logger } from '../conf/logger/logger.js';
 import api from './api.js';
 
 /**
@@ -44,10 +45,18 @@ const authService = {
    * @returns {{username: string, role: string} | null} Current user or null
    */
   getCurrentUser: async () => {
-    const { data } = await api.get('/auth/me', {
+    const response = await api.get('/auth/me', {
       withCredentials: true,
     });
-    return data.user;
+    if (!response.status !== 200) {
+      if (response.status === 401) {
+        logger.debug('No current user');
+        return undefined;
+      }
+      logger.error('Error getting current user');
+      return undefined;
+    }
+    return response.data;
   },
 
   /**

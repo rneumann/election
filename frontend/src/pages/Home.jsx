@@ -4,6 +4,8 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { useTheme } from '../hooks/useTheme.js';
 import ResponsiveButton from '../components/ResponsiveButton.jsx';
 import { voterApi } from '../services/voterApi.js';
+import { Modal } from '../components/Modal.jsx';
+import { logger } from '../conf/logger/logger.js';
 
 /**
  * Main dashboard for authenticated users.
@@ -12,6 +14,8 @@ import { voterApi } from '../services/voterApi.js';
  */
 const Home = () => {
   const [elections, setElections] = useState([]);
+  const [open, setOpen] = useState(false);
+  const [selectedElectionId, setSelectedElectionId] = useState(undefined);
   const { user, logout } = useAuth();
   const theme = useTheme();
   const navigate = useNavigate();
@@ -115,7 +119,7 @@ const Home = () => {
                     {elections.map((election) => (
                       <li
                         key={election.id}
-                        className="p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors flex flex-col gap-2 cursor-pointer"
+                        className="p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors flex flex-col gap-2"
                       >
                         {/* Wahlart */}
                         <div className="flex flex-col sm:flex-row sm:items-center gap-1">
@@ -136,24 +140,22 @@ const Home = () => {
                           </span>
                         </div>
 
-                        {/* Icon */}
-                        <div className="mt-2 sm:mt-0 w-5 h-5 text-blue-600">
-                          <svg
-                            className="w-5 h-5 text-blue-600"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
+                        {/* Button to start voting */}
+                        <div>
+                          <ResponsiveButton
+                            size="small"
+                            onClick={() => {
+                              setOpen(true);
+                              logger.debug(`current election id settet to: ${election.id}`);
+                              setSelectedElectionId(election.id);
+                            }}
                           >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"
-                            />
-                          </svg>
+                            Wahl starten
+                          </ResponsiveButton>
                         </div>
                       </li>
                     ))}
+                    <Modal open={open} setOpen={setOpen} electionId={selectedElectionId}></Modal>
                   </ul>
                 )}
               </div>
