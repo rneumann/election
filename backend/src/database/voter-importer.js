@@ -1,8 +1,8 @@
 import fs from 'fs';
 import csv from 'csv-parser';
 import * as xlsx from 'xlsx';
-import { client } from './db.js'; // Gehen Sie davon aus, dass dies Ihre Datenbankverbindung ist
 import { logger } from '../conf/logger/logger.js';
+import { client } from './db.js'; // Gehen Sie davon aus, dass dies Ihre Datenbankverbindung ist
 
 /**
  * Parst eine CSV-Datei und gibt ein Array von Objekten zurück.

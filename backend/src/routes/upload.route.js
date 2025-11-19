@@ -1,18 +1,21 @@
+import fs from 'fs';
 import multer from 'multer';
 import { logger } from '../conf/logger/logger.js';
 import { importVoterData } from '../database/voter-importer.js';
-import fs from 'fs';
+
 /**
  * Multer storage configuration for file uploads.
  * Files are stored in the local "uploads" directory.
  * The filename is prefixed with a timestamp to ensure uniqueness.
  */
 const storage = multer.diskStorage({
+  //where to store the uploaded files
   destination: (req, file, cb) => {
     cb(null, './uploads');
   },
+  //how to name the uploaded files
   filename: (req, file, cb) => {
-    const uniqueName = Date.now() + '-' + file.originalname;
+    const uniqueName = file.originalname;
     cb(null, uniqueName);
   },
 });
@@ -44,9 +47,12 @@ const fileFilter = (req, file, cb) => {
  * Multer instance used for handling file uploads.
  * Limits file size to 5 MB and applies custom file filtering.
  */
+const mB = 5;
+const kB = 1024;
+
 const upload = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 },
+  limits: { fileSize: mB * kB * kB },
   fileFilter,
 });
 
@@ -63,10 +69,9 @@ const upload = multer({
  * @async
  * @param {Object} req - The Express request object
  * @param {Object} res - The Express response object
- * @param {Function} next - The Express next middleware function
  * @returns {Promise<Response>} JSON response indicating success or failure
  */
-export const importWahlerRoute = async (req, res, next) => {
+export const importWahlerRoute = async (req, res) => {
   logger.debug('Voter import route accessed');
 
   // Validate HTTP method
@@ -95,7 +100,7 @@ export const importWahlerRoute = async (req, res, next) => {
       logger.debug(`Datei gespeichert unter: ${filePath}`);
       await importVoterData(filePath, fileMimeType);
 
-      fs.unlink(filePath, (err) => {
+      fs.promises.unlink(filePath, (err) => {
         if (err) {
           logger.error('Fehler beim Löschen der Datei nach erfolgreichem Import:', err);
         } else {
@@ -109,8 +114,10 @@ export const importWahlerRoute = async (req, res, next) => {
     } catch (importError) {
       logger.error('Importfehler. Datei wird gelöscht.', importError);
 
-      fs.unlink(filePath, (err) => {
-        if (err) logger.error('Fehler beim Löschen der Datei nach Importfehler:', err);
+      fs.promises.unlink(filePath, (err) => {
+        if (err) {
+          logger.error('Fehler beim Löschen der Datei nach Importfehler:', err);
+        }
       });
 
       return res.status(500).json({ message: `Import fehlgeschlagen: ${importError.message}` });
