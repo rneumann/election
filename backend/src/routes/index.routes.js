@@ -3,6 +3,8 @@ import express from 'express';
 import { ensureAuthenticated, ensureHasRole, loginRoute, logoutRoute } from '../auth/auth.js';
 import passport from '../auth/passport.js';
 import { logger } from '../conf/logger/logger.js';
+import { importWahlerRoute } from './upload.route.js';
+import { exportTotalResultsRoute, exportBallotsRoute } from './download.route.js';
 export const router = express.Router();
 
 /**
@@ -173,6 +175,139 @@ router.get('/auth/me', (req, res) => {
  */
 router.delete('/auth/logout', logoutRoute);
 
+/**
+ * @openapi
+ * /api/upload/voters:
+ *   post:
+ *     summary: Upload voter list
+ *     description: Uploads a CSV or Excel file with voter data.
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               file:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       200:
+ *         description: File uploaded successfully
+ *       400:
+ *         description: Bad request (no file, invalid file type/size)
+ *       401:
+ *         description: Unauthorized (not logged in)
+ *       403:
+ *         description: Forbidden (not an admin)
+ */
+router.post('/upload/voters', ensureAuthenticated, ensureHasRole(['admin']), importWahlerRoute);
+
+/**
+ * @swagger
+ * /api/download/results/{electionId}:
+ *   get:
+ *     summary: Downloads the election.
+ *     tags: [Download]
+ *     parameters:
+ *       - in: path
+ *         name: electionId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Id of the election whose results should be downloaded.
+ *     responses:
+ *       200:
+ *         description: Results as a json-file.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 electionId:
+ *                   type: string
+ *                 totalVotes:
+ *                   type: integer
+ *                 results:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       candidate:
+ *                         type: string
+ *                       votes:
+ *                         type: integer
+ *       401:
+ *         description: Unauthorized (not logged in)
+ *       403:
+ *         description: Forbidden (user does not have the required role)
+ *       404:
+ *         description: Election or results not found.
+ *       500:
+ *         description: Internal server error.
+ */
+
+router.get(
+  '/download/results/:electionId',
+  ensureAuthenticated,
+  ensureHasRole('admin'),
+  exportBallotsRoute,
+);
+
+/**
+ * @openapi
+ * /api/download/totalresults/{electionId}:
+ *   get:
+ *     summary: Download aggregated election results (Admin/Committee only)
+ *     description: Fetches the total aggregated vote counts for each candidate in a specific election.
+ *     tags: [Download]
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: electionId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The unique ID of the election.
+ *     responses:
+ *       200:
+ *         description: A JSON file containing the aggregated election results.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 electionId:
+ *                   type: string
+ *                 totalVotes:
+ *                   type: integer
+ *                 results:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       candidate:
+ *                         type: string
+ *                       votes:
+ *                         type: integer
+ *       401:
+ *         description: Unauthorized (not logged in)
+ *       403:
+ *         description: Forbidden (user does not have the required role)
+ *       404:
+ *         description: Not Found (electionId does not exist or has no results)
+ *       500:
+ *         description: Internal server error
+ */
+router.get(
+  '/download/totalresults/:electionId',
+  ensureAuthenticated,
+  ensureHasRole('admin'),
+  exportTotalResultsRoute,
+);
 /**
  * Testing routes for protection
  * @openapi
