@@ -29,13 +29,13 @@ const insertVoters = async (data) => {
   }
 
   const allowedColumns = [
-    'firstname',
+    'uid',
     'lastname',
-    'street',
-    'zipcode',
-    'city',
-    'birthdate',
-    'voter_id',
+    'firstname',
+    'mtknr',
+    'faculty',
+    'votergroup',
+    'notes',
   ];
 
   const columns = allowedColumns.join(', ');
