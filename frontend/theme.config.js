@@ -37,10 +37,9 @@ export const themeConfig = {
   // Text content customization
   text: {
     appTitle: 'Wahlsystem',
-    loginSubtitle: 'Bitte melden Sie sich mit Ihrem normalen RZ-Benutzerkürzel an',
+    loginSubtitle: 'Bitte melden Sie sich mit Ihren Anmeldedaten an',
     welcomeTitle: 'Willkommen im HKA Wahlsystem',
     welcomeSubtitle: 'BSI-konformes Online-Wahlsystem für hochschulinterne Wahlen',
-    copyright: '© 2025 Hochschule Karlsruhe',
   },
 
   // Role names (optional customization)

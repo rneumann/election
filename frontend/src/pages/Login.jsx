@@ -1,13 +1,15 @@
 import { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useTheme } from '../hooks/useTheme.js';
+import ResponsiveButton from '../components/ResponsiveButton.jsx';
+import { logger } from '../conf/logger/logger.js';
 
 /**
- * Login page for RZ authentication.
+ * Login page for user authentication.
  * Handles user login with backend API integration.
  *
- * @returns {React.ReactElement} Login component with form
+ * @returns Login form with LDAP, SAML, and Keycloak authentication options
  */
 const Login = () => {
   const [username, setUsername] = useState('');
@@ -16,6 +18,7 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const usernameRef = useRef(null);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { login } = useAuth();
   const theme = useTheme();
 
@@ -25,6 +28,20 @@ const Login = () => {
   useEffect(() => {
     usernameRef.current?.focus();
   }, []);
+
+  /**
+   * Handle technical errors from URL parameters (from AuthCallback).
+   * Only displays errors for technical issues, not auth provider failures
+   * (those are already shown by the external auth provider).
+   */
+  useEffect(() => {
+    const errorParam = searchParams.get('error');
+
+    // Only show technical errors - auth provider errors are already displayed by provider
+    if (errorParam === 'session_invalid' || errorParam === 'validation_failed') {
+      setError('Ein technischer Fehler ist aufgetreten. Bitte versuchen Sie es erneut.');
+    }
+  }, [searchParams]);
 
   /**
    * Clear error message after 5 seconds.
@@ -43,6 +60,7 @@ const Login = () => {
   /**
    * Handle login form submission.
    * Calls backend API via AuthContext and redirects on success.
+   * Redirects to returnUrl from query params if present, otherwise to /home for users or /admin for admins.
    *
    * @param {React.FormEvent} e - Form submit event
    * @returns {Promise<void>}
@@ -52,12 +70,24 @@ const Login = () => {
     setError('');
     setLoading(true);
 
+    logger.info('Login form submitted');
     try {
       const result = await login(username, password);
 
       if (result.success) {
-        // Redirect to home page on successful login
-        navigate('/home');
+        // Check if there's a return URL from query params
+        const returnUrl = searchParams.get('returnUrl');
+
+        // Determine destination based on role if no returnUrl
+        let destination = '/home';
+        if (returnUrl && returnUrl.startsWith('/')) {
+          destination = returnUrl;
+        } else if (result.user?.role === 'admin') {
+          destination = '/admin';
+        }
+
+        // Redirect to destination on successful login
+        navigate(destination, { replace: true });
       } else {
         // Show error message from backend
         setError(result.message || 'Login failed. Please try again.');
@@ -70,21 +100,49 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-brand-light to-white">
-      <div className="bg-white p-8 rounded-lg shadow-2xl w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-brand-light via-gray-50 to-white px-4 sm:px-6 py-8">
+      <div className="bg-white p-6 sm:p-8 rounded-xl shadow-2xl w-full max-w-md border border-gray-100">
         {/* Logo/Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-brand-primary mb-2">
+        <div className="text-center mb-6 sm:mb-8">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-brand-primary rounded-full mb-4 shadow-lg">
+            <svg
+              className="w-8 h-8 text-white"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+              />
+            </svg>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-brand-primary mb-2">
             {theme.institution.name} {theme.text.appTitle}
           </h1>
-          <p className="text-brand-gray text-sm">{theme.text.loginSubtitle}</p>
+          <p className="text-brand-gray text-xs sm:text-sm">{theme.text.loginSubtitle}</p>
         </div>
 
         {/* Error Message */}
         {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-            <p className="font-semibold">Fehler bei der Anmeldung</p>
-            <p className="text-sm">{error}</p>
+          <div className="bg-red-50 border-l-4 border-red-500 text-red-800 px-4 py-3 rounded-r mb-4 flex items-start gap-3 animate-pulse">
+            <svg
+              className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                fillRule="evenodd"
+                d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                clipRule="evenodd"
+              />
+            </svg>
+            <div>
+              <p className="font-semibold text-sm">Fehler bei der Anmeldung</p>
+              <p className="text-xs mt-1">{error}</p>
+            </div>
           </div>
         )}
 
@@ -92,7 +150,7 @@ const Login = () => {
         <form onSubmit={handleSubmit} className="space-y-6" autoComplete="off">
           <div>
             <label htmlFor="username" className="block text-sm font-medium text-brand-dark mb-2">
-              Benutzerkürzel
+              Benutzername
             </label>
             <input
               type="text"
@@ -101,15 +159,15 @@ const Login = () => {
               ref={usernameRef}
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent outline-none"
-              placeholder="RZ-Benutzerkürzel"
+              className="w-full px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent outline-none transition-shadow duration-200 hover:border-brand-primary"
+              placeholder="Ihr Benutzername"
               required
             />
           </div>
 
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-brand-dark mb-2">
-              RZ-Passwort
+              Passwort
             </label>
             <input
               type="password"
@@ -117,37 +175,41 @@ const Login = () => {
               name="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent outline-none"
-              placeholder="Ihr RZ-Passwort"
+              className="w-full px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent outline-none transition-shadow duration-200 hover:border-brand-primary"
+              placeholder="Ihr Passwort"
               required
             />
           </div>
 
-          <button
+          <ResponsiveButton
             type="submit"
+            variant="primary"
+            size="large"
+            fullWidth
             disabled={loading}
-            className="w-full bg-brand-primary text-white py-3 rounded-lg font-semibold hover:opacity-90 transition duration-200 shadow-lg disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
             {loading ? 'Wird angemeldet...' : 'Anmelden'}
-          </button>
+          </ResponsiveButton>
         </form>
 
-        <button
+        <ResponsiveButton
           onClick={() => (window.location.href = '/api/auth/login/saml')}
           className="mt-4 w-full bg-brand-primary text-white py-3 rounded-lg font-semibold hover:opacity-90 transition duration-200 shadow-lg disabled:bg-gray-400 disabled:cursor-not-allowed"
         >
           {'Anmelden mit SAML'}
-        </button>
+        </ResponsiveButton>
 
-        <button
+        <ResponsiveButton
           onClick={() => (window.location.href = '/api/auth/login/kc')}
           className="mt-4 w-full bg-brand-primary text-white py-3 rounded-lg font-semibold hover:opacity-90 transition duration-200 shadow-lg"
         >
           Anmelden mit Keycloak
-        </button>
+        </ResponsiveButton>
 
         {/* Footer */}
-        <p className="text-center text-xs text-brand-gray mt-6">{theme.text.copyright}</p>
+        <p className="text-center text-xs sm:text-sm text-brand-gray mt-4 sm:mt-6">
+          {theme.text.copyright}
+        </p>
       </div>
     </div>
   );

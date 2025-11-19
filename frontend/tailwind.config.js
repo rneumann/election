@@ -23,6 +23,16 @@ export default {
         'brand-gray': themeConfig.colors.gray,
         'brand-light': themeConfig.colors.lightGray,
       },
+      // Optimized for mobile devices
+      fontSize: {
+        '2xs': '0.625rem', // 10px - for very small mobile text
+      },
+      minHeight: {
+        touch: '44px', // Apple's recommended touch target size
+      },
+      minWidth: {
+        touch: '44px',
+      },
     },
   },
   plugins: [],

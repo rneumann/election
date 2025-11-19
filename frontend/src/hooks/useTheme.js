@@ -1,10 +1,11 @@
 import { themeConfig } from '../../theme.config.js';
 
 /**
- * Custom hook to access theme configuration.
- * Provides colors, text content, and institution information.
+ * Hook for accessing application theme configuration.
+ * Provides institution branding, color scheme, and localized text content.
+ * Theme is defined in theme.config.js at project root.
  *
- * @returns {object} Theme configuration object
+ * @returns {object} Theme configuration with colors, text, and institution data
  *
  * @example
  * const theme = useTheme();
