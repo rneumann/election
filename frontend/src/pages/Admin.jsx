@@ -6,6 +6,7 @@ import ResponsiveButton from '../components/ResponsiveButton.jsx';
 import ValidationErrors from '../components/ValidationErrors.jsx';
 import { validateVoterCSV } from '../utils/validators/csvValidator.js';
 import { validateElectionExcel } from '../utils/validators/excelValidator.js';
+import { MAX_FILE_SIZE } from '../utils/validators/constants.js';
 
 /**
  * Admin page for uploading election definitions via Excel file.
@@ -46,12 +47,11 @@ const AdminUpload = () => {
    * @returns {boolean} True if file is valid
    */
   const validateFile = (file, fileType) => {
-    const csvTypes = ['text/csv', 'application/vnd.ms-excel'];
+    const csvTypes = ['text/csv'];
     const excelTypes = [
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       'application/vnd.ms-excel',
     ];
-    const maxSize = 10 * 1024 * 1024; // 10MB
 
     if (fileType === 'csv') {
       if (!csvTypes.includes(file.type) && !file.name.endsWith('.csv')) {
@@ -69,7 +69,7 @@ const AdminUpload = () => {
       }
     }
 
-    if (file.size > maxSize) {
+    if (file.size > MAX_FILE_SIZE) {
       setError('Die Datei ist zu groß. Maximale Größe: 10MB');
       return false;
     }
@@ -89,8 +89,8 @@ const AdminUpload = () => {
     setValidationErrors([]);
     setValidationStats(null);
 
-    // Determine file type based on active section
-    const fileType = activeSection === 'upload' ? 'csv' : 'excel';
+    // Determine file type based on file extension
+    const fileType = file.name.toLowerCase().endsWith('.csv') ? 'csv' : 'excel';
 
     if (!validateFile(file, fileType)) {
       return;
@@ -341,6 +341,7 @@ const AdminUpload = () => {
                     onClick={() => {
                       setActiveSection('clear');
                       setMobileMenuOpen(false);
+                      handleReset();
                     }}
                     style={{
                       backgroundColor:
@@ -364,6 +365,7 @@ const AdminUpload = () => {
                     onClick={() => {
                       setActiveSection('upload');
                       setMobileMenuOpen(false);
+                      handleReset();
                     }}
                     style={{
                       backgroundColor:
@@ -381,6 +383,7 @@ const AdminUpload = () => {
                     onClick={() => {
                       setActiveSection('download');
                       setMobileMenuOpen(false);
+                      handleReset();
                     }}
                     style={{
                       backgroundColor:
@@ -404,6 +407,7 @@ const AdminUpload = () => {
                     onClick={() => {
                       setActiveSection('template');
                       setMobileMenuOpen(false);
+                      handleReset();
                     }}
                     style={{
                       backgroundColor:
@@ -421,6 +425,7 @@ const AdminUpload = () => {
                     onClick={() => {
                       setActiveSection('definition');
                       setMobileMenuOpen(false);
+                      handleReset();
                     }}
                     style={{
                       backgroundColor:
@@ -438,6 +443,7 @@ const AdminUpload = () => {
                     onClick={() => {
                       setActiveSection('load');
                       setMobileMenuOpen(false);
+                      handleReset();
                     }}
                     style={{
                       backgroundColor:
@@ -461,6 +467,7 @@ const AdminUpload = () => {
                     onClick={() => {
                       setActiveSection('export');
                       setMobileMenuOpen(false);
+                      handleReset();
                     }}
                     style={{
                       backgroundColor:
