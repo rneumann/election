@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { logger } from '../conf/logger/logger.js';
-import { getElections } from '../service/voter.service.js';
+import { getElectionById, getElections } from '../service/voter.service.js';
 
 export const voterRouter = Router();
 
@@ -68,5 +68,83 @@ voterRouter.get('/elections', async (req, res) => {
     return res.status(404).json({ message: 'No elections found' });
   }
   logger.debug(`Elections retrieved successfully res: ${JSON.stringify(data)}`);
+  res.status(200).json(data);
+});
+
+/**
+ * @openapi
+ * /api/voter/elections/{id}:
+ *  get:
+ *    summary: Get election by id
+ *    description: Get election by id
+ *    tags:
+ *      - Elections
+ *    parameters:
+ *      - name: id
+ *        in: path
+ *        description: ID of the election
+ *        required: true
+ *        schema:
+ *          type: string
+ *    responses:
+ *      200:
+ *        description: OK
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: object
+ *              properties:
+ *                id:
+ *                  type: string
+ *                info:
+ *                  type: string
+ *                description:
+ *                  type: string
+ *                voters_per_ballot:
+ *                  type: number
+ *                start:
+ *                  type: string
+ *                end:
+ *                  type: string
+ *                candidates:
+ *                  type: array
+ *                  items:
+ *                    type: object
+ *                    properties:
+ *                      candidateId:
+ *                        type: string
+ *                      lastname:
+ *                        type: string
+ *                      firstname:
+ *                        type: string
+ *                      mtknr:
+ *                        type: string
+ *                      faculty:
+ *                        type: string
+ *                      listnum:
+ *                        type: number
+ *      404:
+ *        description: No election found
+ *      405:
+ *        description: Method Not Allowed
+ *      500:
+ *        description: Internal Server Error
+ */
+voterRouter.get('/elections/:id', async (req, res) => {
+  logger.debug(`Election route accessed with id: ${req.params.id}`);
+  if (req.method !== 'GET') {
+    logger.warn(`Invalid HTTP method: ${req.method}`);
+    return res.status(405).json({ message: 'Method Not Allowed' });
+  }
+  const { ok, data } = await getElectionById(req.params.id);
+  if (!ok) {
+    logger.error('Error retrieving election');
+    return res.status(500).json({ message: 'Error retrieving election' });
+  }
+  if (data.length === 0) {
+    logger.warn('No election found');
+    return res.status(404).json({ message: 'No election found' });
+  }
+  logger.debug(`Election retrieved successfully res: ${JSON.stringify(data)}`);
   res.status(200).json(data);
 });
