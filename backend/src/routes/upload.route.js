@@ -1,6 +1,7 @@
 import multer from 'multer';
 import { logger } from '../conf/logger/logger.js';
-
+import { importVoterData } from '../database/voter-importer.js';
+import fs from 'fs';
 /**
  * Multer storage configuration for file uploads.
  * Files are stored in the local "uploads" directory.
@@ -75,7 +76,7 @@ export const importWahlerRoute = async (req, res, next) => {
   }
 
   // Process file upload
-  upload.single('file')(req, res, (err) => {
+  upload.single('file')(req, res, async (err) => {
     if (err) {
       logger.error('File upload error:', err);
       return res.status(400).json({ message: err.message });
@@ -87,13 +88,32 @@ export const importWahlerRoute = async (req, res, next) => {
       return res.status(400).json({ message: 'file is required' });
     }
 
-    logger.debug(`File uploaded successfully: ${req.file.filename}`);
+    const filePath = req.file.path;
+    const fileMimeType = req.file.mimetype;
 
-    // Successful upload response
-    return res.status(200).json({
-      message: 'Voter file uploaded successfully',
-      filename: req.file.filename,
-      path: req.file.path,
-    });
+    try {
+      logger.debug(`Datei gespeichert unter: ${filePath}`);
+      await importVoterData(filePath, fileMimeType);
+
+      fs.unlink(filePath, (err) => {
+        if (err) {
+          logger.error('Fehler beim Löschen der Datei nach erfolgreichem Import:', err);
+        } else {
+          logger.debug(`Hochgeladene Datei erfolgreich gelöscht: ${filePath}`);
+        }
+      });
+
+      return res.status(200).json({
+        message: 'Wählerdaten erfolgreich hochgeladen und in die Datenbank importiert.',
+      });
+    } catch (importError) {
+      logger.error('Importfehler. Datei wird gelöscht.', importError);
+
+      fs.unlink(filePath, (err) => {
+        if (err) logger.error('Fehler beim Löschen der Datei nach Importfehler:', err);
+      });
+
+      return res.status(500).json({ message: `Import fehlgeschlagen: ${importError.message}` });
+    }
   });
 };

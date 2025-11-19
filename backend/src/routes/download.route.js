@@ -38,16 +38,18 @@ export const exportTotalResultsRoute = async (req, res, next) => {
     // Query for aggregated results
     const query = `
       SELECT 
-        c.name AS candidate,
-        COUNT(bv.id) AS votes
+        c.firstname || ' ' || c.lastname AS candidate,
+        SUM(bv.votes) AS votes
       FROM 
         candidates c
       JOIN 
-        ballotvotes bv ON c.id = bv.candidateId
+        electioncandidates ec ON c.id = ec.candidateId
+      JOIN
+        ballotvotes bv ON ec.electionId = bv.election AND ec.listnum = bv.listnum
       WHERE 
-        c.electionId = $1
+        ec.electionId = $1
       GROUP BY 
-        c.name
+        c.firstname, c.lastname
       ORDER BY 
         votes DESC;
     `;
@@ -120,14 +122,14 @@ export const exportBallotsRoute = async (req, res, next) => {
     // We select the ballot ID and the candidate ID it voted for.
     const query = `
       SELECT 
-        bv.ballotId,
-        bv.candidateId
+        bv.ballot AS "ballotId",
+        ec.candidateId AS "candidateId",
       FROM 
         ballotvotes bv
       JOIN
-        candidates c ON bv.candidateId = c.id
+        electioncandidates ec ON bv.election = ec.electionId AND bv.listnum = ec.listnum
       WHERE 
-        c.electionId = $1;
+        bv.election = $1;
     `;
 
     const dbResult = await client.query(query, [electionId]);
