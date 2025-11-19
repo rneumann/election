@@ -63,8 +63,8 @@ const parseCsv = (path) => {
 const parseExcel = (path) => {
   const workbook = xlsx.readFile(path);
   const sheetName = workbook.SheetNames[0];
+  // eslint-disable-next-line security/detect-object-injection
   const worksheet = workbook.Sheets[sheetName];
-
   return xlsx.utils.sheet_to_json(worksheet).map((row) => safeRow(row));
 };
 
