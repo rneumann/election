@@ -14,6 +14,9 @@ import preferArrow from 'eslint-plugin-prefer-arrow';
 import jsdoc from 'eslint-plugin-jsdoc';
 
 export default [
+  {
+    ignores: ['dist/', 'node_modules/', '*.config.js', '*.config.mjs'],
+  },
   js.configs.recommended,
   {
     files: ['**/*.{js,jsx}'],
