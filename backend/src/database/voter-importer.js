@@ -60,7 +60,6 @@ const insertVoters = async (data) => {
   ];
 
   const columns = allowedColumns.join(', ');
-
   const valuePlaceholders = data
     .map((_, rowIdx) => {
       const values = allowedColumns
