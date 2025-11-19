@@ -21,7 +21,13 @@ const parseCsv = (path) => {
     const results = [];
     fs.createReadStream(path)
       .pipe(csv())
-      .on('data', (data) => results.push(data))
+      .on('data', (data) => {
+        const safe = {};
+        for (const col of allowedColumns) {
+          safe[col] = data[col] ?? null;
+        }
+        results.push(safe);
+      })
       .on('end', () => resolve(results))
       .on('error', reject);
   });
@@ -36,7 +42,13 @@ const parseExcel = (path) => {
   const workbook = xlsx.readFile(path);
   const sheetName = workbook.SheetNames[0];
   const worksheet = workbook.Sheets[sheetName];
-  return xlsx.utils.sheet_to_json(worksheet);
+  return xlsx.utils.sheet_to_json(worksheet).map((row) => {
+    const safe = {};
+    for (const col of allowedColumns) {
+      safe[col] = row[col] ?? null;
+    }
+    return safe;
+  });
 };
 
 /**
@@ -64,8 +76,14 @@ const insertVoters = async (data) => {
     })
     .join(', ');
 
-  const allValues = data.flatMap((row) => allowedColumns.map((c) => row[c] ?? null));
-
+  const allValues = data.flatMap((row) =>
+    allowedColumns.map((c) => {
+      if (Object.prototype.hasOwnProperty.call(row, c)) {
+        return row[c];
+      }
+      return null;
+    }),
+  );
   const query = {
     text: `INSERT INTO voters (${columns}) VALUES ${valuePlaceholders}`,
     values: allValues,
