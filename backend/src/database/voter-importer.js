@@ -11,16 +11,32 @@ import { client } from './db.js';
 
 const allowedColumns = ['uid', 'lastname', 'firstname', 'mtknr', 'faculty', 'votergroup', 'notes'];
 
-const safeRow = (row) => ({
-  uid: row.uid ?? null,
-  lastname: row.lastname ?? null,
-  firstname: row.firstname ?? null,
-  mtknr: row.mtknr ?? null,
-  faculty: row.faculty ?? null,
-  votergroup: row.votergroup ?? null,
-  notes: row.notes ?? null,
-});
+/**
+ * Normalizes a raw row object into a safe, fixed-column object. (Eslint.)
+ * @param {Object} row
+ * @returns {Object}
+ */
+const safeRow = (row) => {
+  const r = {
+    uid: row.uid,
+    lastname: row.lastname,
+    firstname: row.firstname,
+    mtknr: row.mtknr,
+    faculty: row.faculty,
+    votergroup: row.votergroup,
+    notes: row.notes,
+  };
 
+  return {
+    uid: r.uid ?? null,
+    lastname: r.lastname ?? null,
+    firstname: r.firstname ?? null,
+    mtknr: r.mtknr ?? null,
+    faculty: r.faculty ?? null,
+    votergroup: r.votergroup ?? null,
+    notes: r.notes ?? null,
+  };
+};
 /**
  * Parses a CSV file and returns an array of objects.
  * @param {string} path - The path to the CSV file.
