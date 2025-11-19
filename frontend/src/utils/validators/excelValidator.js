@@ -155,8 +155,8 @@ export const validateElectionExcel = async (file) => {
       candidateList: isReferendum
         ? 'Urabstimmung (Ja/Nein)'
         : validationResult.data.candidates
-            .map((c) => `${c.Nr}. ${c.Vorname} ${c.Nachname}`)
-            .join(', '),
+          .map((c) => `${c.Nr}. ${c.Vorname} ${c.Nachname}`)
+          .join(', '),
       faculties: validationResult.data.info['Fakultät(en)'] || 'Alle',
       programs: validationResult.data.info['Studiengänge (Komma-getrennt)'] || 'Alle',
       eligibility: validationResult.data.info['Berechtigt (leer = alle)'] || 'Alle',
