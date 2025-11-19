@@ -2,14 +2,14 @@ import fs from 'fs';
 import csv from 'csv-parser';
 import * as xlsx from 'xlsx';
 import { logger } from '../conf/logger/logger.js';
-import { client } from './db.js'; // Gehen Sie davon aus, dass dies Ihre Datenbankverbindung ist
+import { client } from './db.js';
 
 /**
  * Parst eine CSV-Datei und gibt ein Array von Objekten zurück.
  * @param {string} path - Der Dateipfad zur CSV-Datei.
  * @returns {Promise<Object[]>} Ein Promise, das mit den geparsten Daten aufgelöst wird.
  */
-function parseCsv(path) {
+const parseCsv = (path) => {
   return new Promise((resolve, reject) => {
     const results = [];
     fs.createReadStream(path)
@@ -18,26 +18,26 @@ function parseCsv(path) {
       .on('end', () => resolve(results))
       .on('error', reject);
   });
-}
+};
 
 /**
  * Parst eine Excel-Datei und gibt ein Array von Objekten zurück (vom ersten Sheet).
  * @param {string} path - Der Dateipfad zur Excel-Datei.
  * @returns {Object[]} Die geparsten Daten.
  */
-function parseExcel(path) {
+const parseExcel = (path) => {
   const workbook = xlsx.readFile(path);
   const sheetName = workbook.SheetNames[0];
   const worksheet = workbook.Sheets[sheetName];
   return xlsx.utils.sheet_to_json(worksheet);
-}
+};
 
 /**
  * Fügt Wählerdaten in die PostgreSQL-Datenbank ein.
  * @param {Object[]} data - Ein Array von Wählerobjekten.
  * @returns {Promise<void>}
  */
-async function insertVoters(data) {
+const insertVoters = async (data) => {
   if (data.length === 0) {
     logger.info('Keine Daten zum Einfügen gefunden.');
     return;
@@ -47,8 +47,9 @@ async function insertVoters(data) {
 
   const valuePlaceholders = data
     .map((row, rowIdx) => {
-      const values = Object.values(row)
-        .map((_, colIdx) => `$${rowIdx * Object.keys(row).length + colIdx + 1}`)
+      const rowKeys = Object.keys(row);
+      const values = rowKeys
+        .map((_, colIdx) => `$${rowIdx * rowKeys.length + colIdx + 1}`)
         .join(', ');
       return `(${values})`;
     })
@@ -62,14 +63,13 @@ async function insertVoters(data) {
   };
 
   try {
-    // Führen Sie die Batch-Einfügung aus
     const res = await client.query(query);
     logger.info(`Erfolgreich ${res.rowCount} Wähler in die Datenbank eingefügt.`);
   } catch (error) {
     logger.error('Fehler beim Einfügen der Wählerdaten:', error);
     throw new Error('Datenbank-Fehler beim Einfügen der Wählerdaten.');
   }
-}
+};
 
 /**
  * Importiert Wählerdaten aus der hochgeladenen Datei in die Datenbank.
@@ -77,7 +77,7 @@ async function insertVoters(data) {
  * @param {string} mimeType - Der MIME-Typ der Datei.
  * @returns {Promise<void>}
  */
-export async function importVoterData(path, mimeType) {
+export const importVoterData = async (path, mimeType) => {
   let parsedData;
   logger.debug(`Beginne mit dem Parsen der Datei: ${path} (${mimeType})`);
 
@@ -97,4 +97,4 @@ export async function importVoterData(path, mimeType) {
     logger.error('Fehler im Importprozess:', error);
     throw error;
   }
-}
+};

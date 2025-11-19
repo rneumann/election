@@ -7,13 +7,26 @@ import { importVoterData } from '../database/voter-importer.js';
  * Multer storage configuration for file uploads.
  * Files are stored in the local "uploads" directory.
  * The filename is prefixed with a timestamp to ensure uniqueness.
+ *
+ * @returns {multer.StorageEngine} Configured multer storage engine
  */
 const storage = multer.diskStorage({
-  //where to store the uploaded files
+  /**
+   * Specifies the destination directory for uploaded files.
+   * @param {Object} req - Express request object
+   * @param {Object} file - Uploaded file metadata
+   * @param {Function} cb - Callback for multer
+   */
   destination: (req, file, cb) => {
     cb(null, './uploads');
   },
-  //how to name the uploaded files
+
+  /**
+   * Determines the filename for the stored file.
+   * @param {Object} req - Express request object
+   * @param {Object} file - Uploaded file metadata
+   * @param {Function} cb - Callback for multer
+   */
   filename: (req, file, cb) => {
     const uniqueName = file.originalname;
     cb(null, uniqueName);
@@ -24,9 +37,10 @@ const storage = multer.diskStorage({
  * File filter for validating accepted MIME types.
  * Only CSV and Excel files are allowed.
  *
- * @param req - The Express request object
- * @param file - File metadata provided by multer
- * @param cb - Callback to accept or reject the file
+ * @param {Object} req - The Express request object
+ * @param {Object} file - File metadata provided by multer
+ * @param {Function} cb - Callback to accept or reject the file
+ * @returns {void}
  */
 const fileFilter = (req, file, cb) => {
   const allowed = [
@@ -46,6 +60,8 @@ const fileFilter = (req, file, cb) => {
 /**
  * Multer instance used for handling file uploads.
  * Limits file size to 5 MB and applies custom file filtering.
+ *
+ * @returns {multer.Multer} Configured multer instance
  */
 const mB = 5;
 const kB = 1024;
@@ -69,25 +85,22 @@ const upload = multer({
  * @async
  * @param {Object} req - The Express request object
  * @param {Object} res - The Express response object
- * @returns {Promise<Response>} JSON response indicating success or failure
+ * @returns {Promise<Object>} JSON response indicating success or failure
  */
 export const importWahlerRoute = async (req, res) => {
   logger.debug('Voter import route accessed');
 
-  // Validate HTTP method
   if (req.method !== 'POST') {
     logger.warn(`Invalid HTTP method used: ${req.method}`);
     return res.status(405).json({ message: 'Method Not Allowed' });
   }
 
-  // Process file upload
   upload.single('file')(req, res, async (err) => {
     if (err) {
       logger.error('File upload error:', err);
       return res.status(400).json({ message: err.message });
     }
 
-    // Validate file presence
     if (!req.file) {
       logger.warn('No file uploaded');
       return res.status(400).json({ message: 'file is required' });
