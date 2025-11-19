@@ -26,16 +26,15 @@ export const keycloakStrategy = new OAuth2Strategy(
           headers: { Authorization: `Bearer ${accessToken}` },
         },
       );
-      logger.debug('Userinfo fetched', res);
       const userinfo = await res.data;
 
       const user = {
         username: userinfo.preferred_username || userinfo.sub,
-        //accessToken,
+        accessToken: accessToken,
+        refreshToken: refreshToken,
         profile: userinfo,
         authProvider: 'keycloak',
       };
-
       done(null, user);
     } catch (err) {
       done(err);

@@ -1,7 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import authService from '../services/authService.js';
 import api from '../services/api.js';
-import { logger } from '../conf/logger/logger.js';
 
 /**
  * Authentication context for managing global auth state.
@@ -40,30 +39,19 @@ export const AuthProvider = ({ children }) => {
   /**
    * Logout current user.
    * Clears session storage and resets auth state.
-   * For Keycloak/external providers, follows backend redirect URL.
    *
-   * @returns {Promise<void>}
+   * @returns {void}
    */
   const logout = async () => {
     try {
-      // Clear local state first
+      const response = await api.delete('/auth/logout', { withCredentials: true });
+      const redirectUrl = response.data.redirectUrl;
+      window.location.href = redirectUrl; // Browser folgt Redirect → Keycloak-Session wird beendet
+    } catch {
+      throw new Error('Logout failed');
+    } finally {
       setUser(undefined);
       setIsAuthenticated(false);
-
-      // Call backend logout endpoint
-      const response = await api.delete('/auth/logout', { withCredentials: true });
-
-      // If backend returns a redirect URL (Keycloak), follow it
-      if (response.data.redirectUrl) {
-        window.location.href = response.data.redirectUrl;
-      } else {
-        // For LDAP/SAML, just redirect to login page
-        window.location.href = '/login';
-      }
-    } catch (error) {
-      logger.error('Logout failed:', error);
-      // Even if logout fails on backend, redirect to login
-      window.location.href = '/login';
     }
   };
 
@@ -98,9 +86,9 @@ export const AuthProvider = ({ children }) => {
    * Login user with username and password.
    * Calls backend API and stores user data in session.
    *
-   * @param {string} username - User's username
+   * @param {string} username - User's RZ-Benutzerkürzel
    * @param {string} password - User's password
-   * @returns {Promise<{success: boolean, user?: object, message?: string}>} Login result with user data
+   * @returns {Promise<{success: boolean, message?: string}>} Login result
    */
   const login = async (username, password) => {
     try {
@@ -108,7 +96,7 @@ export const AuthProvider = ({ children }) => {
       setUser(user);
       setIsAuthenticated(true);
 
-      return { success: true, user };
+      return { success: true };
     } catch (error) {
       return {
         success: false,

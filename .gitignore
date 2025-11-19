@@ -70,8 +70,8 @@ web_modules/
 .env.*
 !.env.example
 *secrets*
-*crt
-*pem
+*crt*
+*pem*
 
 # dotenv configuration files
 .*.env
