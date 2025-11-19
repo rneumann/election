@@ -118,7 +118,7 @@ const AuthCallback = () => {
         {status === 'success' && (
           <>
             <div className="relative mb-6">
-              <div className="w-20 h-20 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center mx-auto shadow-lg animate-scale-in">
+              <div className="w-20 h-20 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center mx-auto shadow-lg animate-bounce">
                 <svg
                   className="w-12 h-12 text-white"
                   fill="none"
@@ -163,26 +163,6 @@ const AuthCallback = () => {
           <p className="text-xs text-brand-gray">{theme.text.copyright}</p>
         </div>
       </div>
-
-      {/* CSS Animation for success checkmark */}
-      <style>{`
-        @keyframes scale-in {
-          0% {
-            transform: scale(0);
-            opacity: 0;
-          }
-          50% {
-            transform: scale(1.1);
-          }
-          100% {
-            transform: scale(1);
-            opacity: 1;
-          }
-        }
-        .animate-scale-in {
-          animation: scale-in 0.5s ease-out;
-        }
-      `}</style>
     </div>
   );
 };
