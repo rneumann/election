@@ -4,11 +4,6 @@ import * as xlsx from 'xlsx';
 import { logger } from '../conf/logger/logger.js';
 import { client } from './db.js';
 
-/**
- * Parst eine CSV-Datei und gibt ein Array von Objekten zurück.
- * @param {string} path - Der Dateipfad zur CSV-Datei.
- * @returns {Promise<Object[]>} Ein Promise, das mit den geparsten Daten aufgelöst wird.
- */
 const parseCsv = (path) => {
   return new Promise((resolve, reject) => {
     const results = [];
@@ -20,11 +15,6 @@ const parseCsv = (path) => {
   });
 };
 
-/**
- * Parst eine Excel-Datei und gibt ein Array von Objekten zurück (vom ersten Sheet).
- * @param {string} path - Der Dateipfad zur Excel-Datei.
- * @returns {Object[]} Die geparsten Daten.
- */
 const parseExcel = (path) => {
   const workbook = xlsx.readFile(path);
   const sheetName = workbook.SheetNames[0];
@@ -32,30 +22,34 @@ const parseExcel = (path) => {
   return xlsx.utils.sheet_to_json(worksheet);
 };
 
-/**
- * Fügt Wählerdaten in die PostgreSQL-Datenbank ein.
- * @param {Object[]} data - Ein Array von Wählerobjekten.
- * @returns {Promise<void>}
- */
 const insertVoters = async (data) => {
   if (data.length === 0) {
     logger.info('Keine Daten zum Einfügen gefunden.');
     return;
   }
 
-  const columns = Object.keys(data[0]).join(', ');
+  const allowedColumns = [
+    'firstname',
+    'lastname',
+    'street',
+    'zipcode',
+    'city',
+    'birthdate',
+    'voter_id',
+  ];
+
+  const columns = allowedColumns.join(', ');
 
   const valuePlaceholders = data
-    .map((row, rowIdx) => {
-      const rowKeys = Object.keys(row);
-      const values = rowKeys
-        .map((_, colIdx) => `$${rowIdx * rowKeys.length + colIdx + 1}`)
+    .map((_, rowIdx) => {
+      const values = allowedColumns
+        .map((_, colIdx) => `$${rowIdx * allowedColumns.length + colIdx + 1}`)
         .join(', ');
       return `(${values})`;
     })
     .join(', ');
 
-  const allValues = data.flatMap((row) => Object.values(row));
+  const allValues = data.flatMap((row) => allowedColumns.map((c) => row[c] ?? null));
 
   const query = {
     text: `INSERT INTO voters (${columns}) VALUES ${valuePlaceholders}`,
@@ -71,12 +65,6 @@ const insertVoters = async (data) => {
   }
 };
 
-/**
- * Importiert Wählerdaten aus der hochgeladenen Datei in die Datenbank.
- * @param {string} path - Der Dateipfad der hochgeladenen Datei.
- * @param {string} mimeType - Der MIME-Typ der Datei.
- * @returns {Promise<void>}
- */
 export const importVoterData = async (path, mimeType) => {
   let parsedData;
   logger.debug(`Beginne mit dem Parsen der Datei: ${path} (${mimeType})`);
