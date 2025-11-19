@@ -6,7 +6,7 @@ export const voterRouter = Router();
 
 /**
  * @openapi
- * /voter/elections:
+ * /api/voter/elections:
  *  get:
  *    summary: Get all elections
  *    description: Get all elections, that are currently active

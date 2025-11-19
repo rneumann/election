@@ -195,7 +195,7 @@ app.use('/', healthRouter);
  * Binding API routes
  */
 app.use('/api', router);
-app.use('/voter', voterRouter);
+app.use('/api/voter', voterRouter);
 
 /**
  * Error handling middleware
