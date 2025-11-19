@@ -9,6 +9,8 @@ import { client } from './db.js';
  * logging, and database access.
  */
 
+const allowedColumns = ['uid', 'lastname', 'firstname', 'mtknr', 'faculty', 'votergroup', 'notes'];
+
 /**
  * Parses a CSV file and returns an array of objects.
  * @param {string} path - The path to the CSV file.
@@ -49,22 +51,15 @@ const insertVoters = async (data) => {
     return;
   }
 
-  const allowedColumns = [
-    'uid',
-    'lastname',
-    'firstname',
-    'mtknr',
-    'faculty',
-    'votergroup',
-    'notes',
-  ];
-
   const columns = allowedColumns.join(', ');
+  const numColumns = allowedColumns.length;
   const valuePlaceholders = data
     .map((_, rowIdx) => {
-      const values = allowedColumns
-        .map((_, colIdx) => `$${rowIdx * allowedColumns.length + colIdx + 1}`)
-        .join(', ');
+      const startIdx = rowIdx * numColumns + 1;
+      const values = Array.from(
+        { length: numColumns },
+        (_, colIdx) => `$${startIdx + colIdx}`,
+      ).join(', ');
       return `(${values})`;
     })
     .join(', ');
