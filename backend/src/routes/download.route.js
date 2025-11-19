@@ -123,7 +123,7 @@ export const exportBallotsRoute = async (req, res, next) => {
     const query = `
       SELECT 
         bv.ballot AS "ballotId",
-        ec.candidateId AS "candidateId",
+        ec.candidateId AS "candidateId"
       FROM 
         ballotvotes bv
       JOIN
