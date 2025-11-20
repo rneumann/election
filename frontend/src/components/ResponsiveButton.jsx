@@ -37,7 +37,7 @@ const ResponsiveButton = ({
       'bg-white text-brand-primary border-2 border-brand-primary hover:bg-brand-light active:bg-gray-100',
     danger: 'bg-red-600 text-white hover:bg-red-700 active:bg-red-800 shadow-md hover:shadow-lg',
     outline:
-      'border-2 border-brand-gray text-brand-dark hover:bg-brand-light active:bg-gray-200 bg-transparent',
+      'border-2 border-brand-gray text-brand-dark hover:bg-gray-700 active:bg-gray-200 bg-transparent',
   };
 
   // Size styles (with mobile-optimized touch targets)

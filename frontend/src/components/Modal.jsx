@@ -2,9 +2,11 @@ import { Dialog, DialogBackdrop, DialogPanel, DialogTitle } from '@headlessui/re
 import { useEffect, useState } from 'react';
 import { voterApi } from '../services/voterApi';
 import ResponsiveButton from './ResponsiveButton';
+import { Alert } from './Alert';
 
 export const Modal = ({ open, setOpen, electionId }) => {
   const [election, setElection] = useState([]);
+  const [showAlert, setShowAlert] = useState(false);
   useEffect(() => {
     if (!electionId) {
       return;
@@ -20,7 +22,7 @@ export const Modal = ({ open, setOpen, electionId }) => {
       <DialogBackdrop
         transition
         className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity
-    data-closed:opacity-0 data-enter:duration-300 data-enter:ease-out data-leave:duration-200 data-leave:ease-in"
+        data-closed:opacity-0 data-enter:duration-300 data-enter:ease-out data-leave:duration-200 data-leave:ease-in"
       />
 
       <div className="fixed inset-0 flex items-center justify-center p-4 overflow-y-auto">
@@ -42,6 +44,11 @@ export const Modal = ({ open, setOpen, electionId }) => {
         data-leave:duration-200 data-leave:ease-in
       "
         >
+          {showAlert && (
+            <div className="fixed inset-0 flex items-center justify-center z-[9999] rounded-md">
+              <Alert setShowAlert={setShowAlert} />
+            </div>
+          )}
           {/* Header */}
           <div className="px-4 sm:px-6 py-4 border-b border-gray-700">
             <DialogTitle className="text-lg sm:text-xl md:text-2xl font-bold text-white truncate">
@@ -62,9 +69,9 @@ export const Modal = ({ open, setOpen, electionId }) => {
               {/* Header - only visible on sm+ */}
               <div
                 className="
-        hidden sm:grid sm:grid-cols-4
-        bg-gray-800 text-gray-300 text-xs font-semibold uppercase tracking-wider
-      "
+                  hidden sm:grid sm:grid-cols-4
+                  bg-gray-800 text-gray-300 text-xs font-semibold uppercase tracking-wider
+                "
               >
                 <div className="px-3 py-2">Nr.</div>
                 <div className="px-3 py-2">Schlagwort</div>
@@ -79,10 +86,10 @@ export const Modal = ({ open, setOpen, electionId }) => {
                     <div
                       key={cand.candidateId}
                       className="
-              grid grid-cols-1 sm:grid-cols-4 gap-2 sm:gap-0 items-center
-              px-3 py-3 sm:px-4 sm:py-3
-              hover:bg-gray-800/40 transition
-            "
+                        grid grid-cols-1 sm:grid-cols-4 gap-2 sm:gap-0 items-center
+                        px-3 py-3 sm:px-4 sm:py-3
+                        hover:bg-gray-800/40 transition
+                      "
                     >
                       {/* Nr. */}
                       <div>
@@ -93,13 +100,13 @@ export const Modal = ({ open, setOpen, electionId }) => {
                       {/* Schlagwort */}
                       <div>
                         <div className="sm:hidden text-xs text-gray-400 mb-1">Schlagwort</div>
-                        <div className="text-gray-200 text-sm">{cand.keyword}</div>
+                        <div className="text-gray-200 text-sm sm:px-1">{cand.keyword}</div>
                       </div>
 
                       {/* Kandidat*in */}
                       <div>
                         <div className="sm:hidden text-xs text-gray-400 mb-1">Kandidat*in</div>
-                        <div className="text-gray-200 text-sm">
+                        <div className="text-gray-200 text-sm sm:px-3">
                           {cand.firstname} {cand.lastname}
                         </div>
                       </div>
@@ -113,13 +120,13 @@ export const Modal = ({ open, setOpen, electionId }) => {
                           max={election.votes_per_ballot}
                           aria-label={`Stimmen für ${cand.firstname} ${cand.lastname}`}
                           className="
-                  mx-auto sm:mx-0
-                  w-16 sm:w-24
-                  rounded-md bg-gray-800 border border-gray-600
-                  text-gray-200 px-2 py-1 text-sm
-                  focus:ring-2 focus:ring-blue-500 focus:outline-none
-                "
-                          defaultValue={cand.votes ?? ''}
+                            mx-auto sm:mx-0
+                            w-16 sm:w-18
+                            rounded-md bg-gray-800 border border-gray-600
+                            text-gray-200 px-2 py-1 text-sm
+                            focus:ring-2 focus:ring-blue-500 focus:outline-none
+                          "
+                          defaultValue={0}
                         />
                       </div>
                     </div>
@@ -132,8 +139,25 @@ export const Modal = ({ open, setOpen, electionId }) => {
           </div>
 
           {/* Footer */}
-          <div className="px-4 sm:px-6 py-4 border-t border-gray-700 flex justify-end gap-3">
-            <ResponsiveButton onClick={() => setOpen(false)}>Cancel</ResponsiveButton>
+          <div className="px-4 sm:px-6 py-4 border-t border-gray-700 flex items-center justify-between">
+            <label className="flex items-center gap-3 text-white cursor-pointer">
+              <input type="checkbox" className="w-5 h-5 " />
+              <span>Ich möchte die Wahl ungültig abgeben!</span>
+            </label>
+
+            <div className="flex items-center gap-3">
+              <ResponsiveButton
+                className="text-white"
+                variant="outline"
+                onClick={() => setOpen(false)}
+              >
+                Cancel
+              </ResponsiveButton>
+
+              <ResponsiveButton onClick={() => setShowAlert(true)} variant="primary">
+                Abstimmung speichern
+              </ResponsiveButton>
+            </div>
           </div>
         </DialogPanel>
       </div>
