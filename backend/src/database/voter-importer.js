@@ -1,20 +1,16 @@
 import fs from 'fs';
 import csv from 'csv-parser';
-import * as xlsx from 'xlsx';
+import ExcelJS from 'exceljs';
 import { logger } from '../conf/logger/logger.js';
 import { client } from './db.js';
-
-/**
- * Imports required modules for file operations, CSV parsing, Excel parsing,
- * logging, and database access.
- */
 
 const allowedColumns = ['uid', 'lastname', 'firstname', 'mtknr', 'faculty', 'votergroup', 'notes'];
 
 /**
- * Normalizes a raw row object into a safe, fixed-column object. (Eslint.)
- * @param {Object} row
- * @returns {Object}
+ * Cleans a row object by ensuring all allowed columns exist and are not undefined.
+ *
+ * @param {Object} row - The input row object from CSV or Excel
+ * @returns {Object} A row object with all allowed columns, defaulting to null if missing
  */
 const safeRow = (row) => {
   const r = {
@@ -37,42 +33,71 @@ const safeRow = (row) => {
     notes: r.notes ?? null,
   };
 };
+
 /**
- * Parses a CSV file and returns an array of objects.
- * @param {string} path - The path to the CSV file.
- * @returns {Promise<Object[]>} A promise resolved with all rows as objects.
+ * Parses a CSV file into a JSON array of safe rows.
+ *
+ * @param {string} path - Path to the CSV file
+ * @returns {Promise<Object[]>} Parsed rows from the CSV file
  */
 const parseCsv = (path) => {
   return new Promise((resolve, reject) => {
     const results = [];
     fs.createReadStream(path)
       .pipe(csv())
-      .on('data', (data) => {
-        results.push(safeRow(data));
-      })
+      .on('data', (data) => results.push(safeRow(data)))
       .on('end', () => resolve(results))
       .on('error', reject);
   });
 };
 
 /**
- * Parses an Excel file (first sheet) and returns an array of objects.
- * @param {string} path - The path to the Excel file.
- * @returns {Object[]} The parsed data.
- *  */
-const parseExcel = (path) => {
-  const workbook = xlsx.readFile(path);
-  const sheetName = workbook.SheetNames[0];
-  // eslint-disable-next-line security/detect-object-injection
-  const worksheet = workbook.Sheets[sheetName];
-  return xlsx.utils.sheet_to_json(worksheet).map((row) => safeRow(row));
+ * Parses an Excel file into a JSON array of safe rows using exceljs.
+ *
+ * @param {string} path - Path to the Excel file
+ * @returns {Promise<Object[]>} Parsed rows from the Excel file
+ * @throws Will throw an error if the file has no worksheets
+ */
+const parseExcel = async (path) => {
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.readFile(path);
+
+  const worksheet = workbook.worksheets[0];
+
+  if (!worksheet) {
+    throw new Error('Excel file contains no sheets');
+  }
+
+  const rows = [];
+  let headers = [];
+
+  worksheet.eachRow((row, rowNumber) => {
+    const values = row.values;
+
+    // exceljs includes a null value at index 0 → remove
+    const clean = values.slice(1);
+
+    if (rowNumber === 1) {
+      // header row
+      headers = clean.map((h) => String(h).trim().toLowerCase());
+    } else {
+      const entry = {};
+      clean.forEach((value, idx) => {
+        entry[headers[idx]] = value !== undefined ? value : null; // eslint-disable-line security/detect-object-injection
+      });
+      rows.push(safeRow(entry));
+    }
+  });
+
+  return rows;
 };
 
 /**
- * Inserts validated voter data into the PostgreSQL database.
- * Only whitelisted columns are accepted to prevent object injection.
- * @param {Object[]} data - An array of voter objects.
+ * Inserts an array of voter objects into the database.
+ *
+ * @param {Object[]} data - Array of voter objects with keys matching allowedColumns
  * @returns {Promise<void>}
+ * @throws Will throw an error if the database insertion fails
  */
 const insertVoters = async (data) => {
   if (data.length === 0) {
@@ -82,6 +107,7 @@ const insertVoters = async (data) => {
 
   const columns = allowedColumns.join(', ');
   const numColumns = allowedColumns.length;
+
   const valuePlaceholders = data
     .map((_, rowIdx) => {
       const startIdx = rowIdx * numColumns + 1;
@@ -118,11 +144,14 @@ const insertVoters = async (data) => {
 };
 
 /**
- * Imports voter data from CSV or Excel files, parses it, and loads it into the database.
- * Only safe MIME types are supported.
- * @param {string} path - The file path of the uploaded file.
- * @param {string} mimeType - The MIME type of the file.
+ * Main function to import voter data from a CSV or Excel file.
+ *
+ * Determines file type by MIME type, parses the file, and inserts rows into the database.
+ *
+ * @param {string} path - Path to the file to import
+ * @param {string} mimeType - MIME type of the file (e.g., 'text/csv', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
  * @returns {Promise<void>}
+ * @throws Will throw an error if the file type is unsupported, parsing fails, or database insertion fails
  */
 export const importVoterData = async (path, mimeType) => {
   let parsedData;
@@ -132,13 +161,12 @@ export const importVoterData = async (path, mimeType) => {
     if (mimeType === 'text/csv') {
       parsedData = await parseCsv(path);
     } else if (mimeType.includes('spreadsheet')) {
-      parsedData = parseExcel(path);
+      parsedData = await parseExcel(path);
     } else {
       throw new Error(`Unknown file type: ${mimeType}`);
     }
 
     logger.debug(`File successfully parsed. ${parsedData.length} rows found.`);
-
     await insertVoters(parsedData);
   } catch (error) {
     logger.error('Error during import process:', error);
