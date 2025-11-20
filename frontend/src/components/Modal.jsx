@@ -1,12 +1,15 @@
 import { Dialog, DialogBackdrop, DialogPanel, DialogTitle } from '@headlessui/react';
 import { useEffect, useState } from 'react';
 import { voterApi } from '../services/voterApi';
+import { logger } from '../conf/logger/logger';
 import ResponsiveButton from './ResponsiveButton';
 import { Alert } from './Alert';
 
 export const Modal = ({ open, setOpen, electionId }) => {
   const [election, setElection] = useState([]);
   const [showAlert, setShowAlert] = useState(false);
+  const [votes, setVotes] = useState({});
+  const [votesLeft, setVotesLeft] = useState(0);
   useEffect(() => {
     if (!electionId) {
       return;
@@ -14,6 +17,15 @@ export const Modal = ({ open, setOpen, electionId }) => {
     const fetchCandidates = async () => {
       const response = await voterApi.getElectionById(electionId);
       setElection(response);
+      logger.debug(`getElectionById res: ${JSON.stringify(response)}`);
+      logger.debug(`votes per ballot: ${response.votes_per_ballot}`);
+      setVotesLeft(response.votes_per_ballot || 0);
+
+      const initialVotes = {};
+      response.candidates.forEach((candidate) => {
+        initialVotes[candidate.id] = 0;
+      });
+      setVotes(initialVotes);
     };
     fetchCandidates();
   }, [electionId]);
@@ -58,10 +70,18 @@ export const Modal = ({ open, setOpen, electionId }) => {
 
           {/* Number of votes */}
           <div className="px-4 sm:px-6 py-2 border-b border-gray-700">
-            <DialogTitle className="text-sm sm:text-md font-bold text-white">
-              Sie haben {election.votes_per_ballot} Stimme/n und können maximal x auf eine Person
-              kumulieren.
-            </DialogTitle>
+            <span className="text-sm sm:text-md font-bold text-white">
+              Sie haben {election.votes_per_ballot} Stimme/n und können maximal{' '}
+              {election.maxcumulativevotes} auf eine Person kumulieren.
+            </span>
+            <span
+              className={`
+                text-sm sm:text-md font-bold flex flex-wrap mt-4
+                ${votesLeft > 0 ? 'text-green-400' : 'text-red-400'}
+              `}
+            >
+              Stimmen übrig: {votesLeft}
+            </span>
           </div>
 
           <div className="flex-1 overflow-y-auto px-2 py-2">
@@ -117,7 +137,7 @@ export const Modal = ({ open, setOpen, electionId }) => {
                         <input
                           type="number"
                           min={0}
-                          max={election.votes_per_ballot}
+                          max={election.maxcumulativevotes}
                           aria-label={`Stimmen für ${cand.firstname} ${cand.lastname}`}
                           className="
                             mx-auto sm:mx-0
@@ -127,6 +147,31 @@ export const Modal = ({ open, setOpen, electionId }) => {
                             focus:ring-2 focus:ring-blue-500 focus:outline-none
                           "
                           defaultValue={0}
+                          onChange={(e) => {
+                            logger.debug(`onChange: ${e.target.value}`);
+                            const newValue = Number(e.target.value);
+                            const oldValue = Number(votes[cand.candidateId] || 0);
+                            if (newValue < 0 || newValue > election.maxcumulativevotes) {
+                              logger.debug(`invalid value: ${e.target.value}`);
+                              return;
+                            }
+                            if (votesLeft <= 0 && newValue > oldValue) {
+                              logger.debug(`you reached your votes limit: ${e.target.value}`);
+                              e.target.value = oldValue;
+                              return;
+                            }
+
+                            setVotes((prevVotes) => {
+                              return {
+                                ...prevVotes,
+                                [cand.candidateId]: newValue,
+                              };
+                            });
+
+                            setVotesLeft((prevVotesLeft) => {
+                              return prevVotesLeft - (newValue - oldValue);
+                            });
+                          }}
                         />
                       </div>
                     </div>

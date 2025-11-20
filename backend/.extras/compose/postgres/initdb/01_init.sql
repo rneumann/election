@@ -33,6 +33,7 @@ CREATE TABLE
     info VARCHAR(200) NOT NULL,
     description TEXT,
     votes_per_ballot SMALLINT NOT NULL CHECK (votes_per_ballot > 0),
+    maxCumulativeVotes INT NOT NULL,
     start TIMESTAMPTZ NOT NULL,
     "end" TIMESTAMPTZ NOT NULL,
     CONSTRAINT elections_time_range CHECK ("end" > start)
@@ -62,7 +63,6 @@ CREATE TABLE
     valid BOOLEAN NOT NULL DEFAULT TRUE
   );
 
-< < < < < < < HEAD
 CREATE TABLE
   IF NOT EXISTS ballotvotes (
     election UUID NOT NULL REFERENCES elections (id) ON DELETE CASCADE ON UPDATE CASCADE,
@@ -73,18 +73,6 @@ CREATE TABLE
     CONSTRAINT fk_ballotvotes_list FOREIGN KEY (election, listnum) REFERENCES electioncandidates (electionId, listnum) ON DELETE CASCADE ON UPDATE CASCADE
   );
 
-= = = = = = =
-CREATE TABLE
-  IF NOT EXISTS ballotvotes (
-    election UUID NOT NULL REFERENCES elections (id) ON DELETE CASCADE ON UPDATE CASCADE,
-    ballot UUID NOT NULL REFERENCES ballots (id) ON DELETE CASCADE ON UPDATE CASCADE,
-    listnum INT NOT NULL,
-    votes INT NOT NULL DEFAULT 0 CHECK (votes >= 0),
-    PRIMARY KEY (election, ballot, listnum),
-    CONSTRAINT fk_ballotvotes_list FOREIGN KEY (election, listnum) REFERENCES electioncandidates (electionId, listnum) ON DELETE CASCADE ON UPDATE CASCADE
-  );
-
-> > > > > > > feature / postgres - db
 CREATE TABLE
   IF NOT EXISTS votingnotes (
     voterId UUID NOT NULL REFERENCES voters (id) ON DELETE CASCADE ON UPDATE CASCADE,
