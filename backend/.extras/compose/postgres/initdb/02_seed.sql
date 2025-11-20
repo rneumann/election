@@ -8,7 +8,7 @@ SET TIME ZONE 'Europe/Berlin';
   CSV HEADER;
 
 \echo 'candidates'
-\copy candidates (id,lastname,firstname,mtknr,faculty,keyword,notes,votergroup)
+\copy candidates (id,lastname,firstname,mtknr,faculty,keyword,notes,votergroup,approved)
   FROM '/docker-entrypoint-initdb.d/data/csv/candidates.csv'
   CSV HEADER;
 

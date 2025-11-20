@@ -13,17 +13,18 @@ CREATE TABLE IF NOT EXISTS voters (
   notes      TEXT
 );
 
-CREATE TABLE IF NOT EXISTS candidates (
-  id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  lastname   VARCHAR(100) NOT NULL,
-  firstname  VARCHAR(100) NOT NULL,
-  mtknr      VARCHAR(20),
-  votergroup VARCHAR(100),
-  faculty    VARCHAR(100),
-  keyword    VARCHAR(100),
-  notes      TEXT,
-  approved   BOOLEAN
-);
+CREATE TABLE
+  IF NOT EXISTS candidates (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid (),
+    lastname TEXT NOT NULL,
+    firstname TEXT NOT NULL,
+    mtknr TEXT,
+    votergroup TEXT,
+    faculty TEXT,
+    keyword TEXT,
+    notes TEXT,
+    approved BOOLEAN NOT NULL DEFAULT FALSE
+  );
 
 CREATE TABLE IF NOT EXISTS elections (
   id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -50,11 +51,12 @@ CREATE TABLE IF NOT EXISTS votergroups (
   PRIMARY KEY (electionId, votergroup)
 );
 
-CREATE TABLE IF NOT EXISTS ballots (
-  id        UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  election  UUID NOT NULL REFERENCES elections(id) ON DELETE CASCADE ON UPDATE CASCADE,
-  valid     BOOLEAN NOT NULL DEFAULT TRUE
-);
+CREATE TABLE
+  IF NOT EXISTS ballots (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid (),
+    election UUID NOT NULL REFERENCES elections (id) ON DELETE CASCADE ON UPDATE CASCADE,
+    valid BOOLEAN NOT NULL DEFAULT TRUE
+  );
 
 CREATE TABLE IF NOT EXISTS ballotvotes (
   election UUID NOT NULL REFERENCES elections(id) ON DELETE CASCADE ON UPDATE CASCADE,
@@ -68,70 +70,97 @@ CREATE TABLE IF NOT EXISTS ballotvotes (
     ON DELETE CASCADE ON UPDATE CASCADE
 );
 
-CREATE TABLE IF NOT EXISTS votingnotes (
-  voterId    UUID NOT NULL REFERENCES voters(id)    ON DELETE CASCADE ON UPDATE CASCADE,
-  electionId UUID NOT NULL REFERENCES elections(id) ON DELETE CASCADE ON UPDATE CASCADE,
-  notes      TEXT,
-  PRIMARY KEY (voterId, electionId)
-);
+CREATE TABLE
+  IF NOT EXISTS votingnotes (
+    voterId UUID NOT NULL REFERENCES voters (id) ON DELETE CASCADE ON UPDATE CASCADE,
+    electionId UUID NOT NULL REFERENCES elections (id) ON DELETE CASCADE ON UPDATE CASCADE,
+    notes TEXT,
+    PRIMARY KEY (voterId, electionId)
+  );
 
-CREATE INDEX IF NOT EXISTS idx_ballots_election   ON ballots(election);
-CREATE INDEX IF NOT EXISTS idx_ballotvotes_list   ON ballotvotes(election, listnum);
-CREATE INDEX IF NOT EXISTS idx_votingnotes_voter  ON votingnotes(voterId, electionId);
+CREATE INDEX IF NOT EXISTS idx_ballots_election ON ballots (election);
 
-CREATE OR REPLACE VIEW ballotlist AS
-SELECT 
+CREATE INDEX IF NOT EXISTS idx_ballotvotes_list ON ballotvotes (election, listnum);
+
+CREATE INDEX IF NOT EXISTS idx_votingnotes_voter ON votingnotes (voterId, electionId);
+
+CREATE
+OR REPLACE VIEW ballotlist AS
+SELECT
   ec.listnum,
-  c.id   AS cid,
+  c.id AS cid,
   c.firstname,
   c.lastname,
   c.faculty,
-  e.id   AS electionid,
+  e.id AS electionid,
   e.info
-FROM electioncandidates ec
-JOIN candidates c ON ec.candidateId = c.id
-JOIN elections  e ON ec.electionId  = e.id
-ORDER BY e.id, ec.listnum;
+FROM
+  electioncandidates ec
+  JOIN candidates c ON ec.candidateId = c.id
+  JOIN elections e ON ec.electionId = e.id
+ORDER BY
+  e.id,
+  ec.listnum;
 
-CREATE OR REPLACE VIEW counting AS
+CREATE
+OR REPLACE VIEW counting AS
 SELECT
   ec.listnum,
   c.firstname,
   c.lastname,
   c.faculty,
   SUM(bv.votes) AS votes,
-  e.id  AS electionid,
+  e.id AS electionid,
   e.info
-FROM ballotvotes bv
-JOIN electioncandidates ec ON bv.listnum = ec.listnum AND bv.election = ec.electionId
-JOIN candidates c          ON ec.candidateId = c.id
-JOIN elections  e          ON ec.electionId  = e.id
-GROUP BY e.id, ec.listnum, c.firstname, c.lastname, c.faculty, e.info;
+FROM
+  ballotvotes bv
+  JOIN electioncandidates ec ON bv.listnum = ec.listnum
+  AND bv.election = ec.electionId
+  JOIN candidates c ON ec.candidateId = c.id
+  JOIN elections e ON ec.electionId = e.id
+GROUP BY
+  e.id,
+  ec.listnum,
+  c.firstname,
+  c.lastname,
+  c.faculty,
+  e.info;
 
-CREATE OR REPLACE VIEW votingcounts AS
-SELECT 
+CREATE
+OR REPLACE VIEW votingcounts AS
+SELECT
   election,
   listnum,
   SUM(votes) AS votes
-FROM ballotvotes
-GROUP BY election, listnum;
+FROM
+  ballotvotes
+GROUP BY
+  election,
+  listnum;
 
-CREATE OR REPLACE VIEW numcandidatesperelection AS
-SELECT 
+CREATE
+OR REPLACE VIEW numcandidatesperelection AS
+SELECT
   electionid,
   COUNT(candidateid) AS candidates
-FROM electioncandidates
-GROUP BY electionid;
+FROM
+  electioncandidates
+GROUP BY
+  electionid;
 
-CREATE OR REPLACE VIEW numvotersperelection AS
-SELECT 
+CREATE
+OR REPLACE VIEW numvotersperelection AS
+SELECT
   electionid,
   COUNT(DISTINCT voterid) AS voters
-FROM votingnotes
-GROUP BY electionid;
+FROM
+  votingnotes
+GROUP BY
+  electionid;
 
-CREATE OR REPLACE VIEW electionoverview AS
-SELECT 
+CREATE
+OR REPLACE VIEW electionoverview AS
+SELECT
   e.id,
   e.info,
   e.description,
@@ -139,35 +168,49 @@ SELECT
   e.start,
   e."end",
   COALESCE(nc.candidates, 0) AS candidates,
-  COALESCE(nv.voters, 0)     AS voters,
-  COUNT(DISTINCT b.id)       AS ballots
-FROM elections e
-LEFT JOIN numcandidatesperelection nc ON nc.electionid = e.id
-LEFT JOIN numvotersperelection   nv ON nv.electionid = e.id
-LEFT JOIN ballots b ON b.election = e.id
-GROUP BY e.id, e.info, e.description, e.votes_per_ballot, e.start, e."end", nc.candidates, nv.voters;
+  COALESCE(nv.voters, 0) AS voters,
+  COUNT(DISTINCT b.id) AS ballots
+FROM
+  elections e
+  LEFT JOIN numcandidatesperelection nc ON nc.electionid = e.id
+  LEFT JOIN numvotersperelection nv ON nv.electionid = e.id
+  LEFT JOIN ballots b ON b.election = e.id
+GROUP BY
+  e.id,
+  e.info,
+  e.description,
+  e.votes_per_ballot,
+  e.start,
+  e."end",
+  nc.candidates,
+  nv.voters;
 
-CREATE OR REPLACE VIEW electionspervoter AS
+CREATE
+OR REPLACE VIEW electionspervoter AS
 SELECT
   v.id AS uid,
   v.lastname,
   v.firstname,
   v.mtknr,
   v.faculty,
-  e.id   AS eid,
+  e.id AS eid,
   e.info,
   e.description AS descr,
   (vn.notes IS NOT NULL) AS voted
-FROM voters v
-CROSS JOIN elections e
-LEFT JOIN votingnotes vn ON vn.voterid = v.id AND vn.electionid = e.id;
+FROM
+  voters v
+  CROSS JOIN elections e
+  LEFT JOIN votingnotes vn ON vn.voterid = v.id
+  AND vn.electionid = e.id;
 
-CREATE OR REPLACE VIEW voterregistry AS
-SELECT 
+CREATE
+OR REPLACE VIEW voterregistry AS
+SELECT
   faculty,
   lastname,
   firstname,
   mtknr
-FROM voters;
+FROM
+  voters;
 
 COMMIT;

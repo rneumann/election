@@ -1,3 +1,4 @@
+import { logger } from '../conf/logger/logger.js';
 import api from './api.js';
 
 /**
@@ -14,11 +15,11 @@ const authService = {
    * @throws {Error} When authentication fails
    */
   login: async (username, password) => {
-    const response = await api.post('/auth/login', {
+    const { data } = await api.post('/auth/login/ldap', {
       username: username.trim(),
       password: password.trim(),
     });
-    return response.data;
+    return data.user;
   },
 
   /**
@@ -28,9 +29,14 @@ const authService = {
    *
    * @returns {void}
    */
-  logout: () => {
-    sessionStorage.removeItem('user');
-    sessionStorage.removeItem('isAuthenticated');
+  logout: async () => {
+    const response = await api.delete('/auth/logout', {
+      withCredentials: true,
+    });
+    if (response.status !== 200) {
+      throw new Error('Logout failed');
+    }
+    return response.data.redirectUrl;
   },
 
   /**
@@ -38,9 +44,19 @@ const authService = {
    *
    * @returns {{username: string, role: string} | null} Current user or null
    */
-  getCurrentUser: () => {
-    const user = sessionStorage.getItem('user');
-    return user ? JSON.parse(user) : null;
+  getCurrentUser: async () => {
+    const response = await api.get('/auth/me', {
+      withCredentials: true,
+    });
+    if (!response.status !== 200) {
+      if (response.status === 401) {
+        logger.debug('No current user');
+        return undefined;
+      }
+      logger.error('Error getting current user');
+      return undefined;
+    }
+    return response.data;
   },
 
   /**
