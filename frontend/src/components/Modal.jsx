@@ -139,6 +139,7 @@ export const Modal = ({ open, setOpen, electionId }) => {
                           min={0}
                           max={election.maxcumulativevotes}
                           aria-label={`Stimmen für ${cand.firstname} ${cand.lastname}`}
+                          value={votes[cand.candidateId] ?? 0}
                           className="
                             mx-auto sm:mx-0
                             w-16 sm:w-18
@@ -192,6 +193,7 @@ export const Modal = ({ open, setOpen, electionId }) => {
 
             <div className="flex items-center gap-3">
               <ResponsiveButton
+                size="small"
                 className="text-white"
                 variant="outline"
                 onClick={() => setOpen(false)}
@@ -199,7 +201,18 @@ export const Modal = ({ open, setOpen, electionId }) => {
                 Cancel
               </ResponsiveButton>
 
-              <ResponsiveButton onClick={() => setShowAlert(true)} variant="primary">
+              <ResponsiveButton
+                size="small"
+                onClick={() => {
+                  setVotes({});
+                  setVotesLeft(election.votes_per_ballot);
+                }}
+                variant="primary"
+              >
+                Zurücksetzen
+              </ResponsiveButton>
+
+              <ResponsiveButton size="small" onClick={() => setShowAlert(true)} variant="primary">
                 Abstimmung speichern
               </ResponsiveButton>
             </div>
