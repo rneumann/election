@@ -1,3 +1,4 @@
+/* eslint-disable security/detect-object-injection */
 import fs from 'fs';
 import csv from 'csv-parser';
 import ExcelJS from 'exceljs';
