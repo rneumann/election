@@ -2,7 +2,7 @@ import ExcelJS from 'exceljs';
 import { logger } from '../conf/logger/logger.js';
 import { client } from '../database/db.js';
 
-// --- MIME & Headers ---
+// MIME & Headers
 const EXCEL_MIME_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 const CONTENT_TYPE = 'Content-Type';
 const CONTENT_DISPOSITION = 'Content-Disposition';
@@ -15,12 +15,12 @@ const CONTENT_DISPOSITION = 'Content-Disposition';
  */
 const CONTENT_DISPOSITION_ATTACHMENT = (filename) => `attachment; filename="${filename}"`;
 
-// --- Sheet Names ---
+// Sheet Names
 const SHEET_TOTAL_RESULTS = 'Total Results';
 const SHEET_BALLOTS = 'Ballots';
 const SHEET_SUMMARY = 'Summary';
 
-// --- Summary Header ---
+// Summary Header
 const SUMMARY_HEADER_ROW = 7;
 const SUMMARY_HEADERS = [
   'Kennung',
@@ -32,7 +32,7 @@ const SUMMARY_HEADERS = [
   'Studiengänge',
 ];
 
-// --- Summary Start Row ---
+// Summary Start Row
 const SUMMARY_START_ROW = 8;
 
 /**

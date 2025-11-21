@@ -1,6 +1,6 @@
 import ExcelJS from 'exceljs';
 import { logger } from '../conf/logger/logger.js';
-import { client } from './db.js';
+import { client } from '../database/db.js';
 
 /**
  * Imports election data from an Excel file into the database.
@@ -30,14 +30,14 @@ export const importElectionData = async (filePath) => {
 
     const sheet = workbook.worksheets[0];
     if (!sheet) {
-      throw new Error('Workbook has no worksheets.');
+      throw new Error('This workbook has no worksheets.');
     }
 
     const startDateStr = sheet.getCell('D3').value;
     const endDateStr = sheet.getCell('D4').value;
 
     if (!startDateStr || !endDateStr) {
-      throw new Error('Global start or end date missing (expected in D3 and D4).');
+      throw new Error('Start or end date missing expected in D3 and D4.');
     }
 
     const startDate = parseDate(startDateStr);
@@ -78,7 +78,7 @@ export const importElectionData = async (filePath) => {
 
       const { rows } = await db.query(insertElectionQuery, [
         info,
-        `Imported from Excel. Identifier: ${identifier}`,
+        identifier,
         listvotes,
         votesPerBallot,
         maxCumulativeVotes,

@@ -6,7 +6,7 @@
   "type": "module",
   "main": "server.js",
   "scripts": {
-    "eslint": "npx eslint **/*.js **/*.mjs **/*.json",
+    "eslint": "npx eslint '**/*.js' '**/*.mjs' '**/*.json'",
     "prettier": "npx prettier . --write",
     "start": "node server.js",
     "test": "vitest"

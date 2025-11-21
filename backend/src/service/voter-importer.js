@@ -2,36 +2,22 @@ import fs from 'fs';
 import csv from 'csv-parser';
 import ExcelJS from 'exceljs';
 import { logger } from '../conf/logger/logger.js';
-import { client } from './db.js';
+import { client } from '../database/db.js';
 
 const allowedColumns = ['uid', 'lastname', 'firstname', 'mtknr', 'faculty', 'votergroup', 'notes'];
 
 /**
- * Cleans a row object by ensuring all allowed columns exist and are not undefined.
+ * Ensures all allowed columns exist with null fallback.
  *
  * @param {Object} row - The input row object from CSV or Excel
  * @returns {Object} A row object with all allowed columns, defaulting to null if missing
  */
 const safeRow = (row) => {
-  const r = {
-    uid: row.uid,
-    lastname: row.lastname,
-    firstname: row.firstname,
-    mtknr: row.mtknr,
-    faculty: row.faculty,
-    votergroup: row.votergroup,
-    notes: row.notes,
-  };
-
-  return {
-    uid: r.uid ?? null,
-    lastname: r.lastname ?? null,
-    firstname: r.firstname ?? null,
-    mtknr: r.mtknr ?? null,
-    faculty: r.faculty ?? null,
-    votergroup: r.votergroup ?? null,
-    notes: r.notes ?? null,
-  };
+  const cleaned = {};
+  for (const col of allowedColumns) {
+    cleaned[col] = row[col] ?? null;
+  }
+  return cleaned;
 };
 
 /**
@@ -63,7 +49,6 @@ const parseExcel = async (path) => {
   await workbook.xlsx.readFile(path);
 
   const worksheet = workbook.worksheets[0];
-
   if (!worksheet) {
     throw new Error('Excel file contains no sheets');
   }
@@ -73,12 +58,9 @@ const parseExcel = async (path) => {
 
   worksheet.eachRow((row, rowNumber) => {
     const values = row.values;
-
-    // exceljs includes a null value at index 0 → remove
     const clean = values.slice(1);
 
     if (rowNumber === 1) {
-      // header row
       headers = clean.map((h) => String(h).trim().toLowerCase());
     } else {
       const entry = {};
@@ -100,46 +82,32 @@ const parseExcel = async (path) => {
  * @throws Will throw an error if the database insertion fails
  */
 const insertVoters = async (data) => {
-  if (data.length === 0) {
+  if (!data.length) {
     logger.info('No data found to insert.');
     return;
   }
 
-  const columns = allowedColumns.join(', ');
-  const numColumns = allowedColumns.length;
-
-  const valuePlaceholders = data
-    .map((_, rowIdx) => {
-      const startIdx = rowIdx * numColumns + 1;
-      const values = Array.from(
-        { length: numColumns },
-        (_, colIdx) => `$${startIdx + colIdx}`,
-      ).join(', ');
-      return `(${values})`;
-    })
+  const cols = allowedColumns.join(', ');
+  const placeholders = data
+    .map(
+      (_, i) =>
+        `(${allowedColumns.map((__, j) => `$${i * allowedColumns.length + (j + 1)}`).join(', ')})`,
+    )
     .join(', ');
 
-  const allValues = data.flatMap((row) => [
-    row.uid,
-    row.lastname,
-    row.firstname,
-    row.mtknr,
-    row.faculty,
-    row.votergroup,
-    row.notes,
-  ]);
+  const flatValues = data.flatMap((row) => allowedColumns.map((col) => row[col]));
 
   const query = {
-    text: `INSERT INTO voters (${columns}) VALUES ${valuePlaceholders}`,
-    values: allValues,
+    text: `INSERT INTO voters (${cols}) VALUES ${placeholders}`,
+    values: flatValues,
   };
 
   try {
     const res = await client.query(query);
-    logger.info(`Successfully inserted ${res.rowCount} voters into the database.`);
-  } catch (error) {
-    logger.error('Error inserting voter data into the database:', error);
-    throw new Error('Database error while inserting voter data.');
+    logger.info(`Inserted ${res.rowCount} voters.`);
+  } catch (err) {
+    logger.error('DB insert error:', err);
+    throw new Error('Database error while inserting voters.');
   }
 };
 
@@ -154,22 +122,26 @@ const insertVoters = async (data) => {
  * @throws Will throw an error if the file type is unsupported, parsing fails, or database insertion fails
  */
 export const importVoterData = async (path, mimeType) => {
-  let parsedData;
-  logger.debug(`Starting to parse file: ${path} (${mimeType})`);
+  logger.debug(`Parsing file: ${path} (${mimeType})`);
+
+  const parsers = {
+    'text/csv': parseCsv,
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': parseExcel,
+  };
+
+  const isSpreadsheet = mimeType.includes('spreadsheet');
+  const parser = parsers[mimeType] || (isSpreadsheet ? parseExcel : null);
+
+  if (!parser) {
+    throw new Error(`Unsupported file type: ${mimeType}`);
+  }
 
   try {
-    if (mimeType === 'text/csv') {
-      parsedData = await parseCsv(path);
-    } else if (mimeType.includes('spreadsheet')) {
-      parsedData = await parseExcel(path);
-    } else {
-      throw new Error(`Unknown file type: ${mimeType}`);
-    }
-
-    logger.debug(`File successfully parsed. ${parsedData.length} rows found.`);
-    await insertVoters(parsedData);
-  } catch (error) {
-    logger.error('Error during import process:', error);
-    throw error;
+    const rows = await parser(path);
+    logger.debug(`Parsed ${rows.length} rows.`);
+    await insertVoters(rows);
+  } catch (err) {
+    logger.error('Import process error:', err);
+    throw err;
   }
 };

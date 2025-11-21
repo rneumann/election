@@ -1,8 +1,8 @@
 import fs from 'fs';
 import multer from 'multer';
 import { logger } from '../conf/logger/logger.js';
-import { importVoterData } from '../database/voter-importer.js';
-import { importElectionData } from '../database/election-importer.js';
+import { importVoterData } from '../service/voter-importer.js';
+import { importElectionData } from '../service/election-importer.js';
 
 /**
  * Multer storage configuration for file uploads.
