@@ -35,6 +35,18 @@ CREATE TABLE IF NOT EXISTS elections (
   "end"            TIMESTAMPTZ NOT NULL,
   CONSTRAINT elections_time_range CHECK ("end" > start)
 );
+CREATE TABLE
+  IF NOT EXISTS elections (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid (),
+    info TEXT NOT NULL,
+    description TEXT,
+    listvotes INT NOT NULL DEFAULT '0',
+    votes_per_ballot SMALLINT NOT NULL CHECK (votes_per_ballot > 0),
+    max_cumulative_votes int NOT NULL DEFAULT '0' CHECK (max_cumulative_votes >= 0),
+    start TIMESTAMPTZ NOT NULL,
+    "end" TIMESTAMPTZ NOT NULL,
+    CONSTRAINT elections_time_range CHECK ("end" > start)
+  );
 
 CREATE TABLE IF NOT EXISTS electioncandidates (
   electionId  UUID NOT NULL REFERENCES elections(id)  ON DELETE CASCADE ON UPDATE CASCADE,
@@ -77,6 +89,7 @@ CREATE TABLE
     notes TEXT,
     PRIMARY KEY (voterId, electionId)
   );
+
 
 CREATE INDEX IF NOT EXISTS idx_ballots_election ON ballots (election);
 
