@@ -35,6 +35,7 @@ CREATE TABLE IF NOT EXISTS elections (
   "end"            TIMESTAMPTZ NOT NULL,
   CONSTRAINT elections_time_range CHECK ("end" > start)
 );
+
 CREATE TABLE
   IF NOT EXISTS elections (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid (),
