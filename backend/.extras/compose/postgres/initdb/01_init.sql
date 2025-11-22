@@ -37,7 +37,25 @@ CREATE TABLE
     max_cumulative_votes int NOT NULL DEFAULT '0' CHECK (max_cumulative_votes >= 0),
     start TIMESTAMPTZ NOT NULL,
     "end" TIMESTAMPTZ NOT NULL,
-    CONSTRAINT elections_time_range CHECK ("end" > start)
+    election_type VARCHAR(50),
+    counting_method VARCHAR(50),
+    CONSTRAINT elections_time_range CHECK ("end" > start),
+    CONSTRAINT chk_election_type CHECK (
+      election_type IS NULL OR election_type IN (
+        'proportional_representation',
+        'majority_vote',
+        'referendum',
+        'mixed'
+      )
+    ),
+    CONSTRAINT chk_counting_method CHECK (
+      counting_method IS NULL OR counting_method IN (
+        'sainte_lague',
+        'hare_niemeyer',
+        'highest_votes',
+        'yes_no_referendum'
+      )
+    )
   );
 
 CREATE TABLE
@@ -82,12 +100,32 @@ CREATE TABLE
     PRIMARY KEY (voterId, electionId)
   );
 
+CREATE TABLE
+  IF NOT EXISTS election_results (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid (),
+    election_id UUID NOT NULL REFERENCES elections (id) ON DELETE CASCADE,
+    version INT NOT NULL DEFAULT 1,
+    is_final BOOLEAN NOT NULL DEFAULT FALSE,
+    result_data JSONB NOT NULL,
+    counted_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    counted_by TEXT,
+    CONSTRAINT uq_election_version UNIQUE (election_id, version)
+  );
+
 
 CREATE INDEX IF NOT EXISTS idx_ballots_election ON ballots (election);
 
 CREATE INDEX IF NOT EXISTS idx_ballotvotes_list ON ballotvotes (election, listnum);
 
 CREATE INDEX IF NOT EXISTS idx_votingnotes_voter ON votingnotes (voterId, electionId);
+
+CREATE INDEX IF NOT EXISTS idx_elections_type_method ON elections (election_type, counting_method);
+
+CREATE INDEX IF NOT EXISTS idx_election_results_election ON election_results (election_id);
+
+CREATE INDEX IF NOT EXISTS idx_election_results_final ON election_results (election_id, is_final);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_election_results_one_final ON election_results (election_id) WHERE (is_final = TRUE);
 
 CREATE
 OR REPLACE VIEW ballotlist AS
@@ -217,5 +255,33 @@ SELECT
   mtknr
 FROM
   voters;
+
+CREATE
+OR REPLACE VIEW list_votes AS
+SELECT
+  e.id AS election_id,
+  e.info AS election_info,
+  SUM(bv.votes) AS total_list_votes
+FROM
+  elections e
+  JOIN ballotvotes bv ON e.id = bv.election
+WHERE
+  e.listvotes = 1
+  AND bv.listnum = 0
+GROUP BY
+  e.id,
+  e.info;
+
+CREATE
+OR REPLACE VIEW ballot_statistics AS
+SELECT
+  b.election,
+  COUNT(b.id) AS total_ballots,
+  COUNT(b.id) FILTER (WHERE b.valid = TRUE) AS valid_ballots,
+  COUNT(b.id) FILTER (WHERE b.valid = FALSE) AS invalid_ballots
+FROM
+  ballots b
+GROUP BY
+  b.election;
 
 COMMIT;
