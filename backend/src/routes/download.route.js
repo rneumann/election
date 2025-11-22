@@ -1,41 +1,62 @@
+import ExcelJS from 'exceljs';
 import { logger } from '../conf/logger/logger.js';
 import { client } from '../database/db.js';
 
+// MIME & Headers
+const EXCEL_MIME_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+const CONTENT_TYPE = 'Content-Type';
+const CONTENT_DISPOSITION = 'Content-Disposition';
+
+/**
+ * Generates a Content-Disposition header value for file downloads.
+ *
+ * @param {string} filename - The name of the file to be downloaded
+ * @returns {string} The properly formatted Content-Disposition header value
+ */
+const CONTENT_DISPOSITION_ATTACHMENT = (filename) => `attachment; filename="${filename}"`;
+
+// Sheet Names
+const SHEET_TOTAL_RESULTS = 'Total Results';
+const SHEET_BALLOTS = 'Ballots';
+const SHEET_SUMMARY = 'Summary';
+
+// Summary Header
+const SUMMARY_HEADER_ROW = 7;
+const SUMMARY_HEADERS = [
+  'Kennung',
+  'Info',
+  'Listen',
+  'Plätze',
+  'max. Kum.',
+  'Fakultäten',
+  'Studiengänge',
+];
+
+// Summary Start Row
+const SUMMARY_START_ROW = 8;
+
 /**
  * Route handler for exporting aggregated election results.
- * This route expects a GET request with an electionId as a URL parameter
- * (e.g., /download/totalresults/some-uuid).
- *
- * Behavior:
- * - Validates the HTTP method.
- * - Validates the presence of the electionId.
- * - Queries the database for aggregated vote counts (total votes per candidate).
- * - Sends a JSON file as a download.
  *
  * @async
- * @param {Object} req - The Express request object
- * @param {Object} res - The Express response object
- * @param {Function} next - The Express next middleware function
- * @returns {Promise<Response>} JSON file download or JSON error response
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ * @returns {Promise<void>} Sends an Excel file as response
  */
 export const exportTotalResultsRoute = async (req, res, next) => {
   logger.debug('Export route for total results accessed');
 
-  // Validate HTTP method
   if (req.method !== 'GET') {
-    logger.warn(`Invalid HTTP method used: ${req.method}`);
     return res.status(405).json({ message: 'Method Not Allowed' });
   }
 
-  // Validate parameter
   const { electionId } = req.params;
   if (!electionId) {
-    logger.warn('No electionId provided in the request');
     return res.status(400).json({ message: 'electionId is required' });
   }
 
   try {
-    // Query for aggregated results
     const query = `
       SELECT 
         c.firstname || ' ' || c.lastname AS candidate,
@@ -53,103 +74,184 @@ export const exportTotalResultsRoute = async (req, res, next) => {
       ORDER BY 
         votes DESC;
     `;
-
     const dbResult = await client.query(query, [electionId]);
 
     if (dbResult.rows.length === 0) {
-      logger.warn(`No results found for electionId: ${electionId}`);
       return res.status(404).json({ message: 'No results found for this election ID.' });
     }
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet(SHEET_TOTAL_RESULTS);
+    const excelWritePromise = workbook.xlsx.write(res);
 
-    // Prepare data for download
-    const resultsData = {
-      electionId: electionId,
-      totalVotes: dbResult.rows.reduce((sum, row) => sum + parseInt(row.votes, 10), 0),
-      results: dbResult.rows,
-    };
+    sheet.addRow(['Candidate', 'Votes']);
+    dbResult.rows.forEach((r) => sheet.addRow([r.candidate, r.votes]));
 
-    // Set headers for file download
-    const fileName = `election-total-results-${electionId}.json`;
-    res.setHeader('Content-Type', 'application/json');
-    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+    const fileName = `election-total-results-${electionId}.xlsx`;
+    res.setHeader(CONTENT_TYPE, EXCEL_MIME_TYPE);
+    res.setHeader(CONTENT_DISPOSITION, CONTENT_DISPOSITION_ATTACHMENT(fileName));
 
-    logger.debug(`Successfully exporting total results for electionId ${electionId}.`);
-
-    // Send data as JSON file
-    return res.status(200).json(resultsData);
+    await excelWritePromise;
+    res.end();
   } catch (error) {
-    logger.error('Error querying database for total results export:', error);
+    logger.error('Error exporting total results:', error);
     next(error);
   }
 };
 
 /**
  * Route handler for exporting anonymized ballot data.
- * This route expects a GET request with an electionId as a URL parameter
- * (e.g., /download/ballots/some-uuid).
- *
- * Behavior:
- * - Validates the HTTP method.
- * - Validates the presence of the electionId.
- * - Queries the database for all individual (anonymized) votes associated with an election.
- * - This contains NO voter information, only the link between a ballot and a candidate.
- * - Sends a JSON file as a download.
  *
  * @async
- * @param {Object} req - The Express request object
- * @param {Object} res - The Express response object
- * @param {Function} next - The Express next middleware function
- * @returns {Promise<Response>} JSON file download or JSON error response
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ * @returns {Promise<void>} Sends an Excel file as response
  */
 export const exportBallotsRoute = async (req, res, next) => {
   logger.debug('Export route for anonymized ballots accessed');
 
-  // Validate HTTP method
   if (req.method !== 'GET') {
-    logger.warn(`Invalid HTTP method used: ${req.method}`);
     return res.status(405).json({ message: 'Method Not Allowed' });
   }
 
-  // Validate parameter
   const { electionId } = req.params;
   if (!electionId) {
-    logger.warn('No electionId provided in the request');
     return res.status(400).json({ message: 'electionId is required' });
   }
 
   try {
-    // Query for anonymized ballot votes
-    // We select the ballot ID and the candidate ID it voted for.
     const query = `
       SELECT 
         bv.ballot AS "ballotId",
-        ec.candidateId AS "candidateId",
+        ec.candidateId AS "candidateId"
       FROM 
         ballotvotes bv
       JOIN
-        electioncandidates ec ON bv.election = ec.electionId AND bv.listnum = ec.listnum
+        electioncandidates ec ON bv.election = ec.electionId 
+        AND bv.listnum = ec.listnum
       WHERE 
         bv.election = $1;
     `;
-
     const dbResult = await client.query(query, [electionId]);
 
     if (dbResult.rows.length === 0) {
-      logger.warn(`No ballots found for electionId: ${electionId}`);
       return res.status(404).json({ message: 'No ballots found for this election ID.' });
     }
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet(SHEET_BALLOTS);
+    const excelWritePromise = workbook.xlsx.write(res);
 
-    // Set headers for file download
-    const fileName = `election-anonymized-ballots-${electionId}.json`;
-    res.setHeader('Content-Type', 'application/json');
-    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+    sheet.addRow(['Ballot ID', 'Candidate ID']);
+    dbResult.rows.forEach((r) => sheet.addRow([r.ballotId, r.candidateId]));
 
-    logger.debug(`Successfully exporting anonymized ballots for electionId ${electionId}.`);
+    const fileName = `election-anonymized-ballots-${electionId}.xlsx`;
+    res.setHeader(CONTENT_TYPE, EXCEL_MIME_TYPE);
+    res.setHeader(CONTENT_DISPOSITION, CONTENT_DISPOSITION_ATTACHMENT(fileName));
 
-    // Send the raw rows as the file
-    return res.status(200).json(dbResult.rows);
+    await excelWritePromise;
+    res.end();
   } catch (error) {
-    logger.error('Error querying database for ballot export:', error);
+    logger.error('Error exporting ballots:', error);
     next(error);
+  }
+};
+
+/**
+ * Route handler for exporting the election definition.
+ *
+ * @async
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ * @returns {Promise<void>} Sends an Excel file as response
+ */
+export const exportElectionDefinitionRoute = async (req, res, next) => {
+  logger.debug('Export route for election definition accessed');
+
+  let { startDate, endDate } = req.query;
+
+  try {
+    if (!startDate || !endDate) {
+      logger.warn('No startDate/endDate passed, using most recent election interval.');
+
+      const latest = await client.query(
+        `SELECT DISTINCT start, "end"
+         FROM elections
+         ORDER BY start DESC
+         LIMIT 1`,
+      );
+
+      if (!latest.rows.length) {
+        return res.status(400).json({
+          message: 'No elections found and no date range provided.',
+        });
+      }
+
+      startDate = latest.rows[0].start;
+      endDate = latest.rows[0].end;
+
+      logger.info(`Using fallback interval: ${startDate} → ${endDate}`);
+    }
+
+    const electionsRes = await client.query(
+      `SELECT * FROM elections
+       WHERE start = $1 AND "end" = $2
+       ORDER BY id`,
+      [startDate, endDate],
+    );
+
+    const elections = electionsRes.rows;
+    if (!elections.length) {
+      return res.status(404).json({ message: 'No elections found for this period.' });
+    }
+    const workbook = new ExcelJS.Workbook();
+    const summary = workbook.addWorksheet(SHEET_SUMMARY);
+    const excelWritePromise = workbook.xlsx.write(res);
+
+    summary.getCell('D3').value = startDate;
+    summary.getCell('D4').value = endDate;
+    summary.getRow(SUMMARY_HEADER_ROW).values = SUMMARY_HEADERS;
+
+    let summaryRow = SUMMARY_START_ROW;
+
+    for (const election of elections) {
+      const vgRes = await client.query(
+        `SELECT v.votergroup, v.faculty
+         FROM votergroups v
+         WHERE v.electionId = $1`,
+        [election.id],
+      );
+
+      const faculties = new Set();
+      const courses = new Set();
+      vgRes.rows.forEach((vg) => {
+        if (vg.faculty) {
+          faculties.add(vg.faculty);
+        }
+        if (vg.votergroup) {
+          courses.add(vg.votergroup);
+        }
+      });
+
+      summary.getRow(summaryRow++).values = [
+        election.id,
+        election.info,
+        election.listvotes,
+        election.votes_per_ballot,
+        election.max_cumulative_votes || null,
+        [...faculties].join(', '),
+        [...courses].join(', '),
+      ];
+    }
+
+    const fileName = `election-definition-${startDate}_${endDate}.xlsx`;
+    res.setHeader(CONTENT_TYPE, EXCEL_MIME_TYPE);
+    res.setHeader(CONTENT_DISPOSITION, CONTENT_DISPOSITION_ATTACHMENT(fileName));
+
+    await excelWritePromise;
+    res.end();
+  } catch (err) {
+    logger.error('Error exporting election definition:', err);
+    next(err);
   }
 };

@@ -3,8 +3,12 @@ import express from 'express';
 import { ensureAuthenticated, ensureHasRole, loginRoute, logoutRoute } from '../auth/auth.js';
 import passport from '../auth/passport.js';
 import { logger } from '../conf/logger/logger.js';
-import { importWahlerRoute } from './upload.route.js';
-import { exportTotalResultsRoute, exportBallotsRoute } from './download.route.js';
+import { importWahlerRoute, importElectionRoute } from './upload.route.js';
+import {
+  exportTotalResultsRoute,
+  exportBallotsRoute,
+  exportElectionDefinitionRoute,
+} from './download.route.js';
 export const router = express.Router();
 
 /**
@@ -308,6 +312,75 @@ router.get(
   ensureHasRole('admin'),
   exportTotalResultsRoute,
 );
+
+/**
+ * @openapi
+ * /api/upload/elections:
+ *   post:
+ *     summary: Upload election definitions
+ *     description: Uploads a CSV or Excel file with election definitions (Wahlen.csv).
+ *     tags:
+ *       - Upload
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               file:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       200:
+ *         description: Elections imported successfully
+ *       400:
+ *         description: Bad request (no file, invalid format)
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden (requires admin role)
+ *       500:
+ *         description: Import failed
+ */
+
+router.post(
+  '/upload/elections',
+  ensureAuthenticated,
+  ensureHasRole(['admin']),
+  importElectionRoute,
+);
+
+/**
+ * @openapi
+ * /api/download/definition/{electionId}:
+ *   get:
+ *     summary: Download election definition
+ *     description: Exports the metadata and voter groups for a specific election.
+ *     tags:
+ *       - Download
+ *     parameters:
+ *       - in: path
+ *         name: electionId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: JSON file containing election details
+ *       404:
+ *         description: Election not found
+ */
+
+router.get(
+  '/download/definition/:electionId',
+  ensureAuthenticated,
+  ensureHasRole(['admin']),
+  exportElectionDefinitionRoute,
+);
+
 /**
  * Testing routes for protection
  * @openapi

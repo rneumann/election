@@ -1,5 +1,5 @@
 import dotenv from 'dotenv';
-import { Client } from 'pg';
+import pg from 'pg';
 import { logger } from '../conf/logger/logger.js';
 
 dotenv.config();
@@ -17,7 +17,7 @@ dotenv.config();
  */
 const port = 5432;
 
-const client = new Client({
+const client = new pg.Pool({
   host: process.env.DB_HOST,
   port: process.env.DB_PORT ? parseInt(process.env.DB_PORT) : port,
   user: process.env.DB_USER,
@@ -37,10 +37,8 @@ const client = new Client({
  */
 export const connectDb = async () => {
   try {
-    await client.connect();
-    logger.info('Connected to the database successfully');
-
     const { rows } = await client.query('SELECT NOW() AS now');
+    logger.info('Connected to the database successfully');
     logger.info(`Database time: ${rows[0].now}`);
   } catch (err) {
     logger.error(`Database connection error: ${err.stack}`);
