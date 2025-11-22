@@ -2,17 +2,16 @@ BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
-CREATE TABLE
-  IF NOT EXISTS voters (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid (),
-    uid TEXT UNIQUE,
-    lastname TEXT NOT NULL,
-    firstname TEXT NOT NULL,
-    mtknr TEXT UNIQUE,
-    faculty TEXT,
-    votergroup TEXT NOT NULL,
-    notes TEXT
-  );
+CREATE TABLE IF NOT EXISTS voters (
+  id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  uid        VARCHAR(100) UNIQUE,
+  lastname   VARCHAR(100) NOT NULL,
+  firstname  VARCHAR(100) NOT NULL,
+  mtknr      VARCHAR(20) UNIQUE,
+  faculty    VARCHAR(100),
+  votergroup VARCHAR(100) NOT NULL,
+  notes      TEXT
+);
 
 CREATE TABLE
   IF NOT EXISTS candidates (
@@ -27,6 +26,16 @@ CREATE TABLE
     approved BOOLEAN NOT NULL DEFAULT FALSE
   );
 
+CREATE TABLE IF NOT EXISTS elections (
+  id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  info             VARCHAR(200) NOT NULL,
+  description      TEXT,
+  votes_per_ballot SMALLINT NOT NULL CHECK (votes_per_ballot > 0),
+  start            TIMESTAMPTZ NOT NULL,
+  "end"            TIMESTAMPTZ NOT NULL,
+  CONSTRAINT elections_time_range CHECK ("end" > start)
+);
+
 CREATE TABLE
   IF NOT EXISTS elections (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid (),
@@ -40,22 +49,20 @@ CREATE TABLE
     CONSTRAINT elections_time_range CHECK ("end" > start)
   );
 
-CREATE TABLE
-  IF NOT EXISTS electioncandidates (
-    electionId UUID NOT NULL REFERENCES elections (id) ON DELETE CASCADE ON UPDATE CASCADE,
-    candidateId UUID NOT NULL REFERENCES candidates (id) ON DELETE CASCADE ON UPDATE CASCADE,
-    listnum INT NOT NULL,
-    PRIMARY KEY (electionId, candidateId),
-    CONSTRAINT uq_election_listnum UNIQUE (electionId, listnum)
-  );
+CREATE TABLE IF NOT EXISTS electioncandidates (
+  electionId  UUID NOT NULL REFERENCES elections(id)  ON DELETE CASCADE ON UPDATE CASCADE,
+  candidateId UUID NOT NULL REFERENCES candidates(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  listnum     INT NOT NULL,
+  PRIMARY KEY (electionId, candidateId),
+  CONSTRAINT uq_election_listnum UNIQUE (electionId, listnum)
+);
 
-CREATE TABLE
-  IF NOT EXISTS votergroups (
-    electionId UUID NOT NULL REFERENCES elections (id) ON DELETE CASCADE ON UPDATE CASCADE,
-    votergroup TEXT NOT NULL,
-    faculty TEXT,
-    PRIMARY KEY (electionId, votergroup)
-  );
+CREATE TABLE IF NOT EXISTS votergroups (
+  electionId UUID NOT NULL REFERENCES elections(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  votergroup VARCHAR(100) NOT NULL,
+  faculty    VARCHAR(100),
+  PRIMARY KEY (electionId, votergroup)
+);
 
 CREATE TABLE
   IF NOT EXISTS ballots (
@@ -64,15 +71,17 @@ CREATE TABLE
     valid BOOLEAN NOT NULL DEFAULT TRUE
   );
 
-CREATE TABLE
-  IF NOT EXISTS ballotvotes (
-    election UUID NOT NULL REFERENCES elections (id) ON DELETE CASCADE ON UPDATE CASCADE,
-    ballot UUID NOT NULL REFERENCES ballots (id) ON DELETE CASCADE ON UPDATE CASCADE,
-    listnum INT NOT NULL,
-    votes INT NOT NULL DEFAULT 0 CHECK (votes >= 0),
-    PRIMARY KEY (election, ballot, listnum),
-    CONSTRAINT fk_ballotvotes_list FOREIGN KEY (election, listnum) REFERENCES electioncandidates (electionId, listnum) ON DELETE CASCADE ON UPDATE CASCADE
-  );
+CREATE TABLE IF NOT EXISTS ballotvotes (
+  election UUID NOT NULL REFERENCES elections(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  ballot   UUID NOT NULL REFERENCES ballots(id)   ON DELETE CASCADE ON UPDATE CASCADE,
+  listnum  INT NOT NULL,
+  votes    INT NOT NULL DEFAULT 0 CHECK (votes >= 0),
+  PRIMARY KEY (election, ballot, listnum),
+  CONSTRAINT fk_ballotvotes_list
+    FOREIGN KEY (election, listnum)
+    REFERENCES electioncandidates (electionId, listnum)
+    ON DELETE CASCADE ON UPDATE CASCADE
+);
 
 CREATE TABLE
   IF NOT EXISTS votingnotes (
