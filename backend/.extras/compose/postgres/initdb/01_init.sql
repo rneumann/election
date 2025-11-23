@@ -35,9 +35,14 @@ CREATE TABLE
     listvotes INT NOT NULL DEFAULT '0',
     votes_per_ballot SMALLINT NOT NULL CHECK (votes_per_ballot > 0),
     max_cumulative_votes int NOT NULL DEFAULT '0' CHECK (max_cumulative_votes >= 0),
+    test_election_active BOOLEAN DEFAULT false,
     start TIMESTAMPTZ NOT NULL,
     "end" TIMESTAMPTZ NOT NULL,
-    CONSTRAINT elections_time_range CHECK ("end" > start)
+    CONSTRAINT elections_time_range CHECK ("end" > start),
+    CONSTRAINT elections_test_active_before_start CHECK (
+      NOT test_election_active
+      OR start > now ()
+    )
   );
 
 CREATE TABLE
@@ -169,6 +174,7 @@ SELECT
   e.info,
   e.description,
   e.votes_per_ballot AS votes_per_ballot,
+  e.test_election_active AS test_election_active,
   e.start,
   e."end",
   COALESCE(nc.candidates, 0) AS candidates,

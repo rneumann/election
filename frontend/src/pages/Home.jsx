@@ -65,7 +65,13 @@ const Home = () => {
               </p>
             </div>
             <div className="self-start sm:self-auto">
-              <ResponsiveButton variant="secondary" size="small" onClick={logout}>
+              <ResponsiveButton
+                toolTip={'logout aus der aktuellen Sitzung'}
+                toolTipPlacement="bottom"
+                variant="secondary"
+                size="small"
+                onClick={logout}
+              >
                 Abmelden
               </ResponsiveButton>
             </div>
@@ -225,9 +231,11 @@ const Home = () => {
                         </div>
 
                         {/* Button to start voting */}
-                        <div>
+                        <div className="flex gap-2">
                           <ResponsiveButton
+                            toolTip={election.test_election_active ? '' : 'Testwahl nicht aktiv'}
                             size="small"
+                            disabled={!election.test_election_active}
                             onClick={() => {
                               setOpen(true);
                               logger.debug(`current election id settet to: ${election.id}`);
@@ -235,6 +243,25 @@ const Home = () => {
                             }}
                           >
                             Testwahl starten
+                          </ResponsiveButton>
+                          <ResponsiveButton
+                            size="small"
+                            toolTip={'Hier können Sie Informationen über die Kandidaten abrufen.'}
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              strokeWidth="1.5"
+                              stroke="currentColor"
+                              className="size-5"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z"
+                              />
+                            </svg>
                           </ResponsiveButton>
                         </div>
                       </li>

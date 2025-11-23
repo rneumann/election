@@ -14,6 +14,8 @@ import PropTypes from 'prop-types';
  * @param {Function} [props.onClick] - Click event handler
  * @param {string} [props.type='button'] - HTML button type attribute
  * @param {string} [props.className=''] - Additional Tailwind CSS classes
+ * @param props.toolTip
+ * @param props.toolTipPlacement
  * @returns Styled button element with variant-specific appearance and responsive sizing
  */
 const ResponsiveButton = ({
@@ -25,6 +27,8 @@ const ResponsiveButton = ({
   onClick,
   type = 'button',
   className = '',
+  toolTip = undefined,
+  toolTipPlacement = 'top',
 }) => {
   const baseClasses =
     'rounded-lg font-semibold transition-all duration-200 touch-manipulation disabled:cursor-not-allowed disabled:opacity-50';
@@ -45,6 +49,13 @@ const ResponsiveButton = ({
     small: 'px-3 py-1.5 text-sm sm:px-4 sm:py-2',
     medium: 'px-4 py-2.5 text-sm sm:px-5 sm:py-3 sm:text-base min-h-touch',
     large: 'px-6 py-3 text-base sm:px-8 sm:py-4 sm:text-lg min-h-touch',
+  };
+
+  const tooltipPositionClasses = {
+    bottom: 'top-full mt-2 left-1/2 -translate-x-1/2',
+    top: 'bottom-full mb-2 left-1/2 -translate-x-1/2',
+    left: 'left-full mr-2 top-1/2 -translate-y-1/2',
+    right: 'right-full ml-2 top-1/2 -translate-y-1/2',
   };
 
   const widthClass = fullWidth ? 'w-full' : '';
@@ -79,15 +90,34 @@ const ResponsiveButton = ({
   const selectedVariant = getVariantClass();
   const selectedSize = getSizeClass();
 
+  /* eslint-disable */
+  const selectedTooltipPosition =
+    tooltipPositionClasses[toolTipPlacement] || tooltipPositionClasses.bottom;
+  /* eslint-enable */
   return (
-    <button
-      type={type}
-      onClick={onClick}
-      disabled={disabled}
-      className={`${baseClasses} ${selectedVariant} ${selectedSize} ${widthClass} ${className}`}
-    >
-      {children}
-    </button>
+    <div className="group relative">
+      {/* Tooltip */}
+      {toolTip && (
+        <span
+          role="tooltip"
+          className={`absolute ${selectedTooltipPosition} z-50 whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-xs text-white opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity`}
+        >
+          {toolTip}
+        </span>
+      )}
+
+      {/* Button */}
+      <button
+        type={type}
+        onClick={onClick}
+        disabled={disabled}
+        className={`${baseClasses} ${selectedVariant} ${selectedSize} ${widthClass} ${className}`}
+        aria-label={toolTip || undefined}
+        aria-disabled={disabled}
+      >
+        {children}
+      </button>
+    </div>
   );
 };
 
