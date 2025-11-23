@@ -12,6 +12,15 @@ export const voterRouter = Router();
  *    description: Get all elections, that are currently active
  *    tags:
  *      - Elections
+ *    parameters:
+ *      - name: status
+ *        in: query
+ *        description: Status of the election
+ *        required: false
+ *        schema:
+ *          type: string
+ *          enum: [active, finished, future]
+ *        example: active
  *    responses:
  *      200:
  *        description: OK
@@ -43,6 +52,8 @@ export const voterRouter = Router();
  *                        type: number
  *                      ballots:
  *                        type: number
+ *      400:
+ *        description: Invalid status parameter
  *      404:
  *        description: No elections found
  *      405:
