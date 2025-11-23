@@ -26,16 +26,6 @@ CREATE TABLE
     approved BOOLEAN NOT NULL DEFAULT FALSE
   );
 
-CREATE TABLE IF NOT EXISTS elections (
-  id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  info             VARCHAR(200) NOT NULL,
-  description      TEXT,
-  votes_per_ballot SMALLINT NOT NULL CHECK (votes_per_ballot > 0),
-  start            TIMESTAMPTZ NOT NULL,
-  "end"            TIMESTAMPTZ NOT NULL,
-  CONSTRAINT elections_time_range CHECK ("end" > start)
-);
-
 CREATE TABLE
   IF NOT EXISTS elections (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid (),
@@ -128,16 +118,7 @@ CREATE INDEX IF NOT EXISTS idx_ballotvotes_list ON ballotvotes (election, listnu
 
 CREATE INDEX IF NOT EXISTS idx_votingnotes_voter ON votingnotes (voterId, electionId);
 
-CREATE INDEX IF NOT EXISTS idx_elections_type_method ON elections (election_type, counting_method);
-
-CREATE INDEX IF NOT EXISTS idx_election_results_election ON election_results (election_id);
-
-CREATE INDEX IF NOT EXISTS idx_election_results_final ON election_results (election_id, is_final);
-
-CREATE UNIQUE INDEX IF NOT EXISTS idx_election_results_one_final ON election_results (election_id) WHERE (is_final = TRUE);
-
-CREATE
-OR REPLACE VIEW ballotlist AS
+CREATE OR REPLACE VIEW ballotlist AS
 SELECT
   ec.listnum,
   c.id AS cid,
@@ -154,8 +135,7 @@ ORDER BY
   e.id,
   ec.listnum;
 
-CREATE
-OR REPLACE VIEW counting AS
+CREATE OR REPLACE VIEW counting AS
 SELECT
   ec.listnum,
   c.firstname,
@@ -178,8 +158,7 @@ GROUP BY
   c.faculty,
   e.info;
 
-CREATE
-OR REPLACE VIEW votingcounts AS
+CREATE OR REPLACE VIEW votingcounts AS
 SELECT
   election,
   listnum,
@@ -190,8 +169,7 @@ GROUP BY
   election,
   listnum;
 
-CREATE
-OR REPLACE VIEW numcandidatesperelection AS
+CREATE OR REPLACE VIEW numcandidatesperelection AS
 SELECT
   electionid,
   COUNT(candidateid) AS candidates
@@ -200,8 +178,7 @@ FROM
 GROUP BY
   electionid;
 
-CREATE
-OR REPLACE VIEW numvotersperelection AS
+CREATE OR REPLACE VIEW numvotersperelection AS
 SELECT
   electionid,
   COUNT(DISTINCT voterid) AS voters
@@ -210,8 +187,7 @@ FROM
 GROUP BY
   electionid;
 
-CREATE
-OR REPLACE VIEW electionoverview AS
+CREATE OR REPLACE VIEW electionoverview AS
 SELECT
   e.id,
   e.info,
@@ -237,8 +213,7 @@ GROUP BY
   nc.candidates,
   nv.voters;
 
-CREATE
-OR REPLACE VIEW electionspervoter AS
+CREATE OR REPLACE VIEW electionspervoter AS
 SELECT
   v.id AS uid,
   v.lastname,
@@ -255,8 +230,7 @@ FROM
   LEFT JOIN votingnotes vn ON vn.voterid = v.id
   AND vn.electionid = e.id;
 
-CREATE
-OR REPLACE VIEW voterregistry AS
+CREATE OR REPLACE VIEW voterregistry AS
 SELECT
   faculty,
   lastname,
