@@ -32,8 +32,9 @@ CREATE TABLE
     id UUID PRIMARY KEY DEFAULT gen_random_uuid (),
     info VARCHAR(200) NOT NULL,
     description TEXT,
+    listvotes INT NOT NULL DEFAULT '0',
     votes_per_ballot SMALLINT NOT NULL CHECK (votes_per_ballot > 0),
-    maxCumulativeVotes INT NOT NULL,
+    max_cumulative_votes int NOT NULL DEFAULT '0' CHECK (max_cumulative_votes >= 0),
     start TIMESTAMPTZ NOT NULL,
     "end" TIMESTAMPTZ NOT NULL,
     CONSTRAINT elections_time_range CHECK ("end" > start)

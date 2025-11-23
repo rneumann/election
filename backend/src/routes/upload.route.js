@@ -1,7 +1,8 @@
 import fs from 'fs';
 import multer from 'multer';
 import { logger } from '../conf/logger/logger.js';
-import { importVoterData } from '../database/voter-importer.js';
+import { importVoterData } from '../service/voter-importer.js';
+import { importElectionData } from '../service/election-importer.js';
 
 /**
  * Multer storage configuration for file uploads.
@@ -130,6 +131,67 @@ export const importWahlerRoute = async (req, res) => {
       fs.promises.unlink(filePath, (err) => {
         if (err) {
           logger.error('Fehler beim Löschen der Datei nach Importfehler:', err);
+        }
+      });
+
+      return res.status(500).json({ message: `Import fehlgeschlagen: ${importError.message}` });
+    }
+  });
+};
+
+/**
+ * Express route handler for importing election definitions from an uploaded file.
+ *
+ * This route expects a POST request with multipart/form-data containing a file with the key "file".
+ * It uses Multer to handle file uploads and calls `importElectionData` to parse and insert
+ * the election data into the database.
+ *
+ * @async
+ * @param {import('express').Request} req - Express request object
+ * @param {import('express').Response} res - Express response object
+ * @returns {Promise<import('express').Response>} JSON response with success or error message
+ */
+export const importElectionRoute = async (req, res) => {
+  logger.debug('Election import route accessed');
+
+  if (req.method !== 'POST') {
+    logger.warn(`Invalid HTTP method used: ${req.method}`);
+    return res.status(405).json({ message: 'Method Not Allowed' });
+  }
+
+  upload.single('file')(req, res, async (err) => {
+    if (err) {
+      logger.error('File upload error:', err);
+      return res.status(400).json({ message: err.message });
+    }
+
+    if (!req.file) {
+      logger.warn('No file uploaded');
+      return res.status(400).json({ message: 'file is required' });
+    }
+
+    const filePath = req.file.path;
+
+    try {
+      logger.debug(`Wahldefinitionsdatei gespeichert unter: ${filePath}`);
+
+      await importElectionData(filePath);
+
+      fs.promises.unlink(filePath, (err) => {
+        if (err) {
+          logger.error('Fehler beim Löschen der Datei nach Import:', err);
+        }
+      });
+
+      return res.status(200).json({
+        message: 'Wahldefinitionen erfolgreich importiert.',
+      });
+    } catch (importError) {
+      logger.error('Importfehler bei Wahldefinitionen. Datei wird gelöscht.', importError);
+
+      fs.promises.unlink(filePath, (err) => {
+        if (err) {
+          logger.error('Fehler beim Löschen der Datei nach Fehler:', err);
         }
       });
 
