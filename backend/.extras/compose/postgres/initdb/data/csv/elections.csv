@@ -1,3 +1,11 @@
 id,info,description,listvotes,votes_per_ballot,max_cumulative_votes,start,end
-9d9eb7d5-42a0-4b65-a7ac-681d08b67e7c,Wahl 2025,Wahl der Fachschaft,0,50,0,2025-06-01 08:00:00,2025-06-01 18:00:00
-b474b81b-b264-4411-b1f7-57e9d6c9e437,Präsidentenwahl 2025,Wahl des Präsidenten,0,4,0,2025-07-01 08:00:00,2025-07-01 18:00:00
+9d9eb7d5-42a0-4b65-a7ac-681d08b67e7c,Wahl 2025,Wahl der Fachschaft,0,2,1,2027-06-01 08:00:00,2027-06-01 18:00:00
+b474b81b-b264-4411-b1f7-57e9d6c9e437,Präsidentenwahl 2025,Wahl des Präsidenten,0,4,2,2027-07-01 08:00:00,2027-07-01 18:00:00
+c1f9f7b2-73e4-4c0e-a0b9-9b0f3b0399a1,Studierendenrat Wahl,Laufende Wahl für den Studierendenrat,0,3,1,2025-11-20 08:00:00,2025-11-25 18:00:00
+0c83bc8c-9b58-4458-8df3-b1460d85bb7f,Bibliothekskomitee Wahl,Abstimmung über neues Komitee,0,1,1,2025-11-21 09:00:00,2025-11-24 16:00:00
+97ab2fb6-d1a8-4ea0-ab68-67e8c27478df,Haushaltsabstimmung 2026,Jährliche Haushaltsabstimmung,0,2,1,2026-01-10 08:00:00,2026-01-10 20:00:00
+3f4c7df1-6e5a-4d8a-9c8a-871b9d55f0d0,Fachbereichsleitung 2026,Wahl der Fachbereichsleitung,0,3,1,2026-03-01 08:00:00,2026-03-01 18:00:00
+55a2dad2-23fd-4ba2-9aeb-c93129edcaaf,Projektmittelvergabe 2026,Abstimmung über Projektmittel,1,5,3,2026-02-15 09:00:00,2026-02-15 17:00:00
+7c42b1c3-c4f2-4d41-8ac8-0ceeb138731e,IT-Gremium Wahl 2024,Wahl für das IT-Gremium,0,2,1,2024-05-10 08:00:00,2024-05-10 18:00:00
+e39d17c4-b359-4f8e-9df2-6e2cbeac3072,Kantinenkommission 2023,Abstimmung zur Kantinenkommission,1,4,2,2023-10-02 09:00:00,2023-10-02 17:00:00
+1f8ad5b8-4bf8-41e0-9dc6-185218df2dbf,Sozialfonds Zustimmung 2022,Abstimmung über Sozialfonds,1,1,1,2022-12-01 08:00:00,2022-12-01 12:00:00

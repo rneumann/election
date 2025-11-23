@@ -72,7 +72,7 @@ export const Modal = ({ open, setOpen, electionId }) => {
           <div className="px-4 sm:px-6 py-2 border-b border-gray-700">
             <span className="text-sm sm:text-md font-bold text-white">
               Sie haben {election.votes_per_ballot} Stimme/n und können maximal{' '}
-              {election.maxcumulativevotes} auf eine Person kumulieren.
+              {election.max_cumulative_votes} auf eine Person kumulieren.
             </span>
             <span
               className={`
@@ -152,7 +152,7 @@ export const Modal = ({ open, setOpen, electionId }) => {
                             logger.debug(`onChange: ${e.target.value}`);
                             const newValue = Number(e.target.value);
                             const oldValue = Number(votes[cand.candidateId] || 0);
-                            if (newValue < 0 || newValue > election.maxcumulativevotes) {
+                            if (newValue < 0 || newValue > election.max_cumulative_votes) {
                               logger.debug(`invalid value: ${e.target.value}`);
                               return;
                             }

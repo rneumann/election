@@ -2,16 +2,34 @@ import { logger } from '../conf/logger/logger.js';
 import { client } from '../database/db.js';
 
 /**
-
-/**
  * Retrieves all elections from the electionoverview table.
- * @returns {Promise<Array<electionoverview>>} A promise resolving to an array of electionoverview objects.
+ *
+ * @param {string} [status] The status of the election to be retrieved. If not provided, all elections will be returned.
+ * @returns {Promise<{ ok: boolean, data: Array<object> || undefined >}} A promise resolving to an object with an ok property and a data property containing an array of elections.
  */
-export const getElections = async () => {
+export const getElections = async (status) => {
+  let where = '';
+
+  /* eslint-disable */
+  switch (status) {
+    case 'active':
+      where = 'WHERE start <= now() AND "end" >= now()';
+      break;
+    case 'finished':
+      where = 'WHERE "end" < now()';
+      break;
+    case 'future':
+      where = 'WHERE start > now()';
+      break;
+  }
+  /* eslint-enable */
+
   const sql = `
     SELECT *
     FROM electionoverview
+    ${where}
   `;
+
   const queryRes = await client
     .query(sql)
     .then((res) => {
@@ -52,7 +70,7 @@ export const getElectionById = async (id) => {
       e.info,
       e.description,
       e.votes_per_ballot,
-      e.maxCumulativeVotes,
+      e.max_cumulative_votes,
       e.start,
       e."end",
       COALESCE(json_agg(DISTINCT jsonb_build_object(

@@ -57,7 +57,12 @@ voterRouter.get('/elections', async (req, res) => {
     return res.status(405).json({ message: 'Method Not Allowed' });
   }
 
-  const { ok, data } = await getElections();
+  const status = req.query.status;
+  if (status !== 'active' && status !== 'finished' && status !== 'future' && status !== undefined) {
+    logger.warn(`Invalid status parameter: ${status}`);
+    return res.status(400).json({ message: 'Invalid status parameter' });
+  }
+  const { ok, data } = await getElections(status);
 
   if (!ok) {
     logger.error('Error retrieving elections');
