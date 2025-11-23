@@ -1,4 +1,4 @@
-id,uid,lastname,firstname,mtknr,faculty,votergroup, notes
+id,uid,lastname,firstname,mtknr,faculty,votergroup,notes
 3d57e8e7-529f-4fa5-b4b5-23f42f445ab2,u001,Müller,Max,1234567,Informatik,adasdasd,Kein Kommentar
 82f63a42-cd4e-465f-85c9-b04b4c975f39,u002,Schmidt,Anna,2345678,Maschinenbau,adasdasd,Keine Notizen
 b09f71c8-f8fe-4171-937f-345dfcbe263f,u003,Weber,Julia,3456789,Wirtschaft,adasdasd,Entschuldigt sich oft
