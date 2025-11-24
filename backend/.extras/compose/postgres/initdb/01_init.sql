@@ -81,6 +81,24 @@ CREATE TABLE
     PRIMARY KEY (voterId, electionId)
   );
 
+-----------------------------------------------------
+-- Tabelle für Audit-Logs (OPS-155)
+CREATE TABLE
+  IF NOT EXISTS audit_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid (),
+    timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    actor_id UUID,                     -- Die UUID des Admins/Users (kann NULL sein bei Login-Fehlern)
+    actor_ip TEXT,                     -- IP-Adresse zur Rückverfolgung
+    action_type TEXT NOT NULL,         -- z.B. 'LOGIN_FAILED', 'ELECTION_CREATED'
+    target_id UUID,                    -- ID des betroffenen Objekts (z.B. Wahl-ID)
+    details TEXT                       -- Zusätzliche Infos (als Text oder JSON)
+  );
+
+-- Indizes damit die Suche später im Admin-Dashboard schnell ist
+CREATE INDEX IF NOT EXISTS idx_audit_logs_timestamp ON audit_logs (timestamp);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_action ON audit_logs (action_type);
+
+-----------------------------------------------------
 
 CREATE INDEX IF NOT EXISTS idx_ballots_election ON ballots (election);
 
