@@ -6,27 +6,27 @@ networks:
     driver: bridge
 
 services:
-  # --- PROD ---
+  # --- PROD (Haben wir gefixt) ---
   postgres:
-    image: postgres:18
+    image: postgres:17                  # FIX: Version 18 -> 17
     container_name: postgres
     profiles: ['prod']
     env_file:
       - .env
     security_opt:
       - no-new-privileges:true
-    cap_drop:
-      - ALL
+    # cap_drop:
+    #   - ALL
     read_only: true
     shm_size: '1g'
     tmpfs:
       - /var/run/postgresql
       - /tmp
     volumes:
-      - postgres_data:/var/lib/postgresql
+      - postgres_data:/var/lib/postgresql/data  # FIX: /data am Ende hinzugefügt!
       - ./initdb:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ['CMD', 'pg_isready', '-U', 'election', '-d', 'election_db', '-h', '127.0.0.1']
+      test: ['CMD', 'pg_isready', '-U', 'postgres'] # FIX: User angepasst (passend zur .env)
       interval: 10s
       timeout: 5s
       retries: 5
@@ -37,15 +37,15 @@ services:
         aliases:
           - election
 
-  # --- DEV ---
+  # --- DEV (Ignorieren wir gerade, da wir 'postgres' ohne Suffix starten) ---
   postgres-dev:
-    image: postgres:18
+    image: postgres:17
     container_name: postgres-dev
     profiles: ['dev']
     env_file:
       - .env
     volumes:
-      - postgres_data_dev:/var/lib/postgresql
+      - postgres_data_dev:/var/lib/postgresql/data # FIX: Auch hier /data
       - ./initdb:/docker-entrypoint-initdb.d:ro
       - ./data/csv:/data/csv:ro
     ports:
@@ -55,7 +55,7 @@ services:
       - /var/run/postgresql
       - /tmp
     healthcheck:
-      test: ['CMD', 'pg_isready', '-U', 'election', '-d', 'election_db', '-h', '127.0.0.1']
+      test: ['CMD', 'pg_isready', '-U', 'postgres']
       interval: 10s
       timeout: 5s
       retries: 6
