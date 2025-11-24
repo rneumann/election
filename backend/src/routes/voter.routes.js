@@ -7,60 +7,67 @@ export const voterRouter = Router();
 
 /**
  * @openapi
- *
- *  get:
- *    summary: Get all elections
- *    description: Get all elections, that are currently active
- *    tags:
- *      - Elections
- *    parameters:
- *      - name: status
- *        in: query
- *        description: Status of the election
- *        required: false
- *        schema:
- *          type: string
- *          enum: [active, finished, future]
- *        example: active
- *    responses:
- *      200:
- *        description: OK
- *        content:
- *          application/json:
- *            schema:
- *              type: object
- *              properties:
- *                elections:
- *                  type: array
- *                  items:
- *                    type: object
- *                    properties:
- *                      id:
- *                        type: string
- *                      info:
- *                        type: string
- *                      description:
- *                        type: string
- *                      voters_per_ballot:
- *                        type: number
- *                      start:
- *                        type: string
- *                      end:
- *                        type: string
- *                      candidates:
- *                        type: number
- *                      voters:
- *                        type: number
- *                      ballots:
- *                        type: number
- *      400:
- *        description: Invalid status parameter
- *      404:
- *        description: No elections found
- *      405:
- *        description: Method Not Allowed
- *      500:
- *        description: Internal Server Error
+ * /api/voter/{voterId}/elections:
+ *   get:
+ *     summary: Get elections by voter id, requires authentication as voter, committee or admin
+ *     description: Get elections by voter id
+ *     tags:
+ *       - Elections
+ *     parameters:
+ *       - name: voterId
+ *         in: path
+ *         description: ID of the voter
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - name: status
+ *         in: query
+ *         description: Status of the election (optional)
+ *         required: false
+ *         schema:
+ *           type: string
+ *           enum: [active, finished, future]
+ *     responses:
+ *       200:
+ *         description: OK
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 elections:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                       info:
+ *                         type: string
+ *                       description:
+ *                         type: string
+ *                       voters_per_ballot:
+ *                         type: number
+ *                       start:
+ *                         type: string
+ *                       end:
+ *                         type: string
+ *                       candidates:
+ *                         type: number
+ *                       voters:
+ *                         type: number
+ *                       ballots:
+ *                         type: number
+ *       400:
+ *         description: Invalid status parameter
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: No elections found
+ *       405:
+ *         description: Method Not Allowed
+ *       500:
+ *         description: Internal Server Error
  */
 voterRouter.get(
   '/:voterId/elections',

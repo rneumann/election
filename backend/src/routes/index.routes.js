@@ -35,7 +35,7 @@ export const router = express.Router();
  *             properties:
  *               username:
  *                 type: string
- *                 example: jdoe
+ *                 example: u001
  *               password:
  *                 type: string
  *                 example: secret123
