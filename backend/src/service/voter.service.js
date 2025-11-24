@@ -5,65 +5,75 @@ import { client } from '../database/db.js';
  * Retrieves all elections from the electionoverview table.
  *
  * @param {string} [status] The status of the election to be retrieved. If not provided, all elections will be returned.
+ * @param faculty
+ * @param votergroup
  * @returns {Promise<{ ok: boolean, data: Array<object> || undefined >}} A promise resolving to an object with an ok property and a data property containing an array of elections.
  */
-export const getElections = async (status) => {
-  let where = '';
+export const getElections = async (status, faculty, votergroup) => {
+  const conditions = [];
 
-  /* eslint-disable */
+  /* eslint-disable*/
   switch (status) {
     case 'active':
-      where = 'WHERE start <= now() AND "end" >= now()';
+      conditions.push('start <= now() AND "end" >= now()');
       break;
     case 'finished':
-      where = 'WHERE "end" < now()';
+      conditions.push('"end" < now()');
       break;
     case 'future':
-      where = 'WHERE start > now()';
+      conditions.push('start > now()');
       break;
   }
-  /* eslint-enable */
+  /* eslint-enable*/
+
+  if (faculty) {
+    conditions.push(`vg.faculty = $1`);
+  }
+
+  if (votergroup) {
+    conditions.push(`vg.votergroup = $2`);
+  }
+
+  const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
   const sql = `
     SELECT *
     FROM electionoverview
-    ${where}
+    LEFT JOIN votergroups vg ON vg.electionId = electionoverview.id
+    ${whereClause}
   `;
 
-  const queryRes = await client
-    .query(sql)
-    .then((res) => {
-      if (res.rows.length === 0) {
-        return {
-          ok: false,
-          data: [],
-        };
-      }
-      return {
-        ok: true,
-        data: res.rows,
-      };
-    })
-    .catch((err) => {
-      logger.error(err.stack);
-      return {
-        ok: false,
-        data: undefined,
-      };
-    });
+  const params = [];
+  if (faculty) {
+    params.push(faculty);
+  }
+  if (votergroup) {
+    params.push(votergroup);
+  }
 
-  return queryRes;
+  try {
+    logger.debug(`getElections sql: ${sql} params: ${JSON.stringify(params)}`);
+    const res = await client.query(sql, params);
+    return { ok: true, data: res.rows };
+  } catch (err) {
+    logger.error(err);
+    return { ok: false, data: undefined };
+  }
 };
 
 /**
- * Retrieves an election by its ID from the elections table.
- * The election is joined with its candidates and voting notes using a left join.
- * @param {number} id - The ID of the election to retrieve.
- * @returns {Promise<{ok: boolean, data?: Array<election>>>} A promise resolving to an object with ok and data properties.
+ * Retrieves an election by its id.
+ *
+ * @param {string} electionId - The id of the election.
+ * @param {string} [faculty] - The faculty of the candidates to filter by.
+ * @param {string} [votergroup] - The votergroup of the candidates to filter by.
+ *
+ * @returns {Promise<{ok: boolean, data: object | null}>}
+ * A promise that resolves with an object containing ok and data properties.
  * ok is true if the election was found, false otherwise.
- * data is an array containing the election object, or an empty array if no election was found.
+ * data is null if the election was not found, otherwise it is an object containing the election details.
  */
-export const getElectionById = async (id) => {
+export const getElectionById = async (electionId) => {
   const sql = `
     SELECT 
       e.id,
@@ -90,10 +100,38 @@ export const getElectionById = async (id) => {
   `;
 
   try {
-    const res = await client.query(sql, [id]);
+    const res = await client.query(sql, [electionId]);
 
     if (res.rows.length === 0) {
       return { ok: false, data: null };
+    }
+
+    return { ok: true, data: res.rows[0] };
+  } catch (err) {
+    logger.error(err.stack);
+    return { ok: false, data: undefined };
+  }
+};
+
+/**
+ * Retrieves a voter by its ID from the voters table.
+ * @param {number} voterId - The ID of the voter to retrieve.
+ * @returns {Promise<{ok: boolean, data?: voter>>>} A promise resolving to an object with ok and data properties.
+ * ok is true if the voter was found, false otherwise.
+ * data is the voter object if found, or undefined if no voter was found.
+ */
+export const getVoterById = async (voterId) => {
+  const sql = `
+    SELECT *
+    FROM voters
+    WHERE uid = $1
+  `;
+
+  try {
+    const res = await client.query(sql, [voterId]);
+    logger.debug(`getVoterById res: ${JSON.stringify(res.rows)}`);
+    if (res.rows.length === 0) {
+      return { ok: false, data: undefined };
     }
 
     return { ok: true, data: res.rows[0] };

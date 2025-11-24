@@ -1,12 +1,13 @@
 import { Router } from 'express';
 import { logger } from '../conf/logger/logger.js';
-import { getElectionById, getElections } from '../service/voter.service.js';
+import { getElectionById, getElections, getVoterById } from '../service/voter.service.js';
+import { ensureAuthenticated, ensureHasRole } from '../auth/auth.js';
 
 export const voterRouter = Router();
 
 /**
  * @openapi
- * /api/voter/elections:
+ *
  *  get:
  *    summary: Get all elections
  *    description: Get all elections, that are currently active
@@ -61,31 +62,58 @@ export const voterRouter = Router();
  *      500:
  *        description: Internal Server Error
  */
-voterRouter.get('/elections', async (req, res) => {
-  logger.debug('Election route accessed');
-  if (req.method !== 'GET') {
-    logger.warn(`Invalid HTTP method: ${req.method}`);
-    return res.status(405).json({ message: 'Method Not Allowed' });
-  }
+voterRouter.get(
+  '/:voterId/elections',
+  ensureAuthenticated,
+  ensureHasRole(['admin', 'voter', 'committee']),
+  async (req, res) => {
+    logger.debug('Election route accessed');
+    const voterId = req.params.voterId;
 
-  const status = req.query.status;
-  if (status !== 'active' && status !== 'finished' && status !== 'future' && status !== undefined) {
-    logger.warn(`Invalid status parameter: ${status}`);
-    return res.status(400).json({ message: 'Invalid status parameter' });
-  }
-  const { ok, data } = await getElections(status);
+    if (req.method !== 'GET') {
+      logger.warn(`Invalid HTTP method: ${req.method}`);
+      return res.status(405).json({ message: 'Method Not Allowed' });
+    }
+    const status = req.query.status;
+    if (
+      status !== 'active' &&
+      status !== 'finished' &&
+      status !== 'future' &&
+      status !== undefined
+    ) {
+      logger.warn(`Invalid status parameter: ${status}`);
+      return res.status(400).json({ message: 'Invalid status parameter' });
+    }
 
-  if (!ok) {
-    logger.error('Error retrieving elections');
-    return res.status(500).json({ message: 'Error retrieving elections' });
-  }
-  if (data.length === 0) {
-    logger.warn('No elections found');
-    return res.status(404).json({ message: 'No elections found' });
-  }
-  logger.debug(`Elections retrieved successfully res: ${JSON.stringify(data)}`);
-  res.status(200).json(data);
-});
+    if (!voterId) {
+      logger.warn('Voter id is required');
+      return res.status(400).json({ message: 'Voter id is required' });
+    }
+
+    const response = await getVoterById(voterId);
+    if (!response.ok) {
+      logger.warn('Voter not found');
+      return res.status(404).json({ message: 'Voter not found' });
+    }
+    logger.debug(`Voter retrieved successfully res: ${JSON.stringify(response.data)}`);
+    const { ok, data } = await getElections(
+      status,
+      response.data.faculty,
+      response.data.votergroup,
+    );
+
+    if (!ok) {
+      logger.error('Error retrieving elections');
+      return res.status(500).json({ message: 'Error retrieving elections' });
+    }
+    if (data.length === 0) {
+      logger.warn('No elections found');
+      return res.status(404).json({ message: 'No elections found' });
+    }
+    logger.debug(`Elections retrieved successfully res: ${JSON.stringify(data)}`);
+    res.status(200).json(data);
+  },
+);
 
 /**
  * @openapi
@@ -148,26 +176,33 @@ voterRouter.get('/elections', async (req, res) => {
  *      500:
  *        description: Internal Server Error
  */
-voterRouter.get('/elections/:id', async (req, res) => {
-  const id = req.params.id;
-  logger.debug(`Election route accessed with id: ${id}`);
-  if (req.method !== 'GET') {
-    logger.warn(`Invalid HTTP method: ${req.method}`);
-    return res.status(405).json({ message: 'Method Not Allowed' });
-  }
-  if (!id || id === 'undefined') {
-    logger.warn('Election id is missing');
-    return res.status(400).json({ message: 'Election id is required' });
-  }
-  const { ok, data } = await getElectionById(req.params.id);
-  if (!ok) {
-    logger.error('Error retrieving election');
-    return res.status(500).json({ message: 'Error retrieving election' });
-  }
-  if (data.length === 0) {
-    logger.warn('No election found');
-    return res.status(404).json({ message: 'No election found' });
-  }
-  logger.debug(`Election retrieved successfully res: ${JSON.stringify(data)}`);
-  res.status(200).json(data);
-});
+voterRouter.get(
+  '/elections/:electionId',
+  ensureAuthenticated,
+  ensureHasRole(['admin', 'voter', 'committee']),
+  async (req, res) => {
+    logger.debug(`Election route accessed with id: ${req.params.electionId}`);
+
+    const electionId = req.params.electionId;
+    if (req.method !== 'GET') {
+      logger.warn(`Invalid HTTP method: ${req.method}`);
+      return res.status(405).json({ message: 'Method Not Allowed' });
+    }
+    if (!electionId) {
+      logger.warn('Election id is required');
+      return res.status(400).json({ message: 'Election id is required' });
+    }
+
+    const { ok, data } = await getElectionById(electionId);
+    if (!ok) {
+      logger.error('Error retrieving election');
+      return res.status(500).json({ message: 'Error retrieving election' });
+    }
+    if (data.length === 0) {
+      logger.warn('No election found');
+      return res.status(404).json({ message: 'No election found' });
+    }
+    logger.debug(`Election retrieved successfully res: ${JSON.stringify(data)}`);
+    res.status(200).json(data);
+  },
+);

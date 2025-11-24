@@ -30,14 +30,17 @@ const Home = () => {
   }, [user, navigate]);
 
   useEffect(() => {
-    const fetchElections = async () => {
-      const response = await voterApi.getElections('active');
+    const fetchElectionsActive = async () => {
+      const response = await voterApi.getElections('active', user.username);
       setElectionsActive(response);
+    };
 
-      const responseFuture = await voterApi.getElections('future');
+    const fetchElectionsFuture = async () => {
+      const responseFuture = await voterApi.getElections('future', user.username);
       setElectionsFuture(responseFuture);
     };
-    fetchElections();
+    fetchElectionsActive();
+    fetchElectionsFuture();
   }, []);
 
   const dateOptions = {
