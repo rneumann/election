@@ -3,6 +3,23 @@ import { logger } from '../conf/logger/logger.js';
 import { client } from '../database/db.js';
 
 /**
+ * Mapping tables for election configuration.
+ * These mappings convert numeric codes from Excel to database values.
+ */
+const ELECTION_TYPE_MAPPING = {
+  1: 'majority_vote',
+  2: 'proportional_representation',
+  3: 'referendum',
+};
+
+const COUNTING_METHOD_MAPPING = {
+  1: 'sainte_lague',
+  2: 'hare_niemeyer',
+  3: 'highest_votes',
+  4: 'yes_no_referendum',
+};
+
+/**
  * Imports election data from an Excel file into the database.
  *
  * The Excel file is expected to have the following structure:
@@ -15,6 +32,19 @@ import { client } from '../database/db.js';
  *   E: Maximum cumulative votes
  *   F: Faculties (comma-separated)
  *   G: Courses / voter groups (comma-separated)
+ *   H: Election type (numeric code - see ELECTION_TYPE_MAPPING)
+ *   I: Counting method (numeric code - see COUNTING_METHOD_MAPPING)
+ *
+ * Election Type Codes (Column H):
+ *   1 = majority_vote
+ *   2 = proportional_representation
+ *   3 = referendum
+ *
+ * Counting Method Codes (Column I):
+ *   1 = sainte_lague
+ *   2 = hare_niemeyer
+ *   3 = highest_votes
+ *   4 = yes_no_referendum
  *
  * @async
  * @param {string} filePath - Path to the Excel file to import
@@ -57,10 +87,44 @@ export const importElectionData = async (filePath) => {
       const maxKum = sheet.getCell(`E${rowIndex}`).value ?? 0;
       const facultyStr = sheet.getCell(`F${rowIndex}`).value;
       const coursesStr = sheet.getCell(`G${rowIndex}`).value;
+      const electionTypeCode = sheet.getCell(`H${rowIndex}`).value;
+      const countingMethodCode = sheet.getCell(`I${rowIndex}`).value;
 
       const listvotes = listVote ? 1 : 0;
       const votesPerBallot = seats;
       const maxCumulativeVotes = Number(maxKum) || 0;
+
+      // Validate and map election type
+      if (electionTypeCode == null || electionTypeCode === '') {
+        throw new Error(
+          `Missing election_type (column H) in row ${rowIndex}. Expected numeric code (1-3).`,
+        );
+      }
+
+      const electionType = ELECTION_TYPE_MAPPING[Number(electionTypeCode)];
+      if (!electionType) {
+        throw new Error(
+          `Invalid election_type code '${electionTypeCode}' in row ${rowIndex}. Valid codes: 1=majority_vote, 2=proportional_representation, 3=referendum`,
+        );
+      }
+
+      // Validate and map counting method
+      if (countingMethodCode == null || countingMethodCode === '') {
+        throw new Error(
+          `Missing counting_method (column I) in row ${rowIndex}. Expected numeric code (1-4).`,
+        );
+      }
+
+      const countingMethod = COUNTING_METHOD_MAPPING[Number(countingMethodCode)];
+      if (!countingMethod) {
+        throw new Error(
+          `Invalid counting_method code '${countingMethodCode}' in row ${rowIndex}. Valid codes: 1=sainte_lague, 2=hare_niemeyer, 3=highest_votes, 4=yes_no_referendum`,
+        );
+      }
+
+      logger.info(
+        `Row ${rowIndex}: ${info} → election_type=${electionType}, counting_method=${countingMethod}`,
+      );
 
       const insertElectionQuery = `
         INSERT INTO elections (
@@ -70,9 +134,11 @@ export const importElectionData = async (filePath) => {
           votes_per_ballot,
           max_cumulative_votes,
           start,
-          "end"
+          "end",
+          election_type,
+          counting_method
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
         RETURNING id;
       `;
 
@@ -84,6 +150,8 @@ export const importElectionData = async (filePath) => {
         maxCumulativeVotes,
         startDate,
         endDate,
+        electionType,
+        countingMethod,
       ]);
 
       const electionId = rows[0].id;

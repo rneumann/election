@@ -7,6 +7,7 @@
 - [Voraussetzungen](#voraussetzungen)
 - [Installation](#installation)
 - [Deployment & Konfiguration](#deployment--server-starten)
+- [Excel Import Konfiguration](#excel-import-konfiguration)
 - [API-Dokumentation](#api-endpunkte)
 
 ## Überblick
@@ -109,6 +110,25 @@ Der Server startet mit dem in `.env` konfigurierten `PORT`. Standard-Health-Chec
 ```bash
 GET http://localhost:<PORT>/health
 ```
+
+## Excel Import Konfiguration
+
+### Wahltyp Codes (Spalte H)
+
+| Code  | Wert                          | Beschreibung   | Verwendung                   |
+| ----- | ----------------------------- | -------------- | ---------------------------- |
+| **1** | `majority_vote`               | Mehrheitswahl  | Höchste Stimmenzahl gewinnt  |
+| **2** | `proportional_representation` | Verhältniswahl | Proportionale Sitzverteilung |
+| **3** | `referendum`                  | Urabstimmung   | Ja/Nein-Abstimmung           |
+
+### Zählverfahren Codes (Spalte I)
+
+| Code  | Wert                | Beschreibung                    | Typische Verwendung                  |
+| ----- | ------------------- | ------------------------------- | ------------------------------------ |
+| **1** | `sainte_lague`      | Sainte-Laguë (Divisorverfahren) | Verhältniswahl Studierendenparlament |
+| **2** | `hare_niemeyer`     | Hare-Niemeyer (Quotenverfahren) | Verhältniswahl Senat, Fakultätsrat   |
+| **3** | `highest_votes`     | Höchststimmenprinzip            | Alle Mehrheitswahlen                 |
+| **4** | `yes_no_referendum` | Ja/Nein-Auszählung              | Urabstimmungen                       |
 
 ## Projektstruktur (Beispiel)
 

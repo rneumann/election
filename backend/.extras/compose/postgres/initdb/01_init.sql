@@ -43,8 +43,7 @@ CREATE TABLE
       election_type IS NULL OR election_type IN (
         'proportional_representation',
         'majority_vote',
-        'referendum',
-        'mixed'
+        'referendum'
       )
     ),
     CONSTRAINT chk_counting_method CHECK (
