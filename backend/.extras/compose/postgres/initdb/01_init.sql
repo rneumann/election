@@ -58,7 +58,7 @@ CREATE TABLE
   IF NOT EXISTS votergroups (
     electionId UUID NOT NULL REFERENCES elections (id) ON DELETE CASCADE ON UPDATE CASCADE,
     votergroup VARCHAR(100) NOT NULL,
-    faculty VARCHAR(100),
+    faculty VARCHAR(100) NOT NULL,
     PRIMARY KEY (electionId, votergroup)
   );
 
