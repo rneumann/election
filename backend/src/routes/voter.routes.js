@@ -251,26 +251,18 @@ voterRouter.get(
  *                type: string
  *              valid:
  *                type: boolean
- *              votes:
- *                type: number
- *              listnum:
- *                type: number
+ *              voteDecision:
+ *                type: array
+ *                items:
+ *                  type: object
+ *                  properties:
+ *                    votes:
+ *                      type: number
+ *                    listnum:
+ *                      type: number
  *    responses:
- *      200:
- *        description: OK
- *        content:
- *          application/json:
- *            schema:
- *              type: object
- *              properties:
- *                electionId:
- *                  type: string
- *                valid:
- *                  type: boolean
- *                votes:
- *                  type: number
- *                listnum:
- *                  type: number
+ *      201:
+ *        description: Created
  *      400:
  *        description: Invalid request body
  *      401:
@@ -335,6 +327,6 @@ voterRouter.post(
       return res.status(500).json({ message: 'Error creating ballot' });
     }
     logger.debug(`Ballot created successfully res: ${JSON.stringify(data)}`);
-    res.status(200).json(data);
+    res.sendStatus(201);
   },
 );

@@ -199,7 +199,7 @@ export const createBallot = async (ballot, voterUid) => {
       const resCreateBallotV = await client.query(sqlCreateBallotVotes, [
         ballot.electionId,
         ballotId,
-        candidate.candidateId,
+        candidate.listnum,
         candidate.votes,
       ]);
       logger.debug(`createBallot res: ${JSON.stringify(resCreateBallotV)}`);
