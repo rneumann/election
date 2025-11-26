@@ -308,13 +308,19 @@ voterRouter.post(
       !req.body ||
       !req.body.electionId ||
       req.body.valid === undefined ||
-      !req.body.votes ||
-      !req.body.listnum ||
+      !req.body.voteDecision ||
       req.body.votes === 0
     ) {
+      // eslint-disable-next-line
       logger.warn('Invalid request body');
       return res.status(400).json({ message: 'Invalid request body' });
     }
+
+    if (req.body.voteDecision.length === 0 && req.body.valid === true) {
+      logger.warn('Try to vote without candidates');
+      return res.status(400).json({ message: 'Invalid request body' });
+    }
+
     const { ok, data, status, message } = await createBallot(req.body, req.params.voterId);
     if (!ok) {
       if (status === 404) {

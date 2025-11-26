@@ -169,45 +169,63 @@ export const createBallot = async (ballot, voterUid) => {
   const sqlCreateBallotVotes = `
     INSERT INTO ballotvotes (election, ballot, listnum, votes)
     VALUES ($1, $2, $3, $4)
+    RETURNING *
   `;
 
   const sqlCreateVotingNote = `
     INSERT INTO votingnotes (voterId, electionId, voted)
     VALUES ($1, $2, $3)
+    RETURNING *
   `;
 
   try {
+    await client.query('BEGIN');
     const resCreateBallot = await client.query(sqlCreateBallot, [ballot.electionId, ballot.valid]);
-
     if (resCreateBallot.rows.length === 0) {
+      await client.query('ROLLBACK');
+
       return { ok: false, data: undefined };
     }
     //logger.debug(`createBallot res: ${JSON.stringify(resCreateBallot)}`);
     const ballotId = resCreateBallot.rows[0].id;
     if (!ballotId) {
       logger.error(`BallotId missing, not rechieved from creation`);
+      await client.query('ROLLBACK');
+
       return { ok: false, data: undefined };
     }
 
-    const resCreateBallotV = await client.query(sqlCreateBallotVotes, [
-      ballot.electionId,
-      ballotId,
-      ballot.listnum,
-      ballot.votes,
-    ]);
-    logger.debug(`createBallot res: ${JSON.stringify(resCreateBallotV)}`);
+    for (const candidate of ballot.voteDecision) {
+      const resCreateBallotV = await client.query(sqlCreateBallotVotes, [
+        ballot.electionId,
+        ballotId,
+        candidate.candidateId,
+        candidate.votes,
+      ]);
+      logger.debug(`createBallot res: ${JSON.stringify(resCreateBallotV)}`);
+      if (resCreateBallotV.rows.length === 0) {
+        await client.query('ROLLBACK');
 
+        return { ok: false, data: undefined };
+      }
+    }
     const resCreateVotingN = await client.query(sqlCreateVotingNote, [
       voter.data.id,
       ballot.electionId,
       true,
     ]);
     logger.debug(`createVotingNote res: ${JSON.stringify(resCreateVotingN)}`);
+    if (resCreateVotingN.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return { ok: false, data: undefined };
+    }
 
-    return { ok: true, data: resCreateBallotV.rows[0] };
+    await client.query('COMMIT');
+    return { ok: true, data: resCreateBallot.rows[0] };
   } catch (err) {
-    logger.error(`Error occured: ${JSON.stringify(err)}`);
-    logger.error(err.stack);
+    logger.error(`Error occured`);
+    logger.debug(err.stack);
+    await client.query('ROLLBACK');
     return { ok: false, data: undefined };
   }
 };
@@ -233,7 +251,8 @@ const checkAlreadyVoted = async (voterId, electionId) => {
     }
     return true;
   } catch (err) {
-    logger.error(err.stack);
+    logger.error('Error while checking if voter has already voted');
+    logger.debug(err.stack);
     return false;
   }
 };
