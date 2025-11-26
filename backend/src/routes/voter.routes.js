@@ -1,6 +1,11 @@
 import { Router } from 'express';
 import { logger } from '../conf/logger/logger.js';
-import { getElectionById, getElections, getVoterById } from '../service/voter.service.js';
+import {
+  createBallot,
+  getElectionById,
+  getElections,
+  getVoterById,
+} from '../service/voter.service.js';
 import { ensureAuthenticated, ensureHasRole } from '../auth/auth.js';
 
 export const voterRouter = Router();
@@ -70,15 +75,16 @@ export const voterRouter = Router();
  *         description: Internal Server Error
  */
 voterRouter.get(
-  '/:voterId/elections',
+  '/:voterUid/elections',
   ensureAuthenticated,
   ensureHasRole(['admin', 'voter', 'committee']),
   async (req, res) => {
     logger.debug('Election route accessed');
-    const voterId = req.params.voterId;
+    const voterUid = req.params.voterUid;
 
     if (req.method !== 'GET') {
       logger.warn(`Invalid HTTP method: ${req.method}`);
+      // eslint-disable-next-line
       return res.status(405).json({ message: 'Method Not Allowed' });
     }
     const status = req.query.status;
@@ -92,12 +98,12 @@ voterRouter.get(
       return res.status(400).json({ message: 'Invalid status parameter' });
     }
 
-    if (!voterId) {
+    if (!voterUid) {
       logger.warn('Voter id is required');
       return res.status(400).json({ message: 'Voter id is required' });
     }
 
-    const response = await getVoterById(voterId);
+    const response = await getVoterById(voterUid);
     if (!response.ok) {
       logger.warn('Voter not found');
       return res.status(404).json({ message: 'Voter not found' });
@@ -210,6 +216,119 @@ voterRouter.get(
       return res.status(404).json({ message: 'No election found' });
     }
     logger.debug(`Election retrieved successfully res: ${JSON.stringify(data)}`);
+    res.status(200).json(data);
+  },
+);
+
+/**
+ * @openapi
+ * /api/voter/{voterId}/ballot:
+ *  post:
+ *    summary: Create a new ballot for a given election and voter
+ *    description: Create a new ballot for a given election and voter
+ *    tags:
+ *      - Ballots
+ *    parameters:
+ *      - name: voterId
+ *        in: path
+ *        description: ID of the voter
+ *        required: true
+ *        schema:
+ *          type: string
+ *    requestBody:
+ *      required: true
+ *      content:
+ *        application/json:
+ *          schema:
+ *            type: object
+ *            required:
+ *              - electionId
+ *              - valid
+ *              - votes
+ *              - listnum
+ *            properties:
+ *              electionId:
+ *                type: string
+ *              valid:
+ *                type: boolean
+ *              votes:
+ *                type: number
+ *              listnum:
+ *                type: number
+ *    responses:
+ *      200:
+ *        description: OK
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: object
+ *              properties:
+ *                electionId:
+ *                  type: string
+ *                valid:
+ *                  type: boolean
+ *                votes:
+ *                  type: number
+ *                listnum:
+ *                  type: number
+ *      400:
+ *        description: Invalid request body
+ *      401:
+ *        description: Unauthorized
+ *      404:
+ *        description: Voter not found
+ *      405:
+ *        description: Method Not Allowed
+ *      409:
+ *        description: Ballot already exists
+ *      415:
+ *        description: Content-Type must be application/json
+ *      500:
+ *        description: Internal Server Error
+ */
+voterRouter.post(
+  '/:voterId/ballot',
+  ensureAuthenticated,
+  ensureHasRole(['voter']),
+  async (req, res) => {
+    logger.debug('Ballot route accessed');
+    if (req.method !== 'POST') {
+      logger.warn(`Invalid HTTP method: ${req.method}`);
+      return res.status(405).json({ message: 'Method Not Allowed' });
+    }
+    if (req.headers['content-type'] !== 'application/json') {
+      logger.warn('Invalid Content-Type header');
+      return res.status(415).json({ message: 'Content-Type must be application/json' });
+    }
+    if (!req.params.voterId) {
+      logger.warn('VoterId is missing');
+      return res.status(400).json({ message: 'VoterId is required' });
+    }
+    if (
+      !req.body ||
+      !req.body.electionId ||
+      req.body.valid === undefined ||
+      !req.body.votes ||
+      !req.body.listnum ||
+      req.body.votes === 0
+    ) {
+      logger.warn('Invalid request body');
+      return res.status(400).json({ message: 'Invalid request body' });
+    }
+    const { ok, data, status, message } = await createBallot(req.body, req.params.voterId);
+    if (!ok) {
+      if (status === 404) {
+        logger.warn(message);
+        return res.status(404).json({ message });
+      }
+      if (status === 409) {
+        logger.warn(message);
+        return res.status(409).json({ message });
+      }
+      logger.error('Error creating ballot');
+      return res.status(500).json({ message: 'Error creating ballot' });
+    }
+    logger.debug(`Ballot created successfully res: ${JSON.stringify(data)}`);
     res.status(200).json(data);
   },
 );

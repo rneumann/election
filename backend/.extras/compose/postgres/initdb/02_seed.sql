@@ -23,6 +23,6 @@ SET TIME ZONE 'Europe/Berlin';
 \copy votergroups (electionId, votergroup, faculty) FROM '/docker-entrypoint-initdb.d/data/csv/votergroups.csv' CSV HEADER;
 
 \echo 'votingnotes'
-\copy votingnotes (voterId, electionId, notes) FROM '/docker-entrypoint-initdb.d/data/csv/votingnotes.csv' CSV HEADER;
+\copy votingnotes (voterId, electionId, voted) FROM '/docker-entrypoint-initdb.d/data/csv/votingnotes.csv' CSV HEADER;
 
 \echo 'Seed DONE.'

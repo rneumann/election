@@ -140,3 +140,100 @@ export const getVoterById = async (voterId) => {
     return { ok: false, data: undefined };
   }
 };
+
+/**
+ * Creates a new ballot for a given election and voter.
+ * @param {object} ballot - Ballot data to be inserted into the database.
+ * @param {number} voterUid - The ID of the voter creating the ballot.
+ * @returns {Promise<{ok: boolean, data?: object>>>} A promise resolving to an object with ok and data properties.
+ * ok is true if the ballot was created successfully, false otherwise.
+ * data is the inserted ballot data if ok is true, or undefined if no ballot was created.
+ */
+export const createBallot = async (ballot, voterUid) => {
+  const voter = await getVoterById(voterUid);
+  if (!voter.ok) {
+    return { ok: false, data: undefined, status: 404, message: 'Voter not found' };
+  }
+
+  const alreadyVoted = await checkAlreadyVoted(voter.data.id, ballot.electionId);
+  if (alreadyVoted) {
+    return { ok: false, data: undefined, status: 409, message: 'Voter already voted' };
+  }
+
+  const sqlCreateBallot = `
+    INSERT INTO ballots (election, valid)
+    VALUES ($1, $2)
+    RETURNING *
+  `;
+
+  const sqlCreateBallotVotes = `
+    INSERT INTO ballotvotes (election, ballot, listnum, votes)
+    VALUES ($1, $2, $3, $4)
+  `;
+
+  const sqlCreateVotingNote = `
+    INSERT INTO votingnotes (voterId, electionId, voted)
+    VALUES ($1, $2, $3)
+  `;
+
+  try {
+    const resCreateBallot = await client.query(sqlCreateBallot, [ballot.electionId, ballot.valid]);
+
+    if (resCreateBallot.rows.length === 0) {
+      return { ok: false, data: undefined };
+    }
+    //logger.debug(`createBallot res: ${JSON.stringify(resCreateBallot)}`);
+    const ballotId = resCreateBallot.rows[0].id;
+    if (!ballotId) {
+      logger.error(`BallotId missing, not rechieved from creation`);
+      return { ok: false, data: undefined };
+    }
+
+    const resCreateBallotV = await client.query(sqlCreateBallotVotes, [
+      ballot.electionId,
+      ballotId,
+      ballot.listnum,
+      ballot.votes,
+    ]);
+    logger.debug(`createBallot res: ${JSON.stringify(resCreateBallotV)}`);
+
+    const resCreateVotingN = await client.query(sqlCreateVotingNote, [
+      voter.data.id,
+      ballot.electionId,
+      true,
+    ]);
+    logger.debug(`createVotingNote res: ${JSON.stringify(resCreateVotingN)}`);
+
+    return { ok: true, data: resCreateBallotV.rows[0] };
+  } catch (err) {
+    logger.error(`Error occured: ${JSON.stringify(err)}`);
+    logger.error(err.stack);
+    return { ok: false, data: undefined };
+  }
+};
+
+/**
+ * Checks if a voter has already voted for an election.
+ * @param {string} voterId - The id of the voter.
+ * @param {string} electionId - The id of the election.
+ * @returns {Promise<boolean>} A promise resolving to true if the voter has already voted, false otherwise.
+ */
+const checkAlreadyVoted = async (voterId, electionId) => {
+  const sql = `
+    SELECT *
+    FROM votingnotes
+    WHERE voterId = $1 AND electionId = $2
+  `;
+
+  try {
+    const res = await client.query(sql, [voterId, electionId]);
+    logger.debug(`checkAlreadyVoted res: ${JSON.stringify(res.rows)}`);
+    if (res.rows.length === 0) {
+      return false;
+    }
+    return true;
+  } catch (err) {
+    logger.error(err.stack);
+    return false;
+  }
+};

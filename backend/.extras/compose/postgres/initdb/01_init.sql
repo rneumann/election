@@ -83,7 +83,7 @@ CREATE TABLE
   IF NOT EXISTS votingnotes (
     voterId UUID NOT NULL REFERENCES voters (id) ON DELETE CASCADE ON UPDATE CASCADE,
     electionId UUID NOT NULL REFERENCES elections (id) ON DELETE CASCADE ON UPDATE CASCADE,
-    notes TEXT,
+    voted BOOLEAN NOT NULL DEFAULT FALSE,
     PRIMARY KEY (voterId, electionId)
   );
 
@@ -206,7 +206,7 @@ SELECT
   e.id AS eid,
   e.info,
   e.description AS descr,
-  (vn.notes IS NOT NULL) AS voted
+  (vn.voted IS NOT NULL) AS voted
 FROM
   voters v
   CROSS JOIN elections e
