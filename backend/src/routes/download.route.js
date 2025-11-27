@@ -216,21 +216,19 @@ export const exportElectionDefinitionRoute = async (req, res, next) => {
 
     for (const election of elections) {
       const vgRes = await client.query(
-        `SELECT v.votergroup, v.faculty
-         FROM votergroups v
-         WHERE v.electionId = $1`,
+        `SELECT DISTINCT c.faculty, c.mtknr AS studiengang
+         FROM electioncandidates ec
+         JOIN candidates c ON c.id = ec.candidateId
+         WHERE ec.electionId = $1`,
         [election.id],
       );
 
       const faculties = new Set();
       const courses = new Set();
-      vgRes.rows.forEach((vg) => {
-        if (vg.faculty) {
-          faculties.add(vg.faculty);
-        }
-        if (vg.votergroup) {
-          courses.add(vg.votergroup);
-        }
+
+      vgRes.rows.forEach((row) => {
+        if (row.faculty) faculties.add(row.faculty);
+        if (row.studiengang) courses.add(row.studiengang);
       });
 
       summary.getRow(summaryRow++).values = [

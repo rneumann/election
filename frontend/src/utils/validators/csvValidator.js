@@ -146,12 +146,10 @@ export const validateVoterCSV = async (file) => {
 
   // Step 4: Calculate statistics
   const faculties = new Set(validationResult.data.map((v) => v.Fakultät));
-  const voterGroups = new Set(validationResult.data.map((v) => v.Studiengang));
 
   logger.info('CSV validation successful:', {
     totalVoters: validationResult.data.length,
     faculties: faculties.size,
-    voterGroups: voterGroups.size,
   });
 
   return {
@@ -160,9 +158,7 @@ export const validateVoterCSV = async (file) => {
     stats: {
       totalVoters: validationResult.data.length,
       faculties: faculties.size,
-      voterGroups: voterGroups.size,
       facultyList: [...faculties].sort(),
-      voterGroupList: [...voterGroups].sort(),
     },
   };
 };
