@@ -187,16 +187,19 @@ export const exportElectionDefinitionRoute = async (req, res, next) => {
 
     for (const election of elections) {
       const vgRes = await safeQuery(
-        `SELECT votergroup, faculty FROM votergroups WHERE electionId = $1`,
+        `SELECT DISTINCT c.faculty, c.mtknr AS studiengang
+         FROM electioncandidates ec
+         JOIN candidates c ON c.id = ec.candidateId
+         WHERE ec.electionId = $1`,
         [election.id],
       );
 
-      const facultySet = new Set();
-      const groupSet = new Set();
+      const faculties = new Set();
+      const courses = new Set();
 
-      vgRes.rows.forEach((r) => {
-        if (r.faculty) facultySet.add(r.faculty);
-        if (r.votergroup) groupSet.add(r.votergroup);
+      vgRes.rows.forEach((row) => {
+        if (row.faculty) faculties.add(row.faculty);
+        if (row.studiengang) courses.add(row.studiengang);
       });
 
       sheet.addRow([
