@@ -47,6 +47,21 @@ export const connectDb = async () => {
 };
 
 /**
+ * Runs a SQL query with parameters and logs errors gracefully.
+ *
+ * @param {string} sql
+ * @param {Array<any>} params
+ */
+export async function safeQuery(sql, params = []) {
+  try {
+    return await client.query(sql, params);
+  } catch (err) {
+    console.error('DB query failed:', err);
+    throw err;
+  }
+}
+
+/**
  * Exported PostgreSQL client instance.
  * Can be imported throughout the application to execute queries.
  */

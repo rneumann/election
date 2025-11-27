@@ -66,7 +66,7 @@ const parseExcel = async (path) => {
     } else {
       const entry = {};
       clean.forEach((value, idx) => {
-        entry[headers[idx]] = value !== undefined ? value : null; // eslint-disable-line security/detect-object-injection
+        entry[headers[idx]] = value !== undefined ? value : null;
       });
       rows.push(safeRow(entry));
     }

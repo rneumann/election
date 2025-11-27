@@ -12,6 +12,9 @@ import { healthRouter } from './routes/health.route.js';
 import passport from './auth/passport.js';
 import { logger } from './conf/logger/logger.js';
 import { voterRouter } from './routes/voter.routes.js';
+import { candidateRouter } from './routes/candidate.route.js';
+import { importRouter } from './routes/upload.route.js';
+import { exportRoute } from './routes/export.route.js';
 export const app = express();
 
 /**
@@ -196,6 +199,9 @@ app.use('/', healthRouter);
  */
 app.use('/api', router);
 app.use('/api/voter', voterRouter);
+app.use('/api/candidates', candidateRouter);
+app.use('/api/upload', importRouter);
+app.use('elections', exportRoute);
 
 /**
  * Error handling middleware
