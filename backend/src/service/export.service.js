@@ -1,40 +1,12 @@
 import ExcelJS from 'exceljs';
 import { logger } from '../conf/logger/logger.js';
-import { client, safeQuery } from '../database/db.js';
+import { safeQuery } from '../database/db.js';
 import { createBasicWorkbook, streamWorkbook } from '../utils/excel.js';
-
-// MIME & Headers
-const EXCEL_MIME_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-const CONTENT_TYPE = 'Content-Type';
-const CONTENT_DISPOSITION = 'Content-Disposition';
-
-/**
- * Generates a Content-Disposition header value for file downloads.
- *
- * @param {string} filename - The name of the file to be downloaded
- * @returns {string} The properly formatted Content-Disposition header value
- */
-const CONTENT_DISPOSITION_ATTACHMENT = (filename) => `attachment; filename="${filename}"`;
 
 // Sheet Names
 const SHEET_TOTAL_RESULTS = 'Total Results';
 const SHEET_BALLOTS = 'Ballots';
 const SHEET_SUMMARY = 'Summary';
-
-// Summary Header
-const SUMMARY_HEADER_ROW = 7;
-const SUMMARY_HEADERS = [
-  'Kennung',
-  'Info',
-  'Listen',
-  'Plätze',
-  'max. Kum.',
-  'Fakultäten',
-  'Studiengänge',
-];
-
-// Summary Start Row
-const SUMMARY_START_ROW = 8;
 
 /**
  * Route handler for exporting aggregated election results.
@@ -48,10 +20,14 @@ const SUMMARY_START_ROW = 8;
 export const exportTotalResultsRoute = async (req, res, next) => {
   logger.debug('Accessed total results export route');
 
-  if (req.method !== 'GET') return res.status(405).json({ message: 'Method Not Allowed' });
+  if (req.method !== 'GET') {
+    return res.status(405).json({ message: 'Method Not Allowed' });
+  }
 
   const { electionId } = req.params;
-  if (!electionId) return res.status(400).json({ message: 'electionId is required' });
+  if (!electionId) {
+    return res.status(400).json({ message: 'electionId is required' });
+  }
 
   try {
     const result = await safeQuery(
@@ -69,7 +45,9 @@ export const exportTotalResultsRoute = async (req, res, next) => {
       [electionId],
     );
 
-    if (result.rows.length === 0) return res.status(404).json({ message: 'No results found.' });
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'No results found.' });
+    }
 
     const rows = result.rows.map((r) => [r.candidate, r.votes]);
 
@@ -94,10 +72,14 @@ export const exportTotalResultsRoute = async (req, res, next) => {
 export const exportBallotsRoute = async (req, res, next) => {
   logger.debug('Accessed ballots export route');
 
-  if (req.method !== 'GET') return res.status(405).json({ message: 'Method Not Allowed' });
+  if (req.method !== 'GET') {
+    return res.status(405).json({ message: 'Method Not Allowed' });
+  }
 
   const { electionId } = req.params;
-  if (!electionId) return res.status(400).json({ message: 'electionId is required' });
+  if (!electionId) {
+    return res.status(400).json({ message: 'electionId is required' });
+  }
 
   try {
     const result = await safeQuery(
@@ -112,7 +94,9 @@ export const exportBallotsRoute = async (req, res, next) => {
       [electionId],
     );
 
-    if (result.rows.length === 0) return res.status(404).json({ message: 'No ballots found.' });
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'No ballots found.' });
+    }
 
     const rows = result.rows.map((r) => [r.ballotId, r.candidateId]);
 
@@ -147,7 +131,9 @@ export const exportElectionDefinitionRoute = async (req, res, next) => {
         `SELECT DISTINCT start, "end" FROM elections ORDER BY start DESC LIMIT 1`,
       );
 
-      if (!fallback.rows.length) return res.status(400).json({ message: 'No elections found' });
+      if (!fallback.rows.length) {
+        return res.status(400).json({ message: 'No elections found' });
+      }
 
       startDate = fallback.rows[0].start;
       endDate = fallback.rows[0].end;
@@ -165,7 +151,9 @@ export const exportElectionDefinitionRoute = async (req, res, next) => {
     );
 
     const elections = electionRes.rows;
-    if (!elections.length) return res.status(404).json({ message: 'No elections in interval.' });
+    if (!elections.length) {
+      return res.status(404).json({ message: 'No elections in interval.' });
+    }
 
     // Workbook
     const workbook = new ExcelJS.Workbook();
@@ -199,8 +187,12 @@ export const exportElectionDefinitionRoute = async (req, res, next) => {
       const courses = new Set();
 
       vgRes.rows.forEach((row) => {
-        if (row.faculty) faculties.add(row.faculty);
-        if (row.studiengang) courses.add(row.studiengang);
+        if (row.faculty) {
+          faculties.add(row.faculty);
+        }
+        if (row.studiengang) {
+          courses.add(row.studiengang);
+        }
       });
 
       sheet.addRow([
@@ -214,7 +206,7 @@ export const exportElectionDefinitionRoute = async (req, res, next) => {
       ]);
     }
 
-    await streamWorkbook(workbook, res, `election-definition-${startDate}_${endDate}.xlsx`);
+    await streamWorkbook(workbook, res, `election-definition-${endDate}.xlsx`);
   } catch (err) {
     logger.error('Error exporting election definition:', err);
     next(err);

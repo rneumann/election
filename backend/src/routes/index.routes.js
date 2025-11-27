@@ -3,11 +3,6 @@ import express from 'express';
 import { ensureAuthenticated, ensureHasRole, loginRoute, logoutRoute } from '../auth/auth.js';
 import passport from '../auth/passport.js';
 import { logger } from '../conf/logger/logger.js';
-import {
-  exportTotalResultsRoute,
-  exportBallotsRoute,
-  exportElectionDefinitionRoute,
-} from '../service/export.service.js';
 export const router = express.Router();
 
 /**

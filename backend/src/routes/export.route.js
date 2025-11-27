@@ -1,10 +1,10 @@
+import express from 'express';
 import { ensureAuthenticated, ensureHasRole } from '../auth/auth.js';
 import {
   exportTotalResultsRoute,
   exportBallotsRoute,
   exportElectionDefinitionRoute,
 } from '../service/export.service.js';
-import express from 'express';
 export const exportRoute = express.Router();
 /**
  * @openapi

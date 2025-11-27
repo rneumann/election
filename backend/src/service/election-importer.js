@@ -98,6 +98,8 @@ export const importElectionData = async (filePath) => {
 
 /**
  * Parses a date from various string or Date formats.
+ * @param {string|Date} value - The date value to parse.
+ * @returns {Date} The parsed Date object.
  */
 const parseDate = (value) => {
   if (value instanceof Date) {

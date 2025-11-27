@@ -1,6 +1,6 @@
+import { Router } from 'express';
 import { importWahlerRoute, importElectionRoute } from '../service/upload.service.js';
 import { ensureAuthenticated, ensureHasRole } from '../auth/auth.js';
-import { Router } from 'express';
 
 export const importRouter = Router();
 /**

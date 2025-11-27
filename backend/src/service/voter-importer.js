@@ -9,6 +9,8 @@ const allowedColumns = ['uid', 'lastname', 'firstname', 'mtknr', 'faculty', 'not
 
 /**
  * Ensures all allowed columns exist with null fallback.
+ * @param {Object} row - The input row object
+ * @returns {Object} The cleaned row object
  */
 const safeRow = (row) => {
   const cleaned = {};
@@ -20,6 +22,8 @@ const safeRow = (row) => {
 
 /**
  * Parses a CSV file into a JSON array of safe rows.
+ * @param {string} path - Path to the CSV file
+ * @returns {Promise<Array<Object>>} Parsed rows
  */
 const parseCsv = (path) => {
   return new Promise((resolve, reject) => {
@@ -34,6 +38,8 @@ const parseCsv = (path) => {
 
 /**
  * Parses an Excel file into a JSON array of safe rows.
+ * @param {string} path - Path to the Excel file
+ * @returns {Promise<Array<Object>>} Parsed rows
  */
 const parseExcel = async (path) => {
   const workbook = new ExcelJS.Workbook();
@@ -54,7 +60,7 @@ const parseExcel = async (path) => {
       headers = values.map((h) => String(h).trim().toLowerCase());
     } else {
       const entry = {};
-      clean.forEach((value, idx) => {
+      values.forEach((value, idx) => {
         entry[headers[idx]] = value !== undefined ? value : null;
       });
       rows.push(safeRow(entry));
@@ -66,6 +72,8 @@ const parseExcel = async (path) => {
 
 /**
  * Inserts an array of voter objects into the database.
+ * @param {Array<Object>} data - Array of voter objects
+ * @returns {Promise<void>}
  */
 const insertVoters = async (data) => {
   if (!data.length) {
@@ -99,6 +107,9 @@ const insertVoters = async (data) => {
 
 /**
  * Main entry for voter import.
+ * @param {string} path - Path to the input file
+ * @param {string} mimeType - MIME type of the input file
+ * @returns {Promise<void>}
  */
 export const importVoterData = async (path, mimeType) => {
   logger.debug(`Parsing file: ${path} (${mimeType})`);
