@@ -5,13 +5,10 @@ import ExcelJS from 'exceljs';
 import { logger } from '../conf/logger/logger.js';
 import { client } from '../database/db.js';
 
-const allowedColumns = ['uid', 'lastname', 'firstname', 'mtknr', 'faculty', 'votergroup', 'notes'];
+const allowedColumns = ['uid', 'lastname', 'firstname', 'mtknr', 'faculty', 'notes'];
 
 /**
  * Ensures all allowed columns exist with null fallback.
- *
- * @param {Object} row - The input row object from CSV or Excel
- * @returns {Object} A row object with all allowed columns, defaulting to null if missing
  */
 const safeRow = (row) => {
   const cleaned = {};
@@ -23,9 +20,6 @@ const safeRow = (row) => {
 
 /**
  * Parses a CSV file into a JSON array of safe rows.
- *
- * @param {string} path - Path to the CSV file
- * @returns {Promise<Object[]>} Parsed rows from the CSV file
  */
 const parseCsv = (path) => {
   return new Promise((resolve, reject) => {
@@ -39,11 +33,7 @@ const parseCsv = (path) => {
 };
 
 /**
- * Parses an Excel file into a JSON array of safe rows using exceljs.
- *
- * @param {string} path - Path to the Excel file
- * @returns {Promise<Object[]>} Parsed rows from the Excel file
- * @throws Will throw an error if the file has no worksheets
+ * Parses an Excel file into a JSON array of safe rows.
  */
 const parseExcel = async (path) => {
   const workbook = new ExcelJS.Workbook();
@@ -58,11 +48,10 @@ const parseExcel = async (path) => {
   let headers = [];
 
   worksheet.eachRow((row, rowNumber) => {
-    const values = row.values;
-    const clean = values.slice(1);
+    const values = row.values.slice(1);
 
     if (rowNumber === 1) {
-      headers = clean.map((h) => String(h).trim().toLowerCase());
+      headers = values.map((h) => String(h).trim().toLowerCase());
     } else {
       const entry = {};
       clean.forEach((value, idx) => {
@@ -77,10 +66,6 @@ const parseExcel = async (path) => {
 
 /**
  * Inserts an array of voter objects into the database.
- *
- * @param {Object[]} data - Array of voter objects with keys matching allowedColumns
- * @returns {Promise<void>}
- * @throws Will throw an error if the database insertion fails
  */
 const insertVoters = async (data) => {
   if (!data.length) {
@@ -113,14 +98,7 @@ const insertVoters = async (data) => {
 };
 
 /**
- * Main function to import voter data from a CSV or Excel file.
- *
- * Determines file type by MIME type, parses the file, and inserts rows into the database.
- *
- * @param {string} path - Path to the file to import
- * @param {string} mimeType - MIME type of the file (e.g., 'text/csv', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
- * @returns {Promise<void>}
- * @throws Will throw an error if the file type is unsupported, parsing fails, or database insertion fails
+ * Main entry for voter import.
  */
 export const importVoterData = async (path, mimeType) => {
   logger.debug(`Parsing file: ${path} (${mimeType})`);

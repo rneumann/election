@@ -13,7 +13,6 @@ import { z } from 'zod';
  * - firstname: Vorname
  * - lastname: Nachname
  * - mtknr: Matk.Nr (matriculation number)
- * - votergroup: Studiengang (combined with Studienganskürzel)
  */
 
 /**

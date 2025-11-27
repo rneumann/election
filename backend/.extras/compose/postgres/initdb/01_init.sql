@@ -4,12 +4,11 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 CREATE TABLE IF NOT EXISTS voters (
   id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  uid        VARCHAR(100) UNIQUE,
-  lastname   VARCHAR(100) NOT NULL,
-  firstname  VARCHAR(100) NOT NULL,
+  uid        VARCHAR(30) UNIQUE,
+  lastname   VARCHAR(50) NOT NULL,
+  firstname  VARCHAR(50) NOT NULL,
   mtknr      VARCHAR(20) UNIQUE,
-  faculty    VARCHAR(100),
-  votergroup VARCHAR(100) NOT NULL,
+  faculty    VARCHAR(25),
   notes      TEXT
 );
 
@@ -19,7 +18,6 @@ CREATE TABLE
     lastname TEXT NOT NULL,
     firstname TEXT NOT NULL,
     mtknr TEXT,
-    votergroup TEXT,
     faculty TEXT,
     keyword TEXT,
     notes TEXT,
@@ -45,13 +43,6 @@ CREATE TABLE IF NOT EXISTS electioncandidates (
   listnum     INT NOT NULL,
   PRIMARY KEY (electionId, candidateId),
   CONSTRAINT uq_election_listnum UNIQUE (electionId, listnum)
-);
-
-CREATE TABLE IF NOT EXISTS votergroups (
-  electionId UUID NOT NULL REFERENCES elections(id) ON DELETE CASCADE ON UPDATE CASCADE,
-  votergroup VARCHAR(100) NOT NULL,
-  faculty    VARCHAR(100),
-  PRIMARY KEY (electionId, votergroup)
 );
 
 CREATE TABLE
