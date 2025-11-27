@@ -201,7 +201,7 @@ app.use('/api', router);
 app.use('/api/voter', voterRouter);
 app.use('/api/candidates', candidateRouter);
 app.use('/api/upload/', importRouter);
-app.use('/api/upload/', exportRoute);
+app.use('/api/export/', exportRoute);
 
 /**
  * Error handling middleware

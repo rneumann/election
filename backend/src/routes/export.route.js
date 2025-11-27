@@ -8,7 +8,7 @@ import express from 'express';
 export const exportRoute = express.Router();
 /**
  * @openapi
- * /api/elections/results/{electionId}:
+ * /api/export/results/{electionId}:
  *   get:
  *     summary: Download anonymized ballot data
  *     tags:
@@ -41,7 +41,7 @@ export const exportRoute = express.Router();
  */
 
 exportRoute.get(
-  '/api/elections/results/:electionId',
+  '/results/:electionId',
   ensureAuthenticated,
   ensureHasRole('admin'),
   exportBallotsRoute,
@@ -49,7 +49,7 @@ exportRoute.get(
 
 /**
  * @openapi
- * /api/elections/totalresults/{electionId}:
+ * /api/export/totalresults/{electionId}:
  *   get:
  *     summary: Download aggregated election results (Admin/Committee only)
  *     description: Exports a complete Excel file containing all candidate vote totals for a specific election.
@@ -82,7 +82,7 @@ exportRoute.get(
  *         description: Internal server error
  */
 exportRoute.get(
-  '/api/elections/totalresults/:electionId',
+  '/totalresults/:electionId',
   ensureAuthenticated,
   ensureHasRole('admin'),
   exportTotalResultsRoute,
@@ -90,7 +90,7 @@ exportRoute.get(
 
 /**
  * @openapi
- * /api/elections/definition/{electionId}:
+ * /api/export/definition/{electionId}:
  *   get:
  *     summary: Download election definition
  *     description: Exports the metadata, configuration and voter group assignments for an election as an Excel file.
@@ -119,7 +119,7 @@ exportRoute.get(
  *         description: Internal server error
  */
 exportRoute.get(
-  '/api/elections/definition/:electionId',
+  '/definition/:electionId',
   ensureAuthenticated,
   ensureHasRole(['admin']),
   exportElectionDefinitionRoute,

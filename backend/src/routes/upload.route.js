@@ -10,7 +10,7 @@ export const importRouter = Router();
  *     summary: Upload voter list
  *     description: Uploads a CSV or Excel file with voter data.
  *     tags:
- *       - Upload
+ *       - Elections
  *     security:
  *       - cookieAuth: []
  *     requestBody:
@@ -42,7 +42,7 @@ importRouter.post('/voters', ensureAuthenticated, ensureHasRole(['admin']), impo
  *     summary: Upload election definitions
  *     description: Uploads a CSV or Excel file with election definitions (Wahlen.csv).
  *     tags:
- *       - Upload
+ *       - Elections
  *     security:
  *       - cookieAuth: []
  *     requestBody:

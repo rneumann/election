@@ -34,10 +34,10 @@ export const router = express.Router();
  *             properties:
  *               username:
  *                 type: string
- *                 example: jdoe
+ *                 example: admin
  *               password:
  *                 type: string
- *                 example: secret123
+ *                 example: p
  *     responses:
  *       200:
  *         description: Login successful

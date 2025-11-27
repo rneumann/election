@@ -12,7 +12,7 @@ export const candidateRouter = Router();
  *     summary: Get candidate directory
  *     description: Retrieves a complete list of all candidates stored in the system with details like faculty and image.
  *     tags:
- *       - Candidates
+ *       - Elections
  *     security:
  *       - cookieAuth: []
  *     responses:

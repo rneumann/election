@@ -1,6 +1,7 @@
 import ExcelJS from 'exceljs';
 import { logger } from '../conf/logger/logger.js';
-import { client } from '../database/db.js';
+import { client, safeQuery } from '../database/db.js';
+import { createBasicWorkbook, streamWorkbook } from '../utils/excel.js';
 
 // MIME & Headers
 const EXCEL_MIME_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
@@ -208,8 +209,8 @@ export const exportElectionDefinitionRoute = async (req, res, next) => {
         election.listvotes,
         election.votes_per_ballot,
         election.max_cumulative_votes ?? null,
-        [...facultySet].join(', '),
-        [...groupSet].join(', '),
+        ' ',
+        ' ',
       ]);
     }
 
