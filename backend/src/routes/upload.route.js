@@ -33,12 +33,7 @@ export const importRouter = Router();
  *       403:
  *         description: Forbidden (not an admin)
  */
-importRouter.post(
-  '/upload/voters',
-  ensureAuthenticated,
-  ensureHasRole(['admin']),
-  importWahlerRoute,
-);
+importRouter.post('/voters', ensureAuthenticated, ensureHasRole(['admin']), importWahlerRoute);
 
 /**
  * @openapi
@@ -73,9 +68,4 @@ importRouter.post(
  *         description: Import failed
  */
 
-importRouter.post(
-  '/upload/elections',
-  ensureAuthenticated,
-  ensureHasRole(['admin']),
-  importElectionRoute,
-);
+importRouter.post('/elections', ensureAuthenticated, ensureHasRole(['admin']), importElectionRoute);

@@ -54,7 +54,6 @@ export const importElectionData = async (filePath) => {
       const listVote = sheet.getCell(`C${rowIndex}`).value == '1';
       const seats = sheet.getCell(`D${rowIndex}`).value || 1;
       const maxKum = sheet.getCell(`E${rowIndex}`).value ?? 0;
-
       const listvotes = listVote ? 1 : 0;
       const votesPerBallot = seats;
       const maxCumulativeVotes = Number(maxKum) || 0;
