@@ -41,7 +41,7 @@ const Home = () => {
     };
     fetchElectionsActive();
     fetchElectionsFuture();
-  }, []);
+  }, [user.username]);
 
   const dateOptions = {
     day: '2-digit',

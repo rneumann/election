@@ -18,7 +18,7 @@ export const Modal = ({ open, setOpen, electionId }) => {
   const handleSubmit = () => {
     const cleanedVotes = invalidHandOver
       ? undefined
-      : Object.fromEntries(Object.entries(votes).filter(([key, value]) => value > 0));
+      : Object.fromEntries(Object.entries(votes).filter(([key, value]) => value > 0)); // eslint-disable-line
 
     setCleanedVotesPreview(cleanedVotes);
     setShowAlert(true);
