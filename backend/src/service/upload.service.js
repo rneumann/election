@@ -199,3 +199,54 @@ export const importElectionRoute = async (req, res) => {
     }
   });
 };
+
+/**
+ * Import route handler for candidate data.
+ *
+ * @param {import('express').Request} req - Express request object
+ * @param {import('express').Response} res - Express response object
+ * @returns {Promise<import('express').Response>} JSON response with success or error message
+ */
+export const importCandidateRoute = async (req, res) => {
+  logger.debug('Candidate import route accessed');
+
+  if (req.method !== 'POST') {
+    logger.warn(`Invalid HTTP method used: ${req.method}`);
+    return res.status(405).json({ message: 'Method Not Allowed' });
+  }
+  upload.single('file')(req, res, async (err) => {
+    if (err) {
+      logger.error('File upload error:', err);
+      return res.status(400).json({ message: err.message });
+    }
+    if (!req.file) {
+      logger.warn('No file uploaded');
+      return res.status(400).json({ message: 'file is required' });
+    }
+
+    const filePath = req.file.path;
+    const fileMimeType = req.file.mimetype;
+    try {
+      logger.debug(`Datei gespeichert unter: ${filePath}`);
+      await importCandidateData(filePath, fileMimeType);
+      fs.promises.unlink(filePath, (err) => {
+        if (err) {
+          logger.error('Fehler beim Löschen der Datei nach erfolgreichem Import:', err);
+        } else {
+          logger.debug(`Hochgeladene Datei erfolgreich gelöscht: ${filePath}`);
+        }
+      });
+      return res.status(200).json({
+        message: 'Kandidaten erfolgreich hochgeladen und in die Datenbank importiert.',
+      });
+    } catch (importError) {
+      logger.error('Importfehler. Datei wird gelöscht.', importError);
+      fs.promises.unlink(filePath, (err) => {
+        if (err) {
+          logger.error('Fehler beim Löschen der Datei nach Importfehler:', err);
+        }
+      });
+      return res.status(500).json({ message: `Import fehlgeschlagen: ${importError.message}` });
+    }
+  });
+};
