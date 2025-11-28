@@ -5,24 +5,22 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 CREATE TABLE
   IF NOT EXISTS voters (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid (),
-    uid VARCHAR(100) UNIQUE,
-    lastname VARCHAR(100) NOT NULL,
-    firstname VARCHAR(100) NOT NULL,
+    uid VARCHAR(30) UNIQUE,
+    lastname VARCHAR(50) NOT NULL,
+    firstname VARCHAR(50) NOT NULL,
     mtknr VARCHAR(20) UNIQUE,
-    faculty VARCHAR(100),
-    votergroup VARCHAR(100) NOT NULL,
+    faculty VARCHAR(25),
     notes TEXT
   );
 
 CREATE TABLE
   IF NOT EXISTS candidates (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid (),
-    lastname VARCHAR(100) NOT NULL,
-    firstname VARCHAR(100) NOT NULL,
-    mtknr VARCHAR(20),
-    votergroup VARCHAR(100),
-    faculty VARCHAR(100),
-    keyword VARCHAR(100),
+    lastname TEXT NOT NULL,
+    firstname TEXT NOT NULL,
+    mtknr TEXT,
+    faculty TEXT,
+    keyword TEXT,
     notes TEXT,
     approved BOOLEAN NOT NULL DEFAULT FALSE
   );
@@ -30,19 +28,15 @@ CREATE TABLE
 CREATE TABLE
   IF NOT EXISTS elections (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid (),
-    info VARCHAR(200) NOT NULL,
+    info TEXT NOT NULL,
     description TEXT,
     listvotes INT NOT NULL DEFAULT '0',
     votes_per_ballot SMALLINT NOT NULL CHECK (votes_per_ballot > 0),
     max_cumulative_votes int NOT NULL DEFAULT '0' CHECK (max_cumulative_votes >= 0),
-    test_election_active BOOLEAN DEFAULT false,
+    test_election_active BOOLEAN NOT NULL DEFAULT FALSE,
     start TIMESTAMPTZ NOT NULL,
     "end" TIMESTAMPTZ NOT NULL,
-    CONSTRAINT elections_time_range CHECK ("end" > start),
-    CONSTRAINT elections_test_active_before_start CHECK (
-      NOT test_election_active
-      OR start > now ()
-    )
+    CONSTRAINT elections_time_range CHECK ("end" > start)
   );
 
 CREATE TABLE
@@ -52,14 +46,6 @@ CREATE TABLE
     listnum INT NOT NULL,
     PRIMARY KEY (electionId, candidateId),
     CONSTRAINT uq_election_listnum UNIQUE (electionId, listnum)
-  );
-
-CREATE TABLE
-  IF NOT EXISTS votergroups (
-    electionId UUID NOT NULL REFERENCES elections (id) ON DELETE CASCADE ON UPDATE CASCADE,
-    votergroup VARCHAR(100) NOT NULL,
-    faculty VARCHAR(100) NOT NULL,
-    PRIMARY KEY (electionId, votergroup)
   );
 
 CREATE TABLE
@@ -174,7 +160,6 @@ SELECT
   e.info,
   e.description,
   e.votes_per_ballot AS votes_per_ballot,
-  e.test_election_active AS test_election_active,
   e.start,
   e."end",
   COALESCE(nc.candidates, 0) AS candidates,
@@ -206,7 +191,7 @@ SELECT
   e.id AS eid,
   e.info,
   e.description AS descr,
-  (vn.voted IS NOT NULL) AS voted
+  (vn.notes IS NOT NULL) AS voted
 FROM
   voters v
   CROSS JOIN elections e

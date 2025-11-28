@@ -2,14 +2,16 @@ import { logger } from '../conf/logger/logger.js';
 import { client } from '../database/db.js';
 
 /**
- * Retrieves all elections from the electionoverview table.
- *
- * @param {string} [status] The status of the election to be retrieved. If not provided, all elections will be returned.
- * @param faculty
- * @param votergroup
- * @returns {Promise<{ ok: boolean, data: Array<object> || undefined >}} A promise resolving to an object with an ok property and a data property containing an array of elections.
+ * Retrieves elections based on the given status and voter id.
+ * @param {string} status - One of 'active', 'finished', 'future'.
+ * @param {string} voterId - The id of the voter.
+ * @returns {Promise<{ok: boolean, data: Array<{id: string, info: string, description: string, listvotes: string, votes_per_ballot: number, max_cumulative_vote: number, test_election_active: boolean, start: Date, end: Date}>>}
  */
-export const getElections = async (status, faculty, votergroup) => {
+export const getElections = async (status, voterId) => {
+  if (!['active', 'finished', 'future', undefined].includes(status) || !voterId) {
+    return { ok: false, data: undefined };
+  }
+
   const conditions = [];
 
   /* eslint-disable*/
@@ -24,36 +26,28 @@ export const getElections = async (status, faculty, votergroup) => {
       conditions.push('start > now()');
       break;
   }
-  /* eslint-enable*/
-
-  if (faculty) {
-    conditions.push(`vg.faculty = $1`);
-  }
-
-  if (votergroup) {
-    conditions.push(`vg.votergroup = $2`);
-  }
 
   const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
   const sql = `
-    SELECT *
-    FROM electionoverview
-    LEFT JOIN votergroups vg ON vg.electionId = electionoverview.id
+    SELECT 
+      e.id,
+      e.info,
+      e.description,
+      e.listvotes,
+      e.votes_per_ballot,
+      e.max_cumulative_votes,
+      e.test_election_active,
+      e.start,
+      e.end
+    FROM elections e
+    LEFT JOIN votingnotes vn ON vn.electionId = e.id AND vn.voterId = $1
     ${whereClause}
   `;
 
-  const params = [];
-  if (faculty) {
-    params.push(faculty);
-  }
-  if (votergroup) {
-    params.push(votergroup);
-  }
-
   try {
-    logger.debug(`getElections sql: ${sql} params: ${JSON.stringify(params)}`);
-    const res = await client.query(sql, params);
+    logger.debug(`getElections sql: ${sql}`);
+    const res = await client.query(sql, [voterId]);
     return { ok: true, data: res.rows };
   } catch (err) {
     logger.error(err);
@@ -155,11 +149,6 @@ export const createBallot = async (ballot, voterUid) => {
     return { ok: false, data: undefined, status: 404, message: 'Voter not found' };
   }
 
-  const alreadyVoted = await checkAlreadyVoted(voter.data.id, ballot.electionId);
-  if (alreadyVoted) {
-    return { ok: false, data: undefined, status: 409, message: 'Voter already voted' };
-  }
-
   const sqlCreateBallot = `
     INSERT INTO ballots (election, valid)
     VALUES ($1, $2)
@@ -236,7 +225,7 @@ export const createBallot = async (ballot, voterUid) => {
  * @param {string} electionId - The id of the election.
  * @returns {Promise<boolean>} A promise resolving to true if the voter has already voted, false otherwise.
  */
-const checkAlreadyVoted = async (voterId, electionId) => {
+export const checkAlreadyVoted = async (voterId, electionId) => {
   const sql = `
     SELECT *
     FROM votingnotes
@@ -246,12 +235,41 @@ const checkAlreadyVoted = async (voterId, electionId) => {
   try {
     const res = await client.query(sql, [voterId, electionId]);
     logger.debug(`checkAlreadyVoted res: ${JSON.stringify(res.rows)}`);
+    if (res.rows[0].voted === true) {
+      logger.debug('Voter has already voted');
+      return true;
+    }
+    return false;
+  } catch (err) {
+    logger.error('Error while checking if voter has already voted');
+    logger.debug(err.stack);
+    return false;
+  }
+};
+
+/**
+ * Checks if a candidate is valid for an election.
+ * @param {number} listnumn - The list number of the candidate.
+ * @param {string} eleId - The id of the election.
+ * @returns {Promise<boolean>} A promise resolving to true if the candidate is valid, false otherwise.
+ */
+export const checkIfCandidateIsValid = async (listnumn, eleId) => {
+  const sql = `
+  SELECT candidateId
+  FROM electioncandidates
+  WHERE listnum = $1 AND electionId = $2
+  `;
+
+  try {
+    const res = await client.query(sql, [listnumn, eleId]);
+    logger.debug(`checkIfCandidateIsValid res: ${JSON.stringify(res.rows)}`);
     if (res.rows.length === 0) {
       return false;
     }
+    logger.debug('Candidate is valid');
     return true;
   } catch (err) {
-    logger.error('Error while checking if voter has already voted');
+    logger.error('Error while checking if candidate is valid');
     logger.debug(err.stack);
     return false;
   }

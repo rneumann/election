@@ -1,12 +1,16 @@
 import { Router } from 'express';
 import { logger } from '../conf/logger/logger.js';
 import {
+  checkAlreadyVoted,
+  checkIfCandidateIsValid,
+  checkIfElectionIsActive,
   createBallot,
   getElectionById,
   getElections,
   getVoterById,
 } from '../service/voter.service.js';
 import { ensureAuthenticated, ensureHasRole } from '../auth/auth.js';
+import { ballotInputSchema } from '../schemas/ballot.js';
 
 export const voterRouter = Router();
 
@@ -84,7 +88,7 @@ voterRouter.get(
 
     if (req.method !== 'GET') {
       logger.warn(`Invalid HTTP method: ${req.method}`);
-      // eslint-disable-next-line
+
       return res.status(405).json({ message: 'Method Not Allowed' });
     }
     const status = req.query.status;
@@ -105,6 +109,7 @@ voterRouter.get(
 
     const response = await getVoterById(voterUid);
     if (!response.ok) {
+      // eslint-disable-next-line
       logger.warn('Voter not found');
       return res.status(404).json({ message: 'Voter not found' });
     }
@@ -212,6 +217,7 @@ voterRouter.get(
       return res.status(500).json({ message: 'Error retrieving election' });
     }
     if (data.length === 0) {
+      // eslint-disable-next-line
       logger.warn('No election found');
       return res.status(404).json({ message: 'No election found' });
     }
@@ -279,41 +285,57 @@ voterRouter.get(
  *        description: Internal Server Error
  */
 voterRouter.post(
-  '/:voterId/ballot',
+  '/:voterUid/ballot',
   ensureAuthenticated,
   ensureHasRole(['voter']),
   async (req, res) => {
     logger.debug('Ballot route accessed');
-    if (req.method !== 'POST') {
-      logger.warn(`Invalid HTTP method: ${req.method}`);
-      return res.status(405).json({ message: 'Method Not Allowed' });
-    }
-    if (req.headers['content-type'] !== 'application/json') {
+    if (!req.is('application/json')) {
       logger.warn('Invalid Content-Type header');
       return res.status(415).json({ message: 'Content-Type must be application/json' });
     }
-    if (!req.params.voterId) {
-      logger.warn('VoterId is missing');
-      return res.status(400).json({ message: 'VoterId is required' });
-    }
-    if (
-      !req.body ||
-      !req.body.electionId ||
-      req.body.valid === undefined ||
-      !req.body.voteDecision ||
-      req.body.votes === 0
-    ) {
-      // eslint-disable-next-line
+
+    // chack if request body is valid
+    const ballotInput = ballotInputSchema.safeParse(req.body);
+    if (!ballotInput.success) {
       logger.warn('Invalid request body');
+      logger.debug(`Invalid request body: ${ballotInput.error.message}`);
       return res.status(400).json({ message: 'Invalid request body' });
     }
 
-    if (req.body.voteDecision.length === 0 && req.body.valid === true) {
-      logger.warn('Try to vote without candidates');
-      return res.status(400).json({ message: 'Invalid request body' });
+    // check if candidate is valid
+    const candidateIsValid = await checkIfCandidateIsValid(req.body.voteDecision);
+    if (!candidateIsValid) {
+      logger.warn('Candidate is not justified for this election');
+      return res.status(400).json({ message: 'Candidate is not justified for this election' });
     }
 
-    const { ok, data, status, message } = await createBallot(req.body, req.params.voterId);
+    // retrieve voter-object over voterUid
+    const voter = await getVoterById(req.params.voterUid);
+    if (!voter) {
+      logger.warn('Voter not found');
+      return res.status(404).json({ message: 'Voter not found' });
+    }
+
+    // check if voter already voted
+    const alreadyVoted = await checkAlreadyVoted(voter.data.id, req.body.electionId);
+    if (alreadyVoted) {
+      return { ok: false, data: undefined, status: 409, message: 'Voter already voted' };
+    }
+
+    // check if election is active
+    const elections = await getElections('active', voter.data.id);
+    if (!elections.ok) {
+      logger.warn('No election found');
+      return res.status(404).json({ message: 'No election found' });
+    }
+    // check if election exists
+    if (!elections.data.some((election) => election.id === req.body.electionId)) {
+      logger.warn('Election not found');
+      return res.status(404).json({ message: 'Election not found' });
+    }
+    // start creation process
+    const { ok, data, status, message } = await createBallot(req.body, req.params.voterUid);
     if (!ok) {
       if (status === 404) {
         logger.warn(message);
