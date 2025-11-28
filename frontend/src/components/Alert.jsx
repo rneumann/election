@@ -1,10 +1,15 @@
+import { useState } from 'react';
+import { logger } from '../conf/logger/logger';
 import ResponsiveButton from './ResponsiveButton';
+import { Spinner } from './Spinner';
 
-export const Alert = ({ setShowAlert, cleanedVotes, candidates }) => {
-  const resolveName = (id) => {
-    const cand = candidates?.find((c) => c.candidateId === id);
+export const Alert = ({ setShowAlert, cleanedVotes, candidates, election, invalidHandOver }) => {
+  const [showSpinner, setShowSpinner] = useState(false);
+  const resolveName = (listnum) => {
+    const cand = candidates?.find((c) => c.listnum === Number(listnum));
     if (!cand) {
-      return id;
+      logger.error(`Candidate with listnum ${listnum} not found`);
+      return listnum;
     }
     return `${cand.firstname} ${cand.lastname}`;
   };
@@ -43,12 +48,12 @@ export const Alert = ({ setShowAlert, cleanedVotes, candidates }) => {
           <p className="text-gray-300">Keine Stimmen vergeben.</p>
         ) : (
           <ul className="space-y-3">
-            {Object.entries(cleanedVotes).map(([id, value]) => (
+            {Object.entries(cleanedVotes).map(([listnum, value]) => (
               <li
-                key={id}
+                key={listnum}
                 className="bg-gray-800 text-white rounded-xl p-3 flex justify-between items-center shadow hover:shadow-lg transition"
               >
-                <span className="font-semibold">{resolveName(id)}</span>
+                <span className="font-semibold">{resolveName(listnum)}</span>
                 <span className="bg-blue-600 text-white rounded-full px-3 py-1 text-sm font-medium">
                   {value} Stimme{value > 1 ? 'n' : ''}
                 </span>
@@ -60,8 +65,28 @@ export const Alert = ({ setShowAlert, cleanedVotes, candidates }) => {
 
       {/* Footer */}
       <div className="mt-4 flex justify-end">
-        <ResponsiveButton size="small" className="text-white rounded-lg px-4 py-2 transition">
-          Abstimmung bestätigen
+        <ResponsiveButton
+          disabled={showSpinner}
+          onClick={() => {
+            setShowSpinner(true);
+            const data = {
+              electionId: election.id,
+              valid: !invalidHandOver,
+              voteDecision: Object.entries(cleanedVotes).map(([listnum, value]) => ({
+                listnum: Number(listnum),
+                votes: value,
+              })),
+            };
+            logger.debug(`data: ${JSON.stringify(data)}`);
+          }}
+          size="small"
+          className="text-white rounded-lg px-4 py-2 transition flex items-center gap-2"
+        >
+          {showSpinner ? (
+            <Spinner size={18} thickness={3} color="border-white" />
+          ) : (
+            'Abstimmung bestätigen'
+          )}
         </ResponsiveButton>
       </div>
     </div>

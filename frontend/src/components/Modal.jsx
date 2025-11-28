@@ -96,6 +96,8 @@ export const Modal = ({ open, setOpen, electionId }) => {
                 setShowAlert={setShowAlert}
                 cleanedVotes={cleanedVotesPreview}
                 candidates={election.candidates}
+                election={election}
+                invalidHandOver={invalidHandOver}
               />
             </div>
           )}
@@ -187,7 +189,7 @@ export const Modal = ({ open, setOpen, electionId }) => {
                           min={0}
                           max={election.max_cumulative_votes}
                           aria-label={`Stimmen für ${cand.firstname} ${cand.lastname}`}
-                          value={votes[cand.candidateId] ?? 0}
+                          value={votes[cand.listnum] ?? 0}
                           className="
                             mx-auto sm:mx-0
                             w-20
@@ -198,7 +200,7 @@ export const Modal = ({ open, setOpen, electionId }) => {
                           onChange={(e) => {
                             logger.debug(`onChange: ${e.target.value}`);
                             const newValue = Number(e.target.value);
-                            const oldValue = Number(votes[cand.candidateId] || 0);
+                            const oldValue = Number(votes[cand.listnum] || 0);
                             if (newValue < 0 || newValue > election.max_cumulative_votes) {
                               logger.debug(`invalid value: ${e.target.value}`);
                               return;
@@ -211,7 +213,7 @@ export const Modal = ({ open, setOpen, electionId }) => {
 
                             setVotes((prevVotes) => ({
                               ...prevVotes,
-                              [cand.candidateId]: newValue,
+                              [cand.listnum]: newValue,
                             }));
 
                             setVotesLeft((prevVotesLeft) => prevVotesLeft - (newValue - oldValue));
@@ -244,6 +246,7 @@ export const Modal = ({ open, setOpen, electionId }) => {
                 size="small"
                 className="text-white"
                 variant="outline"
+                disabled={showAlert}
                 onClick={() => {
                   setVotes({});
                   setVotesLeft(election?.votes_per_ballot);
@@ -256,6 +259,7 @@ export const Modal = ({ open, setOpen, electionId }) => {
 
               <ResponsiveButton
                 size="small"
+                disabled={showAlert}
                 onClick={() => {
                   setVotes({});
                   log.warn(
@@ -270,7 +274,7 @@ export const Modal = ({ open, setOpen, electionId }) => {
               </ResponsiveButton>
 
               <ResponsiveButton
-                disabled={saveButtonDisabled}
+                disabled={saveButtonDisabled || showAlert}
                 size="small"
                 type="submit"
                 variant="primary"

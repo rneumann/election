@@ -7,7 +7,7 @@ export const ballotCandidateInputSchema = z.object({
 
 export const ballotInputSchema = z
   .object({
-    electionId: z.string().uuid({ message: 'The election ID must be a valid UUID' }),
+    electionId: z.uuid({ message: 'The election ID must be a valid UUID' }),
     valid: z.boolean({ message: 'The valid field must be a boolean' }),
     voteDecision: z.array(ballotCandidateInputSchema).optional(),
   })
