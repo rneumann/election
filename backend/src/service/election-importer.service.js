@@ -73,7 +73,7 @@ export const importElectionData = async (filePath) => {
         RETURNING id;
       `;
 
-      const { rows } = await db.query(insertElectionQuery, [
+      await db.query(insertElectionQuery, [
         info,
         identifier,
         listvotes,
@@ -98,7 +98,13 @@ export const importElectionData = async (filePath) => {
 };
 
 /**
- * Parses a date from various string or Date formats.
+ * Parse a date from a string or Date object.
+ * If a string, it will be parsed as follows:
+ * - 'DD.MM.YYYY' will be parsed as-is
+ * - If no match, it will be tried to parse as a standard date string
+ * If a Date object, it will be returned as-is
+ * @param {string|Date} value - The value to parse
+ * @returns {Date} The parsed date
  */
 const parseDate = (value) => {
   if (value instanceof Date) {

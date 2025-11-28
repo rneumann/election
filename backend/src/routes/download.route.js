@@ -227,8 +227,12 @@ export const exportElectionDefinitionRoute = async (req, res, next) => {
       const courses = new Set();
 
       vgRes.rows.forEach((row) => {
-        if (row.faculty) faculties.add(row.faculty);
-        if (row.studiengang) courses.add(row.studiengang);
+        if (row.faculty) {
+          return faculties.add(row.faculty);
+        }
+        if (row.studiengang) {
+          return courses.add(row.studiengang);
+        }
       });
 
       summary.getRow(summaryRow++).values = [
