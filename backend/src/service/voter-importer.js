@@ -8,7 +8,10 @@ import { client } from '../database/db.js';
 const allowedColumns = ['uid', 'lastname', 'firstname', 'mtknr', 'faculty', 'notes'];
 
 /**
- * Ensures all allowed columns exist with null fallback.
+ * Creates a new object with only the allowed columns from the given row.
+ * If a column is not present in the row, it will be set to null in the new object.
+ * @param {Object} row - The row object to clean
+ * @returns {Object} - The cleaned row object
  */
 const safeRow = (row) => {
   const cleaned = {};
@@ -20,6 +23,7 @@ const safeRow = (row) => {
 
 /**
  * Parses a CSV file into a JSON array of safe rows.
+ * @param path
  */
 const parseCsv = (path) => {
   return new Promise((resolve, reject) => {
@@ -34,6 +38,11 @@ const parseCsv = (path) => {
 
 /**
  * Parses an Excel file into a JSON array of safe rows.
+ * The function will throw if the Excel file contains no sheets.
+ * The function will also throw if the Excel file contains no header row.
+ * The function will return an empty array if the Excel file contains no data rows.
+ * @param {string} path - The path to the Excel file.
+ * @returns {Promise<Object[]>} - A promise resolved with an array of safe rows.
  */
 const parseExcel = async (path) => {
   const workbook = new ExcelJS.Workbook();
@@ -66,6 +75,7 @@ const parseExcel = async (path) => {
 
 /**
  * Inserts an array of voter objects into the database.
+ * @param data
  */
 const insertVoters = async (data) => {
   if (!data.length) {
@@ -99,6 +109,8 @@ const insertVoters = async (data) => {
 
 /**
  * Main entry for voter import.
+ * @param path
+ * @param mimeType
  */
 export const importVoterData = async (path, mimeType) => {
   logger.debug(`Parsing file: ${path} (${mimeType})`);

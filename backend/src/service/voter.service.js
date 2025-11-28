@@ -2,56 +2,79 @@ import { logger } from '../conf/logger/logger.js';
 import { client } from '../database/db.js';
 
 /**
-
-/**
- * Retrieves all elections from the electionoverview table.
- * @returns {Promise<Array<electionoverview>>} A promise resolving to an array of electionoverview objects.
+ * Retrieves elections based on the given status and voter id.
+ * @param {string} status - One of 'active', 'finished', 'future'.
+ * @param {string} voterId - The id of the voter.
+ * @returns {Promise<{ok: boolean, data: Array<{id: string, info: string, description: string, listvotes: string, votes_per_ballot: number, max_cumulative_vote: number, test_election_active: boolean, start: Date, end: Date}>>}
  */
-export const getElections = async () => {
-  const sql = `
-    SELECT *
-    FROM electionoverview
-  `;
-  const queryRes = await client
-    .query(sql)
-    .then((res) => {
-      if (res.rows.length === 0) {
-        return {
-          ok: false,
-          data: [],
-        };
-      }
-      return {
-        ok: true,
-        data: res.rows,
-      };
-    })
-    .catch((err) => {
-      logger.error(err.stack);
-      return {
-        ok: false,
-        data: undefined,
-      };
-    });
+export const getElections = async (status, voterId) => {
+  if (!['active', 'finished', 'future', undefined].includes(status) || !voterId) {
+    return { ok: false, data: undefined };
+  }
 
-  return queryRes;
+  const conditions = [];
+
+  /* eslint-disable*/
+  switch (status) {
+    case 'active':
+      conditions.push('start <= now() AND "end" >= now()');
+      break;
+    case 'finished':
+      conditions.push('"end" < now()');
+      break;
+    case 'future':
+      conditions.push('start > now()');
+      break;
+  }
+
+  const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+
+  const sql = `
+    SELECT 
+      e.id,
+      e.info,
+      e.description,
+      e.listvotes,
+      e.votes_per_ballot,
+      e.max_cumulative_votes,
+      e.test_election_active,
+      e.start,
+      e.end
+    FROM elections e
+    LEFT JOIN votingnotes vn ON vn.electionId = e.id AND vn.voterId = $1
+    ${whereClause}
+  `;
+
+  try {
+    logger.debug(`getElections sql: ${sql}`);
+    const res = await client.query(sql, [voterId]);
+    return { ok: true, data: res.rows };
+  } catch (err) {
+    logger.error(err);
+    return { ok: false, data: undefined };
+  }
 };
 
 /**
- * Retrieves an election by its ID from the elections table.
- * The election is joined with its candidates and voting notes using a left join.
- * @param {number} id - The ID of the election to retrieve.
- * @returns {Promise<{ok: boolean, data?: Array<election>>>} A promise resolving to an object with ok and data properties.
+ * Retrieves an election by its id.
+ *
+ * @param {string} electionId - The id of the election.
+ * @param {string} [faculty] - The faculty of the candidates to filter by.
+ * @param {string} [votergroup] - The votergroup of the candidates to filter by.
+ *
+ * @returns {Promise<{ok: boolean, data: object | null}>}
+ * A promise that resolves with an object containing ok and data properties.
  * ok is true if the election was found, false otherwise.
- * data is an array containing the election object, or an empty array if no election was found.
+ * data is null if the election was not found, otherwise it is an object containing the election details.
  */
-export const getElectionById = async (id) => {
+export const getElectionById = async (electionId) => {
   const sql = `
     SELECT 
       e.id,
       e.info,
       e.description,
       e.votes_per_ballot,
+      e.max_cumulative_votes,
       e.start,
       e."end",
       COALESCE(json_agg(DISTINCT jsonb_build_object(
@@ -71,7 +94,7 @@ export const getElectionById = async (id) => {
   `;
 
   try {
-    const res = await client.query(sql, [id]);
+    const res = await client.query(sql, [electionId]);
 
     if (res.rows.length === 0) {
       return { ok: false, data: null };
@@ -81,5 +104,177 @@ export const getElectionById = async (id) => {
   } catch (err) {
     logger.error(err.stack);
     return { ok: false, data: undefined };
+  }
+};
+
+/**
+ * Retrieves a voter by its ID from the voters table.
+ * @param {number} voterId - The ID of the voter to retrieve.
+ * @returns {Promise<{ok: boolean, data?: voter>>>} A promise resolving to an object with ok and data properties.
+ * ok is true if the voter was found, false otherwise.
+ * data is the voter object if found, or undefined if no voter was found.
+ */
+export const getVoterById = async (voterId) => {
+  const sql = `
+    SELECT *
+    FROM voters
+    WHERE uid = $1
+  `;
+
+  try {
+    const res = await client.query(sql, [voterId]);
+    logger.debug(`getVoterById res: ${JSON.stringify(res.rows)}`);
+    if (res.rows.length === 0) {
+      return { ok: false, data: undefined };
+    }
+
+    return { ok: true, data: res.rows[0] };
+  } catch (err) {
+    logger.error(err.stack);
+    return { ok: false, data: undefined };
+  }
+};
+
+/**
+ * Creates a new ballot for a given election and voter.
+ * @param {object} ballot - Ballot data to be inserted into the database.
+ * @param {number} voterUid - The ID of the voter creating the ballot.
+ * @returns {Promise<{ok: boolean, data?: object>>>} A promise resolving to an object with ok and data properties.
+ * ok is true if the ballot was created successfully, false otherwise.
+ * data is the inserted ballot data if ok is true, or undefined if no ballot was created.
+ */
+export const createBallot = async (ballot, voterUid) => {
+  const voter = await getVoterById(voterUid);
+  if (!voter.ok) {
+    return { ok: false, data: undefined, status: 404, message: 'Voter not found' };
+  }
+
+  const sqlCreateBallot = `
+    INSERT INTO ballots (election, valid)
+    VALUES ($1, $2)
+    RETURNING *
+  `;
+
+  const sqlCreateBallotVotes = `
+    INSERT INTO ballotvotes (election, ballot, listnum, votes)
+    VALUES ($1, $2, $3, $4)
+    RETURNING *
+  `;
+
+  const sqlCreateVotingNote = `
+    INSERT INTO votingnotes (voterId, electionId, voted)
+    VALUES ($1, $2, $3)
+    RETURNING *
+  `;
+
+  try {
+    await client.query('BEGIN');
+    const resCreateBallot = await client.query(sqlCreateBallot, [ballot.electionId, ballot.valid]);
+    if (resCreateBallot.rows.length === 0) {
+      await client.query('ROLLBACK');
+
+      return { ok: false, data: undefined };
+    }
+    //logger.debug(`createBallot res: ${JSON.stringify(resCreateBallot)}`);
+    const ballotId = resCreateBallot.rows[0].id;
+    if (!ballotId) {
+      logger.error(`BallotId missing, not rechieved from creation`);
+      await client.query('ROLLBACK');
+
+      return { ok: false, data: undefined };
+    }
+
+    for (const candidate of ballot.voteDecision) {
+      const resCreateBallotV = await client.query(sqlCreateBallotVotes, [
+        ballot.electionId,
+        ballotId,
+        candidate.listnum,
+        candidate.votes,
+      ]);
+      logger.debug(`createBallot res: ${JSON.stringify(resCreateBallotV)}`);
+      if (resCreateBallotV.rows.length === 0) {
+        await client.query('ROLLBACK');
+
+        return { ok: false, data: undefined };
+      }
+    }
+    const resCreateVotingN = await client.query(sqlCreateVotingNote, [
+      voter.data.id,
+      ballot.electionId,
+      true,
+    ]);
+    logger.debug(`createVotingNote res: ${JSON.stringify(resCreateVotingN)}`);
+    if (resCreateVotingN.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return { ok: false, data: undefined };
+    }
+
+    await client.query('COMMIT');
+    return { ok: true, data: resCreateBallot.rows[0] };
+  } catch (err) {
+    logger.error(`Error occured`);
+    logger.debug(err.stack);
+    await client.query('ROLLBACK');
+    return { ok: false, data: undefined };
+  }
+};
+
+/**
+ * Checks if a voter has already voted for an election.
+ * @param {string} voterId - The id of the voter.
+ * @param {string} electionId - The id of the election.
+ * @returns {Promise<boolean>} A promise resolving to true if the voter has already voted, false otherwise.
+ */
+export const checkAlreadyVoted = async (voterId, electionId) => {
+  const sql = `
+    SELECT *
+    FROM votingnotes
+    WHERE voterId = $1 AND electionId = $2
+  `;
+
+  try {
+    logger.debug(
+      `checkAlreadyVoted with sql: ${sql}, voterId: ${voterId}, electionId: ${electionId}`,
+    );
+    const res = await client.query(sql, [voterId, electionId]);
+    logger.debug(`checkAlreadyVoted res: ${JSON.stringify(res.rows)}`);
+    if (res.rows.length > 0 && res.rows[0].voted === true) {
+      logger.debug('Voter has already voted');
+      return true;
+    }
+    return false;
+  } catch (err) {
+    logger.error('Error while checking if voter has already voted');
+    logger.debug(err.stack);
+    return;
+  }
+};
+
+/**
+ * Checks if a candidate is valid for an election.
+ * @param {number} listnumn - The list number of the candidate.
+ * @param {string} eleId - The id of the election.
+ * @returns {Promise<boolean>} A promise resolving to true if the candidate is valid, false otherwise.
+ */
+export const checkIfCandidateIsValid = async (listnumn, eleId) => {
+  const sql = `
+  SELECT candidateId
+  FROM electioncandidates
+  WHERE listnum = $1 AND electionId = $2
+  `;
+
+  try {
+    logger.debug(`checkIfCandidateIsValid sql: ${sql} listnumn: ${listnumn} eleId: ${eleId}`);
+    const res = await client.query(sql, [listnumn, eleId]);
+    logger.debug(`checkIfCandidateIsValid res: ${JSON.stringify(res.rows)}`);
+    if (res.rows.length === 0) {
+      return false;
+    }
+    logger.debug('Candidate is valid');
+    return true;
+  } catch (err) {
+    logger.error('Error while checking if candidate is valid');
+    logger.debug(err.stack);
+    return false;
   }
 };

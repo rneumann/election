@@ -2,8 +2,11 @@ import { logger } from '../conf/logger/logger';
 import api from './api';
 
 export const voterApi = {
-  getElections: async () => {
-    const response = await api.get('voter/elections');
+  getElections: async (status, voterId) => {
+    const response = await api.get(
+      `voter/${voterId}/elections${status ? `?status=${status}` : ''}`,
+    );
+    logger.debug(`url: voter/${voterId}/elections${status ? `?status=${status}` : ''}`);
     if (!response) {
       logger.error('Error retrieving elections');
     }
