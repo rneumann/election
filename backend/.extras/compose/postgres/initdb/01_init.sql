@@ -2,16 +2,16 @@ BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
-CREATE TABLE IF NOT EXISTS voters (
-  id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  uid        VARCHAR(100) UNIQUE,
-  lastname   VARCHAR(100) NOT NULL,
-  firstname  VARCHAR(100) NOT NULL,
-  mtknr      VARCHAR(20) UNIQUE,
-  faculty    VARCHAR(100),
-  votergroup VARCHAR(100) NOT NULL,
-  notes      TEXT
-);
+CREATE TABLE
+  IF NOT EXISTS voters (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid (),
+    uid VARCHAR(30) UNIQUE,
+    lastname VARCHAR(50) NOT NULL,
+    firstname VARCHAR(50) NOT NULL,
+    mtknr VARCHAR(20) UNIQUE,
+    faculty VARCHAR(25),
+    notes TEXT
+  );
 
 CREATE TABLE
   IF NOT EXISTS candidates (
@@ -19,7 +19,6 @@ CREATE TABLE
     lastname TEXT NOT NULL,
     firstname TEXT NOT NULL,
     mtknr TEXT,
-    votergroup TEXT,
     faculty TEXT,
     keyword TEXT,
     notes TEXT,
@@ -34,25 +33,20 @@ CREATE TABLE
     listvotes INT NOT NULL DEFAULT '0',
     votes_per_ballot SMALLINT NOT NULL CHECK (votes_per_ballot > 0),
     max_cumulative_votes int NOT NULL DEFAULT '0' CHECK (max_cumulative_votes >= 0),
+    test_election_active BOOLEAN NOT NULL DEFAULT FALSE,
     start TIMESTAMPTZ NOT NULL,
     "end" TIMESTAMPTZ NOT NULL,
     CONSTRAINT elections_time_range CHECK ("end" > start)
   );
 
-CREATE TABLE IF NOT EXISTS electioncandidates (
-  electionId  UUID NOT NULL REFERENCES elections(id)  ON DELETE CASCADE ON UPDATE CASCADE,
-  candidateId UUID NOT NULL REFERENCES candidates(id) ON DELETE CASCADE ON UPDATE CASCADE,
-  listnum     INT NOT NULL,
-  PRIMARY KEY (electionId, candidateId),
-  CONSTRAINT uq_election_listnum UNIQUE (electionId, listnum)
-);
-
-CREATE TABLE IF NOT EXISTS votergroups (
-  electionId UUID NOT NULL REFERENCES elections(id) ON DELETE CASCADE ON UPDATE CASCADE,
-  votergroup VARCHAR(100) NOT NULL,
-  faculty    VARCHAR(100),
-  PRIMARY KEY (electionId, votergroup)
-);
+CREATE TABLE
+  IF NOT EXISTS electioncandidates (
+    electionId UUID NOT NULL REFERENCES elections (id) ON DELETE CASCADE ON UPDATE CASCADE,
+    candidateId UUID NOT NULL REFERENCES candidates (id) ON DELETE CASCADE ON UPDATE CASCADE,
+    listnum INT NOT NULL,
+    PRIMARY KEY (electionId, candidateId),
+    CONSTRAINT uq_election_listnum UNIQUE (electionId, listnum)
+  );
 
 CREATE TABLE
   IF NOT EXISTS ballots (
@@ -61,26 +55,23 @@ CREATE TABLE
     valid BOOLEAN NOT NULL DEFAULT TRUE
   );
 
-CREATE TABLE IF NOT EXISTS ballotvotes (
-  election UUID NOT NULL REFERENCES elections(id) ON DELETE CASCADE ON UPDATE CASCADE,
-  ballot   UUID NOT NULL REFERENCES ballots(id)   ON DELETE CASCADE ON UPDATE CASCADE,
-  listnum  INT NOT NULL,
-  votes    INT NOT NULL DEFAULT 0 CHECK (votes >= 0),
-  PRIMARY KEY (election, ballot, listnum),
-  CONSTRAINT fk_ballotvotes_list
-    FOREIGN KEY (election, listnum)
-    REFERENCES electioncandidates (electionId, listnum)
-    ON DELETE CASCADE ON UPDATE CASCADE
-);
+CREATE TABLE
+  IF NOT EXISTS ballotvotes (
+    election UUID NOT NULL REFERENCES elections (id) ON DELETE CASCADE ON UPDATE CASCADE,
+    ballot UUID NOT NULL REFERENCES ballots (id) ON DELETE CASCADE ON UPDATE CASCADE,
+    listnum INT NOT NULL,
+    votes INT NOT NULL DEFAULT 0 CHECK (votes >= 0),
+    PRIMARY KEY (election, ballot, listnum),
+    CONSTRAINT fk_ballotvotes_list FOREIGN KEY (election, listnum) REFERENCES electioncandidates (electionId, listnum) ON DELETE CASCADE ON UPDATE CASCADE
+  );
 
 CREATE TABLE
   IF NOT EXISTS votingnotes (
     voterId UUID NOT NULL REFERENCES voters (id) ON DELETE CASCADE ON UPDATE CASCADE,
     electionId UUID NOT NULL REFERENCES elections (id) ON DELETE CASCADE ON UPDATE CASCADE,
-    notes TEXT,
+    voted BOOLEAN NOT NULL DEFAULT FALSE,
     PRIMARY KEY (voterId, electionId)
   );
-
 
 CREATE INDEX IF NOT EXISTS idx_ballots_election ON ballots (election);
 
@@ -88,7 +79,8 @@ CREATE INDEX IF NOT EXISTS idx_ballotvotes_list ON ballotvotes (election, listnu
 
 CREATE INDEX IF NOT EXISTS idx_votingnotes_voter ON votingnotes (voterId, electionId);
 
-CREATE OR REPLACE VIEW ballotlist AS
+CREATE
+OR REPLACE VIEW ballotlist AS
 SELECT
   ec.listnum,
   c.id AS cid,
@@ -105,7 +97,8 @@ ORDER BY
   e.id,
   ec.listnum;
 
-CREATE OR REPLACE VIEW counting AS
+CREATE
+OR REPLACE VIEW counting AS
 SELECT
   ec.listnum,
   c.firstname,
@@ -128,7 +121,8 @@ GROUP BY
   c.faculty,
   e.info;
 
-CREATE OR REPLACE VIEW votingcounts AS
+CREATE
+OR REPLACE VIEW votingcounts AS
 SELECT
   election,
   listnum,
@@ -139,7 +133,8 @@ GROUP BY
   election,
   listnum;
 
-CREATE OR REPLACE VIEW numcandidatesperelection AS
+CREATE
+OR REPLACE VIEW numcandidatesperelection AS
 SELECT
   electionid,
   COUNT(candidateid) AS candidates
@@ -148,7 +143,8 @@ FROM
 GROUP BY
   electionid;
 
-CREATE OR REPLACE VIEW numvotersperelection AS
+CREATE
+OR REPLACE VIEW numvotersperelection AS
 SELECT
   electionid,
   COUNT(DISTINCT voterid) AS voters
@@ -157,7 +153,8 @@ FROM
 GROUP BY
   electionid;
 
-CREATE OR REPLACE VIEW electionoverview AS
+CREATE
+OR REPLACE VIEW electionoverview AS
 SELECT
   e.id,
   e.info,
@@ -183,7 +180,8 @@ GROUP BY
   nc.candidates,
   nv.voters;
 
-CREATE OR REPLACE VIEW electionspervoter AS
+CREATE
+OR REPLACE VIEW electionspervoter AS
 SELECT
   v.id AS uid,
   v.lastname,
@@ -193,14 +191,15 @@ SELECT
   e.id AS eid,
   e.info,
   e.description AS descr,
-  (vn.notes IS NOT NULL) AS voted
+  (vn.voted IS NOT NULL) AS voted
 FROM
   voters v
   CROSS JOIN elections e
   LEFT JOIN votingnotes vn ON vn.voterid = v.id
   AND vn.electionid = e.id;
 
-CREATE OR REPLACE VIEW voterregistry AS
+CREATE
+OR REPLACE VIEW voterregistry AS
 SELECT
   faculty,
   lastname,

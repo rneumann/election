@@ -35,7 +35,7 @@ export const router = express.Router();
  *             properties:
  *               username:
  *                 type: string
- *                 example: jdoe
+ *                 example: u001
  *               password:
  *                 type: string
  *                 example: secret123
@@ -380,24 +380,3 @@ router.get(
   ensureHasRole(['admin']),
   exportElectionDefinitionRoute,
 );
-
-/**
- * Testing routes for protection
- * @openapi
- * /api/protected:
- *   get:
- *     summary: Protected route
- *     responses:
- *       200:
- *         description: Protected route accessed
- *       401:
- *         description: Unauthorized
- *       403:
- *         description: Forbidden
- */
-router.get('/protected', ensureAuthenticated, (req, res) => {
-  res.json({ message: `Protected route accessed with user: ${req.user.username}` });
-});
-router.get('/protected/role', ensureHasRole(['admin']), (req, res) => {
-  res.json({ message: `Protected route accessed with user: ${req.user.username}` });
-});
