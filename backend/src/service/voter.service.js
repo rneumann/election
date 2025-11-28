@@ -233,9 +233,12 @@ export const checkAlreadyVoted = async (voterId, electionId) => {
   `;
 
   try {
+    logger.debug(
+      `checkAlreadyVoted with sql: ${sql}, voterId: ${voterId}, electionId: ${electionId}`,
+    );
     const res = await client.query(sql, [voterId, electionId]);
     logger.debug(`checkAlreadyVoted res: ${JSON.stringify(res.rows)}`);
-    if (res.rows[0].voted === true) {
+    if (res.rows.length > 0 && res.rows[0].voted === true) {
       logger.debug('Voter has already voted');
       return true;
     }
@@ -243,7 +246,7 @@ export const checkAlreadyVoted = async (voterId, electionId) => {
   } catch (err) {
     logger.error('Error while checking if voter has already voted');
     logger.debug(err.stack);
-    return false;
+    return;
   }
 };
 
@@ -261,6 +264,7 @@ export const checkIfCandidateIsValid = async (listnumn, eleId) => {
   `;
 
   try {
+    logger.debug(`checkIfCandidateIsValid sql: ${sql} listnumn: ${listnumn} eleId: ${eleId}`);
     const res = await client.query(sql, [listnumn, eleId]);
     logger.debug(`checkIfCandidateIsValid res: ${JSON.stringify(res.rows)}`);
     if (res.rows.length === 0) {

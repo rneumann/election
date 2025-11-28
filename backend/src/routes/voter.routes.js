@@ -3,7 +3,6 @@ import { logger } from '../conf/logger/logger.js';
 import {
   checkAlreadyVoted,
   checkIfCandidateIsValid,
-  checkIfElectionIsActive,
   createBallot,
   getElectionById,
   getElections,
@@ -107,18 +106,14 @@ voterRouter.get(
       return res.status(400).json({ message: 'Voter id is required' });
     }
 
-    const response = await getVoterById(voterUid);
-    if (!response.ok) {
+    const voter = await getVoterById(voterUid);
+    if (!voter.ok) {
       // eslint-disable-next-line
       logger.warn('Voter not found');
       return res.status(404).json({ message: 'Voter not found' });
     }
-    logger.debug(`Voter retrieved successfully res: ${JSON.stringify(response.data)}`);
-    const { ok, data } = await getElections(
-      status,
-      response.data.faculty,
-      response.data.votergroup,
-    );
+    logger.debug(`Voter retrieved successfully res: ${JSON.stringify(voter.data)}`);
+    const { ok, data } = await getElections(status, voter.data.id);
 
     if (!ok) {
       logger.error('Error retrieving elections');
@@ -290,6 +285,7 @@ voterRouter.post(
   ensureHasRole(['voter']),
   async (req, res) => {
     logger.debug('Ballot route accessed');
+    logger.debug(`Request body: ${JSON.stringify(req.body)}`);
     if (!req.is('application/json')) {
       logger.warn('Invalid Content-Type header');
       return res.status(415).json({ message: 'Content-Type must be application/json' });
@@ -304,10 +300,13 @@ voterRouter.post(
     }
 
     // check if candidate is valid
-    const candidateIsValid = await checkIfCandidateIsValid(req.body.voteDecision);
-    if (!candidateIsValid) {
-      logger.warn('Candidate is not justified for this election');
-      return res.status(400).json({ message: 'Candidate is not justified for this election' });
+
+    for (const cand of req.body.voteDecision) {
+      const candidateIsValid = await checkIfCandidateIsValid(cand.listnum, req.body.electionId);
+      if (!candidateIsValid) {
+        logger.warn('Candidate is not justified for this election');
+        return res.status(400).json({ message: 'Candidate is not justified for this election' });
+      }
     }
 
     // retrieve voter-object over voterUid
@@ -320,7 +319,7 @@ voterRouter.post(
     // check if voter already voted
     const alreadyVoted = await checkAlreadyVoted(voter.data.id, req.body.electionId);
     if (alreadyVoted) {
-      return { ok: false, data: undefined, status: 409, message: 'Voter already voted' };
+      return res.status(409).json({ message: 'Already voted' });
     }
 
     // check if election is active

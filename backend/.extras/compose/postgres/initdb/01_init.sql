@@ -191,7 +191,7 @@ SELECT
   e.id AS eid,
   e.info,
   e.description AS descr,
-  (vn.notes IS NOT NULL) AS voted
+  (vn.voted IS NOT NULL) AS voted
 FROM
   voters v
   CROSS JOIN elections e
