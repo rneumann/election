@@ -1,0 +1,166 @@
+/**
+ * Hare-Niemeyer counting (Largest Remainder Method).
+ * Used for: Senat (Wahlart 5.1), Fakultätsrat (Wahlart 6.1) - Verhältniswahl
+ *
+ * Algorithm:
+ * 1. Calculate quota: (votes / total_votes) × seats
+ * 2. Assign floor(quota) seats to each list
+ * 3. Distribute remaining seats by largest remainder (descending)
+ *
+ * BSI-Note: Uses aggregated vote data only. No individual ballot access.
+ *
+ * @module hare-niemeyer
+ */
+
+// Constants for Hare-Niemeyer calculations
+const REMAINDER_TOLERANCE = 0.001; // Tolerance for floating-point comparison (0.1%) - erhöht für sicherere Tie-Detection
+const QUOTA_DECIMALS = 4; // Decimal places for quota display
+
+/**
+ * Performs Hare-Niemeyer proportional seat allocation.
+ *
+ * @param {Object} params - Counting parameters
+ * @param {Array<Object>} params.votes - Vote data from counting VIEW
+ * @param {number} params.votes[].listnum - List/Candidate number
+ * @param {string} params.votes[].firstname - Candidate/List name (first)
+ * @param {string} params.votes[].lastname - Candidate/List name (last)
+ * @param {number} params.votes[].votes - Vote count
+ * @param {Object} params.config - Counting configuration
+ * @param {number} params.config.seats_to_fill - Total seats to allocate
+ * @returns {Object} Allocation result with seat distribution
+ * @throws {Error} If seats_to_fill < 1 or total votes = 0
+ *
+ * @example
+ * const result = countHareNiemeyer({
+ *   votes: [
+ *     { listnum: 1, firstname: 'Liste', lastname: 'A', votes: 4567 },
+ *     { listnum: 2, firstname: 'Liste', lastname: 'B', votes: 3891 },
+ *     { listnum: 3, firstname: 'Liste', lastname: 'C', votes: 2542 }
+ *   ],
+ *   config: { seats_to_fill: 5 }
+ * });
+ * // Returns: { allocation: [A:2 seats, B:2 seats, C:1 seat] }
+ */
+export const countHareNiemeyer = ({ votes, config }) => {
+  // Input validation
+  if (!Array.isArray(votes)) {
+    throw new Error('votes must be an array');
+  }
+
+  if (!config || typeof config !== 'object') {
+    throw new Error('config must be an object');
+  }
+
+  const { seats_to_fill } = config;
+
+  // Validation: seats must be positive
+  if (!seats_to_fill || seats_to_fill < 1 || !Number.isInteger(seats_to_fill)) {
+    throw new Error(
+      `Invalid seats_to_fill: ${seats_to_fill}. Must be a positive integer >= 1 for Hare-Niemeyer counting.`,
+    );
+  }
+
+  // Calculate total votes
+  const totalVotes = votes.reduce((sum, candidate) => sum + Number(candidate.votes), 0);
+
+  // Validation: must have votes
+  if (totalVotes === 0) {
+    throw new Error('No valid votes to count. Total votes = 0.');
+  }
+
+  // Step 1: Calculate quota for each candidate/list
+  const candidates = votes.map((candidate) => {
+    const candidateVotes = Number(candidate.votes);
+    const quota = (candidateVotes / totalVotes) * seats_to_fill;
+    return {
+      listnum: candidate.listnum,
+      name: `${candidate.firstname} ${candidate.lastname}`,
+      firstname: candidate.firstname,
+      lastname: candidate.lastname,
+      votes: candidateVotes,
+      quota,
+      seats: Math.floor(quota), // Initial seat allocation (integer part)
+      remainder: quota - Math.floor(quota), // Decimal part for remainder distribution
+    };
+  });
+
+  // Step 2: Count initially assigned seats
+  let assignedSeats = candidates.reduce((sum, candidate) => sum + candidate.seats, 0);
+
+  // Step 3: Distribute remaining seats by largest remainder
+  const remainingSeats = seats_to_fill - assignedSeats;
+
+  if (remainingSeats > 0) {
+    // Sort by remainder (descending)
+    const sortedByRemainder = [...candidates].sort((a, b) => b.remainder - a.remainder);
+
+    // Assign remaining seats to candidates with largest remainders
+    for (let i = 0; i < remainingSeats; i++) {
+      // Safe array access: i is guaranteed < sortedByRemainder.length
+      // eslint-disable-next-line security/detect-object-injection
+      const candidate = sortedByRemainder[i];
+      if (candidate) {
+        candidate.seats += 1;
+      }
+    }
+
+    // Tie detection: Check if remainder at cutoff equals next remainder
+    if (remainingSeats < sortedByRemainder.length) {
+      // Safe array access: indices validated by condition above
+      const cutoffCandidate = sortedByRemainder[remainingSeats - 1];
+      // eslint-disable-next-line security/detect-object-injection
+      const nextCandidate = sortedByRemainder[remainingSeats];
+      const cutoffRemainder = cutoffCandidate?.remainder;
+      const nextRemainder = nextCandidate?.remainder;
+
+      // Check for remainder tie using defined tolerance
+      if (Math.abs(cutoffRemainder - nextRemainder) < REMAINDER_TOLERANCE) {
+        return {
+          algorithm: 'hare_niemeyer',
+          seats_to_fill,
+          total_votes: totalVotes,
+          allocation: candidates.map((candidate) => ({
+            listnum: candidate.listnum,
+            candidate: candidate.name,
+            firstname: candidate.firstname,
+            lastname: candidate.lastname,
+            votes: candidate.votes,
+            quota: candidate.quota.toFixed(QUOTA_DECIMALS),
+            seats: candidate.seats,
+            remainder: candidate.remainder.toFixed(QUOTA_DECIMALS),
+          })),
+          ties_detected: true,
+          tie_info:
+            `Remainder tie detected at ${cutoffRemainder.toFixed(QUOTA_DECIMALS)}. ` +
+            `Candidates at positions ${remainingSeats} and ${remainingSeats + 1} have equal remainders. ` +
+            `Manual resolution (e.g., drawing lots) required.`,
+        };
+      }
+    }
+  }
+
+  // Verify all seats allocated (sanity check)
+  const finalSeats = candidates.reduce((sum, candidate) => sum + candidate.seats, 0);
+  if (finalSeats !== seats_to_fill) {
+    throw new Error(
+      `Seat allocation error: Allocated ${finalSeats} seats but should allocate ${seats_to_fill}`,
+    );
+  }
+
+  return {
+    algorithm: 'hare_niemeyer',
+    seats_to_fill,
+    total_votes: totalVotes,
+    allocation: candidates.map((candidate) => ({
+      listnum: candidate.listnum,
+      candidate: candidate.name,
+      firstname: candidate.firstname,
+      lastname: candidate.lastname,
+      votes: candidate.votes,
+      quota: candidate.quota.toFixed(QUOTA_DECIMALS),
+      seats: candidate.seats,
+      remainder: candidate.remainder.toFixed(QUOTA_DECIMALS),
+    })),
+    ties_detected: false,
+  };
+};
