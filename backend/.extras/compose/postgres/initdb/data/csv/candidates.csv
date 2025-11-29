@@ -1,4 +1,55 @@
 id,lastname,firstname,mtknr,faculty,keyword,notes,votergroup,approved
 2c9e57f4-543b-4b78-9301-b4363df31a4d,Müller,Max,9876543,Informatik,IT Security,Sehr engagiert,Studierende,true
-42b1fbd1-7c42-4b42-8260-2f9f19824fcb,Schmidt,Anna,8765432,Maschinenbau,Robotik,Gute Führungskompetenz,Mitarbeitende,false
+42b1fbd1-7c42-4b42-8260-2f9f19824fcb,Schmidt,Anna,8765432,Maschinenbau,Robotik,Gute Führungskompetenz,Mitarbeitende,true
 4b9a5353-e080-493b-a3e1-82908f8504c7,Weber,Julia,7654321,Wirtschaft,Marketing,Sehr erfahren,Studierende,true
+5c0d1234-d456-4e78-9f01-234567890abc,Fischer,Tom,7654322,Informatik,KI,Innovativ,Studierende,true
+6d1e2345-e567-4f89-af12-345678901bcd,Wagner,Lisa,7654323,Wirtschaft,Finance,Kompetent,Studierende,true
+7e2f3456-f678-4a90-bf23-456789012cde,Becker,Paul,7654324,Maschinenbau,CAD,Teamplayer,Studierende,true
+8f3a4567-a789-4b01-cf34-567890123def,Schulz,Emma,7654325,Informatik,Web Dev,Kreativ,Studierende,true
+9a4b5678-b890-4c12-df45-678901234efa,Hoffmann,Leon,7654326,Wirtschaft,Controlling,Analytisch,Studierende,true
+0b5c6789-c901-4d23-ef56-789012345fab,Koch,Nina,7654327,Maschinenbau,Produktion,Zuverlässig,Studierende,true
+1c6d7890-d012-4e34-fa67-890123456abc,Bauer,Felix,7654328,Informatik,Security,Detailgenau,Studierende,true
+2d7e8901-e123-4f45-ab78-901234567bcd,Richter,Mia,7654329,Wirtschaft,HR,Kommunikativ,Studierende,true
+3e8f9012-f234-4056-bc89-012345678cde,Klein,Ben,7654330,Maschinenbau,Logistik,Organisiert,Studierende,true
+4f9a0123-a345-4167-cd90-123456789def,Wolf,Sarah,7654331,Informatik,Data Science,Methodisch,Studierende,true
+5a0b1234-b456-4278-de01-234567890efa,Schröder,Tim,7654332,Wirtschaft,Marketing,Kreativ,Studierende,true
+6b1c2345-c567-4389-ef12-345678901fab,Neumann,Laura,7654333,Maschinenbau,Quality,Präzise,Studierende,true
+7c2d3456-d678-4490-fa23-456789012abc,Schwarz,Noah,7654334,Informatik,DevOps,Pragmatisch,Studierende,true
+8d3e4567-e789-4501-ab34-567890123bcd,Zimmermann,Lena,7654335,Wirtschaft,Strategy,Visionär,Studierende,true
+9e4f5678-f890-4612-bc45-678901234cde,Braun,Jonas,7654336,Maschinenbau,Automation,Technisch,Studierende,true
+0f5a6789-a901-4723-cd56-789012345def,Krüger,Hannah,7654337,Informatik,UX Design,User-zentriert,Studierende,true
+1a6b7890-b012-4834-de67-890123456efa,Hofmann,Lukas,7654338,Wirtschaft,E-Commerce,Digital,Studierende,true
+2b7c8901-c123-4945-ef78-901234567fab,Lange,Sophie,7654339,Maschinenbau,Nachhaltigkeit,Verantwortungsvoll,Studierende,true
+3c8d9012-d234-4056-fa89-012345678abc,Schmitt,David,7654340,Informatik,Blockchain,Zukunftsorientiert,Studierende,true
+4d9e0123-e345-4167-ab90-123456789bcd,Werner,Marie,7654341,Wirtschaft,Startup,Unternehmerisch,Studierende,true
+5e0f1234-f456-4278-bc01-234567890cde,Krause,Moritz,7654342,Maschinenbau,Forschung,Wissenschaftlich,Studierende,true
+6f1a2345-a567-4389-cd12-345678901def,Meier,Emily,7654343,Informatik,Mobile Dev,App-Experte,Studierende,true
+7a2b3456-b678-4490-de23-456789012efa,Lehmann,Jan,7654344,Wirtschaft,Consulting,Beratungserfahren,Studierende,true
+8b3c4567-c789-4501-ef34-567890123fab,Huber,Anna,7654345,Maschinenbau,Energie,Nachhaltig,Studierende,true
+9c4d5678-d890-4612-fa45-678901234abc,Böhm,Niklas,7654346,Informatik,Cloud,Skalierbar,Studierende,true
+0d5e6789-e901-4723-ab56-789012345bcd,Walter,Lea,7654347,Wirtschaft,International,Global denkend,Studierende,true
+1e6f7890-f012-4834-bc67-890123456cde,Sommer,Max,7654348,Maschinenbau,Elektromobilität,Innovativ,Studierende,true
+2f7a8901-a123-4945-cd78-901234567def,Jung,Clara,7654349,Informatik,IoT,Vernetztes Denken,Studierende,true
+3a8b9012-b234-4056-de89-012345678efa,Berger,Oskar,7654350,Wirtschaft,Digitalisierung,Change Agent,Studierende,true
+4b9c0123-c345-4167-ef90-123456789fab,Franke,Ella,7654351,Maschinenbau,3D-Druck,Additive Fertigung,Studierende,true
+5c0d1234-d456-4278-fa01-234567890abc,Albrecht,Luis,7654352,Informatik,Quantum,Zukunftstechnologie,Studierende,true
+6d1e2345-e567-4389-ab12-345678901bcd,Schubert,Mila,7654353,Wirtschaft,Social Media,Kommunikationsstark,Studierende,true
+7e2f3456-f678-4490-bc23-456789012cde,Vogel,Jakob,7654354,Maschinenbau,Simulation,Modellierungsexperte,Studierende,true
+8f3a4567-a789-4501-cd34-567890123def,Peters,Nora,7654355,Informatik,Cybersecurity,Sicherheitsbewusst,Studierende,true
+9a4b5678-b890-4612-de45-678901234efa,Lang,Emil,7654356,Wirtschaft,Agile Methods,Scrum Master,Studierende,true
+0b5c6789-c901-4723-ef56-789012345fab,Graf,Lina,7654357,Maschinenbau,Lean Management,Effizienzorientiert,Studierende,true
+aa000000-0000-0000-0000-000000000001,Option,Ja,0,n/a,Referendum Ja,Zustimmung,Studierende,true
+aa000000-0000-0000-0000-000000000002,Option,Nein,0,n/a,Referendum Nein,Ablehnung,Studierende,true
+aa000000-0000-0000-0000-000000000003,Option,Enthaltung,0,n/a,Referendum Enthaltung,Enthaltung,Studierende,true
+bb000000-0000-0000-0000-000000000001,Hartmann,Prof. Dr. Klaus,0,Informatik,Dekan,Erfahren,Professorinnen und Professoren,true
+bb000000-0000-0000-0000-000000000002,Förster,Prof. Dr. Sandra,0,Informatik,Forschung,Publikationsstark,Professorinnen und Professoren,true
+bb000000-0000-0000-0000-000000000003,Seidel,Prof. Dr. Michael,0,Informatik,Lehre,Didaktisch,Professorinnen und Professoren,true
+bb000000-0000-0000-0000-000000000004,Engel,Prof. Dr. Christina,0,Informatik,Innovation,Zukunftsorientiert,Professorinnen und Professoren,true
+cc000000-0000-0000-0000-000000000001,Scholz,Dr. Martin,0,Verwaltung,Prorektor,Verwaltungserfahren,Mitarbeitende,true
+cc000000-0000-0000-0000-000000000002,Krämer,Dr. Petra,0,Verwaltung,Lehre,Didaktikexpertin,Mitarbeitende,true
+cc000000-0000-0000-0000-000000000003,Brandt,Dr. Thomas,0,Verwaltung,Forschung,Drittmittelstark,Mitarbeitende,true
+dd000000-0000-0000-0000-000000000001,Roth,Prof. Dr. Alexander,0,Senat,Senator,Hochschulpolitisch aktiv,Professorinnen und Professoren,true
+dd000000-0000-0000-0000-000000000002,Winkler,Prof. Dr. Julia,0,Senat,Gremienarbeit,Erfahren,Professorinnen und Professoren,true
+dd000000-0000-0000-0000-000000000003,Lorenz,Prof. Dr. Stefan,0,Senat,Qualitätsmanagement,QM-Experte,Professorinnen und Professoren,true
+dd000000-0000-0000-0000-000000000004,Baumann,Prof. Dr. Sabine,0,Senat,Internationalisierung,International,Professorinnen und Professoren,true
+dd000000-0000-0000-0000-000000000005,Schuster,Prof. Dr. Andreas,0,Senat,Digitalisierung,Digital Leader,Professorinnen und Professoren,true
