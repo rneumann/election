@@ -132,14 +132,12 @@ export const countHareNiemeyer = ({ votes, config }) => {
 
       // Check for remainder tie using defined tolerance
       const remainderTie = Math.abs(cutoffRemainder - nextRemainder) < REMAINDER_TOLERANCE;
-      
+
       // Also check if candidates with equal votes have different seat counts (vote equity violation)
-      const voteEquityViolation = candidates.some((c1) => 
-        candidates.some((c2) => 
-          c1.listnum !== c2.listnum && 
-          c1.votes === c2.votes && 
-          c1.seats !== c2.seats
-        )
+      const voteEquityViolation = candidates.some((c1) =>
+        candidates.some(
+          (c2) => c1.listnum !== c2.listnum && c1.votes === c2.votes && c1.seats !== c2.seats,
+        ),
       );
 
       if (remainderTie || voteEquityViolation) {
@@ -168,15 +166,19 @@ export const countHareNiemeyer = ({ votes, config }) => {
             }
           }
           if (equityViolations.length > 0) {
-            const violations = equityViolations.map(v => 
-              `${v.c1.name} and ${v.c2.name} (both ${v.c1.votes} votes, but ${v.c1.seats} vs ${v.c2.seats} seats)`
-            ).join('; ');
+            const violations = equityViolations
+              .map(
+                (v) =>
+                  `${v.c1.name} and ${v.c2.name} (both ${v.c1.votes} votes, but ${v.c1.seats} vs ${v.c2.seats} seats)`,
+              )
+              .join('; ');
             tieMessage = `Vote equity violation: Candidates with equal votes received different seat counts. Affected: ${violations}. Drawing lots required for fair distribution.`;
           }
         }
-        
+
         if (remainderTie && !tieMessage) {
-          tieMessage = `Remainder tie: ${totalTiedCandidates} candidates with equal remainder ${cutoffRemainder.toFixed(QUOTA_DECIMALS)}, ` +
+          tieMessage =
+            `Remainder tie: ${totalTiedCandidates} candidates with equal remainder ${cutoffRemainder.toFixed(QUOTA_DECIMALS)}, ` +
             `but only ${tiedWithRemainderSeats} remainder seat(s) available. Affected candidates: ${tiedNames}. ` +
             `Drawing lots required as no mathematical resolution possible.`;
         }
