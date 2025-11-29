@@ -42,6 +42,7 @@ const ResponsiveButton = ({
     danger: 'bg-red-600 text-white hover:bg-red-700 active:bg-red-800 shadow-md hover:shadow-lg',
     outline:
       'border-2 border-brand-gray text-brand-dark hover:bg-gray-700 active:bg-gray-200 bg-transparent',
+    icon: 'bg-transparent border-none shadow-none p-0 hover:opacity-80 active:opacity-60',
   };
 
   // Size styles (with mobile-optimized touch targets)
@@ -49,6 +50,7 @@ const ResponsiveButton = ({
     small: 'px-3 py-1.5 text-sm sm:px-4 sm:py-2',
     medium: 'px-4 py-2.5 text-sm sm:px-5 sm:py-3 sm:text-base min-h-touch',
     large: 'px-6 py-3 text-base sm:px-8 sm:py-4 sm:text-lg min-h-touch',
+    icon: 'p-0 h-auto w-auto',
   };
 
   const tooltipPositionClasses = {
@@ -74,6 +76,9 @@ const ResponsiveButton = ({
     if (variant === 'outline') {
       return variantClasses.outline;
     }
+    if (variant === 'icon') {
+      return variantClasses.icon;
+    }
     return variantClasses.primary;
   };
 
@@ -83,6 +88,9 @@ const ResponsiveButton = ({
     }
     if (size === 'large') {
       return sizeClasses.large;
+    }
+    if (size === 'icon') {
+      return sizeClasses.icon;
     }
     return sizeClasses.medium;
   };

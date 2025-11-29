@@ -7,12 +7,12 @@ export const voterApi = {
     const response = await api.get(
       `voter/${voterId}/elections${status ? `?status=${status}` : ''}`,
     );
-    logger.debug(`url: voter/${voterId}/elections${status ? `?status=${status}` : ''}`);
+    //logger.debug(`url: voter/${voterId}/elections${status ? `?status=${status}` : ''}`);
     if (!response) {
       logger.error('Error retrieving elections');
     }
     const data = await response.data;
-    logger.debug(`getElections res: ${JSON.stringify(data)}`);
+    //logger.debug(`getElections res: ${JSON.stringify(data)}`);
     return data;
   },
 
@@ -29,7 +29,7 @@ export const voterApi = {
       hnadleHttpStatus(response);
     }
     const data = await response.data;
-    logger.debug(`getElectionById res: ${JSON.stringify(data)}`);
+    //logger.debug(`getElectionById res: ${JSON.stringify(data)}`);
     return data;
   },
 
@@ -38,12 +38,12 @@ export const voterApi = {
       logger.error('No ballot schema provided');
       return;
     }
-    const response = await api.post(`voter/${voterUid}/ballot`, {
-      ballotSchema,
-    });
+    const response = await api.post(`voter/${voterUid}/ballot`, ballotSchema);
     if (response.status !== 201) {
       hnadleHttpStatus(response);
+      return undefined;
     }
+    logger.debug(`createBallot res: ${JSON.stringify(response.data)}`);
     return response.data;
   },
 };

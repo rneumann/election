@@ -155,11 +155,11 @@ router.get(
  */
 router.get('/auth/me', (req, res) => {
   logger.debug('Me route accessed');
-  logger.debug(`Identity provider: ${JSON.stringify(req.user?.authProvider)}`);
+  //logger.debug(`Identity provider: ${JSON.stringify(req.user?.authProvider)}`);
   if (req.isAuthenticated()) {
     res.json({ authenticated: true, user: req.user });
   } else {
-    res.json({ authenticated: false });
+    res.status(401).json({ authenticated: false });
   }
 });
 

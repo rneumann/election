@@ -1,4 +1,5 @@
 import { logger } from '../conf/logger/logger.js';
+import { hnadleHttpStatus } from '../utils/exception-handler/exception-handler.js';
 import api from './api.js';
 
 /**
@@ -48,12 +49,8 @@ const authService = {
     const response = await api.get('/auth/me', {
       withCredentials: true,
     });
-    if (!response.status !== 200) {
-      if (response.status === 401) {
-        logger.debug('No current user');
-        return undefined;
-      }
-      logger.error('Error getting current user');
+    if (response.status !== 200) {
+      hnadleHttpStatus(response);
       return undefined;
     }
     return response.data;

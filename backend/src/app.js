@@ -107,7 +107,7 @@ app.use(passport.session());
  */
 app.use((req, res, next) => {
   logger.debug('Checking session fingerprint');
-  logger.debug(`req.Session: ${JSON.stringify(req.session)}`);
+  //logger.debug(`req.Session: ${JSON.stringify(req.session)}`);
   if (!req.session) {
     logger.debug('No session found');
     return next();

@@ -1,30 +1,31 @@
 import { logger } from '../../conf/logger/logger';
 
 export const hnadleHttpStatus = (response) => {
+  logger.debug(`handleHttpStatus res: ${JSON.stringify(response.status)}`);
   if (response.status === 400) {
     logger.error('Bad request');
-    throw new Error('Bad request');
+    return;
   }
   if (response.status === 401) {
     logger.error('Unauthorized');
-    throw new Error('Unauthorized');
+    return;
   }
   if (response.status === 403) {
     logger.error('Forbidden');
-    throw new Error('Forbidden');
+    return;
   }
   if (response.status === 404) {
     logger.error('Not found');
-    throw new Error('Not found');
+    return;
   }
   if (response.status === 409) {
     logger.error('Conflict');
-    throw new Error('Conflict');
+    return;
   }
   if (response.status === 415) {
     logger.error('Unsupported media type');
-    throw new Error('Unsupported media type');
+    return;
   }
   logger.error('Internal server error');
-  throw new Error('Internal server error');
+  return;
 };

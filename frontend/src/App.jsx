@@ -4,6 +4,7 @@ import Login from './pages/Login';
 import Home from './pages/Home';
 import AuthCallback from './pages/AuthCallback';
 import Admin from './pages/Admin';
+import { AlertProvider } from './context/AlertContext.jsx';
 
 /**
  * Protected route wrapper that enforces authentication.
@@ -88,9 +89,11 @@ const AppRoutes = () => {
 const App = () => {
   return (
     <AuthProvider>
-      <div className="min-h-screen bg-brand-light">
-        <AppRoutes />
-      </div>
+      <AlertProvider>
+        <div className="min-h-screen bg-brand-light">
+          <AppRoutes />
+        </div>
+      </AlertProvider>
     </AuthProvider>
   );
 };

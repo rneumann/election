@@ -1,10 +1,15 @@
 import { useState } from 'react';
 import { logger } from '../conf/logger/logger';
+import { voterApi } from '../services/voterApi';
+import { useAuth } from '../context/AuthContext';
+import { useAlert } from '../context/AlertContext';
 import ResponsiveButton from './ResponsiveButton';
 import { Spinner } from './Spinner';
 
 export const Alert = ({ setShowAlert, cleanedVotes, candidates, election, invalidHandOver }) => {
   const [showSpinner, setShowSpinner] = useState(false);
+  const { user } = useAuth();
+  const { showAlert } = useAlert();
   const resolveName = (listnum) => {
     const cand = candidates?.find((c) => c.listnum === Number(listnum));
     if (!cand) {
@@ -14,13 +19,48 @@ export const Alert = ({ setShowAlert, cleanedVotes, candidates, election, invali
     return `${cand.firstname} ${cand.lastname}`;
   };
 
+  const createBallot = async (ballot) => {
+    logger.debug(`createBallot: ${JSON.stringify(ballot)}, user: ${user.username}`);
+    const res = await voterApi.createBallot(ballot, user.username);
+    logger.debug(`createBallot res: ${JSON.stringify(res)}`);
+    if (!res) {
+      showAlert(
+        'error',
+        'Fehler beim Erstellen der Wahl, stellen Sie sicher, dass Sie die Wahl noch nicht durchgeführt haben!',
+      );
+      setShowSpinner(false);
+      setShowAlert(false);
+      return;
+    }
+    showAlert('success', 'Wahl erfolgreich erstellt');
+    setShowSpinner(false);
+    setShowAlert(false);
+  };
+
+  const handleOnSubmit = async () => {
+    setShowSpinner(true);
+    const data = {
+      electionId: String(election.id),
+      valid: !invalidHandOver,
+      voteDecision: Object.entries(cleanedVotes).map(([listnum, value]) => ({
+        listnum: Number(listnum),
+        votes: value,
+      })),
+    };
+
+    await createBallot(data);
+  };
+
   return (
     <div className="bg-gray-900/95 backdrop-blur-md text-center py-4 px-6 rounded-3xl w-96 h-96 flex flex-col shadow-2xl border border-gray-700">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <span className="font-bold text-white text-lg">Ihre Auswahl zur Kontrolle</span>
-        <button
+        <ResponsiveButton
+          disabled={showSpinner}
           onClick={() => setShowAlert(false)}
+          size="icon"
+          variant="icon"
           className="text-gray-400 hover:text-red-500 transition"
         >
           <svg
@@ -37,7 +77,7 @@ export const Alert = ({ setShowAlert, cleanedVotes, candidates, election, invali
               d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"
             />
           </svg>
-        </button>
+        </ResponsiveButton>
       </div>
 
       {/* Content */}
@@ -68,16 +108,7 @@ export const Alert = ({ setShowAlert, cleanedVotes, candidates, election, invali
         <ResponsiveButton
           disabled={showSpinner}
           onClick={() => {
-            setShowSpinner(true);
-            const data = {
-              electionId: election.id,
-              valid: !invalidHandOver,
-              voteDecision: Object.entries(cleanedVotes).map(([listnum, value]) => ({
-                listnum: Number(listnum),
-                votes: value,
-              })),
-            };
-            logger.debug(`data: ${JSON.stringify(data)}`);
+            handleOnSubmit();
           }}
           size="small"
           className="text-white rounded-lg px-4 py-2 transition flex items-center gap-2"
