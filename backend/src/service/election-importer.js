@@ -4,20 +4,21 @@ import { client } from '../database/db.js';
 
 /**
  * Mapping tables for election configuration.
- * These mappings convert numeric codes from Excel to database values.
+ * These mappings convert German text values from Excel dropdowns to database values.
  */
-const ELECTION_TYPE_MAPPING = {
-  1: 'majority_vote',
-  2: 'proportional_representation',
-  3: 'referendum',
-};
+const ELECTION_TYPE_MAPPING = new Map([
+  ['Mehrheitswahl', 'majority_vote'],
+  ['Verhältniswahl', 'proportional_representation'],
+  ['Urabstimmung', 'referendum'],
+]);
 
-const COUNTING_METHOD_MAPPING = {
-  1: 'sainte_lague',
-  2: 'hare_niemeyer',
-  3: 'highest_votes',
-  4: 'yes_no_referendum',
-};
+const COUNTING_METHOD_MAPPING = new Map([
+  ['Sainte-Laguë', 'sainte_lague'],
+  ['Hare-Niemeyer', 'hare_niemeyer'],
+  ['Einfache Mehrheit', 'highest_votes_simple'],
+  ['Absolute Mehrheit', 'highest_votes_absolute'],
+  ['Ja/Nein/Enthaltung', 'yes_no_referendum'],
+]);
 
 /**
  * Imports election data from an Excel file into the database.
@@ -32,19 +33,20 @@ const COUNTING_METHOD_MAPPING = {
  *   E: Maximum cumulative votes
  *   F: Faculties (comma-separated)
  *   G: Courses / voter groups (comma-separated)
- *   H: Election type (numeric code - see ELECTION_TYPE_MAPPING)
- *   I: Counting method (numeric code - see COUNTING_METHOD_MAPPING)
+ *   H: Election type (text from dropdown - see ELECTION_TYPE_MAPPING)
+ *   I: Counting method (text from dropdown - see COUNTING_METHOD_MAPPING)
  *
- * Election Type Codes (Column H):
- *   1 = majority_vote
- *   2 = proportional_representation
- *   3 = referendum
+ * Election Type Values (Column H):
+ *   - Mehrheitswahl
+ *   - Verhältniswahl
+ *   - Urabstimmung
  *
- * Counting Method Codes (Column I):
- *   1 = sainte_lague
- *   2 = hare_niemeyer
- *   3 = highest_votes
- *   4 = yes_no_referendum
+ * Counting Method Values (Column I):
+ *   - Sainte-Laguë
+ *   - Hare-Niemeyer
+ *   - Einfache Mehrheit
+ *   - Absolute Mehrheit
+ *   - Ja/Nein/Enthaltung
  *
  * @async
  * @param {string} filePath - Path to the Excel file to import
@@ -83,42 +85,59 @@ export const importElectionData = async (filePath) => {
       const identifier = sheet.getCell(`A${rowIndex}`).value;
       const info = sheet.getCell(`B${rowIndex}`).value;
       const listVote = sheet.getCell(`C${rowIndex}`).value == '1';
-      const seats = sheet.getCell(`D${rowIndex}`).value || 1;
+      const seatsValue = sheet.getCell(`D${rowIndex}`).value || 1;
       const maxKum = sheet.getCell(`E${rowIndex}`).value ?? 0;
       const facultyStr = sheet.getCell(`F${rowIndex}`).value;
       const coursesStr = sheet.getCell(`G${rowIndex}`).value;
-      const electionTypeCode = sheet.getCell(`H${rowIndex}`).value;
-      const countingMethodCode = sheet.getCell(`I${rowIndex}`).value;
+      const electionTypeText = sheet.getCell(`H${rowIndex}`).value?.toString().trim();
+      const countingMethodText = sheet.getCell(`I${rowIndex}`).value?.toString().trim();
 
       const listvotes = listVote ? 1 : 0;
-      const votesPerBallot = seats;
+      const seatsToFill = Number(seatsValue);
+      const votesPerBallot = Number(seatsValue); // Column D: seats/votes per ballot
       const maxCumulativeVotes = Number(maxKum) || 0;
 
-      // Validate and map election type
-      if (electionTypeCode == null || electionTypeCode === '') {
+      // Validate seats_to_fill
+      if (!Number.isInteger(seatsToFill) || seatsToFill < 1) {
         throw new Error(
-          `Missing election_type (column H) in row ${rowIndex}. Expected numeric code (1-3).`,
+          `Invalid seats_to_fill in row ${rowIndex}: must be a positive integer, got ${seatsValue}`,
         );
       }
 
-      const electionType = ELECTION_TYPE_MAPPING[Number(electionTypeCode)];
-      if (!electionType) {
+      // Validate votes_per_ballot
+      if (!Number.isInteger(votesPerBallot) || votesPerBallot < 1) {
         throw new Error(
-          `Invalid election_type code '${electionTypeCode}' in row ${rowIndex}. Valid codes: 1=majority_vote, 2=proportional_representation, 3=referendum`,
+          `Invalid votes_per_ballot in row ${rowIndex}: must be a positive integer, got ${seatsValue}`,
+        );
+      }
+
+      // Validate and map election type
+      if (!electionTypeText) {
+        throw new Error(
+          `Missing election_type (column H) in row ${rowIndex}. Expected: Mehrheitswahl, Verhältniswahl, or Urabstimmung.`,
+        );
+      }
+
+      const electionType = ELECTION_TYPE_MAPPING.get(electionTypeText);
+      if (!electionType) {
+        const validTypes = [...ELECTION_TYPE_MAPPING.keys()].join(', ');
+        throw new Error(
+          `Invalid election_type '${electionTypeText}' in row ${rowIndex}. Valid values: ${validTypes}`,
         );
       }
 
       // Validate and map counting method
-      if (countingMethodCode == null || countingMethodCode === '') {
+      if (!countingMethodText) {
         throw new Error(
-          `Missing counting_method (column I) in row ${rowIndex}. Expected numeric code (1-4).`,
+          `Missing counting_method (column I) in row ${rowIndex}. Expected: Sainte-Laguë, Hare-Niemeyer, Einfache Mehrheit, Absolute Mehrheit, or Ja/Nein/Enthaltung.`,
         );
       }
 
-      const countingMethod = COUNTING_METHOD_MAPPING[Number(countingMethodCode)];
+      const countingMethod = COUNTING_METHOD_MAPPING.get(countingMethodText);
       if (!countingMethod) {
+        const validMethods = [...COUNTING_METHOD_MAPPING.keys()].join(', ');
         throw new Error(
-          `Invalid counting_method code '${countingMethodCode}' in row ${rowIndex}. Valid codes: 1=sainte_lague, 2=hare_niemeyer, 3=highest_votes, 4=yes_no_referendum`,
+          `Invalid counting_method '${countingMethodText}' in row ${rowIndex}. Valid values: ${validMethods}`,
         );
       }
 
@@ -131,6 +150,7 @@ export const importElectionData = async (filePath) => {
           info,
           description,
           listvotes,
+          seats_to_fill,
           votes_per_ballot,
           max_cumulative_votes,
           start,
@@ -138,7 +158,7 @@ export const importElectionData = async (filePath) => {
           election_type,
           counting_method
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
         RETURNING id;
       `;
 
@@ -146,6 +166,7 @@ export const importElectionData = async (filePath) => {
         info,
         identifier,
         listvotes,
+        seatsToFill,
         votesPerBallot,
         maxCumulativeVotes,
         startDate,
