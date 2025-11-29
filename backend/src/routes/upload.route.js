@@ -3,6 +3,8 @@ import multer from 'multer';
 import { logger } from '../conf/logger/logger.js';
 import { importVoterData } from '../service/voter-importer.service.js';
 import { importElectionData } from '../service/election-importer.service.js';
+// NEU: Audit Import
+import { writeAuditLog } from '../audit/auditLogger.js';
 
 /**
  * Multer storage configuration for file uploads.
@@ -122,6 +124,19 @@ export const importWahlerRoute = async (req, res) => {
         }
       });
 
+      // NEU: Audit Log (Wählerimport erfolgreich)
+      await writeAuditLog({
+        actionType: 'VOTER_IMPORT_SUCCESS',
+        level: 'INFO',
+        actorId: req.user.username,
+        actorRole: req.user.role,
+        details: {
+          filename: req.file.originalname,
+          mimetype: req.file.mimetype,
+          size: req.file.size,
+        },
+      });
+
       return res.status(200).json({
         message: 'Wählerdaten erfolgreich hochgeladen und in die Datenbank importiert.',
       });
@@ -181,6 +196,17 @@ export const importElectionRoute = async (req, res) => {
         if (err) {
           logger.error('Fehler beim Löschen der Datei nach Import:', err);
         }
+      });
+
+      // NEU: Audit Log (Wahldefinition importiert - KRITISCH!)
+      await writeAuditLog({
+        actionType: 'ELECTION_IMPORT_SUCCESS',
+        level: 'WARN',
+        actorId: req.user.username,
+        actorRole: req.user.role,
+        details: {
+          filename: req.file.originalname,
+        },
       });
 
       return res.status(200).json({

@@ -1,6 +1,8 @@
 import ExcelJS from 'exceljs';
 import { logger } from '../conf/logger/logger.js';
 import { client } from '../database/db.js';
+// NEU: Audit Import
+import { writeAuditLog } from '../audit/auditLogger.js';
 
 // MIME & Headers
 const EXCEL_MIME_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
@@ -90,6 +92,15 @@ export const exportTotalResultsRoute = async (req, res, next) => {
     res.setHeader(CONTENT_TYPE, EXCEL_MIME_TYPE);
     res.setHeader(CONTENT_DISPOSITION, CONTENT_DISPOSITION_ATTACHMENT(fileName));
 
+    // NEU: Audit Log (Ergebnis Export)
+    writeAuditLog({
+      actionType: 'ELECTION_RESULTS_EXPORTED',
+      level: 'INFO',
+      actorId: req.user.username,
+      actorRole: req.user.role,
+      details: { electionId: electionId, type: 'total_results' },
+    }).catch((e) => logger.error(e));
+
     await excelWritePromise;
     res.end();
   } catch (error) {
@@ -147,6 +158,15 @@ export const exportBallotsRoute = async (req, res, next) => {
     const fileName = `election-anonymized-ballots-${electionId}.xlsx`;
     res.setHeader(CONTENT_TYPE, EXCEL_MIME_TYPE);
     res.setHeader(CONTENT_DISPOSITION, CONTENT_DISPOSITION_ATTACHMENT(fileName));
+
+    // NEU: Audit Log (Urnen Export - Kritisch!)
+    writeAuditLog({
+      actionType: 'BALLOT_EXPORTED',
+      level: 'WARN',
+      actorId: req.user.username,
+      actorRole: req.user.role,
+      details: { electionId: electionId, type: 'raw_ballots' },
+    }).catch((e) => logger.error(e));
 
     await excelWritePromise;
     res.end();
@@ -249,6 +269,15 @@ export const exportElectionDefinitionRoute = async (req, res, next) => {
     const fileName = `election-definition-${startDate}_${endDate}.xlsx`;
     res.setHeader(CONTENT_TYPE, EXCEL_MIME_TYPE);
     res.setHeader(CONTENT_DISPOSITION, CONTENT_DISPOSITION_ATTACHMENT(fileName));
+
+    // Audit Log für Definition Export (weniger kritisch, aber gut zu wissen)
+    writeAuditLog({
+      actionType: 'ELECTION_DEFINITION_EXPORTED',
+      level: 'INFO',
+      actorId: req.user.username,
+      actorRole: req.user.role,
+      details: { interval: `${startDate} - ${endDate}` },
+    }).catch((e) => logger.error(e));
 
     await excelWritePromise;
     res.end();

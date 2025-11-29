@@ -6,6 +6,9 @@ import AuthCallback from './pages/AuthCallback';
 import Admin from './pages/Admin';
 import { AlertProvider } from './context/AlertContext.jsx';
 
+//NEU
+import AuditLogPage from './pages/AuditLogPage.jsx';
+
 /**
  * Protected route wrapper that enforces authentication.
  * Displays loading state during session validation,
@@ -75,6 +78,16 @@ const AppRoutes = () => {
         }
       />
       <Route path="*" element={<Navigate to="/login" replace />} />
+
+      {/* NEU: Audit Log Route */}
+      <Route
+        path="/admin/audit"
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <AuditLogPage />
+          </ProtectedRoute>
+        }
+      />
     </Routes>
   );
 };

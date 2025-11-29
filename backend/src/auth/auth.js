@@ -5,6 +5,8 @@ import axios from 'axios';
 import qs from 'qs';
 import { logger } from '../conf/logger/logger.js';
 import { readSecret } from '../security/secret-reader.js';
+// NEU: Audit Import
+import { writeAuditLog } from '../audit/auditLogger.js';
 const { KC_BASE_URL, KC_REALM, CLIENT_ID, CLIENT_SECRET } = process.env;
 
 /**
@@ -93,10 +95,23 @@ export const loginRoute =
     passport.authenticate(strategy, (err, user) => {
       if (err) {
         logger.error('Authentication error:', err);
+        // NEU: Systemfehler Audit
+        writeAuditLog({
+          actionType: 'SYSTEM_ERROR',
+          level: 'ERROR',
+          details: { error: 'passport_auth_error', strategy },
+        }).catch((e) => logger.error(e));
         return res.status(500).json({ message: 'Authentication error' });
       }
       if (!user) {
         logger.warn('Authentication failed for user:', username);
+        // NEU: Login Failed Audit
+        writeAuditLog({
+          actionType: 'LOGIN_FAILED',
+          level: 'WARN',
+          actorId: username,
+          details: { reason: 'authentication_failed', strategy },
+        }).catch((e) => logger.error(e));
         return res.status(401).json({ message: 'Authentication failed' });
       }
       req.logIn(user, (err) => {
@@ -105,6 +120,20 @@ export const loginRoute =
           return res.status(500).json({ message: 'Login error' });
         }
         logger.debug('User authenticated successfully:', username);
+        // NEU: Login Success Audit
+        writeAuditLog({
+          actionType: 'LOGIN_SUCCESS',
+          level: 'INFO',
+          actorId: user.username,
+          actorRole: user.role,
+          details: {
+            method: strategy,
+            session_id_hash: crypto
+              .createHash('sha256')
+              .update(req.sessionID || 'unknown')
+              .digest('hex'),
+          },
+        }).catch((e) => logger.error(e));
         req.session.sessionSecret = crypto.randomBytes(32).toString('hex');
         req.session.freshUser = true;
         req.session.lastActivity = Date.now();
@@ -128,6 +157,16 @@ export const loginRoute =
  */
 export const logoutRoute = async (req, res) => {
   const user = req.user;
+  // NEU: Logout Audit
+  if (user) {
+    writeAuditLog({
+      actionType: 'LOGOUT',
+      level: 'INFO',
+      actorId: user.username,
+      actorRole: user.role,
+      details: { provider: user.authProvider },
+    }).catch((e) => logger.error(e));
+  }
   logger.debug('Logout route accessed');
   logger.debug(`Logging out user: ${JSON.stringify(user)}`);
   req.logout(async (err) => {
@@ -221,6 +260,17 @@ export const ensureAuthenticated = (req, res, next) => {
   if (req.isAuthenticated()) {
     return next();
   }
+  // NEU: Access Denied Audit (Anonym)
+  writeAuditLog({
+    actionType: 'ACCESS_DENIED',
+    level: 'WARN',
+    ip: req.ip,
+    details: {
+      reason: 'unauthenticated',
+      route: req.originalUrl,
+      method: req.method,
+    },
+  }).catch((e) => logger.error(e));
   return res.status(401).json({ message: 'Unauthorized' });
 };
 
@@ -239,6 +289,19 @@ export const ensureHasRole =
       return res.status(401).json({ message: 'Unauthorized' });
     }
     if (!allowedRoles.includes(req.user.role)) {
+      // NEU: Access Denied Audit (Wrong Role)
+      writeAuditLog({
+        actionType: 'ACCESS_DENIED',
+        level: 'ERROR',
+        actorId: req.user.username,
+        actorRole: req.user.role,
+        details: {
+          reason: 'insufficient_permissions',
+          required_roles: allowedRoles,
+          route: req.originalUrl,
+        },
+      }).catch((e) => logger.error(e));
+
       return res.status(403).json({ message: 'Forbidden' });
     }
     return next();
