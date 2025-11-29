@@ -2022,6 +2022,23 @@ const AdminUpload = () => {
                 setCountingError={setCountingError}
               />
             )}
+
+            {/* Counting Section */}
+            {activeSection === 'counting' && (
+              <CountingSection
+                theme={theme}
+                elections={elections}
+                setElections={setElections}
+                loadingElections={loadingElections}
+                setLoadingElections={setLoadingElections}
+                countingElectionId={countingElectionId}
+                setCountingElectionId={setCountingElectionId}
+                countingResult={countingResult}
+                setCountingResult={setCountingResult}
+                countingError={countingError}
+                setCountingError={setCountingError}
+              />
+            )}
           </div>
         </div>
       </main>
