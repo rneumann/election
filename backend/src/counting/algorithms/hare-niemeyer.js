@@ -91,8 +91,20 @@ export const countHareNiemeyer = ({ votes, config }) => {
   const remainingSeats = seats_to_fill - assignedSeats;
 
   if (remainingSeats > 0) {
-    // Sort by remainder (descending)
-    const sortedByRemainder = [...candidates].sort((a, b) => b.remainder - a.remainder);
+    // Sort by remainder (descending), then by votes (descending) for stable tie-breaking
+    // This ensures candidates with equal votes get treated identically
+    const sortedByRemainder = [...candidates].sort((a, b) => {
+      const remainderDiff = b.remainder - a.remainder;
+      if (Math.abs(remainderDiff) < REMAINDER_TOLERANCE) {
+        // If remainders are equal, sort by votes (descending) then by listnum (ascending)
+        const votesDiff = b.votes - a.votes;
+        if (votesDiff === 0) {
+          return a.listnum - b.listnum; // Deterministic tie-breaking by listnum
+        }
+        return votesDiff;
+      }
+      return remainderDiff;
+    });
 
     // Track which candidates got remainder seats (for tie detection)
     const gotRemainderSeat = new Set();
@@ -109,6 +121,7 @@ export const countHareNiemeyer = ({ votes, config }) => {
     }
 
     // Tie detection: Check if remainder at cutoff equals next remainder
+    // OR if candidates with same votes got different number of seats
     if (remainingSeats < sortedByRemainder.length) {
       // Safe array access: indices validated by condition above
       const cutoffCandidate = sortedByRemainder[remainingSeats - 1];
@@ -118,7 +131,18 @@ export const countHareNiemeyer = ({ votes, config }) => {
       const nextRemainder = nextCandidate?.remainder;
 
       // Check for remainder tie using defined tolerance
-      if (Math.abs(cutoffRemainder - nextRemainder) < REMAINDER_TOLERANCE) {
+      const remainderTie = Math.abs(cutoffRemainder - nextRemainder) < REMAINDER_TOLERANCE;
+      
+      // Also check if candidates with equal votes have different seat counts (vote equity violation)
+      const voteEquityViolation = candidates.some((c1) => 
+        candidates.some((c2) => 
+          c1.listnum !== c2.listnum && 
+          c1.votes === c2.votes && 
+          c1.seats !== c2.seats
+        )
+      );
+
+      if (remainderTie || voteEquityViolation) {
         // Collect ALL candidates with the same remainder at cutoff
         const tiedCandidates = sortedByRemainder.filter(
           (c) => Math.abs(c.remainder - cutoffRemainder) < REMAINDER_TOLERANCE,
@@ -130,6 +154,32 @@ export const countHareNiemeyer = ({ votes, config }) => {
           gotRemainderSeat.has(c.listnum),
         ).length;
         const totalTiedCandidates = tiedCandidates.length;
+
+        // Build tie message based on type of tie
+        let tieMessage = '';
+        if (voteEquityViolation) {
+          // Find candidates with same votes but different seats
+          const equityViolations = [];
+          for (const c1 of candidates) {
+            for (const c2 of candidates) {
+              if (c1.listnum < c2.listnum && c1.votes === c2.votes && c1.seats !== c2.seats) {
+                equityViolations.push({ c1, c2 });
+              }
+            }
+          }
+          if (equityViolations.length > 0) {
+            const violations = equityViolations.map(v => 
+              `${v.c1.name} and ${v.c2.name} (both ${v.c1.votes} votes, but ${v.c1.seats} vs ${v.c2.seats} seats)`
+            ).join('; ');
+            tieMessage = `Vote equity violation: Candidates with equal votes received different seat counts. Affected: ${violations}. Drawing lots required for fair distribution.`;
+          }
+        }
+        
+        if (remainderTie && !tieMessage) {
+          tieMessage = `Remainder tie: ${totalTiedCandidates} candidates with equal remainder ${cutoffRemainder.toFixed(QUOTA_DECIMALS)}, ` +
+            `but only ${tiedWithRemainderSeats} remainder seat(s) available. Affected candidates: ${tiedNames}. ` +
+            `Drawing lots required as no mathematical resolution possible.`;
+        }
 
         return {
           algorithm: 'hare_niemeyer',
@@ -146,10 +196,7 @@ export const countHareNiemeyer = ({ votes, config }) => {
             remainder: candidate.remainder.toFixed(QUOTA_DECIMALS),
           })),
           ties_detected: true,
-          tie_info:
-            `Remainder tie: ${totalTiedCandidates} candidates with equal remainder ${cutoffRemainder.toFixed(QUOTA_DECIMALS)}, ` +
-            `but only ${tiedWithRemainderSeats} remainder seat(s) available. Affected candidates: ${tiedNames}. ` +
-            `Drawing lots required as no mathematical resolution possible.`,
+          tie_info: tieMessage,
           tie_candidates: tiedCandidates.map((c) => ({
             listnum: c.listnum,
             name: c.name,

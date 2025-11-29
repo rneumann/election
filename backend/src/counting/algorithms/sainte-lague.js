@@ -110,27 +110,46 @@ export const countSainteLague = ({ votes, config }) => {
       current.quotient > max.quotient ? current : max,
     );
 
-    // Tie detection: Check if multiple candidates have same quotient
+    // Tie detection: Check if multiple candidates have same quotient OR same votes
     const tiedQuotients = quotients.filter(
       (q) => Math.abs(q.quotient - winner.quotient) < QUOTIENT_TOLERANCE,
+    );
+
+    // Additional check: candidates with equal votes at same seat count should tie
+    const sameVotesTied = quotients.filter(
+      (q) =>
+        q.candidate.votes === winner.candidate.votes &&
+        q.candidate.seats === winner.candidate.seats &&
+        q.candidate.listnum !== winner.candidate.listnum,
     );
 
     let tieDetected = false;
     let tieInfo = '';
     let tieCandidates = [];
 
-    if (tiedQuotients.length > 1) {
+    // Merge both types of ties: include all quotient ties PLUS any additional same-vote candidates
+    const allTiedCandidates = [...tiedQuotients];
+
+    // Add same-vote candidates that aren't already in tiedQuotients
+    for (const svt of sameVotesTied) {
+      if (!allTiedCandidates.find((tc) => tc.candidate.listnum === svt.candidate.listnum)) {
+        allTiedCandidates.push(svt);
+      }
+    }
+
+    if (allTiedCandidates.length > 1) {
       // Tie detected - use deterministic tie-breaking (lowest listnum wins)
       // But record tie for transparency
       tieDetected = true;
 
-      const deterministicWinner = tiedQuotients.reduce((min, current) =>
+      const deterministicWinner = allTiedCandidates.reduce((min, current) =>
         current.candidate.listnum < min.candidate.listnum ? current : min,
       );
 
-      tieCandidates = tiedQuotients.map((q) => ({
+      tieCandidates = allTiedCandidates.map((q) => ({
         listnum: q.candidate.listnum,
         name: q.candidate.name,
+        votes: q.candidate.votes,
         quotient: q.quotient.toFixed(QUOTIENT_DECIMALS),
         divisor: q.divisor,
         current_seats: q.candidate.seats,
@@ -138,8 +157,14 @@ export const countSainteLague = ({ votes, config }) => {
 
       const tiedNames = tieCandidates.map((c) => c.name).join(', ');
 
+      // Determine if this is primarily a vote equity issue or quotient tie
+      const hasVoteEquityIssue = sameVotesTied.length > 0;
+      const tieReason = hasVoteEquityIssue
+        ? `equal votes (${winner.candidate.votes})`
+        : `quotient ${winner.quotient.toFixed(QUOTIENT_DECIMALS)}`;
+
       tieInfo =
-        `Round ${round}: ${tiedQuotients.length} candidates tied with quotient ${winner.quotient.toFixed(QUOTIENT_DECIMALS)}. ` +
+        `Round ${round}: ${allTiedCandidates.length} candidates tied with ${tieReason}. ` +
         `Affected candidates: ${tiedNames}. ` +
         `Seat allocated to ${deterministicWinner.candidate.name} (listnum ${deterministicWinner.candidate.listnum}) using deterministic tie-breaking (lowest listnum).`;
 
