@@ -32,6 +32,7 @@ CREATE TABLE
     info TEXT NOT NULL,
     description TEXT,
     listvotes INT NOT NULL DEFAULT '0',
+    seats_to_fill INT NOT NULL CHECK (seats_to_fill >= 1),
     votes_per_ballot SMALLINT NOT NULL CHECK (votes_per_ballot > 0),
     max_cumulative_votes int NOT NULL DEFAULT '0' CHECK (max_cumulative_votes >= 0),
     start TIMESTAMPTZ NOT NULL,
@@ -50,7 +51,8 @@ CREATE TABLE
       counting_method IS NULL OR counting_method IN (
         'sainte_lague',
         'hare_niemeyer',
-        'highest_votes',
+        'highest_votes_absolute',
+        'highest_votes_simple',
         'yes_no_referendum'
       )
     )
@@ -110,6 +112,10 @@ CREATE TABLE
     CONSTRAINT uq_election_version UNIQUE (election_id, version)
   );
 
+-- Partial unique index: Only one final result per election
+CREATE UNIQUE INDEX IF NOT EXISTS uq_election_final 
+  ON election_results (election_id) 
+  WHERE (is_final = TRUE);
 
 CREATE INDEX IF NOT EXISTS idx_ballots_election ON ballots (election);
 
@@ -145,10 +151,13 @@ SELECT
   e.info
 FROM
   ballotvotes bv
+  JOIN ballots b ON bv.ballot = b.id
   JOIN electioncandidates ec ON bv.listnum = ec.listnum
-  AND bv.election = ec.electionId
-  JOIN candidates c ON ec.candidateId = c.id
-  JOIN elections e ON ec.electionId = e.id
+  AND bv.election = ec.electionid
+  JOIN candidates c ON ec.candidateid = c.id
+  JOIN elections e ON ec.electionid = e.id
+WHERE
+  b.valid = TRUE
 GROUP BY
   e.id,
   ec.listnum,
@@ -159,14 +168,17 @@ GROUP BY
 
 CREATE OR REPLACE VIEW votingcounts AS
 SELECT
-  election,
-  listnum,
-  SUM(votes) AS votes
+  bv.election,
+  bv.listnum,
+  SUM(bv.votes) AS votes
 FROM
-  ballotvotes
+  ballotvotes bv
+  JOIN ballots b ON bv.ballot = b.id
+WHERE
+  b.valid = TRUE
 GROUP BY
-  election,
-  listnum;
+  bv.election,
+  bv.listnum;
 
 CREATE OR REPLACE VIEW numcandidatesperelection AS
 SELECT
@@ -191,6 +203,7 @@ SELECT
   e.id,
   e.info,
   e.description,
+  e.seats_to_fill AS seats_to_fill,
   e.votes_per_ballot AS votes_per_ballot,
   e.start,
   e."end",
@@ -206,6 +219,7 @@ GROUP BY
   e.id,
   e.info,
   e.description,
+  e.seats_to_fill,
   e.votes_per_ballot,
   e.start,
   e."end",
