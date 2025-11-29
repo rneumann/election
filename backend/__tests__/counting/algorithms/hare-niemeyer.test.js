@@ -314,7 +314,7 @@ describe('Hare-Niemeyer Algorithm', () => {
       // Initial: 4+3+2 = 9, 1 remaining seat
       // B and C both have remainder 0.5 - TIE!
       expect(result.ties_detected).toBe(true);
-      expect(result.tie_info).toContain('Remainder tie detected');
+      expect(result.tie_info).toContain('Remainder tie');
 
       // Seats are still allocated (one of the tied candidates gets it)
       // but ties_detected flag indicates manual resolution needed
@@ -379,8 +379,8 @@ describe('Hare-Niemeyer Algorithm', () => {
       // Initial: 4+3+2 = 9, 1 remaining
       // A and B both have remainder 0.5 - TIE!
       if (result.ties_detected) {
-        expect(result.tie_info).toContain('Remainder tie detected');
-        expect(result.tie_info).toContain('equal remainders');
+        expect(result.tie_info).toContain('Remainder tie');
+        expect(result.tie_info).toContain('equal remainder');
       }
     });
   });

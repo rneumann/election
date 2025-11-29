@@ -86,6 +86,10 @@ export const countSainteLague = ({ votes, config }) => {
 
   const calculationSteps = [];
 
+  // Track tie information
+  let finalTieInfo = '';
+  let finalTieCandidates = [];
+
   // Allocate seats iteratively (one per round)
   for (let round = 1; round <= seats_to_fill; round++) {
     // Calculate current quotients for all candidates
@@ -107,44 +111,71 @@ export const countSainteLague = ({ votes, config }) => {
     );
 
     // Tie detection: Check if multiple candidates have same quotient
-    const tieCount = quotients.filter(
+    const tiedQuotients = quotients.filter(
       (q) => Math.abs(q.quotient - winner.quotient) < QUOTIENT_TOLERANCE,
-    ).length;
+    );
 
-    if (tieCount > 1) {
-      // Tie detected - cannot proceed automatically
-      return {
-        algorithm: 'sainte_lague',
-        seats_to_fill,
-        total_votes: totalVotes,
-        allocation: candidates.map((candidate) => ({
-          listnum: candidate.listnum,
-          candidate: candidate.name,
-          firstname: candidate.firstname,
-          lastname: candidate.lastname,
-          votes: candidate.votes,
-          seats: candidate.seats,
-        })),
-        calculation_steps: calculationSteps,
-        ties_detected: true,
-        tie_info:
-          `Round ${round}: ${tieCount} candidates tied with quotient ${winner.quotient.toFixed(QUOTIENT_DECIMALS)}. ` +
-          `Manual resolution (e.g., drawing lots) required.`,
-      };
+    let tieDetected = false;
+    let tieInfo = '';
+    let tieCandidates = [];
+
+    if (tiedQuotients.length > 1) {
+      // Tie detected - use deterministic tie-breaking (lowest listnum wins)
+      // But record tie for transparency
+      tieDetected = true;
+
+      const deterministicWinner = tiedQuotients.reduce((min, current) =>
+        current.candidate.listnum < min.candidate.listnum ? current : min,
+      );
+
+      tieCandidates = tiedQuotients.map((q) => ({
+        listnum: q.candidate.listnum,
+        name: q.candidate.name,
+        quotient: q.quotient.toFixed(QUOTIENT_DECIMALS),
+        divisor: q.divisor,
+        current_seats: q.candidate.seats,
+      }));
+
+      const tiedNames = tieCandidates.map((c) => c.name).join(', ');
+
+      tieInfo =
+        `Round ${round}: ${tiedQuotients.length} candidates tied with quotient ${winner.quotient.toFixed(QUOTIENT_DECIMALS)}. ` +
+        `Affected candidates: ${tiedNames}. ` +
+        `Seat allocated to ${deterministicWinner.candidate.name} (listnum ${deterministicWinner.candidate.listnum}) using deterministic tie-breaking (lowest listnum).`;
+
+      // Assign seat to deterministic winner
+      deterministicWinner.candidate.seats += 1;
+
+      // Record calculation step
+      calculationSteps.push({
+        round,
+        winner: deterministicWinner.candidate.name,
+        listnum: deterministicWinner.candidate.listnum,
+        quotient: deterministicWinner.quotient.toFixed(QUOTIENT_DECIMALS),
+        divisor: deterministicWinner.divisor,
+        seats_now: deterministicWinner.candidate.seats,
+        tie_detected: true,
+      });
+    } else {
+      // No tie - assign seat to winner normally
+      winner.candidate.seats += 1;
+
+      // Record calculation step for transparency
+      calculationSteps.push({
+        round,
+        winner: winner.candidate.name,
+        listnum: winner.candidate.listnum,
+        quotient: winner.quotient.toFixed(QUOTIENT_DECIMALS),
+        divisor: winner.divisor,
+        seats_now: winner.candidate.seats,
+      });
     }
 
-    // Assign seat to winner
-    winner.candidate.seats += 1;
-
-    // Record calculation step for transparency
-    calculationSteps.push({
-      round,
-      winner: winner.candidate.name,
-      listnum: winner.candidate.listnum,
-      quotient: winner.quotient.toFixed(QUOTIENT_DECIMALS),
-      divisor: winner.divisor,
-      seats_now: winner.candidate.seats,
-    });
+    // Store tie information if detected (for final result)
+    if (tieDetected && !finalTieInfo) {
+      finalTieInfo = tieInfo;
+      finalTieCandidates = tieCandidates;
+    }
   }
 
   // Verify all seats allocated (sanity check)
@@ -155,7 +186,8 @@ export const countSainteLague = ({ votes, config }) => {
     );
   }
 
-  return {
+  // Build result object
+  const result = {
     algorithm: 'sainte_lague',
     seats_to_fill,
     total_votes: totalVotes,
@@ -168,6 +200,14 @@ export const countSainteLague = ({ votes, config }) => {
       seats: candidate.seats,
     })),
     calculation_steps: calculationSteps,
-    ties_detected: false,
+    ties_detected: finalTieInfo !== '',
   };
+
+  // Add tie information if any ties were detected
+  if (finalTieInfo) {
+    result.tie_info = finalTieInfo;
+    result.tie_candidates = finalTieCandidates;
+  }
+
+  return result;
 };

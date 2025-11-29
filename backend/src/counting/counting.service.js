@@ -92,21 +92,15 @@ export const performCounting = async (electionId, userId) => {
     let votesRes;
 
     if (election.election_type === 'referendum') {
-      // For referendums: Direct aggregation without candidate JOIN
-      // Referendums don't have entries in electioncandidates table
-      // They use listnum directly: 1=Yes, 2=No, 3=Abstain
-      logger.info('Loading referendum vote data (without candidate JOIN)');
+      // For referendums: Use counting VIEW to get uploaded candidate names
+      // Referendums have 3 candidates with listnum 1, 2, 3 (typically: Ja, Nein, Enthaltung)
+      logger.info('Loading referendum vote data from counting VIEW');
 
       votesRes = await db.query(
-        `SELECT 
-          listnum,
-          'Option' as firstname,
-          CAST(listnum AS TEXT) as lastname,
-          SUM(votes) as votes
-        FROM ballotvotes
-        WHERE election = $1
-        GROUP BY listnum
-        ORDER BY listnum`,
+        `SELECT listnum, firstname, lastname, votes 
+         FROM counting 
+         WHERE electionid = $1 AND listnum IN (1, 2, 3)
+         ORDER BY listnum`,
         [electionId],
       );
     } else {
@@ -181,6 +175,10 @@ export const performCounting = async (electionId, userId) => {
     );
 
     // Step 7: Determine next version number for this election
+    // Use SELECT FOR UPDATE on election row to prevent race conditions
+    // This ensures atomic version generation when multiple counting processes run simultaneously
+    await db.query(`SELECT id FROM elections WHERE id = $1 FOR UPDATE`, [electionId]);
+
     const versionRes = await db.query(
       `SELECT COALESCE(MAX(version), 0) + 1 AS next_version
        FROM election_results 

@@ -156,8 +156,9 @@ export const countMajorityVote = ({ votes, config }) => {
     })),
     resolution_required: hasTies,
     tie_info: hasTies
-      ? `Tie detected at ${cutoffVotes} votes. ${tieCandidates.length} additional candidate(s) ` +
-        `with same votes as last elected candidate. Manual resolution (e.g., drawing lots) required.`
+      ? `Tie detected at ${cutoffVotes} votes: ${tieCandidates.length} candidate(s) have same vote count as last elected candidate. ` +
+        `Affected candidates: ${tieCandidates.map((c) => `${c.firstname} ${c.lastname}`).join(', ')}. ` +
+        `Manual resolution (drawing lots/Losentscheid) required.`
       : null,
   };
 };

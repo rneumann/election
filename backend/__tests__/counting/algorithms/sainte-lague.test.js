@@ -208,7 +208,7 @@ describe('Sainte-Laguë Algorithm', () => {
       }
     });
 
-    it('should stop immediately on tie without allocating seat in round 1', () => {
+    it('should detect and resolve ties deterministically using lowest listnum', () => {
       const votes = [
         { listnum: 1, firstname: 'Liste', lastname: 'A', votes: 100 },
         { listnum: 2, firstname: 'Liste', lastname: 'B', votes: 100 },
@@ -221,12 +221,21 @@ describe('Sainte-Laguë Algorithm', () => {
 
       expect(result.ties_detected).toBe(true);
 
-      // No seats should be allocated when tie occurs in round 1
+      // All seats should be allocated using deterministic tie-breaking
       const totalSeats = result.allocation.reduce((sum, c) => sum + c.seats, 0);
-      expect(totalSeats).toBe(0);
+      expect(totalSeats).toBe(5);
 
-      // Calculation steps should be empty (stopped before allocation)
-      expect(result.calculation_steps).toHaveLength(0);
+      // Liste A (listnum 1) should get more seats than B due to tie-breaking
+      const listeA = result.allocation.find((c) => c.listnum === 1);
+      const listeB = result.allocation.find((c) => c.listnum === 2);
+      expect(listeA.seats).toBeGreaterThanOrEqual(listeB.seats);
+
+      // Calculation steps should show all 5 allocations
+      expect(result.calculation_steps).toHaveLength(5);
+
+      // Tie info should mention deterministic tie-breaking
+      expect(result.tie_info).toContain('tied');
+      expect(result.tie_info).toContain('deterministic');
     });
 
     it('should preserve seats allocated before tie occurs', () => {
@@ -251,7 +260,7 @@ describe('Sainte-Laguë Algorithm', () => {
       }
     });
 
-    it('should detect 3-way ties correctly', () => {
+    it('should detect 3-way ties correctly and resolve deterministically', () => {
       const votes = [
         { listnum: 1, firstname: 'Liste', lastname: 'A', votes: 100 },
         { listnum: 2, firstname: 'Liste', lastname: 'B', votes: 100 },
@@ -266,8 +275,13 @@ describe('Sainte-Laguë Algorithm', () => {
       expect(result.ties_detected).toBe(true);
       expect(result.tie_info).toContain('3 candidates tied');
 
+      // All seats allocated using deterministic tie-breaking
       const totalSeats = result.allocation.reduce((sum, c) => sum + c.seats, 0);
-      expect(totalSeats).toBe(0); // Round 1 tie
+      expect(totalSeats).toBe(2);
+
+      // Liste A (listnum 1) should get first seat due to lowest listnum
+      const listeA = result.allocation.find((c) => c.listnum === 1);
+      expect(listeA.seats).toBeGreaterThanOrEqual(1);
     });
   });
 
