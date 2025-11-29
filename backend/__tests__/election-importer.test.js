@@ -104,7 +104,7 @@ describe('Election Importer - election_type and counting_method', () => {
   };
 
   describe('Valid Imports', () => {
-    test('should import election with election_type=majority_vote and counting_method=highest_votes', async () => {
+    test('should import election with election_type=majority_vote and counting_method=highest_votes_simple', async () => {
       const filePath = await createTestExcel('valid-majority-vote.xlsx', [
         {
           identifier: 'TEST-MAJORITY-001',
@@ -113,8 +113,8 @@ describe('Election Importer - election_type and counting_method', () => {
           seats: 3,
           maxKum: 0,
           faculties: 'IWI',
-          electionTypeCode: 1, // majority_vote
-          countingMethodCode: 3, // highest_votes
+          electionTypeCode: 'Mehrheitswahl',
+          countingMethodCode: 'Einfache Mehrheit',
         },
       ]);
 
@@ -130,7 +130,7 @@ describe('Election Importer - election_type and counting_method', () => {
       expect(result.rows).toHaveLength(1);
       expect(result.rows[0].info).toBe('Test Mehrheitswahl');
       expect(result.rows[0].election_type).toBe('majority_vote');
-      expect(result.rows[0].counting_method).toBe('highest_votes');
+      expect(result.rows[0].counting_method).toBe('highest_votes_simple');
 
       await storeTestElectionIds('TEST-MAJORITY-001');
     });
@@ -143,8 +143,8 @@ describe('Election Importer - election_type and counting_method', () => {
           listvotes: '1',
           seats: 15,
           faculties: 'IWI,MMT',
-          electionTypeCode: 2, // proportional_representation
-          countingMethodCode: 1, // sainte_lague
+          electionTypeCode: 'Verhältniswahl',
+          countingMethodCode: 'Sainte-Laguë',
         },
       ]);
 
@@ -173,8 +173,8 @@ describe('Election Importer - election_type and counting_method', () => {
           info: 'Test Urabstimmung',
           seats: 1,
           faculties: 'IWI,MMT,AB',
-          electionTypeCode: 3, // referendum
-          countingMethodCode: 4, // yes_no_referendum
+          electionTypeCode: 'Urabstimmung',
+          countingMethodCode: 'Ja/Nein/Enthaltung',
         },
       ]);
 
@@ -200,20 +200,20 @@ describe('Election Importer - election_type and counting_method', () => {
         {
           identifier: 'TEST-MULTI-001',
           info: 'Mehrheitswahl',
-          electionTypeCode: 1,
-          countingMethodCode: 3,
+          electionTypeCode: 'Mehrheitswahl',
+          countingMethodCode: 'Einfache Mehrheit',
         },
         {
           identifier: 'TEST-MULTI-002',
           info: 'Verhältniswahl',
-          electionTypeCode: 2,
-          countingMethodCode: 2, // hare_niemeyer
+          electionTypeCode: 'Verhältniswahl',
+          countingMethodCode: 'Hare-Niemeyer',
         },
         {
           identifier: 'TEST-MULTI-003',
           info: 'Referendum',
-          electionTypeCode: 3,
-          countingMethodCode: 4,
+          electionTypeCode: 'Urabstimmung',
+          countingMethodCode: 'Ja/Nein/Enthaltung',
         },
       ]);
 
@@ -238,108 +238,110 @@ describe('Election Importer - election_type and counting_method', () => {
   });
 
   describe('Invalid election_type codes', () => {
-    test('should reject invalid election_type code (99)', async () => {
-      const filePath = await createTestExcel('invalid-type-99.xlsx', [
+    test('should reject invalid election_type text (InvalidType)', async () => {
+      const filePath = await createTestExcel('invalid-type-text.xlsx', [
         {
           identifier: 'TEST-INVALID-TYPE-99',
           info: 'Invalid Type',
-          electionTypeCode: 99,
-          countingMethodCode: 1,
+          electionTypeCode: 'InvalidType',
+          countingMethodCode: 'Sainte-Laguë',
         },
       ]);
 
       await expect(importElectionData(filePath)).rejects.toThrow(
-        /Invalid election_type code '99' in row 8/,
+        /Invalid election_type 'InvalidType' in row 8/,
       );
     });
 
-    test('should reject invalid election_type code (0)', async () => {
-      const filePath = await createTestExcel('invalid-type-0.xlsx', [
+    test('should reject invalid election_type text (Proporzwahl)', async () => {
+      const filePath = await createTestExcel('invalid-type-proporz.xlsx', [
         {
           identifier: 'TEST-INVALID-TYPE-0',
           info: 'Invalid Type Zero',
-          electionTypeCode: 0,
-          countingMethodCode: 1,
+          electionTypeCode: 'Proporzwahl',
+          countingMethodCode: 'Sainte-Laguë',
         },
       ]);
 
       await expect(importElectionData(filePath)).rejects.toThrow(
-        /Invalid election_type code '0' in row 8/,
+        /Invalid election_type 'Proporzwahl' in row 8/,
       );
     });
 
-    test('should reject invalid election_type code (4)', async () => {
-      const filePath = await createTestExcel('invalid-type-4.xlsx', [
+    test('should reject misspelled election_type text (Verhaeltniswahl)', async () => {
+      const filePath = await createTestExcel('invalid-type-misspelled.xlsx', [
         {
           identifier: 'TEST-INVALID-TYPE-4',
           info: 'Invalid Type Four',
-          electionTypeCode: 4,
-          countingMethodCode: 1,
+          electionTypeCode: 'Verhaeltniswahl',
+          countingMethodCode: 'Sainte-Laguë',
         },
       ]);
 
       await expect(importElectionData(filePath)).rejects.toThrow(
-        /Invalid election_type code '4' in row 8/,
+        /Invalid election_type 'Verhaeltniswahl' in row 8/,
       );
     });
 
-    test('should reject string value in election_type', async () => {
-      const filePath = await createTestExcel('invalid-type-string.xlsx', [
+    test('should reject numeric value in election_type (now expects text)', async () => {
+      const filePath = await createTestExcel('invalid-type-numeric.xlsx', [
         {
           identifier: 'TEST-INVALID-TYPE-STR',
           info: 'Invalid Type String',
-          electionTypeCode: 'majority',
-          countingMethodCode: 1,
+          electionTypeCode: 1,
+          countingMethodCode: 'Sainte-Laguë',
         },
       ]);
 
-      await expect(importElectionData(filePath)).rejects.toThrow(/Invalid election_type code/);
+      await expect(importElectionData(filePath)).rejects.toThrow(
+        /Invalid election_type '1' in row 8/,
+      );
     });
   });
 
   describe('Invalid counting_method codes', () => {
-    test('should reject invalid counting_method code (99)', async () => {
-      const filePath = await createTestExcel('invalid-method-99.xlsx', [
+    test('should reject invalid counting_method text (InvalidMethod)', async () => {
+      const filePath = await createTestExcel('invalid-method-text.xlsx', [
         {
           identifier: 'TEST-INVALID-METHOD-99',
           info: 'Invalid Method',
-          electionTypeCode: 1,
-          countingMethodCode: 99,
+          electionTypeCode: 'Mehrheitswahl',
+          countingMethodCode: 'InvalidMethod',
         },
       ]);
 
       await expect(importElectionData(filePath)).rejects.toThrow(
-        /Invalid counting_method code '99' in row 8/,
+        /Invalid counting_method 'InvalidMethod' in row 8/,
       );
     });
 
-    test('should reject invalid counting_method code (0)', async () => {
-      const filePath = await createTestExcel('invalid-method-0.xlsx', [
+    test("should reject invalid counting_method text (D'Hondt)", async () => {
+      const filePath = await createTestExcel('invalid-method-dhondt.xlsx', [
         {
           identifier: 'TEST-INVALID-METHOD-0',
           info: 'Invalid Method Zero',
-          electionTypeCode: 1,
-          countingMethodCode: 0,
+          electionTypeCode: 'Mehrheitswahl',
+          countingMethodCode: "D'Hondt",
         },
       ]);
 
       await expect(importElectionData(filePath)).rejects.toThrow(
-        /Invalid counting_method code '0' in row 8/,
+        /Invalid counting_method 'D'Hondt' in row 8/,
       );
     });
 
-    test('should reject invalid counting_method code (5)', async () => {
-      const filePath = await createTestExcel('invalid-method-5.xlsx', [
+    test('should reject misspelled counting_method text (Saint Lague)', async () => {
+      const filePath = await createTestExcel('invalid-method-misspelled.xlsx', [
         {
-          identifier: 'TEST-INVALID-METHOD-5',
-          info: 'Invalid Method Five',
-          electionTypeCode: 1,
-          countingMethodCode: 5,
+          identifier: 'TEST-INVALID-METHOD-6',
+          info: 'Invalid Method Six',
+          electionTypeCode: 'Mehrheitswahl',
+          countingMethodCode: 'Saint Lague',
         },
       ]);
 
       await expect(importElectionData(filePath)).rejects.toThrow(
-        /Invalid counting_method code '5' in row 8/,
+        /Invalid counting_method 'Saint Lague' in row 8/,
       );
     });
   });
@@ -355,13 +357,13 @@ describe('Election Importer - election_type and counting_method', () => {
       sheet.getCell('C8').value = '0';
       sheet.getCell('D8').value = 1;
       // H8 is empty
-      sheet.getCell('I8').value = 1;
+      sheet.getCell('I8').value = 'Sainte-Laguë';
 
       const filePath = path.join(fixturesDir, 'missing-type.xlsx');
       await workbook.xlsx.writeFile(filePath);
 
       await expect(importElectionData(filePath)).rejects.toThrow(
-        /Missing election_type \(column H\) in row 8/,
+        /Missing election_type \(column H\) in row 8.*Expected: Mehrheitswahl, Verhältniswahl, or Urabstimmung/,
       );
     });
 
@@ -374,7 +376,7 @@ describe('Election Importer - election_type and counting_method', () => {
       sheet.getCell('B8').value = 'Missing Method';
       sheet.getCell('C8').value = '0';
       sheet.getCell('D8').value = 1;
-      sheet.getCell('H8').value = 1;
+      sheet.getCell('H8').value = 'Mehrheitswahl';
       // I8 is empty
 
       const filePath = path.join(fixturesDir, 'missing-method.xlsx');
@@ -387,11 +389,26 @@ describe('Election Importer - election_type and counting_method', () => {
   });
 
   describe('All valid combinations', () => {
-    test('should accept all valid election_type codes (1-3)', async () => {
+    test('should accept all valid election_type values', async () => {
       const elections = [
-        { identifier: 'TEST-TYPE-1', info: 'Type 1', electionTypeCode: 1, countingMethodCode: 3 },
-        { identifier: 'TEST-TYPE-2', info: 'Type 2', electionTypeCode: 2, countingMethodCode: 1 },
-        { identifier: 'TEST-TYPE-3', info: 'Type 3', electionTypeCode: 3, countingMethodCode: 4 },
+        {
+          identifier: 'TEST-TYPE-1',
+          info: 'Mehrheitswahl',
+          electionTypeCode: 'Mehrheitswahl',
+          countingMethodCode: 'Einfache Mehrheit',
+        },
+        {
+          identifier: 'TEST-TYPE-2',
+          info: 'Verhältniswahl',
+          electionTypeCode: 'Verhältniswahl',
+          countingMethodCode: 'Sainte-Laguë',
+        },
+        {
+          identifier: 'TEST-TYPE-3',
+          info: 'Urabstimmung',
+          electionTypeCode: 'Urabstimmung',
+          countingMethodCode: 'Ja/Nein/Enthaltung',
+        },
       ];
 
       const filePath = await createTestExcel('all-types.xlsx', elections);
@@ -413,31 +430,37 @@ describe('Election Importer - election_type and counting_method', () => {
       await storeTestElectionIds('TEST-TYPE-%');
     });
 
-    test('should accept all valid counting_method codes (1-4)', async () => {
+    test('should accept all valid counting_method values', async () => {
       const elections = [
         {
           identifier: 'TEST-METHOD-1',
           info: 'Method Sainte-Laguë',
-          electionTypeCode: 2,
-          countingMethodCode: 1,
+          electionTypeCode: 'Verhältniswahl',
+          countingMethodCode: 'Sainte-Laguë',
         },
         {
           identifier: 'TEST-METHOD-2',
           info: 'Method Hare-Niemeyer',
-          electionTypeCode: 2,
-          countingMethodCode: 2,
+          electionTypeCode: 'Verhältniswahl',
+          countingMethodCode: 'Hare-Niemeyer',
         },
         {
           identifier: 'TEST-METHOD-3',
-          info: 'Method Highest Votes',
-          electionTypeCode: 1,
-          countingMethodCode: 3,
+          info: 'Method Highest Votes Simple',
+          electionTypeCode: 'Mehrheitswahl',
+          countingMethodCode: 'Einfache Mehrheit',
         },
         {
           identifier: 'TEST-METHOD-4',
+          info: 'Method Highest Votes Absolute',
+          electionTypeCode: 'Mehrheitswahl',
+          countingMethodCode: 'Absolute Mehrheit',
+        },
+        {
+          identifier: 'TEST-METHOD-5',
           info: 'Method Referendum',
-          electionTypeCode: 3,
-          countingMethodCode: 4,
+          electionTypeCode: 'Urabstimmung',
+          countingMethodCode: 'Ja/Nein/Enthaltung',
         },
       ];
 
@@ -452,11 +475,12 @@ describe('Election Importer - election_type and counting_method', () => {
         ['TEST-METHOD-%'],
       );
 
-      expect(result.rows).toHaveLength(4);
+      expect(result.rows).toHaveLength(5);
       expect(result.rows[0].counting_method).toBe('sainte_lague');
       expect(result.rows[1].counting_method).toBe('hare_niemeyer');
-      expect(result.rows[2].counting_method).toBe('highest_votes');
-      expect(result.rows[3].counting_method).toBe('yes_no_referendum');
+      expect(result.rows[2].counting_method).toBe('highest_votes_simple');
+      expect(result.rows[3].counting_method).toBe('highest_votes_absolute');
+      expect(result.rows[4].counting_method).toBe('yes_no_referendum');
 
       await storeTestElectionIds('TEST-METHOD-%');
     });
@@ -468,20 +492,20 @@ describe('Election Importer - election_type and counting_method', () => {
         {
           identifier: 'TEST-ROLLBACK-1',
           info: 'Valid Election 1',
-          electionTypeCode: 1,
-          countingMethodCode: 3,
+          electionTypeCode: 'Mehrheitswahl',
+          countingMethodCode: 'Absolute Mehrheit',
         },
         {
           identifier: 'TEST-ROLLBACK-2',
           info: 'Invalid Election',
-          electionTypeCode: 99, // This will cause error
-          countingMethodCode: 3,
+          electionTypeCode: 'InvalidType', // This will cause error
+          countingMethodCode: 'Absolute Mehrheit',
         },
         {
           identifier: 'TEST-ROLLBACK-3',
           info: 'Valid Election 3',
-          electionTypeCode: 1,
-          countingMethodCode: 3,
+          electionTypeCode: 'Mehrheitswahl',
+          countingMethodCode: 'Einfache Mehrheit',
         },
       ];
 
