@@ -113,22 +113,25 @@ GET http://localhost:<PORT>/health
 
 ## Excel Import Konfiguration
 
-### Wahltyp Codes (Spalte H)
+Die Excel-Datei für den Import von Wahlkonfigurationen verwendet **deutsche Text-Werte** in Dropdown-Feldern für bessere Benutzerfreundlichkeit.
 
-| Code  | Wert                          | Beschreibung   | Verwendung                   |
-| ----- | ----------------------------- | -------------- | ---------------------------- |
-| **1** | `majority_vote`               | Mehrheitswahl  | Höchste Stimmenzahl gewinnt  |
-| **2** | `proportional_representation` | Verhältniswahl | Proportionale Sitzverteilung |
-| **3** | `referendum`                  | Urabstimmung   | Ja/Nein-Abstimmung           |
+### Wahltyp (Spalte H)
 
-### Zählverfahren Codes (Spalte I)
+| Text-Wert          | DB-Wert                       | Beschreibung   | Verwendung                   |
+| ------------------ | ----------------------------- | -------------- | ---------------------------- |
+| **Mehrheitswahl**  | `majority_vote`               | Mehrheitswahl  | Höchste Stimmenzahl gewinnt  |
+| **Verhältniswahl** | `proportional_representation` | Verhältniswahl | Proportionale Sitzverteilung |
+| **Urabstimmung**   | `referendum`                  | Urabstimmung   | Ja/Nein-Abstimmung           |
 
-| Code  | Wert                | Beschreibung                    | Typische Verwendung                  |
-| ----- | ------------------- | ------------------------------- | ------------------------------------ |
-| **1** | `sainte_lague`      | Sainte-Laguë (Divisorverfahren) | Verhältniswahl Studierendenparlament |
-| **2** | `hare_niemeyer`     | Hare-Niemeyer (Quotenverfahren) | Verhältniswahl Senat, Fakultätsrat   |
-| **3** | `highest_votes`     | Höchststimmenprinzip            | Alle Mehrheitswahlen                 |
-| **4** | `yes_no_referendum` | Ja/Nein-Auszählung              | Urabstimmungen                       |
+### Zählverfahren (Spalte I)
+
+| Text-Wert              | DB-Wert                  | Beschreibung                          | Typische Verwendung                  |
+| ---------------------- | ------------------------ | ------------------------------------- | ------------------------------------ |
+| **Sainte-Laguë**       | `sainte_lague`           | Sainte-Laguë (Divisorverfahren)       | Verhältniswahl Studierendenparlament |
+| **Hare-Niemeyer**      | `hare_niemeyer`          | Hare-Niemeyer (Quotenverfahren)       | Verhältniswahl Senat, Fakultätsrat   |
+| **Einfache Mehrheit**  | `highest_votes_simple`   | Relative Mehrheit (höchste Stimmen)   | Mehrheitswahl ohne Schwellenwert     |
+| **Absolute Mehrheit**  | `highest_votes_absolute` | Absolute Mehrheit (>50% erforderlich) | Mehrheitswahl mit Schwellenwert      |
+| **Ja/Nein/Enthaltung** | `yes_no_referendum`      | Ja/Nein-Auszählung                    | Urabstimmungen                       |
 
 ## Projektstruktur (Beispiel)
 
