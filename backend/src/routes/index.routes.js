@@ -9,6 +9,7 @@ import {
   exportBallotsRoute,
   exportElectionDefinitionRoute,
 } from './download.route.js';
+import { countingRouter } from './counting.route.js';
 export const router = express.Router();
 
 /**
@@ -401,3 +402,15 @@ router.get('/protected', ensureAuthenticated, (req, res) => {
 router.get('/protected/role', ensureHasRole(['admin']), (req, res) => {
   res.json({ message: `Protected route accessed with user: ${req.user.username}` });
 });
+
+/**
+ * Counting routes - Vote counting and results management
+ *
+ * Endpoints:
+ * - POST /api/counting/:electionId/count - Perform vote counting
+ * - GET /api/counting/:electionId/results - Retrieve counting results
+ * - POST /api/counting/:electionId/finalize - Finalize results (lock)
+ *
+ * All routes require authentication and admin/committee role.
+ */
+router.use('/counting', countingRouter);
