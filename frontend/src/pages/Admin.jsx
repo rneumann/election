@@ -338,7 +338,10 @@ const CountingSection = ({
                               </svg>
                               <div className="text-xs text-yellow-900">
                                 <p className="font-semibold">Stimmengleichheit erkannt</p>
-                                <p className="mt-1">Losentscheid erforderlich.</p>
+                                <p className="mt-1">
+                                  {election.countingResult.fullResults?.result_data?.tie_info ||
+                                    'Losentscheid erforderlich.'}
+                                </p>
                               </div>
                             </div>
                           </div>
