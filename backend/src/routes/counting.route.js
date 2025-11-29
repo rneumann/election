@@ -81,11 +81,11 @@ const LOG_INVALID_ELECTION_ID = 'Invalid electionId parameter';
  *                       type: string
  *                       format: date-time
  *                       description: ISO timestamp of counting
-                     algorithm:
-                       type: string
-                       description: Algorithm used for counting
-                       enum: [sainte_lague, hare_niemeyer, highest_votes_absolute, highest_votes_simple, yes_no_referendum]
-                       example: "highest_votes_absolute"
+ *                     algorithm:
+ *                       type: string
+ *                       description: Algorithm used for counting
+ *                       enum: [sainte_lague, hare_niemeyer, highest_votes_absolute, highest_votes_simple, yes_no_referendum]
+ *                       example: "highest_votes_absolute"
  *       400:
  *         description: Validation error (election not ended, already finalized, etc.)
  *         content:
