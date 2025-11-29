@@ -63,4 +63,23 @@ api.interceptors.response.use(
   },
 );
 
+/**
+ * Export election result as Excel file
+ *
+ * @param {string} resultId - UUID of the election result
+ * @returns {Promise<Blob>} Excel file as blob
+ */
+export const exportElectionResultExcel = async (resultId) => {
+  try {
+    const response = await api.get(`/export/election-result/${resultId}`, {
+      responseType: 'blob',
+      timeout: 30000, // 30 seconds for file generation
+    });
+    return response.data;
+  } catch (error) {
+    logger.error('Error exporting election result:', error);
+    throw error;
+  }
+};
+
 export default api;

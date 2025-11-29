@@ -10,6 +10,7 @@ import {
   exportElectionDefinitionRoute,
 } from './download.route.js';
 import { countingRouter } from './counting.route.js';
+import exportRouter from './export.route.js';
 export const router = express.Router();
 
 /**
@@ -414,3 +415,13 @@ router.get('/protected/role', ensureHasRole(['admin']), (req, res) => {
  * All routes require authentication and admin/committee role.
  */
 router.use('/counting', countingRouter);
+
+/**
+ * Export routes - Election result exports
+ *
+ * Endpoints:
+ * - GET /api/export/election-result/:resultId - Export result as Excel
+ *
+ * All routes require authentication and admin/committee role.
+ */
+router.use('/export', ensureAuthenticated, ensureHasRole(['admin', 'committee']), exportRouter);
