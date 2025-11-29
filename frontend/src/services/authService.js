@@ -1,4 +1,3 @@
-import { logger } from '../conf/logger/logger.js';
 import { hnadleHttpStatus } from '../utils/exception-handler/exception-handler.js';
 import api from './api.js';
 
