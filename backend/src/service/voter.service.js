@@ -147,8 +147,8 @@ export const createBallot = async (ballot, voter) => {
   `;
 
   const sqlCreateVotingNote = `
-    INSERT INTO votingnotes (voterId, electionId, voted)
-    VALUES ($1, $2, $3)
+    UPDATE votingnotes SET voted = $1
+    WHERE voterId = $2 AND electionId = $3
     RETURNING *
   `;
 
@@ -168,7 +168,21 @@ export const createBallot = async (ballot, voter) => {
 
       return undefined;
     }
+    if (ballot.valid === false) {
+      const resCreateVotingNote = await client.query(sqlCreateVotingNote, [
+        true,
+        voter.id,
+        ballot.electionId,
+      ]);
+      logger.debug(`createVotingNote res: ${JSON.stringify(resCreateVotingNote)}`);
+      if (resCreateVotingNote.rows.length === 0) {
+        await client.query('ROLLBACK');
+        return undefined;
+      }
 
+      await client.query('COMMIT');
+      return resCreateBallot.rows[0];
+    }
     for (const candidate of ballot.voteDecision) {
       const resCreateBallotV = await client.query(sqlCreateBallotVotes, [
         ballot.electionId,
@@ -183,13 +197,13 @@ export const createBallot = async (ballot, voter) => {
         return undefined;
       }
     }
-    const resCreateVotingN = await client.query(sqlCreateVotingNote, [
+    const resCreateVotingNote = await client.query(sqlCreateVotingNote, [
       voter.id,
       ballot.electionId,
       true,
     ]);
-    logger.debug(`createVotingNote res: ${JSON.stringify(resCreateVotingN)}`);
-    if (resCreateVotingN.rows.length === 0) {
+    logger.debug(`createVotingNote res: ${JSON.stringify(resCreateVotingNote)}`);
+    if (resCreateVotingNote.rows.length === 0) {
       await client.query('ROLLBACK');
       return undefined;
     }

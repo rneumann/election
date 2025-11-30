@@ -15,7 +15,7 @@ export const hnadleHttpStatus = (response) => {
     return;
   }
   if (response.status === 404) {
-    logger.error('Not found');
+    logger.warn('Not found');
     return;
   }
   if (response.status === 409) {

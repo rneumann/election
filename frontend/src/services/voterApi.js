@@ -7,10 +7,9 @@ export const voterApi = {
     const response = await api.get(
       `voter/${voterId}/elections${status ? `?status=${status}` : ''}`,
     );
-    if (!response.status !== 200) {
+    if (response.status !== 200) {
       hnadleHttpStatus(response);
-      logger.error('Error retrieving elections');
-      return undefined;
+      return [];
     }
     const data = await response.data;
     //logger.debug(`getElections res: ${JSON.stringify(data)}`);
@@ -23,11 +22,10 @@ export const voterApi = {
       return;
     }
     const response = await api.get(`voter/elections/${id}`);
-    if (!response) {
-      logger.error('Error retrieving election');
-    }
+
     if (response.status !== 200) {
       hnadleHttpStatus(response);
+      return undefined;
     }
     const data = await response.data;
     //logger.debug(`getElectionById res: ${JSON.stringify(data)}`);

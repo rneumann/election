@@ -176,7 +176,7 @@ export const logoutRoute = async (req, res) => {
           },
         );
         logger.debug(`Keycloak user logged out successfully: ${response.status}`);
-        if (response.status !== 200) {
+        if (response.status !== 204) {
           return res.status(500).json({ message: 'Logout error' });
         }
         return res.status(200).json({ message: 'Logout successful' });

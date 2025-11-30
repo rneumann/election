@@ -205,7 +205,7 @@ const Home = () => {
                 </div>
               </div>
               <div className="mt-4 pt-4 border-t border-blue-200">
-                {electionsFuture.length === 0 ? (
+                {Array.isArray(electionsFuture) && electionsFuture.length === 0 ? (
                   <p className="text-sm text-blue-600">Keine zukünftigen Wahlen gefunden.</p>
                 ) : (
                   <ul className="space-y-4">

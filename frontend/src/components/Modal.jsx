@@ -26,6 +26,13 @@ export const Modal = ({ open, setOpen, electionId }) => {
     log.debug(`cleanedVotes: ${JSON.stringify(cleanedVotes)}`);
   };
 
+  const onCancel = () => {
+    setVotes({});
+    setVotesLeft(election?.votes_per_ballot);
+    setInvalidHandOver(false);
+    setOpen(false);
+  };
+
   useEffect(() => {
     if (!electionId) {
       return;
@@ -90,6 +97,7 @@ export const Modal = ({ open, setOpen, electionId }) => {
             data-leave:duration-200 data-leave:ease-in
           "
         >
+          {/* Alert */}
           {showAlert && (
             <div className="fixed inset-0 flex items-center justify-center z-[9999] rounded-md">
               <Alert
@@ -98,6 +106,7 @@ export const Modal = ({ open, setOpen, electionId }) => {
                 candidates={election.candidates}
                 election={election}
                 invalidHandOver={invalidHandOver}
+                onCancel={onCancel}
               />
             </div>
           )}
@@ -248,10 +257,7 @@ export const Modal = ({ open, setOpen, electionId }) => {
                 variant="outline"
                 disabled={showAlert}
                 onClick={() => {
-                  setVotes({});
-                  setVotesLeft(election?.votes_per_ballot);
-                  setInvalidHandOver(false);
-                  setOpen(false);
+                  onCancel();
                 }}
               >
                 Cancel

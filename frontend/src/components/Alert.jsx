@@ -6,7 +6,14 @@ import { useAlert } from '../context/AlertContext';
 import ResponsiveButton from './ResponsiveButton';
 import { Spinner } from './Spinner';
 
-export const Alert = ({ setShowAlert, cleanedVotes, candidates, election, invalidHandOver }) => {
+export const Alert = ({
+  setShowAlert,
+  cleanedVotes,
+  candidates,
+  election,
+  invalidHandOver,
+  onCancel,
+}) => {
   const [showSpinner, setShowSpinner] = useState(false);
   const { user } = useAuth();
   const { showAlert } = useAlert();
@@ -21,34 +28,37 @@ export const Alert = ({ setShowAlert, cleanedVotes, candidates, election, invali
 
   const createBallot = async (ballot) => {
     logger.debug(`createBallot: ${JSON.stringify(ballot)}, user: ${user.username}`);
-    const res = await voterApi.createBallot(ballot, user.username);
-    logger.debug(`createBallot res: ${JSON.stringify(res)}`);
-    if (!res) {
-      showAlert(
-        'error',
-        'Fehler beim Erstellen der Wahl, stellen Sie sicher, dass Sie die Wahl noch nicht durchgeführt haben!',
-      );
-      setShowSpinner(false);
-      setShowAlert(false);
-      return;
-    }
-    showAlert('success', 'Wahl erfolgreich erstellt');
-    setShowSpinner(false);
-    setShowAlert(false);
+    return await voterApi.createBallot(ballot, user.username);
   };
 
   const handleOnSubmit = async () => {
     setShowSpinner(true);
-    const data = {
-      electionId: String(election.id),
-      valid: !invalidHandOver,
-      voteDecision: Object.entries(cleanedVotes).map(([listnum, value]) => ({
-        listnum: Number(listnum),
-        votes: value,
-      })),
-    };
 
-    await createBallot(data);
+    try {
+      const data = {
+        electionId: String(election.id),
+        valid: !invalidHandOver,
+        voteDecision: Object.entries(cleanedVotes ?? {}).map(([listnum, value]) => ({
+          listnum: Number(listnum),
+          votes: value,
+        })),
+      };
+
+      const res = await createBallot(data);
+
+      if (!res) {
+        showAlert('error', 'Fehler beim Erstellen der Wahl... Bitte versuchen Sie es erneut.');
+        return;
+      }
+
+      showAlert('success', 'Wahl erfolgreich erstellt');
+    } catch {
+      showAlert('error', 'Unerwarteter Fehler');
+    } finally {
+      setShowSpinner(false);
+      setShowAlert(false);
+      onCancel();
+    }
   };
 
   return (
