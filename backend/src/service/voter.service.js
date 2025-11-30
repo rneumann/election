@@ -2,12 +2,13 @@ import { logger } from '../conf/logger/logger.js';
 import { client } from '../database/db.js';
 
 /**
- * Retrieves elections based on the given status and voter id.
- * @param {string} status - One of 'active', 'finished', 'future'.
- * @param {string} voterId - The id of the voter.
- * @returns {Promise<{ok: boolean, data: Array<{id: string, info: string, description: string, listvotes: string, votes_per_ballot: number, max_cumulative_vote: number, test_election_active: boolean, start: Date, end: Date}>>}
+ * Retrieves elections for a given voter based on the given status.
+ * @param {string} status - Status of the election to retrieve, can be 'active', 'finished' or 'future'
+ * @param {string} voterId - ID of the voter
+ * @param {boolean} [alreadyVoted=false] - Whether to retrieve elections which the voter has already voted in
+ * @returns {Promise<Array>} - Array of elections
  */
-export const getElections = async (status, voterId) => {
+export const getElections = async (status, voterId, alreadyVoted = false) => {
   const conditions = [];
 
   /* eslint-disable*/
@@ -21,6 +22,12 @@ export const getElections = async (status, voterId) => {
     case 'future':
       conditions.push('start > now()');
       break;
+  }
+
+  if (alreadyVoted) {
+    conditions.push('vn.voted = true');
+  } else {
+    conditions.push('vn.voted = false');
   }
 
   const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';

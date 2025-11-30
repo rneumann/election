@@ -36,6 +36,12 @@ export const voterRouter = Router();
  *         schema:
  *           type: string
  *           enum: [active, finished, future]
+ *       - name: alreadyVoted
+ *         in: query
+ *         description: Whether to retrieve elections which the voter has already voted in (optional)
+ *         required: false
+ *         schema:
+ *           type: boolean
  *     responses:
  *       200:
  *         description: OK
@@ -86,6 +92,7 @@ voterRouter.get(
     logger.debug('Election route accessed');
     const voterUid = req.params.voterUid;
     const status = req.query.status;
+    const alreadyVoted = req.query.alreadyVoted === 'true';
     if (
       status !== 'active' &&
       status !== 'finished' &&
@@ -109,7 +116,7 @@ voterRouter.get(
       }
       logger.debug(`Voter retrieved successfully res: ${JSON.stringify(voter)}`);
 
-      const elections = await getElections(status, voter.id);
+      const elections = await getElections(status, voter.id, alreadyVoted);
 
       if (!elections || elections.length === 0) {
         logger.warn('No elections found');

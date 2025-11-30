@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import authService from '../services/authService.js';
 import api from '../services/api.js';
+import { logger } from '../conf/logger/logger.js';
 
 /**
  * Authentication context for managing global auth state.
@@ -81,6 +82,29 @@ export const AuthProvider = ({ children }) => {
 
     validateSession();
   }, []);
+
+  useEffect(() => {
+    // Heartbeat nur aktiv, wenn User eingeloggt ist
+    if (!isAuthenticated) {
+      return;
+    }
+    logger.debug('Starting session heartbeat interval');
+    const interval = setInterval(async () => {
+      try {
+        const { data } = await api.get('/auth/me', { withCredentials: true });
+
+        if (!data?.authenticated) {
+          logger.debug('Session heartbeat: invalid → logout');
+          logout();
+        }
+      } catch {
+        logger.debug('Session heartbeat: error or 401 → logout');
+        logout();
+      }
+    }, 130000); // alle 130 Sekunden
+
+    return () => clearInterval(interval);
+  }, [isAuthenticated]);
 
   /**
    * Login user with username and password.

@@ -15,6 +15,7 @@ import { logger } from '../conf/logger/logger.js';
 const Home = () => {
   const [electionsActive, setElectionsActive] = useState([]);
   const [electionsFuture, setElectionsFuture] = useState([]);
+  const [electionsAlreadyVoted, setElectionsAlreadyVoted] = useState([]);
 
   const [open, setOpen] = useState(false);
   const [selectedElectionId, setSelectedElectionId] = useState(undefined);
@@ -31,16 +32,23 @@ const Home = () => {
 
   useEffect(() => {
     const fetchElectionsActive = async () => {
-      const response = await voterApi.getElections('active', user.username);
+      const response = await voterApi.getElections('active', user.username, false);
       setElectionsActive(response);
     };
 
     const fetchElectionsFuture = async () => {
-      const responseFuture = await voterApi.getElections('future', user.username);
+      const responseFuture = await voterApi.getElections('future', user.username, false);
       setElectionsFuture(responseFuture);
     };
+
+    const fetchElectionsAlreadyVoted = async () => {
+      const responseAlreadyVoted = await voterApi.getElections('active', user.username, true);
+      setElectionsAlreadyVoted(responseAlreadyVoted);
+    };
+
     fetchElectionsActive();
     fetchElectionsFuture();
+    fetchElectionsAlreadyVoted();
   }, [user.username]);
 
   const dateOptions = {
@@ -296,9 +304,43 @@ const Home = () => {
                 </div>
               </div>
               <div className="mt-4 pt-4 border-t border-green-200">
-                <span className="text-2xl font-bold text-green-600">0</span>
+                <span className="text-2xl font-bold text-green-600">
+                  {Array.isArray(electionsAlreadyVoted) ? electionsAlreadyVoted.length : '0'}
+                </span>
                 <span className="text-xs text-green-600 ml-1">abgegeben</span>
               </div>
+              {electionsAlreadyVoted.length > 0 ? (
+                <div className="mt-4 pt-4 border-t border-green-200">
+                  <ul className="space-y-3 max-h-40 overflow-y-auto">
+                    {electionsAlreadyVoted.map((election) => (
+                      <li
+                        key={election.id}
+                        className="p-3 bg-white shadow-sm border border-green-100 rounded-xl flex items-start gap-3 hover:shadow-md transition-all"
+                      >
+                        <div className="text-green-600 mt-0.5">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-5 w-5"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M5 13l4 4L19 7"
+                            />
+                          </svg>
+                        </div>
+                        <span className="font-medium text-sm text-gray-700">
+                          {election.description}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : undefined}
             </div>
 
             {/* Card 3: Ergebnisse */}

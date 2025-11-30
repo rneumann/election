@@ -3,9 +3,11 @@ import { hnadleHttpStatus } from '../utils/exception-handler/exception-handler';
 import api from './api';
 
 export const voterApi = {
-  getElections: async (status, voterId) => {
+  getElections: async (status, voterId, alreadyVoted) => {
     const response = await api.get(
-      `voter/${voterId}/elections${status ? `?status=${status}` : ''}`,
+      `voter/${voterId}/elections${status ? `?status=${status}` : ''}${
+        alreadyVoted !== undefined ? `${status ? '&' : '?'}alreadyVoted=${alreadyVoted}` : ''
+      }`,
     );
     if (response.status !== 200) {
       hnadleHttpStatus(response);
