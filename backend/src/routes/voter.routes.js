@@ -3,6 +3,7 @@ import { logger } from '../conf/logger/logger.js';
 import {
   checkAlreadyVoted,
   checkIfCandidateIsValid,
+  checkIfNumberOfVotesIsValid,
   createBallot,
   getElectionById,
   getElections,
@@ -118,6 +119,7 @@ voterRouter.get(
       logger.debug(`Elections retrieved successfully res: ${JSON.stringify(elections)}`);
       res.status(200).json(elections);
     } catch {
+      // eslint-disable-next-line
       res.status(500).json({ message: 'Internal Server Error' });
     }
   },
@@ -289,7 +291,6 @@ voterRouter.post(
     }
 
     // check if candidate is valid
-
     for (const cand of req.body.voteDecision) {
       const candidateIsValid = await checkIfCandidateIsValid(cand.listnum, req.body.electionId);
       if (!candidateIsValid) {
@@ -298,45 +299,54 @@ voterRouter.post(
       }
     }
 
-    // retrieve voter-object over voterUid
-    const voter = await getVoterById(req.params.voterUid);
-    if (!voter) {
-      logger.warn('Voter not found');
-      return res.status(404).json({ message: 'Voter not found' });
-    }
-
-    // check if voter already voted
-    const alreadyVoted = await checkAlreadyVoted(voter.data.id, req.body.electionId);
-    if (alreadyVoted) {
-      return res.status(409).json({ message: 'Already voted' });
-    }
-
-    // check if election is active
-    const elections = await getElections('active', voter.data.id);
-    if (!elections.ok) {
-      logger.warn('No election found');
-      return res.status(404).json({ message: 'No election found' });
-    }
-    // check if election exists
-    if (!elections.data.some((election) => election.id === req.body.electionId)) {
-      logger.warn('Election not found');
-      return res.status(404).json({ message: 'Election not found' });
-    }
-    // start creation process
-    const { ok, data, status, message } = await createBallot(req.body, req.params.voterUid);
-    if (!ok) {
-      if (status === 404) {
-        logger.warn(message);
-        return res.status(404).json({ message });
+    try {
+      // retrieve voter-object over voterUid
+      const voter = await getVoterById(req.params.voterUid);
+      if (!voter) {
+        logger.warn('Voter not found');
+        return res.status(404).json({ message: 'Voter not found' });
       }
-      if (status === 409) {
-        logger.warn(message);
-        return res.status(409).json({ message });
+
+      // check if voter already voted
+      const alreadyVoted = await checkAlreadyVoted(voter.id, req.body.electionId);
+      if (alreadyVoted) {
+        return res.status(409).json({ message: 'Already voted' });
       }
-      logger.error('Error creating ballot');
-      return res.status(500).json({ message: 'Error creating ballot' });
+
+      // check if election is active
+      const election = await getElectionById(req.body.electionId);
+      if (!election) {
+        logger.warn('No election found');
+        return res.status(404).json({ message: 'No election found' });
+      }
+      // check if election is active
+      const currentTime = new Date();
+      if (currentTime < new Date(election.start) || currentTime > new Date(election.end)) {
+        logger.warn('Election is not active');
+        return res.status(400).json({ message: 'Election is not active' });
+      }
+      // checlk number of votes is valid
+      const validVotes = checkIfNumberOfVotesIsValid(
+        req.body,
+        election.max_cumulative_votes,
+        election.votes_per_ballot,
+      );
+      if (!validVotes) {
+        logger.warn('Number of votes is not valid');
+        return res.status(400).json({ message: 'Number of votes is not valid' });
+      }
+      // start creation process
+      const ballot = await createBallot(req.body, voter);
+      if (!ballot) {
+        logger.error('Error creating ballot');
+        return res.status(500).json({ message: 'Error creating ballot' });
+      }
+      logger.debug(`Ballot created successfully res: ${JSON.stringify(ballot)}`);
+      res.sendStatus(201);
+    } catch (err) {
+      logger.error('Internal Server Error');
+      logger.debug(err.stack);
+      res.status(500).json({ message: 'Internal Server Error' });
     }
-    logger.debug(`Ballot created successfully res: ${JSON.stringify(data)}`);
-    res.sendStatus(201);
   },
 );

@@ -127,19 +127,13 @@ export const getVoterById = async (voterId) => {
 };
 
 /**
- * Creates a new ballot for a given election and voter.
- * @param {object} ballot - Ballot data to be inserted into the database.
- * @param {number} voterUid - The ID of the voter creating the ballot.
- * @returns {Promise<{ok: boolean, data?: object>>>} A promise resolving to an object with ok and data properties.
- * ok is true if the ballot was created successfully, false otherwise.
- * data is the inserted ballot data if ok is true, or undefined if no ballot was created.
+ * Creates a ballot for a given voter and election.
+ * @param {object} ballot - Object containing information about the ballot to be created.
+ * @param {object} voter - Object containing information about the voter who is casting the ballot.
+ * @returns {Promise<object>} A promise resolving to an object containing the created ballot.
+ * The object contains the id property which is the ID of the created ballot.
  */
-export const createBallot = async (ballot, voterUid) => {
-  const voter = await getVoterById(voterUid);
-  if (!voter.ok) {
-    return { ok: false, data: undefined, status: 404, message: 'Voter not found' };
-  }
-
+export const createBallot = async (ballot, voter) => {
   const sqlCreateBallot = `
     INSERT INTO ballots (election, valid)
     VALUES ($1, $2)
@@ -164,7 +158,7 @@ export const createBallot = async (ballot, voterUid) => {
     if (resCreateBallot.rows.length === 0) {
       await client.query('ROLLBACK');
 
-      return { ok: false, data: undefined };
+      return undefined;
     }
     //logger.debug(`createBallot res: ${JSON.stringify(resCreateBallot)}`);
     const ballotId = resCreateBallot.rows[0].id;
@@ -172,7 +166,7 @@ export const createBallot = async (ballot, voterUid) => {
       logger.error(`BallotId missing, not rechieved from creation`);
       await client.query('ROLLBACK');
 
-      return { ok: false, data: undefined };
+      return undefined;
     }
 
     for (const candidate of ballot.voteDecision) {
@@ -186,27 +180,27 @@ export const createBallot = async (ballot, voterUid) => {
       if (resCreateBallotV.rows.length === 0) {
         await client.query('ROLLBACK');
 
-        return { ok: false, data: undefined };
+        return undefined;
       }
     }
     const resCreateVotingN = await client.query(sqlCreateVotingNote, [
-      voter.data.id,
+      voter.id,
       ballot.electionId,
       true,
     ]);
     logger.debug(`createVotingNote res: ${JSON.stringify(resCreateVotingN)}`);
     if (resCreateVotingN.rows.length === 0) {
       await client.query('ROLLBACK');
-      return { ok: false, data: undefined };
+      return undefined;
     }
 
     await client.query('COMMIT');
-    return { ok: true, data: resCreateBallot.rows[0] };
+    return resCreateBallot.rows[0];
   } catch (err) {
     logger.error(`Error occured`);
     logger.debug(err.stack);
     await client.query('ROLLBACK');
-    return { ok: false, data: undefined };
+    throw new Error('Database query failed');
   }
 };
 
@@ -268,4 +262,35 @@ export const checkIfCandidateIsValid = async (listnumn, eleId) => {
     logger.debug(err.stack);
     return false;
   }
+};
+
+/**
+ * Checks if the number of votes is valid for a given ballot schema.
+ * Validates that the total votes do not exceed the votes per ballot limit and that the maximum votes per candidate do not exceed the max cumulative votes limit.
+ * @param {object} ballotSchema - Ballot schema to be validated.
+ * @param {number} maxCumulativeVotes - Maximum cumulative votes allowed per candidate.
+ * @param {number} votesperballot - Maximum votes allowed per ballot.
+ * @returns {boolean} True if the number of votes is valid, false otherwise.
+ */
+export const checkIfNumberOfVotesIsValid = (ballotSchema, maxCumulativeVotes, votesperballot) => {
+  let totalVotes = 0;
+  let maxVotesPerCandidate = 0;
+
+  for (const candidate of ballotSchema.voteDecision) {
+    totalVotes += candidate.votes;
+    if (candidate.votes > maxVotesPerCandidate) {
+      maxVotesPerCandidate = candidate.votes;
+    }
+  }
+  if (totalVotes > votesperballot) {
+    logger.warn(`Total votes ${totalVotes} exceed votes per ballot limit of ${votesperballot}`);
+    return false;
+  }
+  if (maxVotesPerCandidate > maxCumulativeVotes) {
+    logger.warn(
+      `Max votes per candidate ${maxVotesPerCandidate} exceed max cumulative votes limit of ${maxCumulativeVotes}`,
+    );
+    return false;
+  }
+  return true;
 };
