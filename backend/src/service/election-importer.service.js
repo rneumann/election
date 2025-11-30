@@ -13,8 +13,7 @@ import { client } from '../database/db.js';
  *   C: List vote flag ('1' for true)
  *   D: Seats per ballot
  *   E: Maximum cumulative votes
- *   F: Faculties (comma-separated)
- *   G: Courses / voter groups (comma-separated)
+ *
  *
  * @async
  * @param {string} filePath - Path to the Excel file to import
@@ -55,8 +54,6 @@ export const importElectionData = async (filePath) => {
       const listVote = sheet.getCell(`C${rowIndex}`).value == '1';
       const seats = sheet.getCell(`D${rowIndex}`).value || 1;
       const maxKum = sheet.getCell(`E${rowIndex}`).value ?? 0;
-      const facultyStr = sheet.getCell(`F${rowIndex}`).value;
-      const coursesStr = sheet.getCell(`G${rowIndex}`).value;
 
       const listvotes = listVote ? 1 : 0;
       const votesPerBallot = seats;
@@ -76,7 +73,7 @@ export const importElectionData = async (filePath) => {
         RETURNING id;
       `;
 
-      const { rows } = await db.query(insertElectionQuery, [
+      await db.query(insertElectionQuery, [
         info,
         identifier,
         listvotes,
@@ -85,49 +82,6 @@ export const importElectionData = async (filePath) => {
         startDate,
         endDate,
       ]);
-
-      const electionId = rows[0].id;
-
-      // Insert faculties as voter groups
-      if (facultyStr) {
-        const faculties = String(facultyStr)
-          .split(',')
-          .map((x) => x.trim())
-          .filter(Boolean);
-
-        for (const fac of faculties) {
-          await db.query(
-            `INSERT INTO votergroups (electionId, votergroup, faculty)
-             VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`,
-            [electionId, fac, fac],
-          );
-        }
-      }
-
-      // Insert courses as voter groups
-      if (coursesStr) {
-        const courses = String(coursesStr)
-          .split(',')
-          .map((x) => x.trim())
-          .filter(Boolean);
-
-        for (const course of courses) {
-          await db.query(
-            `INSERT INTO votergroups (electionId, votergroup, faculty)
-             VALUES ($1, $2, NULL) ON CONFLICT DO NOTHING`,
-            [electionId, course],
-          );
-        }
-      }
-
-      // Default voter group if none provided
-      if (!facultyStr && !coursesStr) {
-        await db.query(
-          `INSERT INTO votergroups (electionId, votergroup, faculty)
-           VALUES ($1, 'ALL', NULL) ON CONFLICT DO NOTHING`,
-          [electionId],
-        );
-      }
 
       rowIndex++;
     }
@@ -144,11 +98,13 @@ export const importElectionData = async (filePath) => {
 };
 
 /**
- * Parses a date from various string or Date formats.
- * Supports Excel-style DD.MM.YYYY strings or standard ISO date strings.
- *
- * @param {string|Date} value - Value to parse as a date
- * @returns {Date} Parsed JavaScript Date object
+ * Parse a date from a string or Date object.
+ * If a string, it will be parsed as follows:
+ * - 'DD.MM.YYYY' will be parsed as-is
+ * - If no match, it will be tried to parse as a standard date string
+ * If a Date object, it will be returned as-is
+ * @param {string|Date} value - The value to parse
+ * @returns {Date} The parsed date
  */
 const parseDate = (value) => {
   if (value instanceof Date) {

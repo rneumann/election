@@ -2,6 +2,6 @@ include:
   - ./ldap/compose.yml
   #- ./saml/compose.yml
   - ./keycloak/compose.yml
-  #- ./postgres/compose.yml
+  - ./postgres/compose.yml
   #- ./backend/compose.yml
   #- ./frontend/compose.yml

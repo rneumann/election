@@ -17,6 +17,19 @@
       "realmRoles": ["admin"]
     },
     {
+      "username": "u001",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "p",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["voter"]
+    },
+    {
       "username": "committee",
       "enabled": true,
       "emailVerified": true,
