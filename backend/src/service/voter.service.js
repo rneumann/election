@@ -104,7 +104,7 @@ export const getElectionById = async (electionId) => {
   } catch (err) {
     logger.error(`Error while retrieving election by id: ${electionId}`);
     logger.debug(err.stack);
-    return undefined;
+    throw new Error('Database query failed');
   }
 };
 

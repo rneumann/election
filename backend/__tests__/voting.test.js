@@ -53,7 +53,7 @@ describe('Data service - getElections', () => {
     ]);
 
     const res = await getElections(undefined, 'u001');
-    expect(res).toEqual({ ok: true, data: rows });
+    expect(res).toEqual(rows);
     expect(queryMock).toHaveBeenCalledTimes(1);
     expect(queryMock.mock.calls[0][0]).toContain('FROM elections');
     expect(logger.debug).toHaveBeenCalled();
@@ -70,15 +70,14 @@ describe('Data service - getElections', () => {
     ]);
 
     const res = await getElections('active', 'u001');
-    expect(res).toEqual({ ok: true, data: rows });
-
+    expect(res).toEqual(rows);
     expect(queryMock).toHaveBeenCalledTimes(1);
     const [sql, params] = queryMock.mock.calls[0];
     expect(sql).toContain('vn.voterId = $1');
     expect(params).toEqual(['u001']);
   });
 
-  test('returns ok:false and data:undefined when no elections found', async () => {
+  test('returns empty array when no elections found', async () => {
     setupQueryMock([
       {
         predicate: (sql) => sql.includes('FROM elections'),
@@ -87,7 +86,7 @@ describe('Data service - getElections', () => {
     ]);
 
     const res = await getElections();
-    expect(res).toEqual({ ok: false, data: undefined });
+    expect(res).toEqual([]);
   });
 
   test('handles DB errors gracefully', async () => {
@@ -98,9 +97,7 @@ describe('Data service - getElections', () => {
       },
     ]);
 
-    const res = await getElections(undefined, 'u001');
-    expect(res).toEqual({ ok: false, data: undefined });
-    expect(logger.error).toHaveBeenCalled();
+    await expect(getElections(undefined, 'u001')).rejects.toThrowError('Database query failed');
   });
 });
 
@@ -115,11 +112,11 @@ describe('Data service - getElectionById', () => {
     ]);
 
     const res = await getElectionById('e1');
-    expect(res).toEqual({ ok: true, data: row });
+    expect(res).toEqual(row);
     expect(queryMock).toHaveBeenCalledWith(expect.stringContaining('FROM elections'), ['e1']);
   });
 
-  test('returns ok:false and data:null when not found', async () => {
+  test('returns empty array when not found', async () => {
     setupQueryMock([
       {
         predicate: (sql) => sql.includes('FROM elections'),
@@ -128,7 +125,7 @@ describe('Data service - getElectionById', () => {
     ]);
 
     const res = await getElectionById('missing');
-    expect(res).toEqual({ ok: false, data: null });
+    expect(res).toEqual(undefined);
   });
 
   test('handles DB error and logs stack', async () => {
@@ -139,9 +136,7 @@ describe('Data service - getElectionById', () => {
       },
     ]);
 
-    const res = await getElectionById('e1');
-    expect(res.ok).toBe(false);
-    expect(res.data).toBeUndefined();
+    await expect(getElectionById('e1')).rejects.toThrowError('Database query failed');
     expect(logger.error).toHaveBeenCalled();
   });
 });
@@ -157,11 +152,11 @@ describe('Data service - getVoterById', () => {
     ]);
 
     const res = await getVoterById(42);
-    expect(res).toEqual({ ok: true, data: voter });
+    expect(res).toEqual(voter);
     expect(logger.debug).toHaveBeenCalled();
   });
 
-  test('returns ok:false when not found', async () => {
+  test('returns undefined when not found', async () => {
     setupQueryMock([
       {
         predicate: (sql) => sql.includes('FROM voters'),
@@ -170,10 +165,10 @@ describe('Data service - getVoterById', () => {
     ]);
 
     const res = await getVoterById(123);
-    expect(res).toEqual({ ok: false, data: undefined });
+    expect(res).toEqual(undefined);
   });
 
-  test('handles DB error and returns ok:false', async () => {
+  test('handles DB error and throws error', async () => {
     setupQueryMock([
       {
         predicate: (sql) => sql.includes('FROM voters'),
@@ -181,14 +176,13 @@ describe('Data service - getVoterById', () => {
       },
     ]);
 
-    const res = await getVoterById(123);
-    expect(res).toEqual({ ok: false, data: undefined });
+    await expect(getVoterById(123)).rejects.toThrowError('Database query failed');
     expect(logger.error).toHaveBeenCalled();
   });
 });
 
 describe('Data service - createBallot', () => {
-  test('creates ballot, votes and votingnote, commits transaction', async () => {
+  test('creates ballot, votes and updates votingnote, commits transaction', async () => {
     const ballot = {
       electionId: 'E1',
       valid: true,
@@ -198,14 +192,10 @@ describe('Data service - createBallot', () => {
       ],
     };
 
-    const voterDbRow = { id: 'voter-id', uid: 7, name: 'Bob' };
+    const voter = { id: 'voter-id', uid: 'u001', name: 'Bob' };
 
+    // Setup query mocks
     setupQueryMock([
-      // checkAlreadyVoted
-      {
-        predicate: (sql) => sql.includes('FROM votingnotes') && sql.includes('voterId = $1'),
-        result: { rows: [] },
-      },
       // BEGIN
       {
         predicate: (sql) => sql === 'BEGIN',
@@ -213,18 +203,17 @@ describe('Data service - createBallot', () => {
       },
       // INSERT INTO ballots
       {
-        predicate: (sql) =>
-          sql.includes('INSERT INTO ballots') || sql.includes('INSERT INTO ballots'),
+        predicate: (sql) => sql.includes('INSERT INTO ballots'),
         result: { rows: [{ id: 'ballot-1' }] },
       },
-      // INSERT INTO ballotvotes (will be called twice)
+      // INSERT INTO ballotvotes (2 candidates)
       {
         predicate: (sql) => sql.includes('INSERT INTO ballotvotes'),
         result: { rows: [{ id: 'bv' }] },
       },
-      // INSERT INTO votingnotes
+      // UPDATE votingnotes
       {
-        predicate: (sql) => sql.includes('INSERT INTO votingnotes'),
+        predicate: (sql) => sql.includes('UPDATE votingnotes'),
         result: { rows: [{ id: 'vn' }] },
       },
       // COMMIT
@@ -232,20 +221,22 @@ describe('Data service - createBallot', () => {
         predicate: (sql) => sql === 'COMMIT',
         result: { rows: [] },
       },
-      // getVoterById query (called earlier) - selects from voters
-      {
-        predicate: (sql) => sql.includes('FROM voters'),
-        result: { rows: [voterDbRow] },
-      },
     ]);
 
-    const res = await createBallot(ballot, voterDbRow.uid);
-    expect(res.ok).toBe(true);
-    expect(res.data).toEqual({ id: 'ballot-1' });
-    // prüfe, dass BEGIN und COMMIT aufgerufen wurden (mindestens einmal)
+    const res = await createBallot(ballot, voter);
+
+    expect(res).toEqual({ id: 'ballot-1' });
+
+    // Logger wurde aufgerufen
+    expect(logger.debug).toHaveBeenCalled();
+
+    // SQL-Abfolgen prüfen
     const calledSqls = queryMock.mock.calls.map((c) => c[0]);
-    expect(calledSqls.some((s) => s === 'BEGIN')).toBeTruthy();
-    expect(calledSqls.some((s) => s === 'COMMIT')).toBeTruthy();
+    expect(calledSqls).toContain('BEGIN');
+    expect(calledSqls.some((s) => s.includes('INSERT INTO ballots'))).toBeTruthy();
+    expect(calledSqls.filter((s) => s.includes('INSERT INTO ballotvotes')).length).toBe(2);
+    expect(calledSqls.some((s) => s.includes('UPDATE votingnotes'))).toBeTruthy();
+    expect(calledSqls).toContain('COMMIT');
   });
 
   test('returns 404 if voter cant be found', async () => {
@@ -263,13 +254,10 @@ describe('Data service - createBallot', () => {
     ]);
 
     const res = await createBallot(ballot, 'falseID123');
-    expect(res.ok).toBe(false);
-    expect(res.status).toBe(404);
-    expect(res.message).toMatch(/Voter not found/i);
-    expect(res.data).toBeUndefined();
+    expect(res).toBe(undefined);
   });
 
-  test('rolls back when ballotvotes insert fails and returns ok:false', async () => {
+  test('rolls back when ballotvotes insert fails and returns undefined', async () => {
     const ballot = {
       electionId: 'E1',
       valid: true,
@@ -299,13 +287,13 @@ describe('Data service - createBallot', () => {
     ]);
 
     const res = await createBallot(ballot, voterDbRow.uid);
-    expect(res.ok).toBe(false);
+    expect(res).toBe(undefined);
     // sicherstellen, dass ROLLBACK ausgeführt wurde
     const calledSqls = queryMock.mock.calls.map((c) => c[0]);
     expect(calledSqls.some((s) => s === 'ROLLBACK')).toBeTruthy();
   });
 
-  test('on DB error during createBallot it rolls back and returns ok:false', async () => {
+  test('on DB error during ballot creation, returns error', async () => {
     const ballot = {
       electionId: 'E1',
       valid: true,
@@ -332,8 +320,9 @@ describe('Data service - createBallot', () => {
       { predicate: (sql) => sql === 'ROLLBACK', result: { rows: [] } },
     ]);
 
-    const res = await createBallot(ballot, voterDbRow.uid);
-    expect(res.ok).toBe(false);
+    await expect(createBallot(ballot, voterDbRow.uid)).rejects.toThrowError(
+      'Database query failed',
+    );
     expect(logger.error).toHaveBeenCalled();
     const calledSqls = queryMock.mock.calls.map((c) => c[0]);
     expect(calledSqls.some((s) => s === 'ROLLBACK')).toBeTruthy();
