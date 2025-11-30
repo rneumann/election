@@ -84,12 +84,6 @@ voterRouter.get(
   async (req, res) => {
     logger.debug('Election route accessed');
     const voterUid = req.params.voterUid;
-
-    if (req.method !== 'GET') {
-      logger.warn(`Invalid HTTP method: ${req.method}`);
-
-      return res.status(405).json({ message: 'Method Not Allowed' });
-    }
     const status = req.query.status;
     if (
       status !== 'active' &&
@@ -105,26 +99,27 @@ voterRouter.get(
       logger.warn('Voter id is required');
       return res.status(400).json({ message: 'Voter id is required' });
     }
+    try {
+      const voter = await getVoterById(voterUid);
+      if (!voter) {
+        // eslint-disable-next-line
+        logger.warn('Voter not found');
+        return res.status(404).json({ message: 'Voter not found' });
+      }
+      logger.debug(`Voter retrieved successfully res: ${JSON.stringify(voter)}`);
 
-    const voter = await getVoterById(voterUid);
-    if (!voter.ok) {
-      // eslint-disable-next-line
-      logger.warn('Voter not found');
-      return res.status(404).json({ message: 'Voter not found' });
-    }
-    logger.debug(`Voter retrieved successfully res: ${JSON.stringify(voter.data)}`);
-    const { ok, data } = await getElections(status, voter.data.id);
+      const elections = await getElections(status, voter.id);
 
-    if (!ok) {
-      logger.error('Error retrieving elections');
-      return res.status(500).json({ message: 'Error retrieving elections' });
+      if (!elections || elections.length === 0) {
+        logger.warn('No elections found');
+        return res.status(404).json({ message: 'No elections found' });
+      }
+
+      logger.debug(`Elections retrieved successfully res: ${JSON.stringify(elections)}`);
+      res.status(200).json(elections);
+    } catch {
+      res.status(500).json({ message: 'Internal Server Error' });
     }
-    if (data.length === 0) {
-      logger.warn('No elections found');
-      return res.status(404).json({ message: 'No elections found' });
-    }
-    logger.debug(`Elections retrieved successfully res: ${JSON.stringify(data)}`);
-    res.status(200).json(data);
   },
 );
 
@@ -197,27 +192,21 @@ voterRouter.get(
     logger.debug(`Election route accessed with id: ${req.params.electionId}`);
 
     const electionId = req.params.electionId;
-    if (req.method !== 'GET') {
-      logger.warn(`Invalid HTTP method: ${req.method}`);
-      return res.status(405).json({ message: 'Method Not Allowed' });
-    }
     if (!electionId) {
       logger.warn('Election id is required');
       return res.status(400).json({ message: 'Election id is required' });
     }
-
-    const { ok, data } = await getElectionById(electionId);
-    if (!ok) {
-      logger.error('Error retrieving election');
-      return res.status(500).json({ message: 'Error retrieving election' });
+    try {
+      const election = await getElectionById(electionId);
+      if (!election) {
+        logger.warn('Error retrieving election');
+        return res.status(404).json({ message: 'Error retrieving election' });
+      }
+      logger.debug(`Election retrieved successfully res: ${JSON.stringify(election)}`);
+      res.status(200).json(election);
+    } catch {
+      res.status(500).json({ message: 'Internal Server Error' });
     }
-    if (data.length === 0) {
-      // eslint-disable-next-line
-      logger.warn('No election found');
-      return res.status(404).json({ message: 'No election found' });
-    }
-    logger.debug(`Election retrieved successfully res: ${JSON.stringify(data)}`);
-    res.status(200).json(data);
   },
 );
 

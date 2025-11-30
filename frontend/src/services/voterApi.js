@@ -7,9 +7,10 @@ export const voterApi = {
     const response = await api.get(
       `voter/${voterId}/elections${status ? `?status=${status}` : ''}`,
     );
-    //logger.debug(`url: voter/${voterId}/elections${status ? `?status=${status}` : ''}`);
-    if (!response) {
+    if (!response.status !== 200) {
+      hnadleHttpStatus(response);
       logger.error('Error retrieving elections');
+      return undefined;
     }
     const data = await response.data;
     //logger.debug(`getElections res: ${JSON.stringify(data)}`);

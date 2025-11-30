@@ -8,10 +8,6 @@ import { client } from '../database/db.js';
  * @returns {Promise<{ok: boolean, data: Array<{id: string, info: string, description: string, listvotes: string, votes_per_ballot: number, max_cumulative_vote: number, test_election_active: boolean, start: Date, end: Date}>>}
  */
 export const getElections = async (status, voterId) => {
-  if (!['active', 'finished', 'future', undefined].includes(status) || !voterId) {
-    return { ok: false, data: undefined };
-  }
-
   const conditions = [];
 
   /* eslint-disable*/
@@ -41,17 +37,18 @@ export const getElections = async (status, voterId) => {
       e.start,
       e.end
     FROM elections e
-    LEFT JOIN votingnotes vn ON vn.electionId = e.id AND vn.voterId = $1
+    INNER JOIN votingnotes vn ON vn.electionId = e.id AND vn.voterId = $1
     ${whereClause}
   `;
 
   try {
-    logger.debug(`getElections sql: ${sql}`);
+    logger.debug(`getElections sql: ${sql} with voterId: ${voterId} and status: ${status}`);
     const res = await client.query(sql, [voterId]);
-    return { ok: true, data: res.rows };
+    return res.rows || [];
   } catch (err) {
-    logger.error(err);
-    return { ok: false, data: undefined };
+    logger.error('Error while retrieving elections');
+    logger.debug(err.stack);
+    throw new Error('Database query failed');
   }
 };
 
@@ -96,14 +93,11 @@ export const getElectionById = async (electionId) => {
   try {
     const res = await client.query(sql, [electionId]);
 
-    if (res.rows.length === 0) {
-      return { ok: false, data: null };
-    }
-
-    return { ok: true, data: res.rows[0] };
+    return res.rows[0] || undefined;
   } catch (err) {
-    logger.error(err.stack);
-    return { ok: false, data: undefined };
+    logger.error(`Error while retrieving election by id: ${electionId}`);
+    logger.debug(err.stack);
+    return undefined;
   }
 };
 
@@ -124,14 +118,11 @@ export const getVoterById = async (voterId) => {
   try {
     const res = await client.query(sql, [voterId]);
     logger.debug(`getVoterById res: ${JSON.stringify(res.rows)}`);
-    if (res.rows.length === 0) {
-      return { ok: false, data: undefined };
-    }
-
-    return { ok: true, data: res.rows[0] };
+    return res.rows[0] || undefined;
   } catch (err) {
-    logger.error(err.stack);
-    return { ok: false, data: undefined };
+    logger.error(`Error while retrieving voter by id: ${voterId}`);
+    logger.debug(err.stack);
+    throw new Error('Database query failed');
   }
 };
 

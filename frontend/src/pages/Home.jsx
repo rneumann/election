@@ -126,7 +126,7 @@ const Home = () => {
                 </div>
               </div>
               <div className="mt-4 pt-4 border-t border-blue-200">
-                {electionsActive.length === 0 ? (
+                {Array.isArray(electionsActive) && electionsActive.length === 0 ? (
                   <p className="text-sm text-blue-600">Aktuell finden keine Wahlen statt.</p>
                 ) : (
                   <ul className="space-y-4">
