@@ -43,6 +43,8 @@ COMMITTEE_PASSWORD={...}
 
 SECRET={...} # Secret Key für die cookie-session, man kann ihn generieren mit -> node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
 
+BALLOT_SECRET={...} # Secret Key für die Ballot Hashes, man kann ihn generieren mit -> node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
+
 ```
 
 ## Installation

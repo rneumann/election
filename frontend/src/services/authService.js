@@ -1,4 +1,5 @@
 import { logger } from '../conf/logger/logger.js';
+import { hnadleHttpStatus } from '../utils/exception-handler/exception-handler.js';
 import api from './api.js';
 
 /**
@@ -19,6 +20,7 @@ const authService = {
       username: username.trim(),
       password: password.trim(),
     });
+    localStorage.setItem('csrfToken', data.csrfToken);
     return data.user;
   },
 
@@ -40,6 +42,24 @@ const authService = {
   },
 
   /**
+   * Retrieves a CSRF token from the backend.
+   * If the request fails, it logs the status code and returns undefined.
+   * If the request succeeds, it logs the retrieved CSRF token and stores it in local storage.
+   * @returns {string | undefined} The retrieved CSRF token or undefined if the request fails.
+   */
+  getCsrfToken: async () => {
+    const csrf = await api.get('/auth/csrf-token', {
+      withCredentials: true,
+    });
+    if (csrf.status !== 200) {
+      hnadleHttpStatus(csrf);
+      return undefined;
+    }
+    logger.info(`CSRF token retrieved: ${csrf.data.csrfToken}`);
+    return localStorage.setItem('csrfToken', csrf.data.csrfToken);
+  },
+
+  /**
    * Get current user from session storage.
    *
    * @returns {{username: string, role: string} | null} Current user or null
@@ -48,12 +68,8 @@ const authService = {
     const response = await api.get('/auth/me', {
       withCredentials: true,
     });
-    if (!response.status !== 200) {
-      if (response.status === 401) {
-        logger.debug('No current user');
-        return undefined;
-      }
-      logger.error('Error getting current user');
+    if (response.status !== 200) {
+      hnadleHttpStatus(response);
       return undefined;
     }
     return response.data;
