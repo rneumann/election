@@ -51,6 +51,8 @@ CREATE TABLE
 CREATE TABLE
   IF NOT EXISTS ballots (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid (),
+    ballot_hash TEXT NOT NULL UNIQUE,
+    previous_ballot_hash TEXT,
     election UUID NOT NULL REFERENCES elections (id) ON DELETE CASCADE ON UPDATE CASCADE,
     valid BOOLEAN NOT NULL DEFAULT TRUE
   );
