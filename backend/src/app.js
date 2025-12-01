@@ -12,6 +12,7 @@ import { healthRouter } from './routes/health.route.js';
 import passport from './auth/passport.js';
 import { logger } from './conf/logger/logger.js';
 import { voterRouter } from './routes/voter.routes.js';
+import { verifyCsrfToken } from './security/csrf-logic.js';
 export const app = express();
 
 /**
@@ -107,7 +108,7 @@ app.use(passport.session());
  */
 app.use((req, res, next) => {
   logger.debug('Checking session fingerprint');
-  logger.debug(`req.Session: ${JSON.stringify(req.session)}`);
+  //logger.debug(`req.Session: ${JSON.stringify(req.session)}`);
   if (!req.session) {
     logger.debug('No session found');
     return next();
@@ -148,6 +149,8 @@ app.use((req, res, next) => {
   }
   next();
 });
+
+app.use(verifyCsrfToken);
 
 /** Session Timeout */
 app.use(async (req, res, next) => {

@@ -637,14 +637,6 @@ const AdminUpload = () => {
                             </span>
                           </div>
                         )}
-                        {validationStats.voterGroups !== undefined && (
-                          <div>
-                            <span className="text-green-700 font-medium">Studiengänge:</span>
-                            <span className="ml-2 text-green-900 font-bold">
-                              {validationStats.voterGroups}
-                            </span>
-                          </div>
-                        )}
                       </div>
                     </div>
                   )}

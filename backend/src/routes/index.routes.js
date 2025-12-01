@@ -35,7 +35,7 @@ export const router = express.Router();
  *             properties:
  *               username:
  *                 type: string
- *                 example: jdoe
+ *                 example: u001
  *               password:
  *                 type: string
  *                 example: secret123
@@ -122,10 +122,22 @@ router.get(
     req.session.sessionSecret = crypto.randomBytes(32).toString('hex');
     req.session.freshUser = true;
     req.session.lastActivity = Date.now();
-    logger.debug('Keycloak set freshUser to true');
+    req.session.csrfToken = crypto.randomBytes(32).toString('hex');
+    logger.debug(
+      `Keycloak set freshUser to true and CSRF token generated: ${req.session.csrfToken}`,
+    );
     res.redirect('http://localhost:5173/home');
   },
 );
+
+router.get('/auth/csrf-token', ensureAuthenticated, (req, res) => {
+  logger.debug('CSRF token requested');
+  if (!req.session.csrfToken) {
+    logger.debug('No CSRF token found, throwing error');
+    return res.status(500).json({ error: 'CSRF token not found' });
+  }
+  res.json({ csrfToken: req.session.csrfToken });
+});
 
 /**
  * @openapi
@@ -155,11 +167,11 @@ router.get(
  */
 router.get('/auth/me', (req, res) => {
   logger.debug('Me route accessed');
-  logger.debug(`Identity provider: ${JSON.stringify(req.user?.authProvider)}`);
+  //logger.debug(`Identity provider: ${JSON.stringify(req.user?.authProvider)}`);
   if (req.isAuthenticated()) {
     res.json({ authenticated: true, user: req.user });
   } else {
-    res.json({ authenticated: false });
+    res.status(401).json({ authenticated: false });
   }
 });
 
@@ -380,24 +392,3 @@ router.get(
   ensureHasRole(['admin']),
   exportElectionDefinitionRoute,
 );
-
-/**
- * Testing routes for protection
- * @openapi
- * /api/protected:
- *   get:
- *     summary: Protected route
- *     responses:
- *       200:
- *         description: Protected route accessed
- *       401:
- *         description: Unauthorized
- *       403:
- *         description: Forbidden
- */
-router.get('/protected', ensureAuthenticated, (req, res) => {
-  res.json({ message: `Protected route accessed with user: ${req.user.username}` });
-});
-router.get('/protected/role', ensureHasRole(['admin']), (req, res) => {
-  res.json({ message: `Protected route accessed with user: ${req.user.username}` });
-});

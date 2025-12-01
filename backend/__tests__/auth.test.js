@@ -1,18 +1,21 @@
-// __tests__/auth.test.js
 import { describe, test, expect, vi, beforeEach } from 'vitest';
 
-// Environment Variablen für Tests setzen
 process.env.ADMIN_PASSWORD = 'admin123';
 process.env.COMMITTEE_PASSWORD = 'committee123';
 process.env.AD_URL = 'ldap://mockserver';
 process.env.AD_BASE_DN = 'dc=example,dc=com';
 process.env.AD_DOMAIN = 'EXAMPLE';
+process.env.ADMIN_DN = 'cn=admin,dc=ads,dc=hs-karlsruhe,dc=de';
+process.env.ADMIN_PASSWORD_LDAP = 'p';
 
-// Mock für Logger
+const ADMIN_DN = process.env.ADMIN_DN;
+const ADMIN_PASSWORD_LDAP = process.env.ADMIN_PASSWORD_LDAP;
+const USER_DN = 'cn=user1,ou=people,dc=example,dc=com';
 vi.mock('../src/conf/logger/logger.js', () => ({
   logger: {
     debug: vi.fn(),
     error: vi.fn(),
+    info: vi.fn(),
   },
 }));
 
@@ -20,10 +23,25 @@ import { ensureHasRole } from '../src/auth/auth.js';
 import { logger } from '../src/conf/logger/logger.js';
 import { login } from '../src/auth/strategies/ldap.strategy.js';
 
-// Mock für LDAP Client
 const bindMock = vi.fn(async (dn, pw) => {
-  if (dn === 'cn=user1,cn=users,dc=example,dc=com' && pw === 'pass1') return;
-  throw new Error('Invalid credentials');
+  if ((dn === ADMIN_DN && pw === ADMIN_PASSWORD_LDAP) || (dn === USER_DN && pw === 'pass1')) {
+    return;
+  }
+  if (dn.startsWith('cn=user1') && pw === 'wrongpass') {
+    throw new Error('Invalid credentials');
+  }
+
+  if (dn.startsWith('cn=user1') && pw !== 'pass1') {
+    throw new Error('Invalid credentials');
+  }
+
+  throw new Error(`Unexpected bind call with DN: ${dn}`);
+});
+
+const searchMock = vi.fn(async () => {
+  return {
+    searchEntries: [{ dn: USER_DN }],
+  };
 });
 const unbindMock = vi.fn(async () => {});
 
@@ -31,6 +49,7 @@ vi.mock('ldapts', () => ({
   Client: class {
     bind = bindMock;
     unbind = unbindMock;
+    search = searchMock;
   },
 }));
 
@@ -56,8 +75,9 @@ describe('login', () => {
     const password = 'wrongpass';
     const result = await login(username, password);
     expect(result).toBeUndefined();
-    expect(bindMock).toHaveBeenCalledWith('cn=user1,cn=users,dc=example,dc=com', 'wrongpass');
-    expect(unbindMock).toHaveBeenCalled();
+    expect(bindMock).toHaveBeenCalledWith(process.env.ADMIN_DN, process.env.ADMIN_PASSWORD_LDAP);
+    expect(bindMock).toHaveBeenCalledWith(USER_DN, password);
+    expect(unbindMock).toHaveBeenCalledTimes(2);
     expect(logger.error).toHaveBeenCalledWith(
       `Error authenticating user ${username} via LDAP: Invalid credentials`,
     );
@@ -66,9 +86,18 @@ describe('login', () => {
   test('should return LDAP-user with correct credentials', async () => {
     const result = await login('user1', 'pass1');
     expect(result).toEqual({ username: 'user1', role: 'voter', authProvider: 'ldap' });
-    expect(bindMock).toHaveBeenCalledWith('cn=user1,cn=users,dc=example,dc=com', 'pass1');
-    expect(unbindMock).toHaveBeenCalled();
-    expect(logger.debug).toHaveBeenCalledWith('User user1 authenticated successfully via LDAP.');
+
+    expect(bindMock).toHaveBeenCalledWith(ADMIN_DN, ADMIN_PASSWORD_LDAP);
+
+    expect(bindMock).toHaveBeenCalledWith(USER_DN, 'pass1');
+
+    expect(bindMock).toHaveBeenCalledTimes(2);
+
+    expect(unbindMock).toHaveBeenCalledTimes(2);
+
+    expect(logger.info).toHaveBeenCalledWith(
+      `User ${USER_DN} authenticated successfully via LDAP.`,
+    );
   });
 
   test('should call next middleware', async () => {
