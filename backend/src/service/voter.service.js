@@ -1,5 +1,6 @@
 import { logger } from '../conf/logger/logger.js';
 import { client } from '../database/db.js';
+import { generateBallotHashes } from '../security/generate-ballot-hashes.js';
 
 /**
  * Retrieves elections for a given voter based on the given status.
@@ -142,8 +143,8 @@ export const getVoterById = async (voterId) => {
  */
 export const createBallot = async (ballot, voter) => {
   const sqlCreateBallot = `
-    INSERT INTO ballots (election, valid)
-    VALUES ($1, $2)
+    INSERT INTO ballots (ballot_hash, previous_ballot_hash, election, valid)
+    VALUES ($1, $2, $3, $4)
     RETURNING *
   `;
 
@@ -161,7 +162,24 @@ export const createBallot = async (ballot, voter) => {
 
   try {
     await client.query('BEGIN');
-    const resCreateBallot = await client.query(sqlCreateBallot, [ballot.electionId, ballot.valid]);
+
+    const prevHash = await getPreviousBallotHash(ballot.electionId);
+    logger.debug(`Previous ballot hash: ${prevHash}`);
+
+    const ballotHash = generateBallotHashes({
+      electionId: ballot.electionId,
+      voteDecision: ballot.voteDecision,
+      valid: ballot.valid,
+      previousHash: prevHash,
+    });
+    logger.debug(`Generated ballot hash: ${ballotHash}`);
+
+    const resCreateBallot = await client.query(sqlCreateBallot, [
+      ballotHash,
+      prevHash,
+      ballot.electionId,
+      ballot.valid,
+    ]);
     if (resCreateBallot.rows.length === 0) {
       await client.query('ROLLBACK');
 
@@ -314,4 +332,25 @@ export const checkIfNumberOfVotesIsValid = (ballotSchema, maxCumulativeVotes, vo
     return false;
   }
   return true;
+};
+
+const getPreviousBallotHash = async (electionId) => {
+  const sql = `
+    SELECT ballot_hash 
+    FROM ballots 
+    WHERE election = $1 
+    ORDER BY id DESC LIMIT 1
+  `;
+
+  try {
+    const res = await client.query(sql, [electionId]);
+    if (res.rows.length === 0) {
+      return undefined;
+    }
+    return res.rows[0].ballot_hash || undefined;
+  } catch (err) {
+    logger.error(`Error while retrieving previous ballot hash: ${electionId}`);
+    logger.debug(err.stack);
+    throw new Error('Database query failed');
+  }
 };
