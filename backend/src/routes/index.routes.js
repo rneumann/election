@@ -3,6 +3,7 @@ import express from 'express';
 import { ensureAuthenticated, ensureHasRole, loginRoute, logoutRoute } from '../auth/auth.js';
 import passport from '../auth/passport.js';
 import { logger } from '../conf/logger/logger.js';
+import { client } from '../database/db.js';
 import { importWahlerRoute, importElectionRoute } from './upload.route.js';
 import {
   exportTotalResultsRoute,
@@ -37,7 +38,7 @@ export const router = express.Router();
  *             properties:
  *               username:
  *                 type: string
- *                 example: jdoe
+ *                 example: u001
  *               password:
  *                 type: string
  *                 example: secret123
@@ -124,10 +125,22 @@ router.get(
     req.session.sessionSecret = crypto.randomBytes(32).toString('hex');
     req.session.freshUser = true;
     req.session.lastActivity = Date.now();
-    logger.debug('Keycloak set freshUser to true');
+    req.session.csrfToken = crypto.randomBytes(32).toString('hex');
+    logger.debug(
+      `Keycloak set freshUser to true and CSRF token generated: ${req.session.csrfToken}`,
+    );
     res.redirect('http://localhost:5173/home');
   },
 );
+
+router.get('/auth/csrf-token', ensureAuthenticated, (req, res) => {
+  logger.debug('CSRF token requested');
+  if (!req.session.csrfToken) {
+    logger.debug('No CSRF token found, throwing error');
+    return res.status(500).json({ error: 'CSRF token not found' });
+  }
+  res.json({ csrfToken: req.session.csrfToken });
+});
 
 /**
  * @openapi
@@ -157,11 +170,11 @@ router.get(
  */
 router.get('/auth/me', (req, res) => {
   logger.debug('Me route accessed');
-  logger.debug(`Identity provider: ${JSON.stringify(req.user?.authProvider)}`);
+  //logger.debug(`Identity provider: ${JSON.stringify(req.user?.authProvider)}`);
   if (req.isAuthenticated()) {
     res.json({ authenticated: true, user: req.user });
   } else {
-    res.json({ authenticated: false });
+    res.status(401).json({ authenticated: false });
   }
 });
 
@@ -403,6 +416,61 @@ router.get('/protected', ensureAuthenticated, (req, res) => {
 router.get('/protected/role', ensureHasRole(['admin']), (req, res) => {
   res.json({ message: `Protected route accessed with user: ${req.user.username}` });
 });
+
+/**
+ * @openapi
+ * /api/admin/elections:
+ *   get:
+ *     summary: Get all elections (Admin only)
+ *     description: Retrieves all elections with candidate and ballot counts
+ *     tags:
+ *       - Admin
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: List of all elections
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden (not an admin)
+ *       500:
+ *         description: Internal server error
+ */
+router.get(
+  '/admin/elections',
+  ensureAuthenticated,
+  ensureHasRole(['admin', 'committee']),
+  async (req, res) => {
+    try {
+      const startedOnly = req.query.startedOnly === 'true';
+
+      const whereClause = startedOnly ? 'WHERE start <= NOW()' : '';
+
+      const result = await client.query(`
+        SELECT 
+          id,
+          info,
+          description,
+          seats_to_fill,
+          votes_per_ballot,
+          start,
+          "end",
+          candidates,
+          voters,
+          ballots
+        FROM electionoverview
+        ${whereClause}
+        ORDER BY start DESC
+      `);
+
+      res.status(200).json(result.rows);
+    } catch (error) {
+      logger.error('Error fetching elections for admin:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  },
+);
 
 /**
  * Counting routes - Vote counting and results management

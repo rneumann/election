@@ -50,7 +50,7 @@ const CountingSection = ({
     setCountingError('');
 
     try {
-      const response = await api.get('/voter/elections');
+      const response = await api.get('/admin/elections?startedOnly=true');
       setElections(response.data || []);
     } catch (error) {
       setCountingError(`Fehler beim Laden der Wahlen: ${error.message}`);
@@ -1319,14 +1319,6 @@ const AdminUpload = () => {
                             <span className="text-green-700 font-medium">Fakultäten:</span>
                             <span className="ml-2 text-green-900 font-bold">
                               {validationStats.faculties}
-                            </span>
-                          </div>
-                        )}
-                        {validationStats.voterGroups !== undefined && (
-                          <div>
-                            <span className="text-green-700 font-medium">Studiengänge:</span>
-                            <span className="ml-2 text-green-900 font-bold">
-                              {validationStats.voterGroups}
                             </span>
                           </div>
                         )}

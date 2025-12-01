@@ -10,6 +10,10 @@ jobs:
   backend:
     name: Build & Test Backend
     runs-on: ubuntu-latest
+    env:
+      ADMIN_PASSWORD: admin123
+      ADMIN_DN: cn=admin,dc=ads,dc=hs-karlsruhe,dc=de
+      ADMIN_PASSWORD_LDAP: p
     steps:
       - uses: actions/checkout@v5
 

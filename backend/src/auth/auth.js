@@ -68,10 +68,6 @@ export const loginRoute =
   (strategy = 'ldap') =>
   async (req, res, next) => {
     logger.debug(`Login route accessed with strategy: ${strategy}`);
-    if (req.method !== 'POST') {
-      logger.warn(`Invalid HTTP method: ${req.method}`);
-      return res.status(405).json({ message: 'Method Not Allowed' });
-    }
     if (req.headers['content-type'] !== 'application/json') {
       logger.warn('Invalid Content-Type header');
       return res.status(415).json({ message: 'Content-Type must be application/json' });
@@ -112,8 +108,13 @@ export const loginRoute =
         req.session.sessionSecret = crypto.randomBytes(32).toString('hex');
         req.session.freshUser = true;
         req.session.lastActivity = Date.now();
-        logger.debug('LDAP set freshUser to true');
-        return res.status(200).json({ message: 'Login successful', user });
+        req.session.csrfToken = crypto.randomBytes(32).toString('hex');
+        logger.debug(
+          `LDAP set freshUser to true and CSRF token generated: ${req.session.csrfToken}`,
+        );
+        return res
+          .status(200)
+          .json({ message: 'Login successful', user, csrfToken: req.session.csrfToken });
       });
     })(req, res, next);
   };
@@ -176,7 +177,7 @@ export const logoutRoute = async (req, res) => {
           },
         );
         logger.debug(`Keycloak user logged out successfully: ${response.status}`);
-        if (response.status !== 200) {
+        if (response.status !== 204) {
           return res.status(500).json({ message: 'Logout error' });
         }
         return res.status(200).json({ message: 'Logout successful' });

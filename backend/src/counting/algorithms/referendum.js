@@ -92,6 +92,10 @@ export const countReferendum = ({ votes, config }) => {
     validVotes > 0
       ? ((noVotes / validVotes) * PERCENTAGE_MULTIPLIER).toFixed(PERCENTAGE_DECIMALS)
       : '0.00';
+  const abstainPercentage =
+    totalVotes > 0
+      ? ((abstainVotes / totalVotes) * PERCENTAGE_MULTIPLIER).toFixed(PERCENTAGE_DECIMALS)
+      : '0.00';
 
   return {
     algorithm: 'yes_no_referendum',
@@ -101,6 +105,7 @@ export const countReferendum = ({ votes, config }) => {
     abstain_votes: abstainVotes,
     yes_percentage: yesPercentage,
     no_percentage: noPercentage,
+    abstain_percentage: abstainPercentage,
     turnout: totalVotes,
     valid_votes: validVotes,
     quorum_required: quorum,
