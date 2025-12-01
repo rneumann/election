@@ -27,8 +27,13 @@ const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     logger.debug(`API Request: ${config.method?.toUpperCase()} ${config.url}`);
-    // Future: Add auth token to headers if needed
-    // config.headers.Authorization = `Bearer ${token}`;
+
+    const csrfToken = localStorage.getItem('csrfToken');
+    if (csrfToken) {
+      config.headers['X-CSRF-Token'] = csrfToken;
+      logger.debug(`Added CSRF token to request headers: ${csrfToken}`);
+    }
+
     return config;
   },
   (error) => {

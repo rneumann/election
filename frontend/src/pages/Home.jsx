@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { use, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useTheme } from '../hooks/useTheme.js';
@@ -6,6 +6,7 @@ import ResponsiveButton from '../components/ResponsiveButton.jsx';
 import { voterApi } from '../services/voterApi.js';
 import { Modal } from '../components/Modal.jsx';
 import { logger } from '../conf/logger/logger.js';
+import authService from '../services/authService.js';
 
 /**
  * Main dashboard for authenticated users.
@@ -51,12 +52,23 @@ const Home = () => {
   }, [user, navigate]);
 
   useEffect(() => {
-    if (user?.username) {
-      const fetchData = async () => {
-        await refreshElections();
-      };
-      fetchData();
+    if (!user?.username) {
+      return;
     }
+
+    const init = async () => {
+      try {
+        if (!localStorage.getItem('csrfToken')) {
+          await authService.getCsrfToken();
+        }
+
+        await refreshElections();
+      } catch (err) {
+        logger.error('Fehler beim Initialisieren', err);
+      }
+    };
+
+    init();
   }, [user.username]); // eslint-disable-line
 
   const dateOptions = {

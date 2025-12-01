@@ -47,6 +47,7 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await api.delete('/auth/logout', { withCredentials: true });
       const redirectUrl = response.data.redirectUrl;
+      localStorage.removeItem('csrfToken');
       window.location.href = redirectUrl; // Browser folgt Redirect → Keycloak-Session wird beendet
     } catch {
       throw new Error('Logout failed');
@@ -119,6 +120,8 @@ export const AuthProvider = ({ children }) => {
       const user = await authService.login(username, password);
       setUser(user);
       setIsAuthenticated(true);
+
+      logger.debug(`CSRF From local storage: ${localStorage.getItem('csrfToken')}`);
 
       return { success: true };
     } catch (error) {

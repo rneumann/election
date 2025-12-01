@@ -12,6 +12,7 @@ import { healthRouter } from './routes/health.route.js';
 import passport from './auth/passport.js';
 import { logger } from './conf/logger/logger.js';
 import { voterRouter } from './routes/voter.routes.js';
+import { verifyCsrfToken } from './security/csrf-logic.js';
 export const app = express();
 
 /**
@@ -148,6 +149,8 @@ app.use((req, res, next) => {
   }
   next();
 });
+
+app.use(verifyCsrfToken);
 
 /** Session Timeout */
 app.use(async (req, res, next) => {

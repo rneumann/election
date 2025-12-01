@@ -122,10 +122,22 @@ router.get(
     req.session.sessionSecret = crypto.randomBytes(32).toString('hex');
     req.session.freshUser = true;
     req.session.lastActivity = Date.now();
-    logger.debug('Keycloak set freshUser to true');
+    req.session.csrfToken = crypto.randomBytes(32).toString('hex');
+    logger.debug(
+      `Keycloak set freshUser to true and CSRF token generated: ${req.session.csrfToken}`,
+    );
     res.redirect('http://localhost:5173/home');
   },
 );
+
+router.get('/auth/csrf-token', ensureAuthenticated, (req, res) => {
+  logger.debug('CSRF token requested');
+  if (!req.session.csrfToken) {
+    logger.debug('No CSRF token found, throwing error');
+    return res.status(500).json({ error: 'CSRF token not found' });
+  }
+  res.json({ csrfToken: req.session.csrfToken });
+});
 
 /**
  * @openapi
