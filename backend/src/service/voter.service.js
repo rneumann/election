@@ -205,9 +205,9 @@ export const createBallot = async (ballot, voter) => {
       }
     }
     const resCreateVotingNote = await client.query(sqlCreateVotingNote, [
+      true,
       voter.id,
       ballot.electionId,
-      true,
     ]);
     logger.debug(`createVotingNote res: ${JSON.stringify(resCreateVotingNote)}`);
     if (resCreateVotingNote.rows.length === 0) {
