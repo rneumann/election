@@ -57,7 +57,7 @@ const Home = () => {
       };
       fetchData();
     }
-  }, [user.username]);
+  }, [user.username]); // eslint-disable-line
 
   const dateOptions = {
     day: '2-digit',
