@@ -1,7 +1,7 @@
 // __tests__/election-importer.test.js
 import { describe, test, expect, beforeAll, afterEach, afterAll, vi } from 'vitest';
 import ExcelJS from 'exceljs';
-import { importElectionData } from '../src/service/election-importer.js';
+import { importElectionData } from '../src/service/election-importer.service.js';
 import { client } from '../src/database/db.js';
 import fs from 'fs/promises';
 import path from 'path';
