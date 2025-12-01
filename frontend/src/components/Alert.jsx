@@ -13,6 +13,7 @@ export const Alert = ({
   election,
   invalidHandOver,
   onCancel,
+  refreshElections,
 }) => {
   const [showSpinner, setShowSpinner] = useState(false);
   const { user } = useAuth();
@@ -52,6 +53,7 @@ export const Alert = ({
       }
 
       showAlert('success', 'Wahl erfolgreich erstellt');
+      await refreshElections();
     } catch {
       showAlert('error', 'Unerwarteter Fehler');
     } finally {

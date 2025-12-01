@@ -23,6 +23,26 @@ const Home = () => {
   const theme = useTheme();
   const navigate = useNavigate();
 
+  /**
+   * Refreshes the list of active, future and already voted elections for the user.
+   * It fetches the list of elections from the API and updates the state with the new data.
+   * If an error occurs, it logs an error message to the console.
+   */
+  const refreshElections = async () => {
+    try {
+      const [active, future, alreadyVoted] = await Promise.all([
+        voterApi.getElections('active', user.username, false),
+        voterApi.getElections('future', user.username, false),
+        voterApi.getElections('active', user.username, true),
+      ]);
+      setElectionsActive(active);
+      setElectionsFuture(future);
+      setElectionsAlreadyVoted(alreadyVoted);
+    } catch (err) {
+      logger.error('Fehler beim Nachladen der Wahlen', err);
+    }
+  };
+
   // Redirect admins to admin page
   useEffect(() => {
     if (user?.role === 'admin') {
@@ -31,24 +51,12 @@ const Home = () => {
   }, [user, navigate]);
 
   useEffect(() => {
-    const fetchElectionsActive = async () => {
-      const response = await voterApi.getElections('active', user.username, false);
-      setElectionsActive(response);
-    };
-
-    const fetchElectionsFuture = async () => {
-      const responseFuture = await voterApi.getElections('future', user.username, false);
-      setElectionsFuture(responseFuture);
-    };
-
-    const fetchElectionsAlreadyVoted = async () => {
-      const responseAlreadyVoted = await voterApi.getElections('active', user.username, true);
-      setElectionsAlreadyVoted(responseAlreadyVoted);
-    };
-
-    fetchElectionsActive();
-    fetchElectionsFuture();
-    fetchElectionsAlreadyVoted();
+    if (user?.username) {
+      const fetchData = async () => {
+        await refreshElections();
+      };
+      fetchData();
+    }
   }, [user.username]);
 
   const dateOptions = {
@@ -277,7 +285,12 @@ const Home = () => {
                         </div>
                       </li>
                     ))}
-                    <Modal open={open} setOpen={setOpen} electionId={selectedElectionId}></Modal>
+                    <Modal
+                      open={open}
+                      setOpen={setOpen}
+                      electionId={selectedElectionId}
+                      refreshElections={refreshElections}
+                    ></Modal>
                   </ul>
                 )}
               </div>
