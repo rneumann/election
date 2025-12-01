@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  # Die Datenbank
+  db:
+    image: postgres:15
+    container_name: audit-db
+    restart: always
+    environment:
+      POSTGRES_USER: audit_logger
+      POSTGRES_PASSWORD: sicheres_passwort_123
+      POSTGRES_DB: evoting_db
+    ports:
+      - "5432:5432"
+    volumes:
+      # Hier wird die Datenbank initialisiert (Tabelle erstellen)
+      - ./database_setup.sql:/docker-entrypoint-initdb.d/init.sql
+      # Hier werden die Daten dauerhaft gespeichert (auch wenn du Docker neu startest)
+      - postgres_data:/var/lib/postgresql/data
+
+  # Optional: pgAdmin (Web-Oberfläche für die DB)
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: audit-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@audit.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "8080:80"
+    depends_on:
+      - db
+
+volumes:
+  postgres_data:
