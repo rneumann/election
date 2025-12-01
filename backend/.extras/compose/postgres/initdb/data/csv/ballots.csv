@@ -1,6 +1,5 @@
 id,ballot_hash,previous_ballot_hash,election,valid
 0f8b5f3e-4e58-4c2d-84f9-88f929ad43f1,b4d9d5f8-4e58-4c2d-84f9-88f929ad43f1,,9d9eb7d5-42a0-4b65-a7ac-681d08b67e7c,True
-1b0c8502-b6b6-4dff-b5bc-d2e3401c262d,b474b81b-b264-4411-b1f7-57e9d6c9e437,,b474b81b-b264-4411-b1f7-57e9d6c9e437,True
 2c1d3e4f-5a6b-4c7d-8e9f-0a1b2c3d4e5f,c5e6f7a8-b9c0-4d1e-2f3a-4b5c6d7e8f9a,,9d9eb7d5-42a0-4b65-a7ac-681d08b67e7c,True
 3d2e4f5a-6b7c-4d8e-9f0a-1b2c3d4e5f6a,d6f7a8b9-c0d1-4e2f-3a4b-5c6d7e8f9a0b,,9d9eb7d5-42a0-4b65-a7ac-681d08b67e7c,False
 4e3f5a6b-7c8d-4e9f-0a1b-2c3d4e5f6a7b,e7a8b9c0-d1e2-4f3a-4b5c-6d7e8f9a0b1c,,b474b81b-b264-4411-b1f7-57e9d6c9e437,True
