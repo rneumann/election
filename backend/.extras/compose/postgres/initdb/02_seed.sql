@@ -14,7 +14,7 @@ SET TIME ZONE 'Europe/Berlin';
 \copy electioncandidates (electionId, candidateId, listnum) FROM '/docker-entrypoint-initdb.d/data/csv/electioncandidates.csv' CSV HEADER;
 
 \echo 'ballots'
-\copy ballots (id, election, valid) FROM '/docker-entrypoint-initdb.d/data/csv/ballots.csv' CSV HEADER;
+\copy ballots (id, ballot_hash, previous_ballot_hash, election, valid) FROM '/docker-entrypoint-initdb.d/data/csv/ballots.csv' CSV HEADER;
 
 \echo 'ballotvotes'
 \copy ballotvotes (election, ballot, listnum, votes) FROM '/docker-entrypoint-initdb.d/data/csv/ballotvotes.csv' CSV HEADER;

@@ -1,4 +1,6 @@
-import { describe, test, expect, vi, beforeEach } from 'vitest';
+process.env.BALLOT_SECRET = 'test_secret';
+
+import { describe, test, expect, vi, beforeEach, beforeAll } from 'vitest';
 
 vi.mock('../src/conf/logger/logger.js', () => ({
   logger: {
@@ -23,6 +25,8 @@ import {
 
 import { logger } from '../src/conf/logger/logger.js';
 import { client } from '../src/database/db.js';
+import { generateBallotHashes } from '../src/security/generate-ballot-hashes.js';
+import crypto from 'crypto';
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -201,6 +205,11 @@ describe('Data service - createBallot', () => {
         predicate: (sql) => sql === 'BEGIN',
         result: { rows: [] },
       },
+      // get previous ballot hash
+      {
+        predicate: (sql) => sql.includes('FROM ballots') && sql.includes('ORDER BY created DESC'),
+        result: { rows: [{ ballot_hash: 'prev-hash-123' }] },
+      },
       // INSERT INTO ballots
       {
         predicate: (sql) => sql.includes('INSERT INTO ballots'),
@@ -326,5 +335,34 @@ describe('Data service - createBallot', () => {
     expect(logger.error).toHaveBeenCalled();
     const calledSqls = queryMock.mock.calls.map((c) => c[0]);
     expect(calledSqls.some((s) => s === 'ROLLBACK')).toBeTruthy();
+  });
+
+  describe('generateBallotHashes', () => {
+    test('generates correct hash for valid ballot with previous hash', () => {
+      const mock = {
+        electionId: 'e1',
+        voteDecision: [
+          { listnum: 2, votes: 3 },
+          { listnum: 1, votes: 5 },
+        ],
+        valid: true,
+        previousHash: 'prevhash123',
+      };
+      const sortedVotes = '1:5|2:3';
+      const hash = generateBallotHashes({
+        electionId: mock.electionId,
+        voteDecision: mock.voteDecision,
+        valid: mock.valid,
+        previousHash: mock.previousHash,
+      });
+      expect(hash).toBe(
+        crypto
+          .createHash('sha256')
+          .update(
+            `${mock.previousHash}|${sortedVotes}|${mock.electionId}|${process.env.BALLOT_SECRET}`,
+          )
+          .digest('hex'),
+      );
+    });
   });
 });
