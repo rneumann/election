@@ -12,7 +12,7 @@ describe('Session Fingerprint Protection', () => {
     const loginRes = await agent
       .post('/api/auth/login/ldap')
       .send({
-        username: 'joe doe',
+        username: 'u001',
         password: 'p',
       })
       .set('User-Agent', 'BrowserABC')
@@ -30,7 +30,7 @@ describe('Session Fingerprint Protection', () => {
 
   it('throw error if fingerprint does not match because of different ip', async () => {
     const loginRes = await agent.post('/api/auth/login/ldap').send({
-      username: 'joe doe',
+      username: 'u001',
       password: 'p',
     });
 

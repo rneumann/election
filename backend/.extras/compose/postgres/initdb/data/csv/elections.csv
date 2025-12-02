@@ -1,3 +1,12 @@
-id,info,description,listvotes,votes_per_ballot,max_cumulative_votes,start,end
-9d9eb7d5-42a0-4b65-a7ac-681d08b67e7c,Wahl 2025,Wahl der Fachschaft,0,50,0,2025-06-01 08:00:00,2025-06-01 18:00:00
-b474b81b-b264-4411-b1f7-57e9d6c9e437,Präsidentenwahl 2025,Wahl des Präsidenten,0,4,0,2025-07-01 08:00:00,2025-07-01 18:00:00
+id,info,description,listvotes,seats_to_fill,votes_per_ballot,max_cumulative_votes,test_election_active,start,end,election_type,counting_method
+9d9eb7d5-42a0-4b65-a7ac-681d08b67e7c,Wahl 2025,Wahl der Fachschaft,0,7,3,2,false,2025-06-01 08:00:00,2026-06-01 18:00:00,majority_vote,highest_votes_absolute
+b474b81b-b264-4411-b1f7-57e9d6c9e437,Präsidentenwahl 2025,Wahl des Präsidenten,0,1,1,1,false,2025-07-01 08:00:00,2025-07-01 18:00:00,majority_vote,highest_votes_simple
+c1f9f7b2-73e4-4c0e-a0b9-9b0f3b0399a1,Studierendenparlament 2025,Verhältniswahl StuPa,1,25,3,2,false,2025-03-01 08:00:00,2026-03-15 18:00:00,proportional_representation,sainte_lague
+0c83bc8c-9b58-4458-8df3-b1460d85bb7f,Senat Studierende 2025,Verhältniswahl Senat (Studierende),0,3,3,2,true,2026-04-01 08:00:00,2026-04-15 18:00:00,proportional_representation,hare_niemeyer
+97ab2fb6-d1a8-4ea0-ab68-67e8c27478df,Fakultätsrat Technik 2025,Verhältniswahl Fakultätsrat,0,3,5,2,false,2025-05-01 08:00:00,2025-05-15 18:00:00,proportional_representation,hare_niemeyer
+3f4c7df1-6e5a-4d8a-9c8a-871b9d55f0d0,Urabstimmung Semesterticket,Abstimmung über Semesterticket,0,1,1,1,false,2025-11-01 08:00:00,2025-11-10 18:00:00,referendum,yes_no_referendum
+55a2dad2-23fd-4ba2-9aeb-c93129edcaaf,Prorektor:in Lehre 2025,Wahl Prorektor:in für Lehre,0,1,1,1,false,2025-09-15 10:00:00,2025-09-15 16:00:00,referendum,yes_no_referendum
+7c42b1c3-c4f2-4d41-8ac8-0ceeb138731e,Dekan:in Informatik 2025,Dekan:innenwahl Fakultät Informatik,0,1,1,1,false,2025-10-01 09:00:00,2025-10-01 17:00:00,majority_vote,highest_votes_absolute
+e39d17c4-b359-4f8e-9df2-6e2cbeac3072,Fachschaftsvorstand IWI 2025,Vorstandswahl Fachschaft IWI,0,2,2,1,false,2025-06-10 08:00:00,2025-06-10 20:00:00,majority_vote,highest_votes_absolute
+1f8ad5b8-4bf8-41e0-9dc6-185218df2dbf,Professorenwahl Senat 2025,Senatorenwahl Professoren,0,2,2,2,false,2025-08-01 08:00:00,2025-08-15 18:00:00,majority_vote,highest_votes_simple
+c2d3e4f5-a6b7-8c9d-0e1f-2a3b4c5d6e7f,StuPa Mehrheitswahl 2025 (LÄUFT),Notfall-Mehrheitswahl StuPa - noch nicht beendet,0,5,3,0,false,2025-11-25 08:00:00,2025-12-27 18:00:00,majority_vote,highest_votes_simple
