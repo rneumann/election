@@ -197,7 +197,12 @@ const Home = () => {
                         </div>
                       </li>
                     ))}
-                    <Modal open={open} setOpen={setOpen} electionId={selectedElectionId}></Modal>
+                    <Modal
+                      open={open}
+                      setOpen={setOpen}
+                      electionId={selectedElectionId}
+                      refreshElections={refreshElections}
+                    ></Modal>
                   </ul>
                 )}
               </div>
