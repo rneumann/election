@@ -140,15 +140,34 @@ export default function AuditLogTable() {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
-  useEffect(() => {
-    // TODO: Hier später den echten API Call einfügen
-    // fetch('/api/audit-logs').then(...)
+  // useEffect(() => {
+  //   // TODO: Hier später den echten API Call einfügen
+  //   // fetch('/api/audit-logs').then(...)
     
-    // Simulation API Delay
-    setTimeout(() => {
-        setLogs(mockLogs);
+  //   // Simulation API Delay
+  //   setTimeout(() => {
+  //       setLogs(mockLogs);
+  //       setLoading(false);
+  //   }, 800);
+  // }, []);
+
+  useEffect(() => {
+    // Echte Daten von der API holen
+    fetch('http://localhost:3000/api/logs')
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Netzwerk-Antwort war nicht ok');
+        }
+        return response.json();
+      })
+      .then(data => {
+        setLogs(data); // Die echten Daten aus der DB setzen
         setLoading(false);
-    }, 800);
+      })
+      .catch(error => {
+        console.error("Fehler beim Laden der Logs:", error);
+        setLoading(false);
+      });
   }, []);
 
   const handleChangePage = (event, newPage) => {
