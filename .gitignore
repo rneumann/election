@@ -72,7 +72,8 @@ web_modules/
 *secrets*
 *crt*
 *pem*
-
+*ou.ldif*
+*users.ldif*
 # dotenv configuration files
 .*.env
 
