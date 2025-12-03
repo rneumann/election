@@ -353,7 +353,7 @@ voterRouter.post(
         return res.status(500).json({ message: 'Error creating ballot' });
       }
       logger.debug(`Ballot created successfully res: ${JSON.stringify(ballot)}`);
-      res.status(201).json({ success: true, message: 'Ballot created successfully', data: ballot });
+      res.sendStatus(201);
     } catch (err) {
       logger.error('Internal Server Error');
       logger.debug(err.stack);
