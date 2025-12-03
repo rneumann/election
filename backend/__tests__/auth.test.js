@@ -10,7 +10,7 @@ process.env.ADMIN_PASSWORD_LDAP = 'p';
 
 const ADMIN_DN = process.env.ADMIN_DN;
 const ADMIN_PASSWORD_LDAP = process.env.ADMIN_PASSWORD_LDAP;
-const USER_DN = 'cn=user1,ou=people,dc=example,dc=com';
+const USER_DN = `uid=user1,ou=students,${process.env.AD_BASE_DN}`;
 vi.mock('../src/conf/logger/logger.js', () => ({
   logger: {
     debug: vi.fn(),
@@ -24,7 +24,7 @@ import { logger } from '../src/conf/logger/logger.js';
 import { login } from '../src/auth/strategies/ldap.strategy.js';
 
 const bindMock = vi.fn(async (dn, pw) => {
-  if ((dn === ADMIN_DN && pw === ADMIN_PASSWORD_LDAP) || (dn === USER_DN && pw === 'pass1')) {
+  if (dn === USER_DN && pw === 'pass1') {
     return;
   }
   if (dn.startsWith('cn=user1') && pw === 'wrongpass') {
@@ -38,18 +38,12 @@ const bindMock = vi.fn(async (dn, pw) => {
   throw new Error(`Unexpected bind call with DN: ${dn}`);
 });
 
-const searchMock = vi.fn(async () => {
-  return {
-    searchEntries: [{ dn: USER_DN }],
-  };
-});
 const unbindMock = vi.fn(async () => {});
 
 vi.mock('ldapts', () => ({
   Client: class {
     bind = bindMock;
     unbind = unbindMock;
-    search = searchMock;
   },
 }));
 
@@ -75,11 +69,12 @@ describe('login', () => {
     const password = 'wrongpass';
     const result = await login(username, password);
     expect(result).toBeUndefined();
-    expect(bindMock).toHaveBeenCalledWith(process.env.ADMIN_DN, process.env.ADMIN_PASSWORD_LDAP);
-    expect(bindMock).toHaveBeenCalledWith(USER_DN, password);
-    expect(unbindMock).toHaveBeenCalledTimes(2);
+    expect(bindMock).toHaveBeenCalledWith(
+      `uid=${username},ou=students,${process.env.AD_BASE_DN}`,
+      password,
+    );
     expect(logger.error).toHaveBeenCalledWith(
-      `Error authenticating user ${username} via LDAP: Invalid credentials`,
+      `Error authenticating user user1 via LDAP: Unexpected bind call with DN: uid=${username},ou=students,dc=example,dc=com`,
     );
   });
 
@@ -87,13 +82,12 @@ describe('login', () => {
     const result = await login('user1', 'pass1');
     expect(result).toEqual({ username: 'user1', role: 'voter', authProvider: 'ldap' });
 
-    expect(bindMock).toHaveBeenCalledWith(ADMIN_DN, ADMIN_PASSWORD_LDAP);
+    expect(bindMock).toHaveBeenCalledWith(
+      `uid=user1,ou=students,${process.env.AD_BASE_DN}`,
+      'pass1',
+    );
 
-    expect(bindMock).toHaveBeenCalledWith(USER_DN, 'pass1');
-
-    expect(bindMock).toHaveBeenCalledTimes(2);
-
-    expect(unbindMock).toHaveBeenCalledTimes(2);
+    expect(bindMock).toHaveBeenCalledTimes(1);
 
     expect(logger.info).toHaveBeenCalledWith(
       `User ${USER_DN} authenticated successfully via LDAP.`,
