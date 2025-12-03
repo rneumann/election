@@ -2,6 +2,8 @@ import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 import { client } from '../database/db.js';
+// Wir nutzen den Projekt-Logger statt console.log
+import { logger } from '../conf/logger/logger.js';
 
 // Pfad-Logik: Priorität auf Environment Variable, sonst relativer Pfad
 const keyPathEnv = process.env.PRIVATE_KEY_PATH;
@@ -12,46 +14,75 @@ const localKeyPath = path.resolve(
 );
 
 let privateKey;
-const keyPathToUse = keyPathEnv && fs.existsSync(keyPathEnv) ? keyPathEnv : localKeyPath;
+const keyPathToUse = keyPathEnv && fs.existsSync(keyPathEnv) ? keyPathEnv : localKeyPath; // eslint-disable-line n/no-sync
 
 try {
+  // eslint-disable-next-line n/no-sync
   if (fs.existsSync(keyPathToUse)) {
-    privateKey = fs.readFileSync(keyPathToUse, 'utf8');
+    privateKey = fs.readFileSync(keyPathToUse, 'utf8'); // eslint-disable-line n/no-sync
   } else {
-    console.warn(`⚠️ AUDIT LOG: Private Key nicht gefunden unter: ${keyPathToUse}`);
+    logger.warn(`⚠️ AUDIT LOG: Private Key nicht gefunden unter: ${keyPathToUse}`);
   }
 } catch (e) {
-  console.warn('⚠️ AUDIT LOG: Fehler beim Laden des Keys.', e.message);
+  logger.warn(`⚠️ AUDIT LOG: Fehler beim Laden des Keys. ${e.message}`);
 }
 
 const SALT = process.env.AUDIT_SALT || 'default_salt';
 
-function sha256(data) {
+/**
+ * Erstellt einen SHA256 Hash.
+ * @param {string} data - Die zu hashenden Daten
+ * @returns {string} Der Hex-String des Hashes
+ */
+const sha256 = (data) => {
   return crypto.createHash('sha256').update(data).digest('hex');
-}
+};
 
-function signData(data) {
-  if (!privateKey) return 'NO_KEY';
+/**
+ * Signiert Daten mit dem Private Key.
+ * @param {string} data - Die zu signierenden Daten
+ * @returns {string} Die Signatur oder 'NO_KEY'
+ */
+const signData = (data) => {
+  if (!privateKey) {
+    return 'NO_KEY';
+  }
   const sign = crypto.createSign('SHA256');
   sign.update(data);
   sign.end();
   return sign.sign(privateKey, 'hex');
-}
+};
 
-function deterministicStringify(obj) {
-  if (typeof obj === 'undefined') return 'null';
-  if (typeof obj !== 'object' || obj === null) return JSON.stringify(obj);
-  if (Array.isArray(obj))
+/**
+ * Sortiert JSON-Objekte deterministisch für konsistentes Hashing.
+ * @param {object|Array|string|null} obj - Das Eingabeobjekt
+ * @returns {string} Der JSON-String
+ */
+const deterministicStringify = (obj) => {
+  if (typeof obj === 'undefined') {
+    return 'null';
+  }
+  if (typeof obj !== 'object' || obj === null) {
+    return JSON.stringify(obj);
+  }
+  if (Array.isArray(obj)) {
     return JSON.stringify(obj.map((item) => JSON.parse(deterministicStringify(item))));
+  }
   const sortedKeys = Object.keys(obj).sort();
   const result = {};
   sortedKeys.forEach((key) => {
+    // eslint-disable-next-line security/detect-object-injection
     result[key] = JSON.parse(deterministicStringify(obj[key]));
   });
   return JSON.stringify(result);
-}
+};
 
-export async function writeAuditLog(event) {
+/**
+ * Schreibt einen Audit-Log-Eintrag in die Datenbank.
+ * @param {object} event - Das Event-Objekt
+ * @returns {Promise<void>}
+ */
+export const writeAuditLog = async (event) => {
   try {
     // Wir nutzen den globalen Client.
     // Für maximale Sicherheit bei Race-Conditions nutzen wir LOCK TABLE.
@@ -108,6 +139,6 @@ export async function writeAuditLog(event) {
     await client.query('COMMIT');
   } catch (err) {
     await client.query('ROLLBACK');
-    console.error('CRITICAL: Audit Log failed:', err.message);
+    logger.error(`CRITICAL: Audit Log failed: ${err.message}`);
   }
-}
+};

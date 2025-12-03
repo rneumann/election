@@ -1,13 +1,11 @@
-import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
-import { useTheme } from '../hooks/useTheme.js';
+
 import AuditLogTable from '../components/AuditLogTable.jsx'; // Deine Tabelle
-import ResponsiveButton from '../components/ResponsiveButton.jsx';
 
 const AuditLogPage = () => {
   const { user, logout } = useAuth();
-  const theme = useTheme();
+
   const navigate = useNavigate();
 
   // Schutz: Nur Admins dürfen hier rein
