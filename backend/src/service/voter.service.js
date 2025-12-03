@@ -1,3 +1,4 @@
+import { writeAuditLog } from '../audit/auditLogger.js';
 import { logger } from '../conf/logger/logger.js';
 import { client } from '../database/db.js';
 import { generateBallotHashes } from '../security/generate-ballot-hashes.js';
@@ -143,8 +144,11 @@ export const getVoterById = async (voterId) => {
  */
 export const createBallot = async (ballot, voter) => {
   const sqlCreateBallot = `
-    INSERT INTO ballots (ballot_hash, previous_ballot_hash, election, valid)
-    VALUES ($1, $2, $3, $4)
+    INSERT INTO ballots (serial_id, ballot_hash, previous_ballot_hash, election, valid)
+    VALUES (
+      COALESCE((SELECT MAX(serial_id) FROM ballots WHERE election = $1), 0) + 1,
+      $2, $3, $1, $4
+    )
     RETURNING *
   `;
 
@@ -162,6 +166,7 @@ export const createBallot = async (ballot, voter) => {
 
   try {
     await client.query('BEGIN');
+    await client.query('SELECT id FROM elections WHERE id = $1 FOR UPDATE', [ballot.electionId]);
 
     const prevHash = await getPreviousBallotHash(ballot.electionId);
     logger.debug(`Previous ballot hash: ${prevHash}`);
@@ -174,12 +179,24 @@ export const createBallot = async (ballot, voter) => {
     });
     logger.debug(`Generated ballot hash: ${ballotHash}`);
 
+    // Test Audit Log
+    await writeAuditLog({
+      actorRole: 'VOTER',
+      actionType: 'CREATE_BALLOT',
+      level: 'INFO',
+      details: {
+        previousBallotHash: prevHash,
+        ballotHash: ballotHash,
+      },
+    }).catch(() => {});
+
     const resCreateBallot = await client.query(sqlCreateBallot, [
-      ballotHash,
-      prevHash,
       ballot.electionId,
+      ballotHash,
+      prevHash || undefined,
       ballot.valid,
     ]);
+
     if (resCreateBallot.rows.length === 0) {
       await client.query('ROLLBACK');
 
@@ -336,10 +353,11 @@ export const checkIfNumberOfVotesIsValid = (ballotSchema, maxCumulativeVotes, vo
 
 const getPreviousBallotHash = async (electionId) => {
   const sql = `
-    SELECT ballot_hash 
-    FROM ballots 
-    WHERE election = $1 
-    ORDER BY id DESC LIMIT 1
+    SELECT ballot_hash
+    FROM ballots
+    WHERE election = $1
+    ORDER BY serial_id DESC
+    LIMIT 1
   `;
 
   try {
