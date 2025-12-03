@@ -2,7 +2,7 @@ SET client_encoding = 'UTF8';
 SET TIME ZONE 'Europe/Berlin';
 
 \echo 'elections'
-\copy elections (id, info, description, listvotes, votes_per_ballot, max_cumulative_votes, test_election_active, start, "end") FROM '/docker-entrypoint-initdb.d/data/csv/elections.csv' CSV HEADER;
+\copy elections (id, info, description, listvotes, seats_to_fill, votes_per_ballot, max_cumulative_votes, test_election_active, start, "end", election_type, counting_method) FROM '/docker-entrypoint-initdb.d/data/csv/elections.csv' CSV HEADER;
 
 \echo 'candidates'
 \copy candidates (id, lastname, firstname, mtknr, faculty, keyword, notes, approved) FROM '/docker-entrypoint-initdb.d/data/csv/candidates.csv' CSV HEADER;

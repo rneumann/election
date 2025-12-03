@@ -1,5 +1,5 @@
 id,uid,lastname,firstname,mtknr,faculty,notes
-3d57e8e7-529f-4fa5-b4b5-23f42f445ab2,u001,Müller,Max,1234567,Informatik, das ist ein commentar
+3d57e8e7-529f-4fa5-b4b5-23f42f445ab2,u001,Müller,Max,1234567,Informatik,Kein Kommentar
 82f63a42-cd4e-465f-85c9-b04b4c975f39,u002,Schmidt,Anna,2345678,Maschinenbau,Keine Notizen
 b09f71c8-f8fe-4171-937f-345dfcbe263f,u003,Weber,Julia,3456789,Wirtschaft,Entschuldigt sich oft
 5ab0194d-4597-42cf-81e4-5f01784b4ae3,u004,Becker,Thomas,4567890,Mathematik,Sehr aktiv

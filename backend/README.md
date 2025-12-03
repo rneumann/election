@@ -7,6 +7,7 @@
 - [Voraussetzungen](#voraussetzungen)
 - [Installation](#installation)
 - [Deployment & Konfiguration](#deployment--server-starten)
+- [Excel Import Konfiguration](#excel-import-konfiguration)
 - [API-Dokumentation](#api-endpunkte)
 
 ## Überblick
@@ -111,6 +112,28 @@ Der Server startet mit dem in `.env` konfigurierten `PORT`. Standard-Health-Chec
 ```bash
 GET http://localhost:<PORT>/health
 ```
+
+## Excel Import Konfiguration
+
+Die Excel-Datei für den Import von Wahlkonfigurationen verwendet **deutsche Text-Werte** in Dropdown-Feldern für bessere Benutzerfreundlichkeit.
+
+### Wahltyp (Spalte H)
+
+| Text-Wert          | DB-Wert                       | Beschreibung   | Verwendung                   |
+| ------------------ | ----------------------------- | -------------- | ---------------------------- |
+| **Mehrheitswahl**  | `majority_vote`               | Mehrheitswahl  | Höchste Stimmenzahl gewinnt  |
+| **Verhältniswahl** | `proportional_representation` | Verhältniswahl | Proportionale Sitzverteilung |
+| **Urabstimmung**   | `referendum`                  | Urabstimmung   | Ja/Nein-Abstimmung           |
+
+### Zählverfahren (Spalte I)
+
+| Text-Wert              | DB-Wert                  | Beschreibung                          | Typische Verwendung                  |
+| ---------------------- | ------------------------ | ------------------------------------- | ------------------------------------ |
+| **Sainte-Laguë**       | `sainte_lague`           | Sainte-Laguë (Divisorverfahren)       | Verhältniswahl Studierendenparlament |
+| **Hare-Niemeyer**      | `hare_niemeyer`          | Hare-Niemeyer (Quotenverfahren)       | Verhältniswahl Senat, Fakultätsrat   |
+| **Einfache Mehrheit**  | `highest_votes_simple`   | Relative Mehrheit (höchste Stimmen)   | Mehrheitswahl ohne Schwellenwert     |
+| **Absolute Mehrheit**  | `highest_votes_absolute` | Absolute Mehrheit (>50% erforderlich) | Mehrheitswahl mit Schwellenwert      |
+| **Ja/Nein/Enthaltung** | `yes_no_referendum`      | Ja/Nein-Auszählung                    | Urabstimmungen                       |
 
 ## Projektstruktur (Beispiel)
 

@@ -31,12 +31,31 @@ CREATE TABLE
     info TEXT NOT NULL,
     description TEXT,
     listvotes INT NOT NULL DEFAULT '0',
+    seats_to_fill INT NOT NULL CHECK (seats_to_fill >= 1),
     votes_per_ballot SMALLINT NOT NULL CHECK (votes_per_ballot > 0),
     max_cumulative_votes int NOT NULL DEFAULT '0' CHECK (max_cumulative_votes >= 0),
     test_election_active BOOLEAN NOT NULL DEFAULT FALSE,
     start TIMESTAMPTZ NOT NULL,
     "end" TIMESTAMPTZ NOT NULL,
-    CONSTRAINT elections_time_range CHECK ("end" > start)
+    election_type VARCHAR(50),
+    counting_method VARCHAR(50),
+    CONSTRAINT elections_time_range CHECK ("end" > start),
+    CONSTRAINT chk_election_type CHECK (
+      election_type IS NULL OR election_type IN (
+        'proportional_representation',
+        'majority_vote',
+        'referendum'
+      )
+    ),
+    CONSTRAINT chk_counting_method CHECK (
+      counting_method IS NULL OR counting_method IN (
+        'sainte_lague',
+        'hare_niemeyer',
+        'highest_votes_absolute',
+        'highest_votes_simple',
+        'yes_no_referendum'
+      )
+    )
   );
 
 CREATE TABLE
@@ -75,6 +94,23 @@ CREATE TABLE
     PRIMARY KEY (voterId, electionId)
   );
 
+CREATE TABLE
+  IF NOT EXISTS election_results (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid (),
+    election_id UUID NOT NULL REFERENCES elections (id) ON DELETE CASCADE,
+    version INT NOT NULL DEFAULT 1,
+    is_final BOOLEAN NOT NULL DEFAULT FALSE,
+    result_data JSONB NOT NULL,
+    counted_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    counted_by TEXT,
+    CONSTRAINT uq_election_version UNIQUE (election_id, version)
+  );
+
+-- Partial unique index: Only one final result per election
+CREATE UNIQUE INDEX IF NOT EXISTS uq_election_final 
+  ON election_results (election_id) 
+  WHERE (is_final = TRUE);
+
 CREATE INDEX IF NOT EXISTS idx_ballots_election ON ballots (election);
 
 CREATE INDEX IF NOT EXISTS idx_ballotvotes_list ON ballotvotes (election, listnum);
@@ -111,10 +147,13 @@ SELECT
   e.info
 FROM
   ballotvotes bv
+  JOIN ballots b ON bv.ballot = b.id
   JOIN electioncandidates ec ON bv.listnum = ec.listnum
-  AND bv.election = ec.electionId
-  JOIN candidates c ON ec.candidateId = c.id
-  JOIN elections e ON ec.electionId = e.id
+  AND bv.election = ec.electionid
+  JOIN candidates c ON ec.candidateid = c.id
+  JOIN elections e ON ec.electionid = e.id
+WHERE
+  b.valid = TRUE
 GROUP BY
   e.id,
   ec.listnum,
@@ -126,14 +165,17 @@ GROUP BY
 CREATE
 OR REPLACE VIEW votingcounts AS
 SELECT
-  election,
-  listnum,
-  SUM(votes) AS votes
+  bv.election,
+  bv.listnum,
+  SUM(bv.votes) AS votes
 FROM
-  ballotvotes
+  ballotvotes bv
+  JOIN ballots b ON bv.ballot = b.id
+WHERE
+  b.valid = TRUE
 GROUP BY
-  election,
-  listnum;
+  bv.election,
+  bv.listnum;
 
 CREATE
 OR REPLACE VIEW numcandidatesperelection AS
@@ -161,6 +203,7 @@ SELECT
   e.id,
   e.info,
   e.description,
+  e.seats_to_fill AS seats_to_fill,
   e.votes_per_ballot AS votes_per_ballot,
   e.start,
   e."end",
@@ -176,6 +219,7 @@ GROUP BY
   e.id,
   e.info,
   e.description,
+  e.seats_to_fill,
   e.votes_per_ballot,
   e.start,
   e."end",
@@ -209,5 +253,33 @@ SELECT
   mtknr
 FROM
   voters;
+
+CREATE
+OR REPLACE VIEW list_votes AS
+SELECT
+  e.id AS election_id,
+  e.info AS election_info,
+  SUM(bv.votes) AS total_list_votes
+FROM
+  elections e
+  JOIN ballotvotes bv ON e.id = bv.election
+WHERE
+  e.listvotes = 1
+  AND bv.listnum = 0
+GROUP BY
+  e.id,
+  e.info;
+
+CREATE
+OR REPLACE VIEW ballot_statistics AS
+SELECT
+  b.election,
+  COUNT(b.id) AS total_ballots,
+  COUNT(b.id) FILTER (WHERE b.valid = TRUE) AS valid_ballots,
+  COUNT(b.id) FILTER (WHERE b.valid = FALSE) AS invalid_ballots
+FROM
+  ballots b
+GROUP BY
+  b.election;
 
 COMMIT;

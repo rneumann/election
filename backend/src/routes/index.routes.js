@@ -3,12 +3,15 @@ import express from 'express';
 import { ensureAuthenticated, ensureHasRole, loginRoute, logoutRoute } from '../auth/auth.js';
 import passport from '../auth/passport.js';
 import { logger } from '../conf/logger/logger.js';
+import { client } from '../database/db.js';
 import { importWahlerRoute, importElectionRoute } from './upload.route.js';
 import {
   exportTotalResultsRoute,
   exportBallotsRoute,
   exportElectionDefinitionRoute,
 } from './download.route.js';
+import { countingRouter } from './counting.route.js';
+import exportRouter from './export.route.js';
 export const router = express.Router();
 
 /**
@@ -392,3 +395,101 @@ router.get(
   ensureHasRole(['admin']),
   exportElectionDefinitionRoute,
 );
+
+/**
+ * Testing routes for protection
+ * @openapi
+ * /api/protected:
+ *   get:
+ *     summary: Protected route
+ *     responses:
+ *       200:
+ *         description: Protected route accessed
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ */
+router.get('/protected', ensureAuthenticated, (req, res) => {
+  res.json({ message: `Protected route accessed with user: ${req.user.username}` });
+});
+router.get('/protected/role', ensureHasRole(['admin']), (req, res) => {
+  res.json({ message: `Protected route accessed with user: ${req.user.username}` });
+});
+
+/**
+ * @openapi
+ * /api/admin/elections:
+ *   get:
+ *     summary: Get all elections (Admin only)
+ *     description: Retrieves all elections with candidate and ballot counts
+ *     tags:
+ *       - Admin
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: List of all elections
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden (not an admin)
+ *       500:
+ *         description: Internal server error
+ */
+router.get(
+  '/admin/elections',
+  ensureAuthenticated,
+  ensureHasRole(['admin', 'committee']),
+  async (req, res) => {
+    try {
+      const startedOnly = req.query.startedOnly === 'true';
+
+      const whereClause = startedOnly ? 'WHERE start <= NOW()' : '';
+
+      const result = await client.query(`
+        SELECT 
+          id,
+          info,
+          description,
+          seats_to_fill,
+          votes_per_ballot,
+          start,
+          "end",
+          candidates,
+          voters,
+          ballots
+        FROM electionoverview
+        ${whereClause}
+        ORDER BY start DESC
+      `);
+
+      res.status(200).json(result.rows);
+    } catch (error) {
+      logger.error('Error fetching elections for admin:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  },
+);
+
+/**
+ * Counting routes - Vote counting and results management
+ *
+ * Endpoints:
+ * - POST /api/counting/:electionId/count - Perform vote counting
+ * - GET /api/counting/:electionId/results - Retrieve counting results
+ * - POST /api/counting/:electionId/finalize - Finalize results (lock)
+ *
+ * All routes require authentication and admin/committee role.
+ */
+router.use('/counting', countingRouter);
+
+/**
+ * Export routes - Election result exports
+ *
+ * Endpoints:
+ * - GET /api/export/election-result/:resultId - Export result as Excel
+ *
+ * All routes require authentication and admin/committee role.
+ */
+router.use('/export', ensureAuthenticated, ensureHasRole(['admin', 'committee']), exportRouter);

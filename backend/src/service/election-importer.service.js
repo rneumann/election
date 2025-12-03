@@ -3,6 +3,24 @@ import { logger } from '../conf/logger/logger.js';
 import { client } from '../database/db.js';
 
 /**
+ * Mapping tables for election configuration.
+ * These mappings convert German text values from Excel dropdowns to database values.
+ */
+const ELECTION_TYPE_MAPPING = new Map([
+  ['Mehrheitswahl', 'majority_vote'],
+  ['Verhältniswahl', 'proportional_representation'],
+  ['Urabstimmung', 'referendum'],
+]);
+
+const COUNTING_METHOD_MAPPING = new Map([
+  ['Sainte-Laguë', 'sainte_lague'],
+  ['Hare-Niemeyer', 'hare_niemeyer'],
+  ['Einfache Mehrheit', 'highest_votes_simple'],
+  ['Absolute Mehrheit', 'highest_votes_absolute'],
+  ['Ja/Nein/Enthaltung', 'yes_no_referendum'],
+]);
+
+/**
  * Imports election data from an Excel file into the database.
  *
  * The Excel file is expected to have the following structure:
@@ -13,7 +31,20 @@ import { client } from '../database/db.js';
  *   C: List vote flag ('1' for true)
  *   D: Seats per ballot
  *   E: Maximum cumulative votes
+ *   H: Election type (text from dropdown - see ELECTION_TYPE_MAPPING)
+ *   I: Counting method (text from dropdown - see COUNTING_METHOD_MAPPING)
  *
+ * Election Type Values (Column H):
+ *   - Mehrheitswahl
+ *   - Verhältniswahl
+ *   - Urabstimmung
+ *
+ * Counting Method Values (Column I):
+ *   - Sainte-Laguë
+ *   - Hare-Niemeyer
+ *   - Einfache Mehrheit
+ *   - Absolute Mehrheit
+ *   - Ja/Nein/Enthaltung
  *
  * @async
  * @param {string} filePath - Path to the Excel file to import
@@ -52,24 +83,77 @@ export const importElectionData = async (filePath) => {
       const identifier = sheet.getCell(`A${rowIndex}`).value;
       const info = sheet.getCell(`B${rowIndex}`).value;
       const listVote = sheet.getCell(`C${rowIndex}`).value == '1';
-      const seats = sheet.getCell(`D${rowIndex}`).value || 1;
+      const seatsValue = sheet.getCell(`D${rowIndex}`).value || 1;
       const maxKum = sheet.getCell(`E${rowIndex}`).value ?? 0;
-
+      const electionTypeText = sheet.getCell(`H${rowIndex}`).value?.toString().trim();
+      const countingMethodText = sheet.getCell(`I${rowIndex}`).value?.toString().trim();
       const listvotes = listVote ? 1 : 0;
-      const votesPerBallot = seats;
+      const seatsToFill = Number(seatsValue);
+      const votesPerBallot = Number(seatsValue); // Column D: seats/votes per ballot
       const maxCumulativeVotes = Number(maxKum) || 0;
+
+      // Validate seats_to_fill
+      if (!Number.isInteger(seatsToFill) || seatsToFill < 1) {
+        throw new Error(
+          `Invalid seats_to_fill in row ${rowIndex}: must be a positive integer, got ${seatsValue}`,
+        );
+      }
+
+      // Validate votes_per_ballot
+      if (!Number.isInteger(votesPerBallot) || votesPerBallot < 1) {
+        throw new Error(
+          `Invalid votes_per_ballot in row ${rowIndex}: must be a positive integer, got ${seatsValue}`,
+        );
+      }
+
+      // Validate and map election type
+      if (!electionTypeText) {
+        throw new Error(
+          `Missing election_type (column H) in row ${rowIndex}. Expected: Mehrheitswahl, Verhältniswahl, or Urabstimmung.`,
+        );
+      }
+
+      const electionType = ELECTION_TYPE_MAPPING.get(electionTypeText);
+      if (!electionType) {
+        const validTypes = [...ELECTION_TYPE_MAPPING.keys()].join(', ');
+        throw new Error(
+          `Invalid election_type '${electionTypeText}' in row ${rowIndex}. Valid values: ${validTypes}`,
+        );
+      }
+
+      // Validate and map counting method
+      if (!countingMethodText) {
+        throw new Error(
+          `Missing counting_method (column I) in row ${rowIndex}. Expected: Sainte-Laguë, Hare-Niemeyer, Einfache Mehrheit, Absolute Mehrheit, or Ja/Nein/Enthaltung.`,
+        );
+      }
+
+      const countingMethod = COUNTING_METHOD_MAPPING.get(countingMethodText);
+      if (!countingMethod) {
+        const validMethods = [...COUNTING_METHOD_MAPPING.keys()].join(', ');
+        throw new Error(
+          `Invalid counting_method '${countingMethodText}' in row ${rowIndex}. Valid values: ${validMethods}`,
+        );
+      }
+
+      logger.info(
+        `Row ${rowIndex}: ${info} → election_type=${electionType}, counting_method=${countingMethod}`,
+      );
 
       const insertElectionQuery = `
         INSERT INTO elections (
           info,
           description,
           listvotes,
+          seats_to_fill,
           votes_per_ballot,
           max_cumulative_votes,
           start,
-          "end"
+          "end",
+          election_type,
+          counting_method
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
         RETURNING id;
       `;
 
@@ -77,10 +161,13 @@ export const importElectionData = async (filePath) => {
         info,
         identifier,
         listvotes,
+        seatsToFill,
         votesPerBallot,
         maxCumulativeVotes,
         startDate,
         endDate,
+        electionType,
+        countingMethod,
       ]);
 
       rowIndex++;
