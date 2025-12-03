@@ -15,6 +15,7 @@ export default defineConfig({
       '__tests__/counting/algorithms/sainte-lague.test.js',
       '__tests__/counting/algorithms/majority-vote.test.js',
       '__tests__/counting/algorithms/referendum.test.js',
+      '__tests__/election-import.test.js',
     ],
   },
 });
