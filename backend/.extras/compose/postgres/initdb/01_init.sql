@@ -41,14 +41,16 @@ CREATE TABLE
     counting_method VARCHAR(50),
     CONSTRAINT elections_time_range CHECK ("end" > start),
     CONSTRAINT chk_election_type CHECK (
-      election_type IS NULL OR election_type IN (
+      election_type IS NULL
+      OR election_type IN (
         'proportional_representation',
         'majority_vote',
         'referendum'
       )
     ),
     CONSTRAINT chk_counting_method CHECK (
-      counting_method IS NULL OR counting_method IN (
+      counting_method IS NULL
+      OR counting_method IN (
         'sainte_lague',
         'hare_niemeyer',
         'highest_votes_absolute',
@@ -70,10 +72,12 @@ CREATE TABLE
 CREATE TABLE
   IF NOT EXISTS ballots (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid (),
+    serial_id INT NOT NULL,
     ballot_hash TEXT NOT NULL UNIQUE,
     previous_ballot_hash TEXT,
     election UUID NOT NULL REFERENCES elections (id) ON DELETE CASCADE ON UPDATE CASCADE,
-    valid BOOLEAN NOT NULL DEFAULT TRUE
+    valid BOOLEAN NOT NULL DEFAULT TRUE,
+    CONSTRAINT uq_election_serial UNIQUE (election, serial_id)
   );
 
 CREATE TABLE
@@ -101,15 +105,15 @@ CREATE TABLE
     version INT NOT NULL DEFAULT 1,
     is_final BOOLEAN NOT NULL DEFAULT FALSE,
     result_data JSONB NOT NULL,
-    counted_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    counted_at TIMESTAMPTZ NOT NULL DEFAULT NOW (),
     counted_by TEXT,
     CONSTRAINT uq_election_version UNIQUE (election_id, version)
   );
 
 -- Partial unique index: Only one final result per election
-CREATE UNIQUE INDEX IF NOT EXISTS uq_election_final 
-  ON election_results (election_id) 
-  WHERE (is_final = TRUE);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_election_final ON election_results (election_id)
+WHERE
+  (is_final = TRUE);
 
 CREATE INDEX IF NOT EXISTS idx_ballots_election ON ballots (election);
 
@@ -275,8 +279,14 @@ OR REPLACE VIEW ballot_statistics AS
 SELECT
   b.election,
   COUNT(b.id) AS total_ballots,
-  COUNT(b.id) FILTER (WHERE b.valid = TRUE) AS valid_ballots,
-  COUNT(b.id) FILTER (WHERE b.valid = FALSE) AS invalid_ballots
+  COUNT(b.id) FILTER (
+    WHERE
+      b.valid = TRUE
+  ) AS valid_ballots,
+  COUNT(b.id) FILTER (
+    WHERE
+      b.valid = FALSE
+  ) AS invalid_ballots
 FROM
   ballots b
 GROUP BY

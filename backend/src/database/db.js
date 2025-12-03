@@ -1,6 +1,8 @@
 import dotenv from 'dotenv';
 import pg from 'pg';
 import { logger } from '../conf/logger/logger.js';
+// NEU: Audit Import
+import { writeAuditLog } from '../audit/auditLogger.js';
 
 dotenv.config();
 
@@ -42,6 +44,14 @@ export const connectDb = async () => {
     logger.info(`Database time: ${rows[0].now}`);
   } catch (err) {
     logger.error(`Database connection error: ${err.stack}`);
+
+    // NEU: Audit Log (DB Verbindungsfehler - Fatal!)
+    await writeAuditLog({
+      actionType: 'DB_CONNECTION_FAILURE',
+      level: 'FATAL',
+      details: { error: err.message },
+    }).catch(() => {});
+
     process.exit(1);
   }
 };

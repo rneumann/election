@@ -16,6 +16,7 @@ vi.mock('../src/conf/logger/logger.js', () => ({
     debug: vi.fn(),
     error: vi.fn(),
     info: vi.fn(),
+    warn: vi.fn(),
   },
 }));
 

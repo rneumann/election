@@ -208,7 +208,7 @@ const Home = () => {
               </div>
             </div>
 
-            {/* aktuelle Wahlen*/}
+            {/* zukünftige Wahlen*/}
             <div className="bg-gradient-to-br from-blue-100 to-blue-200 p-4 sm:p-6 rounded-lg border border-blue-200 hover:shadow-lg transition-shadow duration-200">
               <div className="flex items-start gap-3 mb-3">
                 <div className="bg-blue-600 text-white rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0">

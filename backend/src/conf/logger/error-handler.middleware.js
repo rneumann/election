@@ -1,3 +1,5 @@
+// NEU: Audit Import (Pfade beachten!)
+import { writeAuditLog } from '../../audit/auditLogger.js';
 import { logger } from './logger.js';
 
 /**
@@ -16,5 +18,18 @@ export const errorHandler = (err, req, res, next) => {
     stack: err.stack,
     path: req.path,
   });
+
+  // NEU: Audit Log (Systemabsturz/Unhandled Exception)
+  writeAuditLog({
+    actionType: 'UNHANDLED_EXCEPTION',
+    level: 'FATAL',
+    actorId: req.user ? req.user.username : 'system',
+    details: {
+      error_message: err.message,
+      path: req.path,
+      method: req.method,
+    },
+  }).catch((e) => console.error('Audit Log failed:', e));
+
   res.status(500).json({ error: 'Internal Server Error' });
 };
