@@ -20,6 +20,8 @@ services:
       - SESSION_SECRET
     networks:
       - election-network
+    volumes:
+      - ./secrets/keys:/run/secrets/keys:ro #
 
 networks:
   election-network:

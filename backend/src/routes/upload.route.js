@@ -5,6 +5,8 @@ import {
   importCandidateRoute,
 } from '../service/upload.service.js';
 import { ensureAuthenticated, ensureHasRole } from '../auth/auth.js';
+import { writeAuditLog } from '../audit/auditLogger.js';
+
 export const importRouter = Router();
 /**
  * @openapi

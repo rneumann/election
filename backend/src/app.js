@@ -18,6 +18,10 @@ import { exportRoute } from './routes/export.route.js';
 import { verifyCsrfToken } from './security/csrf-logic.js';
 export const app = express();
 
+// NEU: Audit Imports
+import { writeAuditLog } from './audit/auditLogger.js';
+import { auditRouter } from './routes/audit.routes.js';
+
 /**
  * Setup Express middlewares and routes
  */
@@ -147,6 +151,21 @@ app.use((req, res, next) => {
 
   if (expected !== req.session.fingerprint) {
     logger.warn('Session fingerprint mismatch');
+
+    // NEU: Audit Log bei Hijacking-Verdacht
+    writeAuditLog({
+      actionType: 'SESSION_HIJACKING_SUSPECTED',
+      level: 'CRITICAL',
+      actorId: req.user ? req.user.username : 'unknown',
+      actorRole: req.user ? req.user.role : 'unknown',
+      details: {
+        reason: 'fingerprint_mismatch',
+        original_fingerprint: req.session.fingerprint,
+        detected_ip: ip,
+        detected_ua: ua,
+      },
+    }).catch((e) => logger.error(e));
+
     req.session.destroy(() => {});
     return res.status(401).json({ message: 'Unauthorized' });
   }
@@ -168,6 +187,21 @@ app.use(async (req, res, next) => {
   logger.info(`The if condition: ${diff > 2 * 60 * 1000}, ${diff} > ${2 * 60 * 1000}`);
   if (diff > 2 * 60 * 1000) {
     logger.debug('Session timeout detected logging out user');
+
+    // NEU: Audit Log bei Timeout
+    if (user) {
+      writeAuditLog({
+        actionType: 'SESSION_TIMEOUT',
+        level: 'INFO',
+        actorId: user.username,
+        actorRole: user.role,
+        details: {
+          last_activity: new Date(lastActivity).toISOString(),
+          provider: user.authProvider,
+        },
+      }).catch((e) => logger.error(e));
+    }
+
     req.session.destroy(() => {});
     res.clearCookie('connect.sid', { path: '/', httpOnly: true });
 
@@ -192,6 +226,9 @@ app.use(async (req, res, next) => {
   next();
 });
 
+// Swagger muss VOR den Routen und VOR dem ErrorHandler kommen!
+// app.use('/api-docs', swaggerUiExpress.serve, swaggerUiExpress.setup(swaggerSpec));
+
 /**
  * Health route
  */
@@ -205,6 +242,8 @@ app.use('/api/voter', voterRouter);
 app.use('/api/candidates', candidateRouter);
 app.use('/api/upload/', importRouter);
 app.use('/api/export/', exportRoute);
+// NEU: Audit API Route registrieren
+app.use('/api/audit', auditRouter);
 
 /**
  * Error handling middleware
