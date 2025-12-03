@@ -11,10 +11,9 @@ export const getAllCandidates = async () => {
       lastname AS "Lastname",
       firstname AS "Firstname",
       faculty AS "Fakultät", 
-      notes AS "Notizen", 
-      image AS "Bild" 
+      notes AS "Notizen"
     FROM candidates 
-    ORDER BY name ASC
+    ORDER BY lastname ASC
   `;
   const result = await client.query(query);
   return result.rows;

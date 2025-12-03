@@ -5,7 +5,11 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { useTheme } from '../hooks/useTheme.js';
 import ResponsiveButton from '../components/ResponsiveButton.jsx';
 import ValidationErrors from '../components/ValidationErrors.jsx';
-import { validateVoterCSV } from '../utils/validators/csvValidator.js';
+import {
+  validateVoterCSV,
+  validateCandidateCSV,
+  transformCandidateFile,
+} from '../utils/validators/csvValidator.js';
 import { validateElectionExcel } from '../utils/validators/excelValidator.js';
 import { MAX_FILE_SIZE } from '../utils/validators/constants.js';
 import api, { exportElectionResultExcel } from '../services/api.js';
@@ -707,11 +711,13 @@ const AdminUpload = () => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [activeSection, setActiveSection] = useState('upload'); // 'upload' | 'manage' | 'counting'
+  const [activeSection, setActiveSection] = useState('upload'); // 'upload' | 'manage' | 'counting' | 'uploadCandidates'
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [validationErrors, setValidationErrors] = useState([]);
   const [validationStats, setValidationStats] = useState(null);
   const [isValidating, setIsValidating] = useState(false);
+
+  const [clearingDatabase, setClearingDatabase] = useState(false);
 
   // Counting states
   const [elections, setElections] = useState([]);
@@ -788,26 +794,32 @@ const AdminUpload = () => {
     try {
       let validationResult;
 
-      if (fileType === 'csv') {
+      if (activeSection === 'uploadCandidates') {
+        if (fileType === 'csv') {
+          validationResult = await validateCandidateCSV(file);
+        } else {
+          validationResult = { success: true, stats: { info: 'Excel wird serverseitig geprüft' } };
+        }
+      } else if (activeSection === 'upload') {
         validationResult = await validateVoterCSV(file);
-      } else {
+      } else if (activeSection === 'definition') {
         validationResult = await validateElectionExcel(file);
+      } else {
+        validationResult = { success: true, stats: {} };
       }
 
       if (!validationResult.success) {
         setValidationErrors(validationResult.errors);
-        setSelectedFile(null); // Don't set file if validation fails
-        setError(
-          'Die Datei enthält Validierungsfehler. Bitte korrigieren Sie diese und versuchen Sie es erneut.',
-        );
+        setSelectedFile(null);
+        setError('Die Datei enthält Validierungsfehler.');
       } else {
-        setSelectedFile(file); // Only set file if validation succeeds
+        setSelectedFile(file);
         setValidationStats(validationResult.stats);
         setSuccess('Datei erfolgreich validiert! Sie können nun hochladen.');
       }
-    } catch (validationError) {
-      setSelectedFile(null); // Don't set file on validation error
-      setError(`Validierungsfehler: ${validationError.message}`);
+    } catch (err) {
+      console.error(err);
+      setError('Fehler bei der Validierung: ' + err.message);
     } finally {
       setIsValidating(false);
     }
@@ -869,11 +881,8 @@ const AdminUpload = () => {
    * Only proceeds if file passed validation.
    */
   const handleUpload = async () => {
-    if (!selectedFile) {
-      return;
-    }
+    if (!selectedFile) return;
 
-    // Prevent upload if validation errors exist
     if (validationErrors.length > 0) {
       setError('Bitte korrigieren Sie zuerst die Validierungsfehler.');
       return;
@@ -884,42 +893,79 @@ const AdminUpload = () => {
     setSuccess('');
     setUploadProgress(0);
 
+    // Wir starten den try-Block früher, um auch Fehler bei der Transformation abzufangen
     try {
-      // Simulate upload progress
-      const progressInterval = setInterval(() => {
-        setUploadProgress((prev) => {
-          if (prev >= 90) {
-            clearInterval(progressInterval);
-            return 90;
-          }
-          return prev + 10;
-        });
-      }, 200);
+      // 1. Transformations-Logik
+      // Standardmäßig nehmen wir die ausgewählte Datei
+      let fileToUpload = selectedFile;
 
-      // TODO: Replace with actual backend API call
-      // Example:
-      // const formData = new FormData();
-      // formData.append('file', selectedFile);
-      // const response = await api.post('/upload/voters', formData);
+      // Nur wenn wir im Kandidaten-Upload sind, führen wir die Transformation durch
+      if (activeSection === 'uploadCandidates') {
+        console.log('Starte Transformation der Kandidaten-Datei...');
+        // Hier wird aus "Nachname" -> "lastname" etc.
+        fileToUpload = await transformCandidateFile(selectedFile);
+        console.log('Transformation abgeschlossen:', fileToUpload.name);
+      }
 
-      // Simulate backend call
-      await new Promise((resolve) => {
-        return setTimeout(resolve, 2000);
+      // 2. FormData mit der (ggf. transformierten) Datei erstellen
+      const formData = new FormData();
+      formData.append('file', fileToUpload);
+
+      const csrfToken = localStorage.getItem('csrfToken') || '';
+
+      // 3. Endpoint wählen
+      let endpoint = '';
+      switch (activeSection) {
+        case 'upload':
+          endpoint = '/upload/voters';
+          break;
+        case 'uploadCandidates':
+          endpoint = '/upload/candidates';
+          break;
+        case 'definition':
+          endpoint = '/upload/election-definition';
+          break;
+        default:
+          throw new Error('Unbekannter Upload-Typ');
+      }
+
+      // 4. API Request senden
+      const response = await api.post(endpoint, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          'X-CSRF-TOKEN': csrfToken,
+        },
+        onUploadProgress: (progressEvent) => {
+          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          setUploadProgress(percentCompleted);
+        },
       });
 
-      clearInterval(progressInterval);
-      setUploadProgress(100);
+      console.log('HTTP Status:', response.status);
+      console.log('Server Antwort (ganzes Objekt):', response);
+      console.log('Server Daten (response.data):', response.data);
 
-      setSuccess('Datei erfolgreich hochgeladen und verarbeitet!');
-      setTimeout(() => {
-        setSelectedFile(null);
-        setUploadProgress(0);
-        setValidationErrors([]);
-        setValidationStats(null);
-        navigate('/home'); // Redirect to home to see the new data
-      }, 2000);
-    } catch {
-      setError('Fehler beim Hochladen der Datei. Bitte versuchen Sie es erneut.');
+      // 5. Erfolg prüfen
+      if (response.data?.success || response.status === 200 || response.status === 201) {
+        setSuccess(response.data?.message || 'Datei erfolgreich hochgeladen und verarbeitet!');
+
+        // Optional: Reset nach kurzer Verzögerung
+        setTimeout(() => {
+          setSelectedFile(null);
+          setUploadProgress(0);
+          setValidationErrors([]);
+          setValidationStats(null);
+          // navigate('/home'); // Optional: Redirect oder Daten neu laden
+        }, 2000);
+      } else {
+        throw new Error(response.data?.message || 'Upload fehlgeschlagen');
+      }
+    } catch (err) {
+      console.error('Upload Error:', err);
+      const errorMsg =
+        err.response?.data?.message || err.message || 'Fehler beim Hochladen der Datei.';
+      setError(errorMsg);
+      setUploadProgress(0);
     } finally {
       setUploading(false);
     }
@@ -1140,6 +1186,53 @@ const AdminUpload = () => {
                     <div className="flex items-center justify-between">
                       <span>Einstellungen laden</span>
                       <span className="text-xs opacity-60">3.3</span>
+                    </div>
+                  </button>
+                </div>
+
+                <div className="mb-6">
+                  <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                    Kandidatenverzeichnis
+                  </div>
+
+                  {/* Upload button */}
+                  <button
+                    onClick={() => {
+                      setActiveSection('uploadCandidates');
+                      setMobileMenuOpen(false);
+                      handleReset();
+                    }}
+                    style={{
+                      backgroundColor:
+                        activeSection === 'uploadCandidates' ? theme.colors.primary : 'transparent',
+                      color: activeSection === 'uploadCandidates' ? '#ffffff' : theme.colors.dark,
+                    }}
+                    className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span>CSV-Datei hochladen</span>
+                      <span className="text-xs opacity-60">3.1</span>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setActiveSection('downloadCandidates');
+                      setMobileMenuOpen(false);
+                      handleReset();
+                    }}
+                    style={{
+                      backgroundColor:
+                        activeSection === 'downloadCandidates'
+                          ? theme.colors.primary
+                          : 'transparent',
+                      color: activeSection === 'downloadCandidates' ? '#ffffff' : theme.colors.dark,
+                    }}
+                    className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span>Kandidatenverzeichnis herunterladen</span>
+                      <span className="text-xs opacity-60">3.2</span>
                     </div>
                   </button>
                 </div>
@@ -1445,6 +1538,209 @@ const AdminUpload = () => {
                         Datei auswählen
                       </ResponsiveButton>
                     )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeSection === 'uploadCandidates' && (
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div className="border-b border-gray-200 px-6 py-4">
+                  <h2 className="text-xl font-bold text-gray-900">
+                    Kandidatenverzeichnis hochladen
+                  </h2>
+                  <p className="text-sm text-gray-600 mt-1">
+                    CSV-Datei mit Kandidaten hochladen. Die Datei muss aus einer Kopfzeile und den
+                    folgenden, durch Komma getrennten Spalten bestehen:
+                  </p>
+                </div>
+
+                <div className="p-6">
+                  {/* Format Example */}
+                  <div className="mb-6 bg-gray-50 rounded-lg p-4 border border-gray-200">
+                    <p className="text-xs font-mono text-gray-700 mb-2">Format-Beispiel:</p>
+                    <code className="text-xs font-mono text-gray-900 block bg-white p-3 rounded border border-gray-300 overflow-x-auto">
+                      Nachname,Vorname,MatrikelNr,Fakultät,Schlüsselworte,Notizen,IstZugelassen
+                      <br />
+                      Mustermann,Max,123456,AB,"Umwelt, Digitalisierung","Bemerkung",true
+                    </code>
+                  </div>
+
+                  {/* Drag & Drop Zone */}
+                  <div
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                    onClick={!selectedFile ? handleBrowseClick : undefined}
+                    className={`
+                      relative p-12 border-2 border-dashed rounded-lg transition-all cursor-pointer
+                      ${
+                        isDragging
+                          ? 'border-brand-primary bg-blue-50 scale-[1.02]'
+                          : selectedFile
+                            ? 'border-green-500 bg-green-50'
+                            : 'border-gray-300 hover:border-brand-primary hover:bg-gray-50'
+                      }
+                    `}
+                  >
+                    {!selectedFile ? (
+                      <div className="text-center">
+                        <div
+                          className={`inline-flex items-center justify-center w-16 h-16 rounded-full mb-4 transition-all ${
+                            isDragging ? 'bg-brand-primary scale-110' : 'bg-gray-100'
+                          }`}
+                        >
+                          <svg
+                            className={`w-8 h-8 ${isDragging ? 'text-white' : 'text-gray-400'}`}
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                            />
+                          </svg>
+                        </div>
+                        <p className="text-lg font-semibold text-gray-900 mb-2">
+                          {isDragging ? 'Datei hier ablegen...' : 'Datei hier ziehen oder klicken'}
+                        </p>
+                        <p className="text-sm text-gray-500 mb-4">CSV-Datei (max. 10 MB)</p>
+                        <ResponsiveButton variant="outline" size="medium">
+                          Datei auswählen
+                        </ResponsiveButton>
+                      </div>
+                    ) : (
+                      <div className="text-center">
+                        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-500 mb-4">
+                          <svg
+                            className="w-8 h-8 text-white"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M5 13l4 4L19 7"
+                            />
+                          </svg>
+                        </div>
+                        <p className="font-semibold text-green-900 mb-2">Datei bereit zum Upload</p>
+                        <p className="text-sm text-gray-700 font-medium truncate max-w-md mx-auto">
+                          {selectedFile.name}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {(selectedFile.size / 1024).toFixed(1)} KB
+                        </p>
+                      </div>
+                    )}
+
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept=".csv,text/csv"
+                      onChange={handleFileInputChange}
+                      className="hidden"
+                    />
+                  </div>
+
+                  {validationErrors.length > 0 && (
+                    <ValidationErrors errors={validationErrors} fileType="CSV" />
+                  )}
+
+                  {/* Upload Button */}
+                  {selectedFile && validationErrors.length === 0 && (
+                    <div className="mt-6 flex gap-3">
+                      <ResponsiveButton
+                        variant="primary"
+                        size="large"
+                        onClick={handleUpload}
+                        disabled={uploading || isValidating}
+                      >
+                        Jetzt hochladen
+                      </ResponsiveButton>
+                      <ResponsiveButton
+                        variant="outline"
+                        size="large"
+                        onClick={handleReset}
+                        disabled={uploading || isValidating}
+                      >
+                        Abbrechen
+                      </ResponsiveButton>
+                    </div>
+                  )}
+
+                  {/* Upload Progress */}
+                  {uploading && (
+                    <div className="mt-4 w-full bg-gray-200 rounded-full h-2">
+                      <div
+                        className="bg-green-500 h-2 rounded-full transition-all"
+                        style={{ width: `${uploadProgress}%` }}
+                      ></div>
+                    </div>
+                  )}
+
+                  {/* Messages */}
+                  {error && (
+                    <div className="mt-6 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg flex gap-3">
+                      <div className="text-sm">
+                        <p className="font-semibold">Fehler</p>
+                        <p className="mt-1">{error}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {success && (
+                    <div className="mt-6 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg flex gap-3">
+                      <div className="text-sm">
+                        <p className="font-semibold">Erfolg</p>
+                        <p className="mt-1">{success}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Kandidatenverzeichnis herunterladen Section */}
+            {activeSection === 'downloadCandidates' && (
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div className="border-b border-gray-200 px-6 py-4">
+                  <h2 className="text-xl font-bold text-gray-900">
+                    Kandidatenverzeichnis herunterladen
+                  </h2>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Aktuelles Kandidatenverzeichnis als Excel-Dokument herunterladen (enthält ein
+                    Tabellenblatt pro Fakultät/Studiengang)
+                  </p>
+                </div>
+                <div className="p-6">
+                  <div className="text-center py-8">
+                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
+                      <svg
+                        className="w-8 h-8 text-gray-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                        />
+                      </svg>
+                    </div>
+                    <p className="text-gray-600 mb-6">
+                      Diese Funktion wird demnächst verfügbar sein.
+                    </p>
+                    <ResponsiveButton variant="outline" size="medium">
+                      Bald verfügbar
+                    </ResponsiveButton>
                   </div>
                 </div>
               </div>

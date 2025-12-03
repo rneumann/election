@@ -5,7 +5,8 @@ import passport from '../auth/passport.js';
 import { logger } from '../conf/logger/logger.js';
 import { client } from '../database/db.js';
 import { countingRouter } from './counting.route.js';
-import exportRouter from './export.route.js';
+import { exportRoute } from './export.route.js';
+
 export const router = express.Router();
 
 /**
@@ -284,4 +285,4 @@ router.use('/counting', countingRouter);
  *
  * All routes require authentication and admin/committee role.
  */
-router.use('/export', ensureAuthenticated, ensureHasRole(['admin', 'committee']), exportRouter);
+router.use('/export', ensureAuthenticated, ensureHasRole(['admin', 'committee']), exportRoute);

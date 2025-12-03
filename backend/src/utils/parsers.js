@@ -2,6 +2,9 @@ import fs from 'fs';
 import csv from 'csv-parser';
 import ExcelJS from 'exceljs';
 import { logger } from '../conf/logger/logger.js';
+
+export const allowedColumns = ['lastname', 'firstname', 'mtknr', 'faculty', 'keyword', 'notes'];
+
 /**
  * Ensures all allowed columns exist with null fallback.
  * @param {Object} row - The input row object

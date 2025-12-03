@@ -1,7 +1,10 @@
 import { Router } from 'express';
-import { importWahlerRoute, importElectionRoute } from '../service/upload.service.js';
+import {
+  importWahlerRoute,
+  importElectionRoute,
+  importCandidateRoute,
+} from '../service/upload.service.js';
 import { ensureAuthenticated, ensureHasRole } from '../auth/auth.js';
-
 export const importRouter = Router();
 /**
  * @openapi
@@ -13,6 +16,11 @@ export const importRouter = Router();
  *       - Elections
  *     security:
  *       - cookieAuth: []
+ *     parameters:
+ *       - in: header
+ *         name: X-CSRF-Token
+ *         required: true
+ *         description: CSRF token for security.
  *     requestBody:
  *       required: true
  *       content:
@@ -45,6 +53,11 @@ importRouter.post('/voters', ensureAuthenticated, ensureHasRole(['admin']), impo
  *       - Elections
  *     security:
  *       - cookieAuth: []
+ *     parameters:
+ *       - in: header
+ *         name: X-CSRF-Token
+ *         required: true
+ *         description: CSRF token for security.
  *     requestBody:
  *       required: true
  *       content:
@@ -69,3 +82,40 @@ importRouter.post('/voters', ensureAuthenticated, ensureHasRole(['admin']), impo
  */
 
 importRouter.post('/elections', ensureAuthenticated, ensureHasRole(['admin']), importElectionRoute);
+
+/**
+ * @openapi
+ * /api/upload/candidates:
+ *   post:
+ *     summary: Upload candidate directory (Excel/CSV)
+ *     tags:
+ *       - Elections
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: header
+ *         name: X-CSRF-Token
+ *         required: true
+ *         description: CSRF token for security.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               file:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       200:
+ *         description: File uploaded successfully
+ *       400:
+ *         description: File missing or invalid
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Internal server error
+ */
+
+importRouter.post('/candidates', ensureAuthenticated, ensureHasRole('admin'), importCandidateRoute);

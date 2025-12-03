@@ -1,7 +1,20 @@
 /* eslint-disable security/detect-object-injection */
 import { logger } from '../conf/logger/logger.js';
 import { client } from '../database/db.js';
-import { safeRow, parseCsv, parseExcel } from '../utils/parsers.js';
+import { parseCsv, parseExcel } from '../utils/parsers.js';
+
+/**
+ * Ensures all allowed columns exist with null fallback.
+ * @param {Object} row - The input row object
+ * @returns {Object} The cleaned row object
+ */
+export const safeRow = (row) => {
+  const cleaned = {};
+  for (const col of allowedColumns) {
+    cleaned[col] = row[col] ?? null;
+  }
+  return cleaned;
+};
 
 const allowedColumns = ['lastname', 'firstname', 'mtknr', 'faculty', 'keyword', 'notes'];
 
@@ -49,22 +62,28 @@ const insertCandidates = async (data) => {
 export const importCandidateData = async (path, mimeType) => {
   logger.debug(`Parsing candidate file: ${path} (${mimeType})`);
 
+  // Parser mapping
   const parsers = {
     'text/csv': parseCsv,
+    'application/vnd.ms-excel': parseCsv, // ältere CSV-MIME
     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': parseExcel,
   };
 
-  const isSpreadsheet = mimeType.includes('spreadsheet');
-  const parser = parsers[mimeType] || (isSpreadsheet ? parseExcel : null);
+  // Automatische Erkennung anhand Dateiendung, falls MIME falsch
+  const lowerPath = path.toLowerCase();
+  const isCsv = lowerPath.endsWith('.csv');
+  const isXlsx = lowerPath.endsWith('.xlsx');
+
+  const parser = parsers[mimeType] || (isCsv ? parseCsv : isXlsx ? parseExcel : null);
 
   if (!parser) {
-    throw new Error(`Unsupported file type: ${mimeType}`);
+    throw new Error(`Unsupported file type: ${mimeType} (${path})`);
   }
 
   try {
     const rawRows = await parser(path);
 
-    const rows = rawRows.map((row) => safeRow(row, allowedColumns));
+    const rows = rawRows.map((row) => safeRow(row));
 
     logger.debug(`Parsed ${rows.length} candidate rows.`);
 

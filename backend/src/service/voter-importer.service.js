@@ -2,9 +2,22 @@
 import fs from 'fs';
 import { logger } from '../conf/logger/logger.js';
 import { client } from '../database/db.js';
-import { safeRow, parseCsv, parseExcel } from '../utils/parsers.js';
+import { parseCsv, parseExcel } from '../utils/parsers.js';
 
 const allowedColumns = ['uid', 'lastname', 'firstname', 'mtknr', 'faculty', 'notes'];
+
+/**
+ * Ensures all allowed columns exist with null fallback.
+ * @param {Object} row - The input row object
+ * @returns {Object} The cleaned row object
+ */
+export const safeRow = (row) => {
+  const cleaned = {};
+  for (const col of allowedColumns) {
+    cleaned[col] = row[col] ?? null;
+  }
+  return cleaned;
+};
 
 /**
  * Inserts an array of voter objects into the database.

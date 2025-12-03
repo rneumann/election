@@ -1,7 +1,6 @@
 import express from 'express';
 import { logger } from '../conf/logger/logger.js';
 import { generateElectionResultExcel } from '../service/result-exporter.js';
-import express from 'express';
 import { ensureAuthenticated, ensureHasRole } from '../auth/auth.js';
 import {
   exportTotalResultsRoute,
