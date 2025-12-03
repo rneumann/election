@@ -1,8 +1,7 @@
 import { Router } from 'express';
 import { logger } from '../conf/logger/logger.js';
-import { ensureAuthenticated, ensureHasRole } from '../auth/auth.js';
+import { ensureAuthenticated } from '../auth/auth.js';
 import { getAllCandidates } from '../service/candidate.service.js';
-import { importCandidateRoute } from '../service/upload.service.js';
 
 export const candidateRouter = Router();
 

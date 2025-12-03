@@ -923,7 +923,7 @@ const AdminUpload = () => {
           endpoint = '/upload/candidates';
           break;
         case 'definition':
-          endpoint = '/upload/election-definition';
+          endpoint = '/upload/elections';
           break;
         default:
           throw new Error('Unbekannter Upload-Typ');

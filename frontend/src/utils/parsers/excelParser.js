@@ -3,22 +3,14 @@ import { EXPECTED_SHEET_NAMES } from '../../schemas/election.schema.js';
 
 /**
  * Parse Excel file containing election configuration.
- * Uses ExcelJS library for secure reading of Excel files with multiple sheets.
- *
- * @param {File} file - Excel file to parse
- * @returns {Promise<{success: boolean, data?: Object, errors?: Array, sheets?: Array}>}
- * @throws {Error} If file reading fails
  */
 export const parseElectionExcel = async (file) => {
   try {
-    // Read file as ArrayBuffer
     const arrayBuffer = await file.arrayBuffer();
-
-    // Create workbook and load file
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.load(arrayBuffer);
 
-    // Check if all required sheets exist
+    // Sheets prüfen
     const actualSheets = workbook.worksheets.map((ws) => ws.name);
     const requiredSheets = [EXPECTED_SHEET_NAMES.INFO, EXPECTED_SHEET_NAMES.CANDIDATES];
     const missingSheets = requiredSheets.filter((sheet) => !actualSheets.includes(sheet));
@@ -28,131 +20,117 @@ export const parseElectionExcel = async (file) => {
         success: false,
         errors: [
           {
-            sheet: null,
-            row: null,
-            field: null,
             message: `Fehlende Tabellenblätter: ${missingSheets.join(', ')}`,
             code: 'MISSING_SHEETS',
-          },
-          {
-            sheet: null,
-            row: null,
-            field: null,
-            message: `Erwartete Tabellenblätter: ${requiredSheets.join(', ')}`,
-            code: 'EXPECTED_SHEETS',
           },
         ],
       };
     }
 
-    // Get worksheets
     const infoSheet = workbook.getWorksheet(EXPECTED_SHEET_NAMES.INFO);
     const candidatesSheet = workbook.getWorksheet(EXPECTED_SHEET_NAMES.CANDIDATES);
 
-    // Parse Wahlen sheet (election metadata) - horizontal table format
-    // ExcelJS: First row is header, data starts at row 2
-    const infoRows = [];
+    // --- PARSE WAHLEN SHEET (Metadaten) ---
+    // Wir suchen dynamisch nach der Kopfzeile und den Datumsfeldern
+
+    let infoHeaders = {}; // Map: SpaltenIndex -> Name (z.B. 7 -> "Wahltyp")
+    let infoDataRow = null;
+    let startDate = null;
+    let endDate = null;
+
     infoSheet.eachRow((row, rowNumber) => {
-      if (rowNumber === 1) {
-        return; // Skip header row
-      }
-      const rowData = {};
       row.eachCell((cell, colNumber) => {
-        const header = infoSheet.getRow(1).getCell(colNumber).value;
-        if (header) {
-          // Convert cell value to string/number based on type
-          let value = cell.value;
-          if (value && typeof value === 'object' && value.result !== undefined) {
-            value = value.result; // Handle formula cells
+        const val = cell.value ? String(cell.value).trim() : '';
+
+        // 1. Datum suchen (steht oft oben links/rechts)
+        if (val === 'Wahlzeitraum von') startDate = row.getCell(colNumber + 2).value; // Annahme: Wert steht 2 Spalten weiter
+        if (val === 'bis') endDate = row.getCell(colNumber + 2).value;
+
+        // 2. Kopfzeile finden (Zeile beginnt mit Kennung oder Wahl Kennung)
+        if (val === 'Kennung' || val === 'Wahl Kennung') {
+          // Header-Zeile gefunden! Alle Spaltennamen speichern
+          row.eachCell((headerCell, headerCol) => {
+            const headerName = String(headerCell.value).trim();
+            // eslint-disable-next-line security/detect-object-injection
+            if (headerName) infoHeaders[headerCol] = headerName;
+          });
+
+          // Die eigentlichen DATEN stehen direkt in der Zeile darunter
+          const dataRow = infoSheet.getRow(rowNumber + 1);
+          if (dataRow) {
+            infoDataRow = {};
+            dataRow.eachCell((dataCell, dataCol) => {
+              // eslint-disable-next-line security/detect-object-injection
+              const key = infoHeaders[dataCol]; // Wir nutzen den Namen aus dem Header, nicht den Index!
+              if (key) {
+                let value = dataCell.value;
+                if (value && typeof value === 'object' && value.result !== undefined)
+                  value = value.result;
+                // eslint-disable-next-line security/detect-object-injection
+                infoDataRow[key] = value;
+              }
+            });
           }
-          // eslint-disable-next-line security/detect-object-injection
-          rowData[header] = value === null || value === undefined ? '' : String(value);
         }
       });
-      if (Object.keys(rowData).length > 0) {
-        infoRows.push(rowData);
-      }
     });
 
-    // Take first row as election data
-    const info = infoRows.length > 0 ? infoRows[0] : {};
+    const info = infoDataRow || {};
+    // Datums-Fallback, falls nicht gefunden oder nicht gesetzt
+    if (startDate) info['Startzeitpunkt'] = startDate;
+    if (endDate) info['Endzeitpunkt'] = endDate;
 
-    // Parse Listenvorlage sheet (candidates)
+    // --- PARSE LISTENVORLAGE SHEET (Kandidaten) ---
     const candidatesRaw = [];
     let candidateHeaders = [];
 
     candidatesSheet.eachRow((row, rowNumber) => {
       if (rowNumber === 1) {
-        // Get headers from first row
-        row.eachCell((cell) => {
-          candidateHeaders.push(cell.value || '');
-        });
+        row.eachCell((cell) => candidateHeaders.push(cell.value ? String(cell.value).trim() : ''));
         return;
       }
-
       const rowData = {};
+      let hasData = false;
       row.eachCell((cell, colNumber) => {
         const header = candidateHeaders[colNumber - 1];
         if (header) {
           let value = cell.value;
-          if (value && typeof value === 'object' && value.result !== undefined) {
+          if (value && typeof value === 'object' && value.result !== undefined)
             value = value.result;
-          }
           // eslint-disable-next-line security/detect-object-injection
           rowData[header] = value === null || value === undefined ? '' : String(value);
+          if (String(value).trim() !== '') hasData = true;
         }
       });
-
-      if (Object.keys(rowData).length > 0) {
-        candidatesRaw.push(rowData);
-      }
+      if (hasData) candidatesRaw.push(rowData);
     });
 
-    // Convert Nr to integers
     const candidates = candidatesRaw.map((row) => ({
       ...row,
       Nr: row.Nr ? parseInt(row.Nr, 10) : null,
     }));
 
-    // Check if info sheet is empty
     if (Object.keys(info).length === 0) {
       return {
         success: false,
         errors: [
           {
-            sheet: EXPECTED_SHEET_NAMES.INFO,
-            row: null,
-            field: null,
-            message: `Das Tabellenblatt "${EXPECTED_SHEET_NAMES.INFO}" enthält keine Daten`,
-            code: 'EMPTY_SHEET',
+            message: `Konnte Kopfzeile 'Kennung' im Blatt '${EXPECTED_SHEET_NAMES.INFO}' nicht finden.`,
+            code: 'HEADER_MISSING',
           },
         ],
       };
     }
 
-    // Note: Empty candidates list is allowed for referendums (Urabstimmungen)
-    // Validation is handled by Zod schema in candidateListSchema
-
     return {
       success: true,
-      data: {
-        info,
-        candidates,
-      },
+      data: { info, candidates },
       sheets: actualSheets,
     };
   } catch (error) {
     return {
       success: false,
-      errors: [
-        {
-          sheet: null,
-          row: null,
-          field: null,
-          message: `Fehler beim Lesen der Excel-Datei: ${error.message}`,
-          code: 'FILE_READ_ERROR',
-        },
-      ],
+      errors: [{ message: `Excel Fehler: ${error.message}`, code: 'FILE_READ_ERROR' }],
     };
   }
 };

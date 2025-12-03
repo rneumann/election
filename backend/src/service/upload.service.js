@@ -5,6 +5,12 @@ import { importVoterData } from '../service/voter-importer.service.js';
 import { importElectionData } from '../service/election-importer.service.js';
 import { importCandidateData } from '../service/candidate-importer.js';
 
+// Konstanten für wiederkehrende Strings
+const ERR_FILE_UPLOAD = 'File upload error:';
+const ERR_NO_FILE = 'No file uploaded';
+const ERR_METHOD_NOT_ALLOWED = 'Method Not Allowed';
+const UPLOAD_FIELD = 'file';
+
 /**
  * Multer storage configuration for file uploads.
  * Files are stored in the local "uploads" directory.
@@ -94,17 +100,17 @@ export const importWahlerRoute = async (req, res) => {
 
   if (req.method !== 'POST') {
     logger.warn(`Invalid HTTP method used: ${req.method}`);
-    return res.status(405).json({ message: 'Method Not Allowed' });
+    return res.status(405).json({ message: ERR_METHOD_NOT_ALLOWED });
   }
 
-  upload.single('file')(req, res, async (err) => {
+  upload.single(UPLOAD_FIELD)(req, res, async (err) => {
     if (err) {
-      logger.error('File upload error:', err);
+      logger.error(ERR_FILE_UPLOAD, err);
       return res.status(400).json({ message: err.message });
     }
 
     if (!req.file) {
-      logger.warn('No file uploaded');
+      logger.warn(ERR_NO_FILE);
       return res.status(400).json({ message: 'file is required' });
     }
 
@@ -115,9 +121,9 @@ export const importWahlerRoute = async (req, res) => {
       logger.debug(`Datei gespeichert unter: ${filePath}`);
       await importVoterData(filePath, fileMimeType);
 
-      fs.promises.unlink(filePath, (err) => {
-        if (err) {
-          logger.error('Fehler beim Löschen der Datei nach erfolgreichem Import:', err);
+      fs.promises.unlink(filePath, (unlinkErr) => {
+        if (unlinkErr) {
+          logger.error('Fehler beim Löschen der Datei nach erfolgreichem Import:', unlinkErr);
         } else {
           logger.debug(`Hochgeladene Datei erfolgreich gelöscht: ${filePath}`);
         }
@@ -129,9 +135,9 @@ export const importWahlerRoute = async (req, res) => {
     } catch (importError) {
       logger.error('Importfehler. Datei wird gelöscht.', importError);
 
-      fs.promises.unlink(filePath, (err) => {
-        if (err) {
-          logger.error('Fehler beim Löschen der Datei nach Importfehler:', err);
+      fs.promises.unlink(filePath, (unlinkErr) => {
+        if (unlinkErr) {
+          logger.error('Fehler beim Löschen der Datei nach Importfehler:', unlinkErr);
         }
       });
 
@@ -156,45 +162,53 @@ export const importElectionRoute = async (req, res) => {
   logger.debug('Election import route accessed');
 
   if (req.method !== 'POST') {
-    logger.warn(`Invalid HTTP method used: ${req.method}`);
-    return res.status(405).json({ message: 'Method Not Allowed' });
+    return res.status(405).json({ message: ERR_METHOD_NOT_ALLOWED });
   }
 
-  upload.single('file')(req, res, async (err) => {
+  upload.single(UPLOAD_FIELD)(req, res, async (err) => {
     if (err) {
-      logger.error('File upload error:', err);
+      logger.error(ERR_FILE_UPLOAD, err);
       return res.status(400).json({ message: err.message });
     }
 
     if (!req.file) {
-      logger.warn('No file uploaded');
-      return res.status(400).json({ message: 'file is required' });
+      return res.status(400).json({ message: 'Keine Datei hochgeladen.' });
     }
 
     const filePath = req.file.path;
 
     try {
-      logger.debug(`Wahldefinitionsdatei gespeichert unter: ${filePath}`);
+      logger.debug(`Verarbeite Datei: ${filePath}`);
 
-      await importElectionData(filePath);
+      const importCount = await importElectionData(filePath);
 
-      fs.promises.unlink(filePath, (err) => {
-        if (err) {
-          logger.error('Fehler beim Löschen der Datei nach Import:', err);
-        }
-      });
+      try {
+        await fs.promises.unlink(filePath);
+      } catch (unlinkErr) {
+        logger.warn('Konnte temporäre Datei nicht löschen:', unlinkErr);
+      }
+
+      if (importCount === 0) {
+        logger.warn('Import lief durch, aber es wurden 0 Wahlen gefunden.');
+        return res.status(200).json({
+          success: true,
+          message:
+            'Datei verarbeitet, aber KEINE Wahlen gefunden/importiert. Prüfen Sie Zeile 9 in der Excel.',
+        });
+      }
 
       return res.status(200).json({
-        message: 'Wahldefinitionen erfolgreich importiert.',
+        success: true,
+        message: `${importCount} Wahldefinition(en) erfolgreich importiert.`,
       });
     } catch (importError) {
-      logger.error('Importfehler bei Wahldefinitionen. Datei wird gelöscht.', importError);
+      logger.error('Importfehler (Catch Block):', importError);
 
-      fs.promises.unlink(filePath, (err) => {
-        if (err) {
-          logger.error('Fehler beim Löschen der Datei nach Fehler:', err);
-        }
-      });
+      try {
+        await fs.promises.unlink(filePath);
+      } catch (e) {
+        logger.warn('Fehler beim Löschen der Datei im Catch-Block:', e);
+      }
 
       return res.status(500).json({ message: `Import fehlgeschlagen: ${importError.message}` });
     }
@@ -213,15 +227,15 @@ export const importCandidateRoute = async (req, res) => {
 
   if (req.method !== 'POST') {
     logger.warn(`Invalid HTTP method used: ${req.method}`);
-    return res.status(405).json({ message: 'Method Not Allowed' });
+    return res.status(405).json({ message: ERR_METHOD_NOT_ALLOWED });
   }
-  upload.single('file')(req, res, async (err) => {
+  upload.single(UPLOAD_FIELD)(req, res, async (err) => {
     if (err) {
-      logger.error('File upload error:', err);
+      logger.error(ERR_FILE_UPLOAD, err);
       return res.status(400).json({ message: err.message });
     }
     if (!req.file) {
-      logger.warn('No file uploaded');
+      logger.warn(ERR_NO_FILE);
       return res.status(400).json({ message: 'file is required' });
     }
 
@@ -230,9 +244,9 @@ export const importCandidateRoute = async (req, res) => {
     try {
       logger.debug(`Datei gespeichert unter: ${filePath}`);
       await importCandidateData(filePath, fileMimeType);
-      fs.promises.unlink(filePath, (err) => {
-        if (err) {
-          logger.error('Fehler beim Löschen der Datei nach erfolgreichem Import:', err);
+      fs.promises.unlink(filePath, (unlinkErr) => {
+        if (unlinkErr) {
+          logger.error('Fehler beim Löschen der Datei nach erfolgreichem Import:', unlinkErr);
         } else {
           logger.debug(`Hochgeladene Datei erfolgreich gelöscht: ${filePath}`);
         }
@@ -242,9 +256,9 @@ export const importCandidateRoute = async (req, res) => {
       });
     } catch (importError) {
       logger.error('Importfehler. Datei wird gelöscht.', importError);
-      fs.promises.unlink(filePath, (err) => {
-        if (err) {
-          logger.error('Fehler beim Löschen der Datei nach Importfehler:', err);
+      fs.promises.unlink(filePath, (unlinkErr) => {
+        if (unlinkErr) {
+          logger.error('Fehler beim Löschen der Datei nach Importfehler:', unlinkErr);
         }
       });
       return res.status(500).json({ message: `Import fehlgeschlagen: ${importError.message}` });

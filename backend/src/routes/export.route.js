@@ -8,7 +8,6 @@ import {
   exportElectionDefinitionRoute,
 } from '../service/export.service.js';
 
-const router = express.Router();
 // Constants
 const RESULT_ID_SUBSTRING_LENGTH = 8;
 

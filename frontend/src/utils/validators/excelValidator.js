@@ -1,4 +1,8 @@
-import { electionConfigSchema } from '../../schemas/election.schema.js';
+import {
+  electionConfigSchema,
+  ELECTION_TYPE_MAPPING,
+  COUNTING_METHOD_MAPPING,
+} from '../../schemas/election.schema.js';
 import { parseElectionExcel } from '../parsers/excelParser.js';
 import { logger } from '../../conf/logger/logger.js';
 import { MAX_FILE_SIZE } from './constants.js';
@@ -41,30 +45,44 @@ export const validateElectionExcel = async (file) => {
   if (!parseResult.success) {
     return {
       success: false,
-      errors: parseResult.errors,
+      errors: parseResult.errors || [
+        { message: 'Unbekannter Parsing-Fehler', code: 'PARSE_ERROR' },
+      ],
     };
   }
 
   const { data } = parseResult;
+  const infoData = data.info || {};
 
   // Step 2: Prepare data for validation
-  // Template uses horizontal table format for "Wahlen" sheet
-  // Parser returns first row as object
-
   const preparedInfo = {
-    'Wahl Kennung': data.info['Wahl Kennung'] || '',
-    Info: data.info.Info || '',
-    Listen: data.info.Listen || '',
-    Plätze: data.info.Plätze ? parseInt(data.info.Plätze, 10) : 0,
-    'max. Kum.': data.info['max. Kum.'] ? parseInt(data.info['max. Kum.'], 10) : 0,
-    'Berechtigt (leer = alle)': data.info['Berechtigt (leer = alle)'] || '',
-    'Fakultät(en)': data.info['Fakultät(en)'] || '',
-    'Studiengänge (Komma-getrennt)': data.info['Studiengänge (Komma-getrennt)'] || '',
+    // Neue Excel: "Kennung", Alte Excel: "Wahl Kennung"
+    Kennung: infoData['Kennung'] || infoData['Wahl Kennung'] || '',
+
+    Info: infoData.Info || '',
+
+    // Listen (String oder Zahl behandeln)
+    Listen: infoData.Listen ? String(infoData.Listen) : '0',
+
+    Plätze: infoData.Plätze,
+
+    'Stimmen pro Zettel': infoData['Stimmen pro Zettel'],
+
+    'max. Kum.': infoData['max. Kum.'],
+
+    Wahltyp: infoData['Wahltyp'],
+
+    Zählverfahren: infoData['Zählverfahren'],
+
+    // Fallback auf "Heute", falls Datum fehlt (wird vom Schema validiert/gecoerced)
+    Startzeitpunkt:
+      infoData['Wahlzeitraum von'] || infoData['Startzeitpunkt'] || new Date().toISOString(),
+    Endzeitpunkt: infoData['bis'] || infoData['Endzeitpunkt'] || new Date().toISOString(),
   };
 
   const preparedData = {
     info: preparedInfo,
-    candidates: data.candidates,
+    candidates: data.candidates || [],
   };
 
   // Step 3: Validate with Zod schema
@@ -72,21 +90,21 @@ export const validateElectionExcel = async (file) => {
 
   if (!validationResult.success) {
     const errors = [];
+    const zodErrors = validationResult.error?.errors || [];
 
-    validationResult.error.errors.forEach((error) => {
+    zodErrors.forEach((error) => {
       const path = error.path;
       let sheet = null;
       let row = null;
       let field = null;
 
-      // Determine which sheet the error belongs to
       if (path[0] === 'info') {
         sheet = 'Wahlen';
         field = path[1] || null;
       } else if (path[0] === 'candidates') {
         sheet = 'Listenvorlage';
         if (path.length > 1 && typeof path[1] === 'number') {
-          row = path[1] + 2; // +2 for header and 0-index
+          row = path[1] + 2;
           field = path[2] || null;
         } else {
           field = null;
@@ -108,10 +126,8 @@ export const validateElectionExcel = async (file) => {
     };
   }
 
-  // Step 4: Additional cross-field validations
-
-  // Check for duplicate candidate names (only if candidates exist)
-  if (validationResult.data.candidates.length > 0) {
+  // Step 4: Cross-field validations (Duplicates)
+  if (validationResult.data.candidates && validationResult.data.candidates.length > 0) {
     const candidateNames = new Map();
     const duplicateCandidateErrors = [];
 
@@ -139,28 +155,57 @@ export const validateElectionExcel = async (file) => {
   }
 
   // Step 5: Calculate statistics
+  const validatedInfo = validationResult.data.info;
   const candidateCount = validationResult.data.candidates.length;
-  const seats = validationResult.data.info.Plätze;
-  const isReferendum = candidateCount === 0;
+
+  const dbElectionType = ELECTION_TYPE_MAPPING[validatedInfo['Wahltyp']] || 'unknown';
+  const dbCountingMethod = COUNTING_METHOD_MAPPING[validatedInfo['Zählverfahren']] || 'unknown';
+
+  // HELPER: Datum für die UI in String umwandeln (behebt den React Fehler)
+  const formatDateForUI = (dateVal) => {
+    if (!dateVal) return '';
+    try {
+      const d = new Date(dateVal);
+      // Gibt z.B. "04.12.2025" zurück
+      return d.toLocaleDateString('de-DE', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      });
+    } catch (e) {
+      return String(dateVal);
+    }
+  };
+
   /*eslint-disable*/
   return {
     success: true,
-    data: validationResult.data,
+    data: {
+      ...validationResult.data,
+      info: {
+        ...validatedInfo,
+        election_type_db: dbElectionType,
+        counting_method_db: dbCountingMethod,
+      },
+    },
     stats: {
-      electionName: validationResult.data.info['Wahl Kennung'],
-      electionInfo: validationResult.data.info.Info,
+      electionName: validatedInfo['Kennung'],
+      electionInfo: validatedInfo.Info,
       totalCandidates: candidateCount,
-      seats,
-      maxCumulative: validationResult.data.info['max. Kum.'],
-      candidateList: isReferendum
-        ? 'Urabstimmung (Ja/Nein)'
-        : validationResult.data.candidates
-            .map((c) => `${c.Nr}. ${c.Vorname} ${c.Nachname}`)
-            .join(', '),
-      faculties: validationResult.data.info['Fakultät(en)'] || 'Alle',
-      programs: validationResult.data.info['Studiengänge (Komma-getrennt)'] || 'Alle',
-      eligibility: validationResult.data.info['Berechtigt (leer = alle)'] || 'Alle',
-      type: isReferendum ? 'Urabstimmung' : 'Personenwahl',
+      seats: validatedInfo.Plätze,
+      maxCumulative: validatedInfo['max. Kum.'],
+      candidateList:
+        candidateCount === 0
+          ? 'Urabstimmung (Ja/Nein)'
+          : validationResult.data.candidates
+              .map((c) => `${c.Nr}. ${c.Vorname} ${c.Nachname}`)
+              .join(', '),
+      type: validatedInfo['Wahltyp'],
+      countingMethod: validatedInfo['Zählverfahren'],
+
+      // FIX: Hier rufen wir die Formatierungsfunktion auf -> liefert Strings
+      startDate: formatDateForUI(validatedInfo['Startzeitpunkt']),
+      endDate: formatDateForUI(validatedInfo['Endzeitpunkt']),
     },
   };
 };
