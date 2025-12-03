@@ -3,8 +3,6 @@ import { Client } from 'ldapts';
 import { checkAdminOrCommittee } from '../auth.js';
 import { logger } from '../../conf/logger/logger.js';
 
-const { ADMIN_PASSWORD_LDAP, ADMIN_DN } = process.env;
-
 export const ldapStrategy = new Strategy(async (username, password, done) => {
   const user = await login(username, password);
   if (!user) {
