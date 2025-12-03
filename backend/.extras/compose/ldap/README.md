@@ -73,3 +73,15 @@ PHPLDAPADMIN_LDAP_ADMIN_PASSWORD – Passwort des Admins (muss identisch mit LDA
 + docker compose up   #starten des docker containers
 - docker compose down #stoppen des docker containers
 ```
+
+## phpLDAPadmin
+
+```text
+nache dem Login in LDAP im Browser:
+http://localhost:6443/
+solltenfolgende Schritte ausgeführt werden:
+  - Oben Links gibt es einen reiter import, dort kann man zuerst die ou.ldif datei hochladen um das grundgerueste setup zu erzeugen.
+  - Dann kann man die users.ldif datei hochladen um die normalen LDAP-Benutzer zu erstellen.
+  - jetzt sollte man auf jeden angelegten user und das passwort updaten. Z.B. p eintragen auf updaten klicken und dann commiten.
+  jetzt kann man sich anmelden, mit der uid und dem passwort.
+```
