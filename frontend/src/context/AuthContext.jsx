@@ -33,7 +33,7 @@ export const useAuth = () => {
  * @returns {React.ReactElement} Provider component
  */
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(() => authService.getCurrentUser());
+  const [user, setUser] = useState(undefined);
   const [isAuthenticated, setIsAuthenticated] = useState(() => authService.isAuthenticated());
   const [loading, setLoading] = useState(true);
 
@@ -45,15 +45,29 @@ export const AuthProvider = ({ children }) => {
    */
   const logout = async () => {
     try {
-      const response = await api.delete('/auth/logout', { withCredentials: true });
-      const redirectUrl = response.data.redirectUrl;
-      localStorage.removeItem('csrfToken');
-      window.location.href = redirectUrl; // Browser folgt Redirect → Keycloak-Session wird beendet
-    } catch {
-      throw new Error('Logout failed');
-    } finally {
+      // Clear state BEFORE making the API call to prevent any race conditions
       setUser(undefined);
       setIsAuthenticated(false);
+      localStorage.removeItem('csrfToken');
+      sessionStorage.removeItem('isAuthenticated');
+
+      const response = await api.delete('/auth/logout', { withCredentials: true });
+      const redirectUrl = response.data.redirectUrl;
+
+      // Replace the current history entry so "back" button won't work
+      window.history.replaceState(null, '', '/login');
+
+      // Hard redirect to Keycloak logout
+      window.location.href = redirectUrl;
+    } catch {
+      // Even if logout fails, clear local state
+      setUser(undefined);
+      setIsAuthenticated(false);
+      localStorage.removeItem('csrfToken');
+      sessionStorage.removeItem('isAuthenticated');
+
+      // Redirect to login page
+      window.location.href = '/login';
     }
   };
 
@@ -120,6 +134,7 @@ export const AuthProvider = ({ children }) => {
       const user = await authService.login(username, password);
       setUser(user);
       setIsAuthenticated(true);
+      sessionStorage.setItem('isAuthenticated', 'true');
 
       logger.debug(`CSRF From local storage: ${localStorage.getItem('csrfToken')}`);
 

@@ -1,10 +1,12 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext.jsx';
+import { AlertProvider } from './context/AlertContext.jsx';
 import Login from './pages/Login';
 import Home from './pages/Home';
 import AuthCallback from './pages/AuthCallback';
 import Admin from './pages/Admin';
-import { AlertProvider } from './context/AlertContext.jsx';
+import api from './services/api.js';
 
 //NEU
 import AuditLogPage from './pages/AuditLogPage.jsx';
@@ -19,7 +21,28 @@ import AuditLogPage from './pages/AuditLogPage.jsx';
  * @returns Authenticated content, loading spinner, or redirect to /login
  */
 const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, logout } = useAuth();
+  const location = useLocation();
+
+  // Validate session on every route change
+  useEffect(() => {
+    const validateOnNavigation = async () => {
+      try {
+        const { data } = await api.get('/auth/me', { withCredentials: true });
+        if (!data?.authenticated) {
+          // Session is invalid, force logout
+          logout();
+        }
+      } catch {
+        // API call failed, user is not authenticated
+        logout();
+      }
+    };
+
+    if (isAuthenticated) {
+      validateOnNavigation();
+    }
+  }, [location.pathname, isAuthenticated, logout]);
 
   if (loading) {
     return (
