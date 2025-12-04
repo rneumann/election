@@ -95,7 +95,7 @@ export const Alert = ({
       {/* Content */}
       <div className="flex-1 overflow-auto">
         {cleanedVotes === undefined ? (
-          <p className="text-red-500 font-bold">Wahl wird ungültig abgegeben!</p>
+          <p className="text-red-500 font-bold">Ihr Stimmzettel wird ungültig abgegeben!</p>
         ) : Object.keys(cleanedVotes).length === 0 ? (
           <p className="text-gray-300">Keine Stimmen vergeben.</p>
         ) : (
@@ -117,20 +117,35 @@ export const Alert = ({
 
       {/* Footer */}
       <div className="mt-4 flex justify-end">
-        <ResponsiveButton
-          disabled={showSpinner}
-          onClick={() => {
-            handleOnSubmit();
-          }}
-          size="small"
-          className="text-white rounded-lg px-4 py-2 transition flex items-center gap-2"
-        >
-          {showSpinner ? (
-            <Spinner size={18} thickness={3} color="border-white" />
-          ) : (
-            'Abstimmung bestätigen'
-          )}
-        </ResponsiveButton>
+        <div className="w-full flex justify-between">
+          <div className="flex items-center gap-2 sm:gap-3 justify-start">
+            <ResponsiveButton
+              size="small"
+              onClick={() => setShowAlert(false)}
+              disabled={showSpinner}
+              className="text-white"
+              variant="outline"
+            >
+              zurück
+            </ResponsiveButton>
+          </div>
+          <div className="flex items-center gap-2 sm:gap-3 justify-end">
+            <ResponsiveButton
+              disabled={showSpinner}
+              onClick={() => {
+                handleOnSubmit();
+              }}
+              size="small"
+              className="text-white rounded-lg px-4 py-2 transition flex items-center gap-2"
+            >
+              {showSpinner ? (
+                <Spinner size={18} thickness={3} color="border-white" />
+              ) : (
+                'Abstimmung bestätigen'
+              )}
+            </ResponsiveButton>
+          </div>
+        </div>
       </div>
     </div>
   );
