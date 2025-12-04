@@ -10,7 +10,6 @@ export const parseElectionExcel = async (file) => {
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.load(arrayBuffer);
 
-    // Sheets prüfen
     const actualSheets = workbook.worksheets.map((ws) => ws.name);
     const requiredSheets = [EXPECTED_SHEET_NAMES.INFO, EXPECTED_SHEET_NAMES.CANDIDATES];
     const missingSheets = requiredSheets.filter((sheet) => !actualSheets.includes(sheet));
@@ -30,10 +29,7 @@ export const parseElectionExcel = async (file) => {
     const infoSheet = workbook.getWorksheet(EXPECTED_SHEET_NAMES.INFO);
     const candidatesSheet = workbook.getWorksheet(EXPECTED_SHEET_NAMES.CANDIDATES);
 
-    // --- PARSE WAHLEN SHEET (Metadaten) ---
-    // Wir suchen dynamisch nach der Kopfzeile und den Datumsfeldern
-
-    let infoHeaders = {}; // Map: SpaltenIndex -> Name (z.B. 7 -> "Wahltyp")
+    let infoHeaders = {};
     let infoDataRow = null;
     let startDate = null;
     let endDate = null;
@@ -42,26 +38,22 @@ export const parseElectionExcel = async (file) => {
       row.eachCell((cell, colNumber) => {
         const val = cell.value ? String(cell.value).trim() : '';
 
-        // 1. Datum suchen (steht oft oben links/rechts)
         if (val === 'Wahlzeitraum von') startDate = row.getCell(colNumber + 2).value; // Annahme: Wert steht 2 Spalten weiter
         if (val === 'bis') endDate = row.getCell(colNumber + 2).value;
 
-        // 2. Kopfzeile finden (Zeile beginnt mit Kennung oder Wahl Kennung)
         if (val === 'Kennung' || val === 'Wahl Kennung') {
-          // Header-Zeile gefunden! Alle Spaltennamen speichern
           row.eachCell((headerCell, headerCol) => {
             const headerName = String(headerCell.value).trim();
             // eslint-disable-next-line security/detect-object-injection
             if (headerName) infoHeaders[headerCol] = headerName;
           });
 
-          // Die eigentlichen DATEN stehen direkt in der Zeile darunter
           const dataRow = infoSheet.getRow(rowNumber + 1);
           if (dataRow) {
             infoDataRow = {};
             dataRow.eachCell((dataCell, dataCol) => {
               // eslint-disable-next-line security/detect-object-injection
-              const key = infoHeaders[dataCol]; // Wir nutzen den Namen aus dem Header, nicht den Index!
+              const key = infoHeaders[dataCol];
               if (key) {
                 let value = dataCell.value;
                 if (value && typeof value === 'object' && value.result !== undefined)
@@ -76,11 +68,9 @@ export const parseElectionExcel = async (file) => {
     });
 
     const info = infoDataRow || {};
-    // Datums-Fallback, falls nicht gefunden oder nicht gesetzt
     if (startDate) info['Startzeitpunkt'] = startDate;
     if (endDate) info['Endzeitpunkt'] = endDate;
 
-    // --- PARSE LISTENVORLAGE SHEET (Kandidaten) ---
     const candidatesRaw = [];
     let candidateHeaders = [];
 

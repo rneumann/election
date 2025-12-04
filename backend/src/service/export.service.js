@@ -102,6 +102,14 @@ export const exportBallotsRoute = async (req, res, next) => {
 
     const workbook = createBasicWorkbook(SHEET_BALLOTS, ['Ballot ID', 'Candidate ID'], rows);
 
+    writeAuditLog({
+      actionType: 'ELECTION_RESULTS_EXPORTED',
+      level: 'INFO',
+      actorId: req.user.username,
+      actorRole: req.user.role,
+      details: { electionId: electionId, type: 'total_results' },
+    }).catch((e) => logger.error(e));
+
     await streamWorkbook(workbook, res, `election-anonymized-ballots-${electionId}.xlsx`);
   } catch (err) {
     logger.error('Error exporting ballots:', err);
@@ -205,6 +213,14 @@ export const exportElectionDefinitionRoute = async (req, res, next) => {
         ' ',
       ]);
     }
+
+    writeAuditLog({
+      actionType: 'ELECTION_RESULTS_EXPORTED',
+      level: 'INFO',
+      actorId: req.user.username,
+      actorRole: req.user.role,
+      details: { electionId: electionId, type: 'total_results' },
+    }).catch((e) => logger.error(e));
 
     await streamWorkbook(workbook, res, `election-definition-${endDate}.xlsx`);
   } catch (err) {
