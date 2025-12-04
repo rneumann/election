@@ -1,8 +1,11 @@
+/* eslint-disable security/detect-object-injection */
 import ExcelJS from 'exceljs';
 import { EXPECTED_SHEET_NAMES } from '../../schemas/election.schema.js';
 
 /**
  * Parse Excel file containing election configuration.
+ * @param {File} file - The Excel file to parse.
+ * @returns {Promise<{success: boolean, data?: {info: Object, candidates: Array}, sheets?: Array, errors?: Array}>}
  */
 export const parseElectionExcel = async (file) => {
   try {
@@ -38,13 +41,19 @@ export const parseElectionExcel = async (file) => {
       row.eachCell((cell, colNumber) => {
         const val = cell.value ? String(cell.value).trim() : '';
 
-        if (val === 'Wahlzeitraum von') startDate = row.getCell(colNumber + 2).value;
-        if (val === 'bis') endDate = row.getCell(colNumber + 2).value;
+        if (val === 'Wahlzeitraum von') {
+          startDate = row.getCell(colNumber + 2).value;
+        }
+        if (val === 'bis') {
+          endDate = row.getCell(colNumber + 2).value;
+        }
 
         if (val === 'Kennung' || val === 'Wahl Kennung') {
           row.eachCell((headerCell, headerCol) => {
             const headerName = String(headerCell.value).trim();
-            if (headerName) infoHeaders[headerCol] = headerName;
+            if (headerName) {
+              infoHeaders[headerCol] = headerName;
+            }
           });
 
           const dataRow = infoSheet.getRow(rowNumber + 1);
@@ -54,8 +63,9 @@ export const parseElectionExcel = async (file) => {
               const key = infoHeaders[dataCol]; // Wir nutzen den Namen aus dem Header, nicht den Index!
               if (key) {
                 let value = dataCell.value;
-                if (value && typeof value === 'object' && value.result !== undefined)
+                if (value && typeof value === 'object' && value.result !== undefined) {
                   value = value.result;
+                }
                 infoDataRow[key] = value;
               }
             });
@@ -65,8 +75,12 @@ export const parseElectionExcel = async (file) => {
     });
 
     const info = infoDataRow || {};
-    if (startDate) info['Startzeitpunkt'] = startDate;
-    if (endDate) info['Endzeitpunkt'] = endDate;
+    if (startDate) {
+      info['Startzeitpunkt'] = startDate;
+    }
+    if (endDate) {
+      info['Endzeitpunkt'] = endDate;
+    }
     const candidatesRaw = [];
     let candidateHeaders = [];
 
@@ -81,13 +95,18 @@ export const parseElectionExcel = async (file) => {
         const header = candidateHeaders[colNumber - 1];
         if (header) {
           let value = cell.value;
-          if (value && typeof value === 'object' && value.result !== undefined)
+          if (value && typeof value === 'object' && value.result !== undefined) {
             value = value.result;
+          }
           rowData[header] = value === null || value === undefined ? '' : String(value);
-          if (String(value).trim() !== '') hasData = true;
+          if (String(value).trim() !== '') {
+            hasData = true;
+          }
         }
       });
-      if (hasData) candidatesRaw.push(rowData);
+      if (hasData) {
+        candidatesRaw.push(rowData);
+      }
     });
 
     const candidates = candidatesRaw.map((row) => ({
