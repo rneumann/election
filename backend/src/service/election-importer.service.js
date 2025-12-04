@@ -2,10 +2,6 @@ import ExcelJS from 'exceljs';
 import { logger } from '../conf/logger/logger.js';
 import { client } from '../database/db.js';
 
-/**
- * Mapping tables for election configuration.
- * These mappings convert German text values from Excel dropdowns to database values.
- */
 const ELECTION_TYPE_MAPPING = new Map([
   ['Mehrheitswahl', 'majority_vote'],
   ['Verhältniswahl', 'proportional_representation'],
@@ -22,34 +18,11 @@ const COUNTING_METHOD_MAPPING = new Map([
 
 /**
  * Imports election data from an Excel file into the database.
+ * Parses the Excel file row by row and inserts valid elections.
  *
- * The Excel file is expected to have the following structure:
- * - D3: Global start date (required)
- * - D4: Global end date (required)
- *   A: Identifier
- *   B: Election info/description
- *   C: List vote flag ('1' for true)
- *   D: Seats per ballot
- *   E: Maximum cumulative votes
- *   H: Election type (text from dropdown - see ELECTION_TYPE_MAPPING)
- *   I: Counting method (text from dropdown - see COUNTING_METHOD_MAPPING)
- *
- * Election Type Values (Column H):
- *   - Mehrheitswahl
- *   - Verhältniswahl
- *   - Urabstimmung
- *
- * Counting Method Values (Column I):
- *   - Sainte-Laguë
- *   - Hare-Niemeyer
- *   - Einfache Mehrheit
- *   - Absolute Mehrheit
- *   - Ja/Nein/Enthaltung
- *
- * @async
- * @param {string} filePath - Path to the Excel file to import
- * @throws Will throw an error if the file cannot be read, required cells are missing,
- *         or a database operation fails
+ * @param {string} filePath - Path to the Excel file
+ * @returns {Promise<number>} Number of successfully imported elections
+ * @throws {Error} If file reading fails or validation errors occur
  */
 export const importElectionData = async (filePath) => {
   const db = await client.connect();
@@ -58,106 +31,68 @@ export const importElectionData = async (filePath) => {
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.readFile(filePath);
 
-    const sheet = workbook.worksheets[0];
-    if (!sheet) {
-      throw new Error('This workbook has no worksheets.');
+    const electionSheet = workbook.worksheets[0];
+    if (!electionSheet) {
+      throw new Error('Die Excel-Datei ist leer.');
     }
 
-    const startDateStr = sheet.getCell('D3').value;
-    const endDateStr = sheet.getCell('D4').value;
+    const startDateStr = electionSheet.getCell('D3').value;
+    const endDateStr = electionSheet.getCell('D4').value;
 
     if (!startDateStr || !endDateStr) {
-      throw new Error('Start or end date missing expected in D3 and D4.');
+      throw new Error('Start- oder Enddatum fehlt (erwartet in Zellen D3 und D4).');
     }
 
     const startDate = parseDate(startDateStr);
     const endDate = parseDate(endDateStr);
 
-    logger.info(`Importing elections for period ${startDate} → ${endDate}`);
+    logger.info(`Importiere Wahlen für Zeitraum: ${startDate} -> ${endDate}`);
 
     await db.query('BEGIN');
 
+    const electionIdMap = new Map();
     let rowIndex = 8;
+    let importedCount = 0;
 
-    while (sheet.getCell(`A${rowIndex}`).value) {
-      const identifier = sheet.getCell(`A${rowIndex}`).value;
-      const info = sheet.getCell(`B${rowIndex}`).value;
-      const listVote = sheet.getCell(`C${rowIndex}`).value == '1';
-      const seatsValue = sheet.getCell(`D${rowIndex}`).value || 1;
-      const maxKum = sheet.getCell(`E${rowIndex}`).value ?? 0;
-      const electionTypeText = sheet.getCell(`H${rowIndex}`).value?.toString().trim();
-      const countingMethodText = sheet.getCell(`I${rowIndex}`).value?.toString().trim();
-      const listvotes = listVote ? 1 : 0;
+    while (electionSheet.getCell(`A${rowIndex}`).value) {
+      const identifier = electionSheet.getCell(`A${rowIndex}`).value?.toString();
+      const info = electionSheet.getCell(`B${rowIndex}`).value?.toString() || '';
+      const listValRaw = electionSheet.getCell(`C${rowIndex}`).value;
+      const listvotes =
+        listValRaw == 1 || listValRaw == '1' || listValRaw === true ? 1 : parseInt(listValRaw) || 0;
+      const seatsValue = electionSheet.getCell(`D${rowIndex}`).value;
+      const votesPerBallotValue = electionSheet.getCell(`E${rowIndex}`).value;
+      const maxKumValue = electionSheet.getCell(`F${rowIndex}`).value;
+      const electionTypeText = electionSheet.getCell(`G${rowIndex}`).value?.toString().trim();
+      const countingMethodText = electionSheet.getCell(`H${rowIndex}`).value?.toString().trim();
+
       const seatsToFill = Number(seatsValue);
-      const votesPerBallot = Number(seatsValue); // Column D: seats/votes per ballot
-      const maxCumulativeVotes = Number(maxKum) || 0;
+      const votesPerBallot = votesPerBallotValue ? Number(votesPerBallotValue) : seatsToFill;
+      const maxCumulativeVotes = Number(maxKumValue) || 0;
 
-      // Validate seats_to_fill
       if (!Number.isInteger(seatsToFill) || seatsToFill < 1) {
-        throw new Error(
-          `Invalid seats_to_fill in row ${rowIndex}: must be a positive integer, got ${seatsValue}`,
-        );
+        throw new Error(`Zeile ${rowIndex}: 'Plätze' ungültig.`);
       }
-
-      // Validate votes_per_ballot
-      if (!Number.isInteger(votesPerBallot) || votesPerBallot < 1) {
-        throw new Error(
-          `Invalid votes_per_ballot in row ${rowIndex}: must be a positive integer, got ${seatsValue}`,
-        );
-      }
-
-      // Validate and map election type
-      if (!electionTypeText) {
-        throw new Error(
-          `Missing election_type (column H) in row ${rowIndex}. Expected: Mehrheitswahl, Verhältniswahl, or Urabstimmung.`,
-        );
-      }
-
       const electionType = ELECTION_TYPE_MAPPING.get(electionTypeText);
       if (!electionType) {
-        const validTypes = [...ELECTION_TYPE_MAPPING.keys()].join(', ');
-        throw new Error(
-          `Invalid election_type '${electionTypeText}' in row ${rowIndex}. Valid values: ${validTypes}`,
-        );
+        throw new Error(`Zeile ${rowIndex}: Unbekannter Wahltyp '${electionTypeText}'`);
       }
-
-      // Validate and map counting method
-      if (!countingMethodText) {
-        throw new Error(
-          `Missing counting_method (column I) in row ${rowIndex}. Expected: Sainte-Laguë, Hare-Niemeyer, Einfache Mehrheit, Absolute Mehrheit, or Ja/Nein/Enthaltung.`,
-        );
-      }
-
       const countingMethod = COUNTING_METHOD_MAPPING.get(countingMethodText);
       if (!countingMethod) {
-        const validMethods = [...COUNTING_METHOD_MAPPING.keys()].join(', ');
-        throw new Error(
-          `Invalid counting_method '${countingMethodText}' in row ${rowIndex}. Valid values: ${validMethods}`,
-        );
+        throw new Error(`Zeile ${rowIndex}: Unbekanntes Zählverfahren '${countingMethodText}'`);
       }
-
-      logger.info(
-        `Row ${rowIndex}: ${info} → election_type=${electionType}, counting_method=${countingMethod}`,
-      );
+      logger.info(`Zeile ${rowIndex}: Importiere Wahl "${identifier}"`);
 
       const insertElectionQuery = `
         INSERT INTO elections (
-          info,
-          description,
-          listvotes,
-          seats_to_fill,
-          votes_per_ballot,
-          max_cumulative_votes,
-          start,
-          "end",
-          election_type,
-          counting_method
+          info, description, listvotes, seats_to_fill, votes_per_ballot, 
+          max_cumulative_votes, start, "end", election_type, counting_method
         )
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
         RETURNING id;
       `;
 
-      await db.query(insertElectionQuery, [
+      const res = await db.query(insertElectionQuery, [
         info,
         identifier,
         listvotes,
@@ -170,14 +105,87 @@ export const importElectionData = async (filePath) => {
         countingMethod,
       ]);
 
+      electionIdMap.set(identifier, res.rows[0].id);
       rowIndex++;
+      importedCount++;
+    }
+
+    if (workbook.worksheets.length > 1) {
+      const candidateSheet = workbook.worksheets[2];
+      logger.info(`Verarbeite Kandidaten aus Blatt "${candidateSheet.name}"...`);
+
+      let candRow = 2;
+      let candCount = 0;
+
+      while (candidateSheet.getCell(`A${candRow}`).value) {
+        const electionRef = candidateSheet.getCell(`A${candRow}`).value?.toString();
+        const electionUUID = electionIdMap.get(electionRef);
+
+        if (electionUUID) {
+          const lastname = candidateSheet.getCell(`D${candRow}`).value?.toString() || '';
+          const firstname = candidateSheet.getCell(`E${candRow}`).value?.toString() || '';
+          const matrNr = candidateSheet.getCell(`B${candRow}`).value?.toString() || '';
+          const faculty = candidateSheet.getCell(`C${candRow}`).value?.toString() || '';
+          const keywords = candidateSheet.getCell(`F${candRow}`).value?.toString() || '';
+          const notes = candidateSheet.getCell(`G${candRow}`).value?.toString() || '';
+
+          const admittedRaw = candidateSheet.getCell(`H${candRow}`).value;
+          const isAdmitted =
+            admittedRaw === false ||
+            String(admittedRaw).toLowerCase() === 'false' ||
+            String(admittedRaw).toLowerCase() === 'nein'
+              ? false
+              : true;
+
+          if (lastname) {
+            const insertCandidateQuery = `
+              INSERT INTO candidates 
+              (lastname, firstname, mtknr, faculty, keyword, notes, approved)
+              VALUES ($1, $2, $3, $4, $5, $6, $7)
+              RETURNING id
+            `;
+
+            const candRes = await db.query(insertCandidateQuery, [
+              lastname,
+              firstname,
+              matrNr,
+              faculty,
+              keywords,
+              notes,
+              isAdmitted,
+            ]);
+
+            const newCandidateId = candRes.rows[0].id;
+
+            const linkQuery = `
+              INSERT INTO electioncandidates (electionId, candidateId, listnum)
+              VALUES ($1, $2, $3)
+            `;
+
+            await db.query(linkQuery, [electionUUID, newCandidateId, candCount]);
+            candCount++;
+          }
+        } else {
+          if (electionRef) {
+            logger.warn(`Zeile ${candRow}: Unbekannte Wahl-Referenz "${electionRef}".`);
+          }
+        }
+        candRow++;
+      }
+      logger.info(`${candCount} Kandidaten importiert und verknüpft.`);
     }
 
     await db.query('COMMIT');
-    logger.info('Election import completed.');
+    return importedCount;
   } catch (err) {
     await db.query('ROLLBACK');
-    logger.error('Error during Excel import:', err);
+    logger.error('Fehler beim Excel-Import:', err);
+
+    if (err.message.includes('relation "electioncandidates" does not exist')) {
+      throw new Error(
+        "Datenbankfehler: Tabelle 'electioncandidates' nicht gefunden. Prüfen Sie, ob sie 'election_candidates' heißt.",
+      );
+    }
     throw err;
   } finally {
     db.release();
@@ -185,13 +193,9 @@ export const importElectionData = async (filePath) => {
 };
 
 /**
- * Parse a date from a string or Date object.
- * If a string, it will be parsed as follows:
- * - 'DD.MM.YYYY' will be parsed as-is
- * - If no match, it will be tried to parse as a standard date string
- * If a Date object, it will be returned as-is
- * @param {string|Date} value - The value to parse
- * @returns {Date} The parsed date
+ * Parses a date from various formats.
+ * @param {*} value
+ * @returns
  */
 const parseDate = (value) => {
   if (value instanceof Date) {

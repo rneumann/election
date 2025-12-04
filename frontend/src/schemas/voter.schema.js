@@ -6,19 +6,8 @@ import { z } from 'zod';
  *
  * Expected CSV format:
  * RZ-Kennung,Fakultät,Vorname,Nachname,Matk.Nr,Studienganskürzel,Studiengang
- *
- * Database mapping:
- * - uid: RZ-Kennung (unique identifier)
- * - faculty: Fakultät
- * - firstname: Vorname
- * - lastname: Nachname
- * - mtknr: Matk.Nr (matriculation number)
  */
 
-/**
- * Schema for a single voter record.
- * All fields are required except notes.
- */
 export const voterSchema = z.object({
   'RZ-Kennung': z
     .string()
@@ -75,7 +64,6 @@ export const voterSchema = z.object({
 
 /**
  * Schema for validating an array of voter records.
- * Ensures at least one voter is present.
  */
 export const voterListSchema = z
   .array(voterSchema)

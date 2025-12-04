@@ -1,227 +1,122 @@
-import fs from 'fs';
-import multer from 'multer';
-import { logger } from '../conf/logger/logger.js';
-import { importVoterData } from '../service/voter-importer.service.js';
-import { importElectionData } from '../service/election-importer.service.js';
-// NEU: Audit Import
-import { writeAuditLog } from '../audit/auditLogger.js';
+import { Router } from 'express';
+import {
+  importWahlerRoute,
+  importElectionRoute,
+  importCandidateRoute,
+} from '../service/upload.service.js';
+import { ensureAuthenticated, ensureHasRole } from '../auth/auth.js';
+
+export const importRouter = Router();
+/**
+ * @openapi
+ * /api/upload/voters:
+ *   post:
+ *     summary: Upload voter list
+ *     description: Uploads a CSV or Excel file with voter data.
+ *     tags:
+ *       - Elections
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: header
+ *         name: X-CSRF-Token
+ *         required: true
+ *         description: CSRF token for security.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               file:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       200:
+ *         description: File uploaded successfully
+ *       400:
+ *         description: Bad request (no file, invalid file type/size)
+ *       401:
+ *         description: Unauthorized (not logged in)
+ *       403:
+ *         description: Forbidden (not an admin)
+ */
+importRouter.post('/voters', ensureAuthenticated, ensureHasRole(['admin']), importWahlerRoute);
 
 /**
- * Multer storage configuration for file uploads.
- * Files are stored in the local "uploads" directory.
- * The filename is prefixed with a timestamp to ensure uniqueness.
- *
- * @returns {multer.StorageEngine} Configured multer storage engine
+ * @openapi
+ * /api/upload/elections:
+ *   post:
+ *     summary: Upload election definitions
+ *     description: Uploads a CSV or Excel file with election definitions (Wahlen.csv).
+ *     tags:
+ *       - Elections
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: header
+ *         name: X-CSRF-Token
+ *         required: true
+ *         description: CSRF token for security.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               file:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       200:
+ *         description: Elections imported successfully
+ *       400:
+ *         description: Bad request (no file, invalid format)
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden (requires admin role)
+ *       500:
+ *         description: Import failed
  */
-const storage = multer.diskStorage({
-  /**
-   * Specifies the destination directory for uploaded files.
-   * @param {Object} req - Express request object
-   * @param {Object} file - Uploaded file metadata
-   * @param {Function} cb - Callback for multer
-   */
-  destination: (req, file, cb) => {
-    cb(null, './uploads');
-  },
 
-  /**
-   * Determines the filename for the stored file.
-   * @param {Object} req - Express request object
-   * @param {Object} file - Uploaded file metadata
-   * @param {Function} cb - Callback for multer
-   */
-  filename: (req, file, cb) => {
-    const uniqueName = file.originalname;
-    cb(null, uniqueName);
-  },
-});
+importRouter.post('/elections', ensureAuthenticated, ensureHasRole(['admin']), importElectionRoute);
 
 /**
- * File filter for validating accepted MIME types.
- * Only CSV and Excel files are allowed.
- *
- * @param {Object} req - The Express request object
- * @param {Object} file - File metadata provided by multer
- * @param {Function} cb - Callback to accept or reject the file
- * @returns {void}
+ * @openapi
+ * /api/upload/candidates:
+ *   post:
+ *     summary: Upload candidate directory (Excel/CSV)
+ *     tags:
+ *       - Elections
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: header
+ *         name: X-CSRF-Token
+ *         required: true
+ *         description: CSRF token for security.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               file:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       200:
+ *         description: File uploaded successfully
+ *       400:
+ *         description: File missing or invalid
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Internal server error
  */
-const fileFilter = (req, file, cb) => {
-  const allowed = [
-    'text/csv',
-    'application/vnd.ms-excel',
-    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  ];
 
-  if (!allowed.includes(file.mimetype)) {
-    logger.warn(`Invalid file type attempted: ${file.mimetype}`);
-    return cb(new Error('Only CSV or Excel files are allowed!'), false);
-  }
-
-  cb(null, true);
-};
-
-/**
- * Multer instance used for handling file uploads.
- * Limits file size to 5 MB and applies custom file filtering.
- *
- * @returns {multer.Multer} Configured multer instance
- */
-const mB = 5;
-const kB = 1024;
-
-const upload = multer({
-  storage,
-  limits: { fileSize: mB * kB * kB },
-  fileFilter,
-});
-
-/**
- * Route handler for importing voter data.
- * This route expects a POST request with multipart/form-data containing a file with the key "file".
- *
- * Behavior:
- * - Rejects invalid HTTP methods.
- * - Validates the file type and size.
- * - Stores the file on disk.
- * - Responds with metadata of the uploaded file.
- *
- * @async
- * @param {Object} req - The Express request object
- * @param {Object} res - The Express response object
- * @returns {Promise<Object>} JSON response indicating success or failure
- */
-export const importWahlerRoute = async (req, res) => {
-  logger.debug('Voter import route accessed');
-
-  if (req.method !== 'POST') {
-    logger.warn(`Invalid HTTP method used: ${req.method}`);
-    return res.status(405).json({ message: 'Method Not Allowed' });
-  }
-
-  upload.single('file')(req, res, async (err) => {
-    if (err) {
-      logger.error('File upload error:', err);
-      return res.status(400).json({ message: err.message });
-    }
-
-    if (!req.file) {
-      logger.warn('No file uploaded');
-      return res.status(400).json({ message: 'file is required' });
-    }
-
-    const filePath = req.file.path;
-    const fileMimeType = req.file.mimetype;
-
-    try {
-      logger.debug(`Datei gespeichert unter: ${filePath}`);
-      await importVoterData(filePath, fileMimeType);
-
-      fs.promises.unlink(filePath, (err) => {
-        if (err) {
-          logger.error('Fehler beim Löschen der Datei nach erfolgreichem Import:', err);
-        } else {
-          logger.debug(`Hochgeladene Datei erfolgreich gelöscht: ${filePath}`);
-        }
-      });
-
-      // NEU: Audit Log (Wählerimport erfolgreich)
-      await writeAuditLog({
-        actionType: 'VOTER_IMPORT_SUCCESS',
-        level: 'INFO',
-        actorId: req.user.username,
-        actorRole: req.user.role,
-        details: {
-          filename: req.file.originalname,
-          mimetype: req.file.mimetype,
-          size: req.file.size,
-        },
-      });
-
-      return res.status(200).json({
-        message: 'Wählerdaten erfolgreich hochgeladen und in die Datenbank importiert.',
-      });
-    } catch (importError) {
-      logger.error('Importfehler. Datei wird gelöscht.', importError);
-
-      fs.promises.unlink(filePath, (err) => {
-        if (err) {
-          logger.error('Fehler beim Löschen der Datei nach Importfehler:', err);
-        }
-      });
-
-      return res.status(500).json({ message: `Import fehlgeschlagen: ${importError.message}` });
-    }
-  });
-};
-
-/**
- * Express route handler for importing election definitions from an uploaded file.
- *
- * This route expects a POST request with multipart/form-data containing a file with the key "file".
- * It uses Multer to handle file uploads and calls `importElectionData` to parse and insert
- * the election data into the database.
- *
- * @async
- * @param {import('express').Request} req - Express request object
- * @param {import('express').Response} res - Express response object
- * @returns {Promise<import('express').Response>} JSON response with success or error message
- */
-export const importElectionRoute = async (req, res) => {
-  logger.debug('Election import route accessed');
-
-  if (req.method !== 'POST') {
-    logger.warn(`Invalid HTTP method used: ${req.method}`);
-    return res.status(405).json({ message: 'Method Not Allowed' });
-  }
-
-  upload.single('file')(req, res, async (err) => {
-    if (err) {
-      logger.error('File upload error:', err);
-      return res.status(400).json({ message: err.message });
-    }
-
-    if (!req.file) {
-      logger.warn('No file uploaded');
-      return res.status(400).json({ message: 'file is required' });
-    }
-
-    const filePath = req.file.path;
-
-    try {
-      logger.debug(`Wahldefinitionsdatei gespeichert unter: ${filePath}`);
-
-      await importElectionData(filePath);
-
-      fs.promises.unlink(filePath, (err) => {
-        if (err) {
-          logger.error('Fehler beim Löschen der Datei nach Import:', err);
-        }
-      });
-
-      // NEU: Audit Log (Wahldefinition importiert - KRITISCH!)
-      await writeAuditLog({
-        actionType: 'ELECTION_IMPORT_SUCCESS',
-        level: 'WARN',
-        actorId: req.user.username,
-        actorRole: req.user.role,
-        details: {
-          filename: req.file.originalname,
-        },
-      });
-
-      return res.status(200).json({
-        message: 'Wahldefinitionen erfolgreich importiert.',
-      });
-    } catch (importError) {
-      logger.error('Importfehler bei Wahldefinitionen. Datei wird gelöscht.', importError);
-
-      fs.promises.unlink(filePath, (err) => {
-        if (err) {
-          logger.error('Fehler beim Löschen der Datei nach Fehler:', err);
-        }
-      });
-
-      return res.status(500).json({ message: `Import fehlgeschlagen: ${importError.message}` });
-    }
-  });
-};
+importRouter.post('/candidates', ensureAuthenticated, ensureHasRole('admin'), importCandidateRoute);

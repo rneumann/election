@@ -1,11 +1,16 @@
 /* eslint-disable indent */
+/* eslint-disable sonarjs/no-duplicate-string */
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useTheme } from '../hooks/useTheme.js';
 import ResponsiveButton from '../components/ResponsiveButton.jsx';
 import ValidationErrors from '../components/ValidationErrors.jsx';
-import { validateVoterCSV } from '../utils/validators/csvValidator.js';
+import {
+  validateVoterCSV,
+  validateCandidateCSV,
+  transformCandidateFile,
+} from '../utils/validators/csvValidator.js';
 import { validateElectionExcel } from '../utils/validators/excelValidator.js';
 import { MAX_FILE_SIZE } from '../utils/validators/constants.js';
 import api, { exportElectionResultExcel } from '../services/api.js';
@@ -476,7 +481,8 @@ const CountingSection = ({
                                               )}
                                               {candidate.seats && (
                                                 <span className="ml-2 text-gray-600">
-                                                  · {candidate.seats} Sitze
+                                                  · {candidate.seats}{' '}
+                                                  {candidate.seats === 1 ? 'Sitz' : 'Sitze'}
                                                 </span>
                                               )}
                                             </div>
@@ -707,11 +713,13 @@ const AdminUpload = () => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [activeSection, setActiveSection] = useState('upload'); // 'upload' | 'manage' | 'counting'
+  const [activeSection, setActiveSection] = useState('upload'); // 'upload' | 'manage' | 'counting' | 'uploadCandidates'
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [validationErrors, setValidationErrors] = useState([]);
   const [validationStats, setValidationStats] = useState(null);
   const [isValidating, setIsValidating] = useState(false);
+
+  // const [clearingDatabase, setClearingDatabase] = useState(false);
 
   // Counting states
   const [elections, setElections] = useState([]);
@@ -788,26 +796,33 @@ const AdminUpload = () => {
     try {
       let validationResult;
 
-      if (fileType === 'csv') {
+      if (activeSection === 'uploadCandidates') {
+        if (fileType === 'csv') {
+          validationResult = await validateCandidateCSV(file);
+        } else {
+          validationResult = { success: true, stats: { info: 'Excel wird serverseitig geprüft' } };
+        }
+      } else if (activeSection === 'upload') {
         validationResult = await validateVoterCSV(file);
-      } else {
+      } else if (activeSection === 'definition') {
         validationResult = await validateElectionExcel(file);
+      } else {
+        validationResult = { success: true, stats: {} };
       }
 
       if (!validationResult.success) {
         setValidationErrors(validationResult.errors);
-        setSelectedFile(null); // Don't set file if validation fails
-        setError(
-          'Die Datei enthält Validierungsfehler. Bitte korrigieren Sie diese und versuchen Sie es erneut.',
-        );
+        setSelectedFile(null);
+        setError('Die Datei enthält Validierungsfehler.');
       } else {
-        setSelectedFile(file); // Only set file if validation succeeds
+        setSelectedFile(file);
         setValidationStats(validationResult.stats);
         setSuccess('Datei erfolgreich validiert! Sie können nun hochladen.');
       }
-    } catch (validationError) {
-      setSelectedFile(null); // Don't set file on validation error
-      setError(`Validierungsfehler: ${validationError.message}`);
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error(err);
+      setError(`Fehler bei der Validierung: ${err.message}`);
     } finally {
       setIsValidating(false);
     }
@@ -873,7 +888,6 @@ const AdminUpload = () => {
       return;
     }
 
-    // Prevent upload if validation errors exist
     if (validationErrors.length > 0) {
       setError('Bitte korrigieren Sie zuerst die Validierungsfehler.');
       return;
@@ -884,42 +898,78 @@ const AdminUpload = () => {
     setSuccess('');
     setUploadProgress(0);
 
+    // Wir starten den try-Block früher, um auch Fehler bei der Transformation abzufangen
     try {
-      // Simulate upload progress
-      const progressInterval = setInterval(() => {
-        setUploadProgress((prev) => {
-          if (prev >= 90) {
-            clearInterval(progressInterval);
-            return 90;
-          }
-          return prev + 10;
-        });
-      }, 200);
+      // 1. Transformations-Logik
+      // Standardmäßig nehmen wir die ausgewählte Datei
+      let fileToUpload = selectedFile;
 
-      // TODO: Replace with actual backend API call
-      // Example:
-      // const formData = new FormData();
-      // formData.append('file', selectedFile);
-      // const response = await api.post('/upload/voters', formData);
+      // Nur wenn wir im Kandidaten-Upload sind, führen wir die Transformation durch
+      if (activeSection === 'uploadCandidates') {
+        // eslint-disable-next-line no-console
+        console.log('Starte Transformation der Kandidaten-Datei...');
+        // Hier wird aus "Nachname" -> "lastname" etc.
+        fileToUpload = await transformCandidateFile(selectedFile);
+        // eslint-disable-next-line no-console
+        console.log('Transformation abgeschlossen:', fileToUpload.name);
+      }
 
-      // Simulate backend call
-      await new Promise((resolve) => {
-        return setTimeout(resolve, 2000);
+      // 2. FormData mit der (ggf. transformierten) Datei erstellen
+      const formData = new FormData();
+      formData.append('file', fileToUpload);
+
+      const csrfToken = localStorage.getItem('csrfToken') || '';
+
+      // 3. Endpoint wählen
+      let endpoint = '';
+      switch (activeSection) {
+        case 'upload':
+          endpoint = '/upload/voters';
+          break;
+        case 'uploadCandidates':
+          endpoint = '/upload/candidates';
+          break;
+        case 'definition':
+          endpoint = '/upload/elections';
+          break;
+        default:
+          throw new Error('Unbekannter Upload-Typ');
+      }
+
+      // 4. API Request senden
+      const response = await api.post(endpoint, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          'X-CSRF-TOKEN': csrfToken,
+        },
+        onUploadProgress: (progressEvent) => {
+          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          setUploadProgress(percentCompleted);
+        },
       });
 
-      clearInterval(progressInterval);
-      setUploadProgress(100);
+      // 5. Erfolg prüfen
+      if (response.data?.success || response.status === 200 || response.status === 201) {
+        setSuccess(response.data?.message || 'Datei erfolgreich hochgeladen und verarbeitet!');
 
-      setSuccess('Datei erfolgreich hochgeladen und verarbeitet!');
-      setTimeout(() => {
-        setSelectedFile(null);
-        setUploadProgress(0);
-        setValidationErrors([]);
-        setValidationStats(null);
-        navigate('/home'); // Redirect to home to see the new data
-      }, 2000);
-    } catch {
-      setError('Fehler beim Hochladen der Datei. Bitte versuchen Sie es erneut.');
+        // Optional: Reset nach kurzer Verzögerung
+        setTimeout(() => {
+          setSelectedFile(null);
+          setUploadProgress(0);
+          setValidationErrors([]);
+          setValidationStats(null);
+          // navigate('/home'); // Optional: Redirect oder Daten neu laden
+        }, 2000);
+      } else {
+        throw new Error(response.data?.message || 'Upload fehlgeschlagen');
+      }
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('Upload Error:', err);
+      const errorMsg =
+        err.response?.data?.message || err.message || 'Fehler beim Hochladen der Datei.';
+      setError(errorMsg);
+      setUploadProgress(0);
     } finally {
       setUploading(false);
     }
@@ -939,6 +989,12 @@ const AdminUpload = () => {
       fileInputRef.current.value = '';
     }
   };
+
+  // Helper to remove duplicated logic in sidebar buttons
+  const getNavButtonStyle = (section) => ({
+    backgroundColor: activeSection === section ? theme.colors.primary : 'transparent',
+    color: activeSection === section ? '#ffffff' : theme.colors.dark,
+  });
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
@@ -1063,11 +1119,7 @@ const AdminUpload = () => {
                       setMobileMenuOpen(false);
                       handleReset();
                     }}
-                    style={{
-                      backgroundColor:
-                        activeSection === 'clear' ? theme.colors.primary : 'transparent',
-                      color: activeSection === 'clear' ? '#ffffff' : theme.colors.dark,
-                    }}
+                    style={getNavButtonStyle('clear')}
                     className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
                   >
                     <div className="flex items-center justify-between">
@@ -1087,11 +1139,7 @@ const AdminUpload = () => {
                       setMobileMenuOpen(false);
                       handleReset();
                     }}
-                    style={{
-                      backgroundColor:
-                        activeSection === 'upload' ? theme.colors.primary : 'transparent',
-                      color: activeSection === 'upload' ? '#ffffff' : theme.colors.dark,
-                    }}
+                    style={getNavButtonStyle('upload')}
                     className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
                   >
                     <div className="flex items-center justify-between">
@@ -1105,11 +1153,7 @@ const AdminUpload = () => {
                       setMobileMenuOpen(false);
                       handleReset();
                     }}
-                    style={{
-                      backgroundColor:
-                        activeSection === 'download' ? theme.colors.primary : 'transparent',
-                      color: activeSection === 'download' ? '#ffffff' : theme.colors.dark,
-                    }}
+                    style={getNavButtonStyle('download')}
                     className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
                   >
                     <div className="flex items-center justify-between">
@@ -1129,11 +1173,7 @@ const AdminUpload = () => {
                       setMobileMenuOpen(false);
                       handleReset();
                     }}
-                    style={{
-                      backgroundColor:
-                        activeSection === 'template' ? theme.colors.primary : 'transparent',
-                      color: activeSection === 'template' ? '#ffffff' : theme.colors.dark,
-                    }}
+                    style={getNavButtonStyle('template')}
                     className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
                   >
                     <div className="flex items-center justify-between">
@@ -1147,11 +1187,7 @@ const AdminUpload = () => {
                       setMobileMenuOpen(false);
                       handleReset();
                     }}
-                    style={{
-                      backgroundColor:
-                        activeSection === 'definition' ? theme.colors.primary : 'transparent',
-                      color: activeSection === 'definition' ? '#ffffff' : theme.colors.dark,
-                    }}
+                    style={getNavButtonStyle('definition')}
                     className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
                   >
                     <div className="flex items-center justify-between">
@@ -1165,16 +1201,49 @@ const AdminUpload = () => {
                       setMobileMenuOpen(false);
                       handleReset();
                     }}
-                    style={{
-                      backgroundColor:
-                        activeSection === 'load' ? theme.colors.primary : 'transparent',
-                      color: activeSection === 'load' ? '#ffffff' : theme.colors.dark,
-                    }}
+                    style={getNavButtonStyle('load')}
                     className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
                   >
                     <div className="flex items-center justify-between">
                       <span>Einstellungen laden</span>
                       <span className="text-xs opacity-60">3.3</span>
+                    </div>
+                  </button>
+                </div>
+
+                <div className="mb-6">
+                  <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                    Kandidatenverzeichnis
+                  </div>
+
+                  {/* Upload button */}
+                  <button
+                    onClick={() => {
+                      setActiveSection('uploadCandidates');
+                      setMobileMenuOpen(false);
+                      handleReset();
+                    }}
+                    style={getNavButtonStyle('uploadCandidates')}
+                    className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span>CSV-Datei hochladen</span>
+                      <span className="text-xs opacity-60">3.1</span>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setActiveSection('downloadCandidates');
+                      setMobileMenuOpen(false);
+                      handleReset();
+                    }}
+                    style={getNavButtonStyle('downloadCandidates')}
+                    className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span>Kandidatenverzeichnis herunterladen</span>
+                      <span className="text-xs opacity-60">3.2</span>
                     </div>
                   </button>
                 </div>
@@ -1189,11 +1258,7 @@ const AdminUpload = () => {
                       setMobileMenuOpen(false);
                       handleReset();
                     }}
-                    style={{
-                      backgroundColor:
-                        activeSection === 'counting' ? theme.colors.primary : 'transparent',
-                      color: activeSection === 'counting' ? '#ffffff' : theme.colors.dark,
-                    }}
+                    style={getNavButtonStyle('counting')}
                     className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
                   >
                     <div className="flex items-center justify-between">
@@ -1480,6 +1545,333 @@ const AdminUpload = () => {
                         Datei auswählen
                       </ResponsiveButton>
                     )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeSection === 'uploadCandidates' && (
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div className="border-b border-gray-200 px-6 py-4">
+                  <h2 className="text-xl font-bold text-gray-900">
+                    Kandidatenverzeichnis hochladen
+                  </h2>
+                  <p className="text-sm text-gray-600 mt-1">
+                    CSV-Datei mit Kandidaten hochladen. Die Datei muss aus einer Kopfzeile und den
+                    folgenden, durch Komma getrennten Spalten bestehen:
+                  </p>
+                </div>
+
+                <div className="p-6">
+                  {/* Format Example */}
+                  <div className="mb-6 bg-gray-50 rounded-lg p-4 border border-gray-200">
+                    <p className="text-xs font-mono text-gray-700 mb-2">Format-Beispiel:</p>
+                    <code className="text-xs font-mono text-gray-900 block bg-white p-3 rounded border border-gray-300 overflow-x-auto">
+                      Nachname,Vorname,MatrikelNr,Fakultät,Schlüsselworte,Notizen,IstZugelassen
+                      <br />
+                      Mustermann,Max,123456,AB,&quot;Umwelt,
+                      Digitalisierung&quot;,&quot;Bemerkung&quot;,true
+                    </code>
+                  </div>
+
+                  {/* Drag & Drop Zone */}
+                  <div
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                    onClick={!selectedFile ? handleBrowseClick : undefined}
+                    className={`
+                      relative p-12 border-2 border-dashed rounded-lg transition-all cursor-pointer
+                      ${
+                        isDragging
+                          ? 'border-brand-primary bg-blue-50 scale-[1.02]'
+                          : selectedFile
+                            ? 'border-green-500 bg-green-50'
+                            : 'border-gray-300 hover:border-brand-primary hover:bg-gray-50'
+                      }
+                    `}
+                  >
+                    {!selectedFile ? (
+                      <div className="text-center">
+                        <div
+                          className={`inline-flex items-center justify-center w-16 h-16 rounded-full mb-4 transition-all ${
+                            isDragging ? 'bg-brand-primary scale-110' : 'bg-gray-100'
+                          }`}
+                        >
+                          <svg
+                            className={`w-8 h-8 ${isDragging ? 'text-white' : 'text-gray-400'}`}
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                            />
+                          </svg>
+                        </div>
+                        <p className="text-lg font-semibold text-gray-900 mb-2">
+                          {isDragging ? 'Datei hier ablegen...' : 'Datei hier ziehen oder klicken'}
+                        </p>
+                        <p className="text-sm text-gray-500 mb-4">CSV-Datei (max. 10 MB)</p>
+                        <ResponsiveButton variant="outline" size="medium">
+                          Datei auswählen
+                        </ResponsiveButton>
+                      </div>
+                    ) : (
+                      <div className="text-center">
+                        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-500 mb-4">
+                          <svg
+                            className="w-8 h-8 text-white"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M5 13l4 4L19 7"
+                            />
+                          </svg>
+                        </div>
+                        <p className="font-semibold text-green-900 mb-2">Datei bereit zum Upload</p>
+                        <p className="text-sm text-gray-700 font-medium truncate max-w-md mx-auto">
+                          {selectedFile.name}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {(selectedFile.size / 1024).toFixed(1)} KB
+                        </p>
+                      </div>
+                    )}
+
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept=".csv,text/csv"
+                      onChange={handleFileInputChange}
+                      className="hidden"
+                    />
+                  </div>
+
+                  {/* Validation in Progress */}
+                  {isValidating && (
+                    <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                      <div className="flex items-center gap-3">
+                        <svg
+                          className="animate-spin h-5 w-5 text-blue-600"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          />
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          />
+                        </svg>
+                        <span className="text-sm font-medium text-blue-900">
+                          Datei wird validiert...
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Validation Stats */}
+                  {validationStats && validationErrors.length === 0 && (
+                    <div className="mt-6 p-4 bg-green-50 rounded-lg border border-green-200">
+                      <h4 className="text-sm font-bold text-green-900 mb-3">
+                        ✓ Validierung erfolgreich
+                      </h4>
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        {validationStats.totalVoters !== undefined && (
+                          <div>
+                            <span className="text-green-700 font-medium">Wähler:</span>
+                            <span className="ml-2 text-green-900 font-bold">
+                              {validationStats.totalVoters}
+                            </span>
+                          </div>
+                        )}
+                        {validationStats.faculties !== undefined && (
+                          <div>
+                            <span className="text-green-700 font-medium">Fakultäten:</span>
+                            <span className="ml-2 text-green-900 font-bold">
+                              {validationStats.faculties}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Validation Errors */}
+                  {validationErrors.length > 0 && (
+                    <ValidationErrors errors={validationErrors} fileType="CSV" />
+                  )}
+
+                  {/* Progress Bar */}
+                  {uploading && uploadProgress > 0 && (
+                    <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                      <div className="flex justify-between text-sm mb-2">
+                        <span className="font-medium text-gray-700">Upload läuft...</span>
+                        <span className="text-brand-primary font-bold">{uploadProgress}%</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                        <div
+                          className="bg-brand-primary h-3 rounded-full transition-all duration-500 relative overflow-hidden"
+                          style={{ width: `${uploadProgress}%` }}
+                        >
+                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-30 animate-shimmer"></div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Messages */}
+                  {error && (
+                    <div className="mt-6 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg flex gap-3">
+                      <svg
+                        className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      <div className="text-sm">
+                        <p className="font-semibold">Fehler beim Upload</p>
+                        <p className="mt-1">{error}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {success && (
+                    <div className="mt-6 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg flex gap-3">
+                      <svg
+                        className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      <div className="text-sm">
+                        <p className="font-semibold">Upload erfolgreich</p>
+                        <p className="mt-1">{success}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Action Buttons */}
+                  <div className="mt-6 flex gap-3">
+                    {selectedFile ? (
+                      <>
+                        <ResponsiveButton
+                          variant="primary"
+                          size="large"
+                          onClick={handleUpload}
+                          disabled={uploading || isValidating || validationErrors.length > 0}
+                          className="flex-1"
+                        >
+                          {uploading ? (
+                            <div className="flex items-center justify-center gap-2">
+                              <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                                <circle
+                                  className="opacity-25"
+                                  cx="12"
+                                  cy="12"
+                                  r="10"
+                                  stroke="currentColor"
+                                  strokeWidth="4"
+                                />
+                                <path
+                                  className="opacity-75"
+                                  fill="currentColor"
+                                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                />
+                              </svg>
+                              <span>Wird hochgeladen...</span>
+                            </div>
+                          ) : validationErrors.length > 0 ? (
+                            'Fehler beheben'
+                          ) : (
+                            'Hochladen'
+                          )}
+                        </ResponsiveButton>
+                        <ResponsiveButton
+                          variant="outline"
+                          size="large"
+                          onClick={handleReset}
+                          disabled={uploading || isValidating}
+                        >
+                          Abbrechen
+                        </ResponsiveButton>
+                      </>
+                    ) : (
+                      <ResponsiveButton
+                        variant="primary"
+                        size="large"
+                        onClick={handleBrowseClick}
+                        className="flex-1"
+                      >
+                        Datei auswählen
+                      </ResponsiveButton>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Kandidatenverzeichnis herunterladen Section */}
+            {activeSection === 'downloadCandidates' && (
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div className="border-b border-gray-200 px-6 py-4">
+                  <h2 className="text-xl font-bold text-gray-900">
+                    Kandidatenverzeichnis herunterladen
+                  </h2>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Aktuelles Kandidatenverzeichnis als Excel-Dokument herunterladen (enthält ein
+                    Tabellenblatt pro Fakultät/Studiengang)
+                  </p>
+                </div>
+                <div className="p-6">
+                  <div className="text-center py-8">
+                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
+                      <svg
+                        className="w-8 h-8 text-gray-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                        />
+                      </svg>
+                    </div>
+                    <p className="text-gray-600 mb-6">
+                      Diese Funktion wird demnächst verfügbar sein.
+                    </p>
+                    <ResponsiveButton variant="outline" size="medium">
+                      Bald verfügbar
+                    </ResponsiveButton>
                   </div>
                 </div>
               </div>
@@ -1773,32 +2165,6 @@ const AdminUpload = () => {
                         Datei auswählen
                       </ResponsiveButton>
                     )}
-                  </div>
-
-                  {/* Info Note */}
-                  <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                    <div className="flex gap-3">
-                      <svg
-                        className="w-5 h-5 text-blue-600 flex-shrink-0"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                        />
-                      </svg>
-                      <div className="text-sm text-blue-900">
-                        <p className="font-semibold mb-1">Anmerkung:</p>
-                        <p className="text-blue-800">
-                          Die Datei wird auf Fehler geprüft. Wenn es Fehler gibt, wird die Datei
-                          nicht hochgeladen und Sie werden über die Fehler informiert.
-                        </p>
-                      </div>
-                    </div>
                   </div>
                 </div>
               </div>
