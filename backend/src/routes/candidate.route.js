@@ -1,10 +1,8 @@
 import { Router } from 'express';
-import { ca } from 'zod/locales';
 import { logger } from '../conf/logger/logger.js';
 import { ensureAuthenticated, ensureHasRole } from '../auth/auth.js';
 import { getAllCandidates, uploadCandidateInformation } from '../service/candidate.service.js';
 import { candidateInfoSchema } from '../schemas/candidate-info.js';
-import { checkIfCandidateIsValid } from '../service/voter.service.js';
 
 export const candidateRouter = Router();
 

@@ -1,7 +1,9 @@
 import dotenv from 'dotenv';
 import { Strategy as OAuth2Strategy } from 'passport-oauth2';
 import axios from 'axios';
+import { is } from 'zod/locales';
 import { logger } from '../../conf/logger/logger.js';
+import { checkIfVoterIsCandidate } from '../../service/candidate.service.js';
 
 dotenv.config();
 
@@ -28,12 +30,18 @@ export const keycloakStrategy = new OAuth2Strategy(
       );
       const userinfo = await res.data;
 
+      const isCandidate = checkIfVoterIsCandidate(userinfo.preferred_username || userinfo.sub);
+      logger.debug(
+        `Is user: ${userinfo.preferred_username || userinfo.sub} a candidate? ${isCandidate}`,
+      );
+
       const user = {
         username: userinfo.preferred_username || userinfo.sub,
         accessToken: accessToken,
         refreshToken: refreshToken,
         profile: userinfo,
         authProvider: 'keycloak',
+        isCandidate: isCandidate,
       };
       done(null, user);
     } catch (err) {
