@@ -1,4 +1,5 @@
 /* eslint-disable indent */
+/* eslint-disable sonarjs/no-duplicate-string */
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -480,7 +481,8 @@ const CountingSection = ({
                                               )}
                                               {candidate.seats && (
                                                 <span className="ml-2 text-gray-600">
-                                                  · {candidate.seats} Sitze
+                                                  · {candidate.seats}{' '}
+                                                  {candidate.seats === 1 ? 'Sitz' : 'Sitze'}
                                                 </span>
                                               )}
                                             </div>
@@ -717,7 +719,7 @@ const AdminUpload = () => {
   const [validationStats, setValidationStats] = useState(null);
   const [isValidating, setIsValidating] = useState(false);
 
-  const [clearingDatabase, setClearingDatabase] = useState(false);
+  // const [clearingDatabase, setClearingDatabase] = useState(false);
 
   // Counting states
   const [elections, setElections] = useState([]);
@@ -818,8 +820,9 @@ const AdminUpload = () => {
         setSuccess('Datei erfolgreich validiert! Sie können nun hochladen.');
       }
     } catch (err) {
+      // eslint-disable-next-line no-console
       console.error(err);
-      setError('Fehler bei der Validierung: ' + err.message);
+      setError(`Fehler bei der Validierung: ${err.message}`);
     } finally {
       setIsValidating(false);
     }
@@ -881,7 +884,9 @@ const AdminUpload = () => {
    * Only proceeds if file passed validation.
    */
   const handleUpload = async () => {
-    if (!selectedFile) return;
+    if (!selectedFile) {
+      return;
+    }
 
     if (validationErrors.length > 0) {
       setError('Bitte korrigieren Sie zuerst die Validierungsfehler.');
@@ -901,9 +906,11 @@ const AdminUpload = () => {
 
       // Nur wenn wir im Kandidaten-Upload sind, führen wir die Transformation durch
       if (activeSection === 'uploadCandidates') {
+        // eslint-disable-next-line no-console
         console.log('Starte Transformation der Kandidaten-Datei...');
         // Hier wird aus "Nachname" -> "lastname" etc.
         fileToUpload = await transformCandidateFile(selectedFile);
+        // eslint-disable-next-line no-console
         console.log('Transformation abgeschlossen:', fileToUpload.name);
       }
 
@@ -941,10 +948,6 @@ const AdminUpload = () => {
         },
       });
 
-      console.log('HTTP Status:', response.status);
-      console.log('Server Antwort (ganzes Objekt):', response);
-      console.log('Server Daten (response.data):', response.data);
-
       // 5. Erfolg prüfen
       if (response.data?.success || response.status === 200 || response.status === 201) {
         setSuccess(response.data?.message || 'Datei erfolgreich hochgeladen und verarbeitet!');
@@ -961,6 +964,7 @@ const AdminUpload = () => {
         throw new Error(response.data?.message || 'Upload fehlgeschlagen');
       }
     } catch (err) {
+      // eslint-disable-next-line no-console
       console.error('Upload Error:', err);
       const errorMsg =
         err.response?.data?.message || err.message || 'Fehler beim Hochladen der Datei.';
@@ -985,6 +989,12 @@ const AdminUpload = () => {
       fileInputRef.current.value = '';
     }
   };
+
+  // Helper to remove duplicated logic in sidebar buttons
+  const getNavButtonStyle = (section) => ({
+    backgroundColor: activeSection === section ? theme.colors.primary : 'transparent',
+    color: activeSection === section ? '#ffffff' : theme.colors.dark,
+  });
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
@@ -1109,11 +1119,7 @@ const AdminUpload = () => {
                       setMobileMenuOpen(false);
                       handleReset();
                     }}
-                    style={{
-                      backgroundColor:
-                        activeSection === 'clear' ? theme.colors.primary : 'transparent',
-                      color: activeSection === 'clear' ? '#ffffff' : theme.colors.dark,
-                    }}
+                    style={getNavButtonStyle('clear')}
                     className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
                   >
                     <div className="flex items-center justify-between">
@@ -1133,11 +1139,7 @@ const AdminUpload = () => {
                       setMobileMenuOpen(false);
                       handleReset();
                     }}
-                    style={{
-                      backgroundColor:
-                        activeSection === 'upload' ? theme.colors.primary : 'transparent',
-                      color: activeSection === 'upload' ? '#ffffff' : theme.colors.dark,
-                    }}
+                    style={getNavButtonStyle('upload')}
                     className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
                   >
                     <div className="flex items-center justify-between">
@@ -1151,11 +1153,7 @@ const AdminUpload = () => {
                       setMobileMenuOpen(false);
                       handleReset();
                     }}
-                    style={{
-                      backgroundColor:
-                        activeSection === 'download' ? theme.colors.primary : 'transparent',
-                      color: activeSection === 'download' ? '#ffffff' : theme.colors.dark,
-                    }}
+                    style={getNavButtonStyle('download')}
                     className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
                   >
                     <div className="flex items-center justify-between">
@@ -1175,11 +1173,7 @@ const AdminUpload = () => {
                       setMobileMenuOpen(false);
                       handleReset();
                     }}
-                    style={{
-                      backgroundColor:
-                        activeSection === 'template' ? theme.colors.primary : 'transparent',
-                      color: activeSection === 'template' ? '#ffffff' : theme.colors.dark,
-                    }}
+                    style={getNavButtonStyle('template')}
                     className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
                   >
                     <div className="flex items-center justify-between">
@@ -1193,11 +1187,7 @@ const AdminUpload = () => {
                       setMobileMenuOpen(false);
                       handleReset();
                     }}
-                    style={{
-                      backgroundColor:
-                        activeSection === 'definition' ? theme.colors.primary : 'transparent',
-                      color: activeSection === 'definition' ? '#ffffff' : theme.colors.dark,
-                    }}
+                    style={getNavButtonStyle('definition')}
                     className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
                   >
                     <div className="flex items-center justify-between">
@@ -1211,11 +1201,7 @@ const AdminUpload = () => {
                       setMobileMenuOpen(false);
                       handleReset();
                     }}
-                    style={{
-                      backgroundColor:
-                        activeSection === 'load' ? theme.colors.primary : 'transparent',
-                      color: activeSection === 'load' ? '#ffffff' : theme.colors.dark,
-                    }}
+                    style={getNavButtonStyle('load')}
                     className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
                   >
                     <div className="flex items-center justify-between">
@@ -1237,11 +1223,7 @@ const AdminUpload = () => {
                       setMobileMenuOpen(false);
                       handleReset();
                     }}
-                    style={{
-                      backgroundColor:
-                        activeSection === 'uploadCandidates' ? theme.colors.primary : 'transparent',
-                      color: activeSection === 'uploadCandidates' ? '#ffffff' : theme.colors.dark,
-                    }}
+                    style={getNavButtonStyle('uploadCandidates')}
                     className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
                   >
                     <div className="flex items-center justify-between">
@@ -1256,13 +1238,7 @@ const AdminUpload = () => {
                       setMobileMenuOpen(false);
                       handleReset();
                     }}
-                    style={{
-                      backgroundColor:
-                        activeSection === 'downloadCandidates'
-                          ? theme.colors.primary
-                          : 'transparent',
-                      color: activeSection === 'downloadCandidates' ? '#ffffff' : theme.colors.dark,
-                    }}
+                    style={getNavButtonStyle('downloadCandidates')}
                     className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
                   >
                     <div className="flex items-center justify-between">
@@ -1282,11 +1258,7 @@ const AdminUpload = () => {
                       setMobileMenuOpen(false);
                       handleReset();
                     }}
-                    style={{
-                      backgroundColor:
-                        activeSection === 'counting' ? theme.colors.primary : 'transparent',
-                      color: activeSection === 'counting' ? '#ffffff' : theme.colors.dark,
-                    }}
+                    style={getNavButtonStyle('counting')}
                     className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
                   >
                     <div className="flex items-center justify-between">
@@ -1597,7 +1569,8 @@ const AdminUpload = () => {
                     <code className="text-xs font-mono text-gray-900 block bg-white p-3 rounded border border-gray-300 overflow-x-auto">
                       Nachname,Vorname,MatrikelNr,Fakultät,Schlüsselworte,Notizen,IstZugelassen
                       <br />
-                      Mustermann,Max,123456,AB,"Umwelt, Digitalisierung","Bemerkung",true
+                      Mustermann,Max,123456,AB,&quot;Umwelt,
+                      Digitalisierung&quot;,&quot;Bemerkung&quot;,true
                     </code>
                   </div>
 
@@ -1683,47 +1656,102 @@ const AdminUpload = () => {
                     />
                   </div>
 
+                  {/* Validation in Progress */}
+                  {isValidating && (
+                    <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                      <div className="flex items-center gap-3">
+                        <svg
+                          className="animate-spin h-5 w-5 text-blue-600"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          />
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          />
+                        </svg>
+                        <span className="text-sm font-medium text-blue-900">
+                          Datei wird validiert...
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Validation Stats */}
+                  {validationStats && validationErrors.length === 0 && (
+                    <div className="mt-6 p-4 bg-green-50 rounded-lg border border-green-200">
+                      <h4 className="text-sm font-bold text-green-900 mb-3">
+                        ✓ Validierung erfolgreich
+                      </h4>
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        {validationStats.totalVoters !== undefined && (
+                          <div>
+                            <span className="text-green-700 font-medium">Wähler:</span>
+                            <span className="ml-2 text-green-900 font-bold">
+                              {validationStats.totalVoters}
+                            </span>
+                          </div>
+                        )}
+                        {validationStats.faculties !== undefined && (
+                          <div>
+                            <span className="text-green-700 font-medium">Fakultäten:</span>
+                            <span className="ml-2 text-green-900 font-bold">
+                              {validationStats.faculties}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Validation Errors */}
                   {validationErrors.length > 0 && (
                     <ValidationErrors errors={validationErrors} fileType="CSV" />
                   )}
 
-                  {/* Upload Button */}
-                  {selectedFile && validationErrors.length === 0 && (
-                    <div className="mt-6 flex gap-3">
-                      <ResponsiveButton
-                        variant="primary"
-                        size="large"
-                        onClick={handleUpload}
-                        disabled={uploading || isValidating}
-                      >
-                        Jetzt hochladen
-                      </ResponsiveButton>
-                      <ResponsiveButton
-                        variant="outline"
-                        size="large"
-                        onClick={handleReset}
-                        disabled={uploading || isValidating}
-                      >
-                        Abbrechen
-                      </ResponsiveButton>
-                    </div>
-                  )}
-
-                  {/* Upload Progress */}
-                  {uploading && (
-                    <div className="mt-4 w-full bg-gray-200 rounded-full h-2">
-                      <div
-                        className="bg-green-500 h-2 rounded-full transition-all"
-                        style={{ width: `${uploadProgress}%` }}
-                      ></div>
+                  {/* Progress Bar */}
+                  {uploading && uploadProgress > 0 && (
+                    <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                      <div className="flex justify-between text-sm mb-2">
+                        <span className="font-medium text-gray-700">Upload läuft...</span>
+                        <span className="text-brand-primary font-bold">{uploadProgress}%</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                        <div
+                          className="bg-brand-primary h-3 rounded-full transition-all duration-500 relative overflow-hidden"
+                          style={{ width: `${uploadProgress}%` }}
+                        >
+                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-30 animate-shimmer"></div>
+                        </div>
+                      </div>
                     </div>
                   )}
 
                   {/* Messages */}
                   {error && (
                     <div className="mt-6 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg flex gap-3">
+                      <svg
+                        className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
                       <div className="text-sm">
-                        <p className="font-semibold">Fehler</p>
+                        <p className="font-semibold">Fehler beim Upload</p>
                         <p className="mt-1">{error}</p>
                       </div>
                     </div>
@@ -1731,12 +1759,80 @@ const AdminUpload = () => {
 
                   {success && (
                     <div className="mt-6 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg flex gap-3">
+                      <svg
+                        className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
                       <div className="text-sm">
-                        <p className="font-semibold">Erfolg</p>
+                        <p className="font-semibold">Upload erfolgreich</p>
                         <p className="mt-1">{success}</p>
                       </div>
                     </div>
                   )}
+
+                  {/* Action Buttons */}
+                  <div className="mt-6 flex gap-3">
+                    {selectedFile ? (
+                      <>
+                        <ResponsiveButton
+                          variant="primary"
+                          size="large"
+                          onClick={handleUpload}
+                          disabled={uploading || isValidating || validationErrors.length > 0}
+                          className="flex-1"
+                        >
+                          {uploading ? (
+                            <div className="flex items-center justify-center gap-2">
+                              <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                                <circle
+                                  className="opacity-25"
+                                  cx="12"
+                                  cy="12"
+                                  r="10"
+                                  stroke="currentColor"
+                                  strokeWidth="4"
+                                />
+                                <path
+                                  className="opacity-75"
+                                  fill="currentColor"
+                                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                />
+                              </svg>
+                              <span>Wird hochgeladen...</span>
+                            </div>
+                          ) : validationErrors.length > 0 ? (
+                            'Fehler beheben'
+                          ) : (
+                            'Hochladen'
+                          )}
+                        </ResponsiveButton>
+                        <ResponsiveButton
+                          variant="outline"
+                          size="large"
+                          onClick={handleReset}
+                          disabled={uploading || isValidating}
+                        >
+                          Abbrechen
+                        </ResponsiveButton>
+                      </>
+                    ) : (
+                      <ResponsiveButton
+                        variant="primary"
+                        size="large"
+                        onClick={handleBrowseClick}
+                        className="flex-1"
+                      >
+                        Datei auswählen
+                      </ResponsiveButton>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
@@ -2069,32 +2165,6 @@ const AdminUpload = () => {
                         Datei auswählen
                       </ResponsiveButton>
                     )}
-                  </div>
-
-                  {/* Info Note */}
-                  <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                    <div className="flex gap-3">
-                      <svg
-                        className="w-5 h-5 text-blue-600 flex-shrink-0"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                        />
-                      </svg>
-                      <div className="text-sm text-blue-900">
-                        <p className="font-semibold mb-1">Anmerkung:</p>
-                        <p className="text-blue-800">
-                          Die Datei wird auf Fehler geprüft. Wenn es Fehler gibt, wird die Datei
-                          nicht hochgeladen und Sie werden über die Fehler informiert.
-                        </p>
-                      </div>
-                    </div>
                   </div>
                 </div>
               </div>

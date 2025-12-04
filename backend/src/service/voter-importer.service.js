@@ -1,4 +1,5 @@
 /* eslint-disable security/detect-object-injection */
+/* eslint-disable no-unused-vars */
 import fs from 'fs';
 import { logger } from '../conf/logger/logger.js';
 import { client } from '../database/db.js';

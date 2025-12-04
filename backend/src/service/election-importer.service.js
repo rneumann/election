@@ -32,7 +32,9 @@ export const importElectionData = async (filePath) => {
     await workbook.xlsx.readFile(filePath);
 
     const electionSheet = workbook.worksheets[0];
-    if (!electionSheet) throw new Error('Die Excel-Datei ist leer.');
+    if (!electionSheet) {
+      throw new Error('Die Excel-Datei ist leer.');
+    }
 
     const startDateStr = electionSheet.getCell('D3').value;
     const endDateStr = electionSheet.getCell('D4').value;
@@ -68,17 +70,17 @@ export const importElectionData = async (filePath) => {
       const votesPerBallot = votesPerBallotValue ? Number(votesPerBallotValue) : seatsToFill;
       const maxCumulativeVotes = Number(maxKumValue) || 0;
 
-      if (!Number.isInteger(seatsToFill) || seatsToFill < 1)
+      if (!Number.isInteger(seatsToFill) || seatsToFill < 1) {
         throw new Error(`Zeile ${rowIndex}: 'Plätze' ungültig.`);
-
+      }
       const electionType = ELECTION_TYPE_MAPPING.get(electionTypeText);
-      if (!electionType)
+      if (!electionType) {
         throw new Error(`Zeile ${rowIndex}: Unbekannter Wahltyp '${electionTypeText}'`);
-
+      }
       const countingMethod = COUNTING_METHOD_MAPPING.get(countingMethodText);
-      if (!countingMethod)
+      if (!countingMethod) {
         throw new Error(`Zeile ${rowIndex}: Unbekanntes Zählverfahren '${countingMethodText}'`);
-
+      }
       logger.info(`Zeile ${rowIndex}: Importiere Wahl "${identifier}"`);
 
       const insertElectionQuery = `
@@ -190,10 +192,19 @@ export const importElectionData = async (filePath) => {
   }
 };
 
+/**
+ * Parses a date from various formats.
+ * @param {*} value
+ * @returns
+ */
 const parseDate = (value) => {
-  if (value instanceof Date) return value;
+  if (value instanceof Date) {
+    return value;
+  }
   const s = String(value).trim();
   const m = s.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
-  if (m) return new Date(`${m[3]}-${m[2]}-${m[1]}`);
+  if (m) {
+    return new Date(`${m[3]}-${m[2]}-${m[1]}`);
+  }
   return new Date(s);
 };

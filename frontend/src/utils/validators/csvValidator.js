@@ -1,9 +1,10 @@
+/* eslint-disable security/detect-object-injection */
+import Papa from 'papaparse';
 import { voterListSchema } from '../../schemas/voter.schema.js';
 import { parseVoterCSV } from '../parsers/csvParser.js';
 import { logger } from '../../conf/logger/logger.js';
-import { MAX_FILE_SIZE } from './constants.js';
-import Papa from 'papaparse';
 import { CANDIDATE_CSV_MAPPING } from '../../schemas/candidate.schema.js';
+import { MAX_FILE_SIZE } from './constants.js';
 
 /**
  * Validate CSV file containing voter data.
@@ -168,6 +169,8 @@ export const validateVoterCSV = async (file) => {
 /**
  * Validates a candidate CSV file against the required schema.
  * Expected columns: Nachname, Vorname, MatrikelNr, Fakultät, Schlüsselworte, Notizen, IstZugelassen
+ * @param {File} file - The CSV file to validate
+ * @returns {Promise<{success: boolean, data?: Array, errors?: Array, stats?: Object}>}
  */
 export const validateCandidateCSV = async (file) => {
   return new Promise((resolve) => {

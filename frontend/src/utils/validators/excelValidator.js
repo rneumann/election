@@ -1,8 +1,4 @@
-import {
-  electionConfigSchema,
-  ELECTION_TYPE_MAPPING,
-  COUNTING_METHOD_MAPPING,
-} from '../../schemas/election.schema.js';
+import { electionConfigSchema } from '../../schemas/election.schema.js';
 import { parseElectionExcel } from '../parsers/excelParser.js';
 import { logger } from '../../conf/logger/logger.js';
 import { MAX_FILE_SIZE } from './constants.js';
@@ -135,11 +131,13 @@ export const validateElectionExcel = async (file) => {
 
   // Datum Helper
   const formatDateForUI = (dateVal) => {
-    if (!dateVal) return '';
+    if (!dateVal) {
+      return '';
+    }
     try {
       return new Date(dateVal).toLocaleDateString('de-DE');
-    } catch (e) {
-      return String(dateVal);
+    } catch (_err) {
+      return String(_err + dateVal);
     }
   };
 

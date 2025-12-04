@@ -2,6 +2,7 @@ import ExcelJS from 'exceljs';
 import { logger } from '../conf/logger/logger.js';
 import { safeQuery } from '../database/db.js';
 import { createBasicWorkbook, streamWorkbook } from '../utils/excel.js';
+import { writeAuditLog } from '../audit/auditLogger.js';
 
 // Sheet Names
 const SHEET_TOTAL_RESULTS = 'Total Results';
@@ -219,7 +220,6 @@ export const exportElectionDefinitionRoute = async (req, res, next) => {
       level: 'INFO',
       actorId: req.user.username,
       actorRole: req.user.role,
-      details: { electionId: electionId, type: 'total_results' },
     }).catch((e) => logger.error(e));
 
     await streamWorkbook(workbook, res, `election-definition-${endDate}.xlsx`);
