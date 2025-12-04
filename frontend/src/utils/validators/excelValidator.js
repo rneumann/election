@@ -1,14 +1,16 @@
-import { electionConfigSchema } from '../../schemas/election.schema.js';
+import {
+  electionConfigSchema,
+  ELECTION_TYPE_MAPPING,
+  COUNTING_METHOD_MAPPING,
+} from '../../schemas/election.schema.js';
 import { parseElectionExcel } from '../parsers/excelParser.js';
 import { logger } from '../../conf/logger/logger.js';
 import { MAX_FILE_SIZE } from './constants.js';
+import { EXPECTED_SHEET_NAMES } from '../../schemas/election.schema.js';
 
 /**
- * Validate Excel file containing election configuration.
- * Combines parsing and Zod schema validation for MULTIPLE elections.
- *
- * @param {File} file - Excel file to validate
- * @returns {Promise<{success: boolean, data?: Object, errors?: Array, stats?: Object}>}
+ * Validiert die Excel-Datei mit der Wahlkonfiguration.
+ * Kombiniert Parsing und Zod-Schema-Validierung.
  */
 export const validateElectionExcel = async (file) => {
   const fileExtension = file.name.split('.').pop();
@@ -16,7 +18,6 @@ export const validateElectionExcel = async (file) => {
     `Starting Excel validation for file type: .${fileExtension}, size: ${(file.size / 1024).toFixed(2)}KB`,
   );
 
-  // Step 0: Check file size
   if (file.size > MAX_FILE_SIZE) {
     return {
       success: false,
@@ -32,8 +33,7 @@ export const validateElectionExcel = async (file) => {
     };
   }
 
-  // Step 1: Parse Excel file
-  const parseResult = await parseElectionExcel(file);
+  const parseResult = await parseElectionExcel(file, EXPECTED_SHEET_NAMES);
 
   if (!parseResult.success) {
     return {
@@ -45,35 +45,31 @@ export const validateElectionExcel = async (file) => {
   }
 
   const { data } = parseResult;
+  const infoData = data.info || {};
 
-  const electionsRaw = data.elections || [];
-
-  // Step 2: Prepare data for validation
-  // Wir müssen jedes Wahl-Objekt im Array einzeln aufbereiten
-  const preparedElections = electionsRaw.map((infoData) => ({
-    Kennung: infoData['Kennung'] || infoData['Wahl Kennung'] || '',
+  const preparedElections = {
+    Kennung: infoData['Kennung'] || infoData['Wahl Kennung'] || infoData['Wahlbezeichnung'] || '',
     Info: infoData.Info || '',
-
-    // Listen (String oder Zahl behandeln)
     Listen: infoData.Listen ? String(infoData.Listen) : '0',
     Plätze: infoData.Plätze,
-    'Stimmen pro Zettel': infoData['Stimmen pro Zettel'],
-    'max. Kum.': infoData['max. Kum.'],
+    'Stimmen pro Zettel': infoData['Stimmen pro Zettel'] || infoData['Stimmen'],
+    'max. Kum.': infoData['max. Kum.'] || infoData['Kumulieren'] || 0,
     Wahltyp: infoData['Wahltyp'],
     Zählverfahren: infoData['Zählverfahren'],
-
-    // Fallback auf "Heute", falls Datum fehlt
     Startzeitpunkt:
-      infoData['Wahlzeitraum von'] || infoData['Startzeitpunkt'] || new Date().toISOString(),
-    Endzeitpunkt: infoData['bis'] || infoData['Endzeitpunkt'] || new Date().toISOString(),
-  }));
+      infoData['Startzeitpunkt'] ||
+      infoData['Wahlzeitraum von'] ||
+      infoData['Start'] ||
+      new Date().toISOString(),
+    Endzeitpunkt:
+      infoData['Endzeitpunkt'] || infoData['bis'] || infoData['Ende'] || new Date().toISOString(),
+  };
 
   const preparedData = {
-    elections: preparedElections, // Jetzt ein Array!
+    elections: [preparedElections],
     candidates: data.candidates || [],
   };
 
-  // Step 3: Validate with Zod schema
   const validationResult = electionConfigSchema.safeParse(preparedData);
 
   if (!validationResult.success) {
@@ -86,21 +82,13 @@ export const validateElectionExcel = async (file) => {
       let row = null;
       let field = null;
 
-      // Pfad-Analyse für korrekte Fehlermeldung
       if (path[0] === 'elections') {
         sheet = 'Wahlen';
-        // path[1] ist der Index im Array. Im Excel beginnt Header bei Zeile 8 (als Beispiel).
-        // Da wir den Header dynamisch suchen, ist die exakte Zeile schwer zu raten,
-        // aber meistens: Header-Zeile + 1 + Index.
-        // Wir nehmen hier Index + 1 für relative Angabe zur Liste.
-        if (typeof path[1] === 'number') {
-          row = `Liste ${path[1] + 1}`;
-          field = path[2] || null;
-        }
+        field = path[2] || null;
       } else if (path[0] === 'candidates') {
         sheet = 'Listenvorlage';
         if (path.length > 1 && typeof path[1] === 'number') {
-          row = path[1] + 2; // +2 wegen Header
+          row = path[1] + 2;
           field = path[2] || null;
         } else {
           field = null;
@@ -122,42 +110,30 @@ export const validateElectionExcel = async (file) => {
     };
   }
 
-  // Step 4: Cross-field validations (Doppelte Kandidaten)
-  // ... (Ihr bestehender Code hier war gut, ggf. anpassen auf neues Format) ...
-
-  // Step 5: Calculate statistics
   const validElections = validationResult.data.elections;
   const candidateCount = validationResult.data.candidates.length;
 
-  // Datum Helper
   const formatDateForUI = (dateVal) => {
-    if (!dateVal) {
-      return '';
-    }
+    if (!dateVal) return '';
     try {
       return new Date(dateVal).toLocaleDateString('de-DE');
     } catch (_err) {
-      return String(_err + dateVal);
+      return String(dateVal);
     }
   };
 
   return {
     success: true,
-    data: validationResult.data, // Enthält jetzt { elections: [...], candidates: [...] }
+    data: validationResult.data,
     stats: {
-      // Wir zeigen Infos der ersten Wahl an oder eine Zusammenfassung
       electionName:
         validElections.length > 1
           ? `${validElections.length} Wahlen definiert`
           : validElections[0].Kennung,
       electionInfo: validElections.length > 1 ? 'Mehrere Wahlen' : validElections[0].Info,
-
       totalCandidates: candidateCount,
-      seats: validElections.reduce((sum, e) => sum + (e.Plätze || 0), 0), // Summe aller Sitze
-
-      // Liste aller Wahl-Typen
+      seats: validElections.reduce((sum, e) => sum + (e.Plätze || 0), 0),
       type: [...new Set(validElections.map((e) => e.Wahltyp))].join(', '),
-
       startDate: formatDateForUI(validElections[0].Startzeitpunkt),
       endDate: formatDateForUI(validElections[0].Endzeitpunkt),
     },
