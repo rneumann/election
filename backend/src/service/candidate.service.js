@@ -31,12 +31,12 @@ export const getAllCandidates = async () => {
  */
 export const uploadCandidateInformation = async (candidateInfo) => {
   const query = `
-    INSERT INTO candidate_information (candidate_id, info, picture_content_type, picture_data)
+    INSERT INTO candidate_information (candidate_uid, info, picture_content_type, picture_data)
     VALUES ($1, $2, $3, $4)
     RETURNING id
   `;
   const values = [
-    candidateInfo.candidate_id,
+    candidateInfo.candidate_uid,
     candidateInfo.info,
     candidateInfo.picture_content_type,
     candidateInfo.picture_data,
@@ -64,14 +64,14 @@ export const updateCandidateInformation = async (candidateInfo) => {
   const query = `
     UPDATE candidate_information
     SET info = $1, picture_content_type = $2, picture_data = $3
-    WHERE candidate_id = $4
+    WHERE candidate_uid = $4
     RETURNING id
   `;
   const values = [
     candidateInfo.info,
     candidateInfo.picture_content_type,
     candidateInfo.picture_data,
-    candidateInfo.candidate_id,
+    candidateInfo.candidate_uid,
   ];
   try {
     const result = await client.query(query, values);
@@ -101,6 +101,28 @@ export const checkIfVoterIsCandidate = async (uid) => {
   } catch (error) {
     logger.debug('Error checking if voter is candidate:', error);
     logger.error('Failed to check if voter is candidate in the database.');
+    throw new Error('Database query operation failed.');
+  }
+};
+
+/**
+ * Checks if a candidate already has information in the database.
+ * @param {number} candidate_uid - The ID of the candidate to check.
+ * @returns {Promise<boolean>} A promise resolving to true if the candidate already has information, false otherwise.
+ */
+export const checkIfCandidateAlreadyHasInfo = async (candidate_uid) => {
+  const query = `
+    SELECT COUNT(*) AS count
+    FROM candidate_information
+    WHERE candidate_uid = $1
+  `;
+  const values = [candidate_uid];
+  try {
+    const result = await client.query(query, values);
+    return parseInt(result.rows[0].count, 10) > 0;
+  } catch (error) {
+    logger.debug('Error checking if candidate already has information:', error);
+    logger.error('Failed to check if candidate already has information in the database.');
     throw new Error('Database query operation failed.');
   }
 };

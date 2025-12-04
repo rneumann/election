@@ -1,7 +1,6 @@
 import dotenv from 'dotenv';
 import { Strategy as OAuth2Strategy } from 'passport-oauth2';
 import axios from 'axios';
-import { is } from 'zod/locales';
 import { logger } from '../../conf/logger/logger.js';
 import { checkIfVoterIsCandidate } from '../../service/candidate.service.js';
 

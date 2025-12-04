@@ -16,7 +16,7 @@ CREATE TABLE
 CREATE TABLE
   IF NOT EXISTS candidates (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid (),
-    uid VARCHAR(30) UNIQUE,
+    uid VARCHAR(30) UNIQUE NOT NULL,
     lastname TEXT NOT NULL,
     firstname TEXT NOT NULL,
     mtknr TEXT,
@@ -29,17 +29,17 @@ CREATE TABLE
 CREATE TABLE
   IF NOT EXISTS candidate_information (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid (),
-    candidate_id UUID NOT NULL REFERENCES candidates (id) ON DELETE CASCADE ON UPDATE CASCADE UNIQUE,
+    candidate_uid VARCHAR(30) NOT NULL REFERENCES candidates (uid) ON DELETE CASCADE ON UPDATE CASCADE UNIQUE,
     info VARCHAR(200) NOT NULL,
     picture_content_type TEXT,
-    picture BYTEA,
+    picture_data BYTEA,
     CONSTRAINT check_if_pic_values_not_null_if_exists CHECK (
       (
-        picture IS NOT NULL
+        picture_data IS NOT NULL
         AND picture_content_type IS NOT NULL
       )
       OR (
-        picture IS NULL
+        picture_data IS NULL
         AND picture_content_type IS NULL
       )
     )
