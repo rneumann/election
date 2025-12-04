@@ -79,8 +79,13 @@ export const countMajorityVote = ({ votes, config }) => {
 
   const hasTies = tieCandidates.length > 0;
 
+  // If tie detected, ALL candidates with cutoffVotes should be marked as tied
+  // This includes elected candidates with the same vote count
+  const allTiedCandidates = hasTies
+    ? sorted.filter((candidate) => candidate.votes === cutoffVotes)
+    : [];
+
   // Absolute majority check: Only performed for 'highest_votes_absolute' method
-  // Relevant for Wahlarten 2 (Fachschaftsvorstand WG1), 8 (Dekane WG1), 10 (Prodekane WG1)
   const requiresAbsoluteMajority = config.counting_method === 'highest_votes_absolute';
 
   let absoluteMajorityAchieved = null;
@@ -126,7 +131,9 @@ export const countMajorityVote = ({ votes, config }) => {
     // Full candidate list (sorted desc) for unified frontend rendering
     all_candidates: sorted.map((candidate) => {
       const isElected = elected.some((e) => e.listnum === candidate.listnum);
-      const isTie = tieCandidates.some((t) => t.listnum === candidate.listnum);
+      // Mark ALL candidates with cutoffVotes as tied when hasTies is true
+      const isTie = hasTies && allTiedCandidates.some((t) => t.listnum === candidate.listnum);
+      // If candidate is in a tie, they are NOT considered elected (resolution required)
       return {
         listnum: candidate.listnum,
         candidate: `${candidate.firstname} ${candidate.lastname}`,
@@ -137,7 +144,7 @@ export const countMajorityVote = ({ votes, config }) => {
           totalVotes > 0
             ? ((candidate.votes / totalVotes) * PERCENTAGE_MULTIPLIER).toFixed(2)
             : '0.00',
-        is_elected: isElected,
+        is_elected: isElected && !isTie,
         is_tie: isTie,
       };
     }),
@@ -156,8 +163,8 @@ export const countMajorityVote = ({ votes, config }) => {
     })),
     resolution_required: hasTies,
     tie_info: hasTies
-      ? `Tie detected at ${cutoffVotes} votes: ${tieCandidates.length} candidate(s) have same vote count as last elected candidate. ` +
-        `Affected candidates: ${tieCandidates.map((c) => `${c.firstname} ${c.lastname}`).join(', ')}. ` +
+      ? `Tie detected at ${cutoffVotes} votes: ${allTiedCandidates.length} candidate(s) have same vote count. ` +
+        `Affected candidates: ${allTiedCandidates.map((c) => `${c.firstname} ${c.lastname}`).join(', ')}. ` +
         `Manual resolution (drawing lots/Losentscheid) required.`
       : null,
   };

@@ -1131,40 +1131,6 @@ const AdminUpload = () => {
 
                 <div className="mb-6">
                   <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                    Wählerverzeichnis
-                  </div>
-                  <button
-                    onClick={() => {
-                      setActiveSection('upload');
-                      setMobileMenuOpen(false);
-                      handleReset();
-                    }}
-                    style={getNavButtonStyle('upload')}
-                    className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span>CSV-Datei hochladen</span>
-                      <span className="text-xs opacity-60">2.1</span>
-                    </div>
-                  </button>
-                  <button
-                    onClick={() => {
-                      setActiveSection('download');
-                      setMobileMenuOpen(false);
-                      handleReset();
-                    }}
-                    style={getNavButtonStyle('download')}
-                    className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span>Wählerverzeichnis herunterladen</span>
-                      <span className="text-xs opacity-60">2.2</span>
-                    </div>
-                  </button>
-                </div>
-
-                <div className="mb-6">
-                  <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
                     Wahlen definieren
                   </div>
                   <button
@@ -1178,7 +1144,7 @@ const AdminUpload = () => {
                   >
                     <div className="flex items-center justify-between">
                       <span>Excel-Vorlage herunterladen</span>
-                      <span className="text-xs opacity-60">3.1</span>
+                      <span className="text-xs opacity-60">2.1</span>
                     </div>
                   </button>
                   <button
@@ -1192,21 +1158,41 @@ const AdminUpload = () => {
                   >
                     <div className="flex items-center justify-between">
                       <span>Wahleinstellung hochladen</span>
-                      <span className="text-xs opacity-60">3.2</span>
+                      <span className="text-xs opacity-60">2.2</span>
+                    </div>
+                  </button>
+                </div>
+
+                <div className="mb-6">
+                  <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                    Wählerverzeichnis
+                  </div>
+                  <button
+                    onClick={() => {
+                      setActiveSection('upload');
+                      setMobileMenuOpen(false);
+                      handleReset();
+                    }}
+                    style={getNavButtonStyle('upload')}
+                    className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span>CSV-Datei hochladen</span>
+                      <span className="text-xs opacity-60">3.1</span>
                     </div>
                   </button>
                   <button
                     onClick={() => {
-                      setActiveSection('load');
+                      setActiveSection('download');
                       setMobileMenuOpen(false);
                       handleReset();
                     }}
-                    style={getNavButtonStyle('load')}
+                    style={getNavButtonStyle('download')}
                     className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
                   >
                     <div className="flex items-center justify-between">
-                      <span>Einstellungen laden</span>
-                      <span className="text-xs opacity-60">3.3</span>
+                      <span>Wählerverzeichnis herunterladen</span>
+                      <span className="text-xs opacity-60">3.2</span>
                     </div>
                   </button>
                 </div>
@@ -1228,7 +1214,7 @@ const AdminUpload = () => {
                   >
                     <div className="flex items-center justify-between">
                       <span>CSV-Datei hochladen</span>
-                      <span className="text-xs opacity-60">3.1</span>
+                      <span className="text-xs opacity-60">4.1</span>
                     </div>
                   </button>
 
@@ -1243,7 +1229,7 @@ const AdminUpload = () => {
                   >
                     <div className="flex items-center justify-between">
                       <span>Kandidatenverzeichnis herunterladen</span>
-                      <span className="text-xs opacity-60">3.2</span>
+                      <span className="text-xs opacity-60">4.2</span>
                     </div>
                   </button>
                 </div>
@@ -1263,7 +1249,7 @@ const AdminUpload = () => {
                   >
                     <div className="flex items-center justify-between">
                       <span>Wahlergebnisse auszählen</span>
-                      <span className="text-xs opacity-60">4</span>
+                      <span className="text-xs opacity-60">5</span>
                     </div>
                   </button>
                 </div>
