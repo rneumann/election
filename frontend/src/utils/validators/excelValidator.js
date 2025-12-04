@@ -1,14 +1,15 @@
 import { electionConfigSchema } from '../../schemas/election.schema.js';
 import { parseElectionExcel } from '../parsers/excelParser.js';
 import { logger } from '../../conf/logger/logger.js';
+import { EXPECTED_SHEET_NAMES } from '../../schemas/election.schema.js';
 import { MAX_FILE_SIZE } from './constants.js';
 
 /**
- * Validate Excel file containing election configuration.
- * Combines parsing and Zod schema validation for MULTIPLE elections.
+ * Validates the Excel file containing the election configuration.
+ * Combines parsing and Zod schema validation.
  *
- * @param {File} file - Excel file to validate
- * @returns {Promise<{success: boolean, data?: Object, errors?: Array, stats?: Object}>}
+ * @param {File} file - The uploaded file object.
+ * @returns {Promise<Object>} Returns an object containing success status, validation errors, or validated data with stats.
  */
 export const validateElectionExcel = async (file) => {
   const fileExtension = file.name.split('.').pop();
@@ -16,7 +17,7 @@ export const validateElectionExcel = async (file) => {
     `Starting Excel validation for file type: .${fileExtension}, size: ${(file.size / 1024).toFixed(2)}KB`,
   );
 
-  // Step 0: Check file size
+  // Check if file exceeds the maximum allowed size
   if (file.size > MAX_FILE_SIZE) {
     return {
       success: false,
@@ -25,57 +26,55 @@ export const validateElectionExcel = async (file) => {
           sheet: null,
           row: null,
           field: null,
-          message: `Datei zu groß. Maximal erlaubt: ${(MAX_FILE_SIZE / 1024 / 1024).toFixed(0)}MB.`,
+          message: `File too large. Maximum allowed: ${(MAX_FILE_SIZE / 1024 / 1024).toFixed(0)}MB.`,
           code: 'FILE_TOO_LARGE',
         },
       ],
     };
   }
 
-  // Step 1: Parse Excel file
-  const parseResult = await parseElectionExcel(file);
+  // Parse the Excel file content
+  const parseResult = await parseElectionExcel(file, EXPECTED_SHEET_NAMES);
 
   if (!parseResult.success) {
     return {
       success: false,
-      errors: parseResult.errors || [
-        { message: 'Unbekannter Parsing-Fehler', code: 'PARSE_ERROR' },
-      ],
+      errors: parseResult.errors || [{ message: 'Unknown parsing error', code: 'PARSE_ERROR' }],
     };
   }
 
   const { data } = parseResult;
+  const infoData = data.info || {};
 
-  const electionsRaw = data.elections || [];
-
-  // Step 2: Prepare data for validation
-  // Wir müssen jedes Wahl-Objekt im Array einzeln aufbereiten
-  const preparedElections = electionsRaw.map((infoData) => ({
-    Kennung: infoData['Kennung'] || infoData['Wahl Kennung'] || '',
+  // Map the raw data from the "Info" sheet to the expected schema structure
+  const preparedElections = {
+    Kennung: infoData['Kennung'] || infoData['Wahl Kennung'] || infoData['Wahlbezeichnung'] || '',
     Info: infoData.Info || '',
-
-    // Listen (String oder Zahl behandeln)
     Listen: infoData.Listen ? String(infoData.Listen) : '0',
     Plätze: infoData.Plätze,
-    'Stimmen pro Zettel': infoData['Stimmen pro Zettel'],
-    'max. Kum.': infoData['max. Kum.'],
+    'Stimmen pro Zettel': infoData['Stimmen pro Zettel'] || infoData['Stimmen'],
+    'max. Kum.': infoData['max. Kum.'] || infoData['Kumulieren'] || 0,
     Wahltyp: infoData['Wahltyp'],
     Zählverfahren: infoData['Zählverfahren'],
-
-    // Fallback auf "Heute", falls Datum fehlt
     Startzeitpunkt:
-      infoData['Wahlzeitraum von'] || infoData['Startzeitpunkt'] || new Date().toISOString(),
-    Endzeitpunkt: infoData['bis'] || infoData['Endzeitpunkt'] || new Date().toISOString(),
-  }));
+      infoData['Startzeitpunkt'] ||
+      infoData['Wahlzeitraum von'] ||
+      infoData['Start'] ||
+      new Date().toISOString(),
+    Endzeitpunkt:
+      infoData['Endzeitpunkt'] || infoData['bis'] || infoData['Ende'] || new Date().toISOString(),
+  };
 
+  // Wrap the single election object in an array as expected by the schema
   const preparedData = {
-    elections: preparedElections, // Jetzt ein Array!
+    elections: [preparedElections],
     candidates: data.candidates || [],
   };
 
-  // Step 3: Validate with Zod schema
+  // Run Zod validation
   const validationResult = electionConfigSchema.safeParse(preparedData);
 
+  // Handle validation errors by mapping them to specific sheets and rows
   if (!validationResult.success) {
     const errors = [];
     const zodErrors = validationResult.error?.errors || [];
@@ -86,21 +85,17 @@ export const validateElectionExcel = async (file) => {
       let row = null;
       let field = null;
 
-      // Pfad-Analyse für korrekte Fehlermeldung
+      // Map errors in 'elections' array to the 'Wahlen' sheet
       if (path[0] === 'elections') {
         sheet = 'Wahlen';
-        // path[1] ist der Index im Array. Im Excel beginnt Header bei Zeile 8 (als Beispiel).
-        // Da wir den Header dynamisch suchen, ist die exakte Zeile schwer zu raten,
-        // aber meistens: Header-Zeile + 1 + Index.
-        // Wir nehmen hier Index + 1 für relative Angabe zur Liste.
-        if (typeof path[1] === 'number') {
-          row = `Liste ${path[1] + 1}`;
-          field = path[2] || null;
-        }
-      } else if (path[0] === 'candidates') {
+        field = path[2] || null;
+      }
+      // Map errors in 'candidates' array to the 'Listenvorlage' sheet
+      else if (path[0] === 'candidates') {
         sheet = 'Listenvorlage';
+        // Calculate the actual Excel row number (Index + Header offset)
         if (path.length > 1 && typeof path[1] === 'number') {
-          row = path[1] + 2; // +2 wegen Header
+          row = path[1] + 2;
           field = path[2] || null;
         } else {
           field = null;
@@ -122,14 +117,10 @@ export const validateElectionExcel = async (file) => {
     };
   }
 
-  // Step 4: Cross-field validations (Doppelte Kandidaten)
-  // ... (Ihr bestehender Code hier war gut, ggf. anpassen auf neues Format) ...
-
-  // Step 5: Calculate statistics
   const validElections = validationResult.data.elections;
   const candidateCount = validationResult.data.candidates.length;
 
-  // Datum Helper
+  // Helper to format dates for the UI summary
   const formatDateForUI = (dateVal) => {
     if (!dateVal) {
       return '';
@@ -141,23 +132,19 @@ export const validateElectionExcel = async (file) => {
     }
   };
 
+  // Return success result with statistical summary
   return {
     success: true,
-    data: validationResult.data, // Enthält jetzt { elections: [...], candidates: [...] }
+    data: validationResult.data,
     stats: {
-      // Wir zeigen Infos der ersten Wahl an oder eine Zusammenfassung
       electionName:
         validElections.length > 1
-          ? `${validElections.length} Wahlen definiert`
+          ? `${validElections.length} elections defined`
           : validElections[0].Kennung,
-      electionInfo: validElections.length > 1 ? 'Mehrere Wahlen' : validElections[0].Info,
-
+      electionInfo: validElections.length > 1 ? 'Multiple elections' : validElections[0].Info,
       totalCandidates: candidateCount,
-      seats: validElections.reduce((sum, e) => sum + (e.Plätze || 0), 0), // Summe aller Sitze
-
-      // Liste aller Wahl-Typen
+      seats: validElections.reduce((sum, e) => sum + (e.Plätze || 0), 0),
       type: [...new Set(validElections.map((e) => e.Wahltyp))].join(', '),
-
       startDate: formatDateForUI(validElections[0].Startzeitpunkt),
       endDate: formatDateForUI(validElections[0].Endzeitpunkt),
     },
