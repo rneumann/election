@@ -183,11 +183,12 @@ export const countHareNiemeyer = ({ votes, config }) => {
             `Drawing lots required as no mathematical resolution possible.`;
         }
 
-        return {
-          algorithm: 'hare_niemeyer',
-          seats_to_fill,
-          total_votes: totalVotes,
-          allocation: candidates.map((candidate) => ({
+        // Mark all tied candidates
+        const tiedListnums = new Set(tiedCandidates.map((c) => c.listnum));
+
+        // Sort allocation by seats (desc), then votes (desc), then listnum (asc)
+        const sortedAllocation = candidates
+          .map((candidate) => ({
             listnum: candidate.listnum,
             candidate: candidate.name,
             firstname: candidate.firstname,
@@ -196,7 +197,44 @@ export const countHareNiemeyer = ({ votes, config }) => {
             quota: candidate.quota.toFixed(QUOTA_DECIMALS),
             seats: candidate.seats,
             remainder: candidate.remainder.toFixed(QUOTA_DECIMALS),
-          })),
+            is_tie: false, // Will be set below if vote equity violation exists
+          }))
+          .sort((a, b) => {
+            if (b.seats !== a.seats) {
+              return b.seats - a.seats;
+            }
+            if (b.votes !== a.votes) {
+              return b.votes - a.votes;
+            }
+            return a.listnum - b.listnum;
+          });
+
+        // Check for vote equity violations: candidates with equal votes but different seats
+        const voteToSeatsMap = new Map();
+        candidates.forEach((c) => {
+          if (!voteToSeatsMap.has(c.votes)) {
+            voteToSeatsMap.set(c.votes, new Set());
+          }
+          voteToSeatsMap.get(c.votes).add(c.seats);
+        });
+
+        // Mark candidates where their vote count maps to multiple different seat counts
+        sortedAllocation.forEach((candidate) => {
+          const seatsForThisVoteCount = voteToSeatsMap.get(candidate.votes);
+          if (
+            seatsForThisVoteCount &&
+            seatsForThisVoteCount.size > 1 &&
+            tiedListnums.has(candidate.listnum)
+          ) {
+            candidate.is_tie = true;
+          }
+        });
+
+        return {
+          algorithm: 'hare_niemeyer',
+          seats_to_fill,
+          total_votes: totalVotes,
+          allocation: sortedAllocation,
           ties_detected: true,
           tie_info: tieMessage,
           tie_candidates: tiedCandidates.map((c) => ({
@@ -218,11 +256,9 @@ export const countHareNiemeyer = ({ votes, config }) => {
     );
   }
 
-  return {
-    algorithm: 'hare_niemeyer',
-    seats_to_fill,
-    total_votes: totalVotes,
-    allocation: candidates.map((candidate) => ({
+  // Sort allocation by seats (desc), then votes (desc), then listnum (asc)
+  const sortedAllocation = candidates
+    .map((candidate) => ({
       listnum: candidate.listnum,
       candidate: candidate.name,
       firstname: candidate.firstname,
@@ -231,7 +267,23 @@ export const countHareNiemeyer = ({ votes, config }) => {
       quota: candidate.quota.toFixed(QUOTA_DECIMALS),
       seats: candidate.seats,
       remainder: candidate.remainder.toFixed(QUOTA_DECIMALS),
-    })),
+      is_tie: false,
+    }))
+    .sort((a, b) => {
+      if (b.seats !== a.seats) {
+        return b.seats - a.seats;
+      }
+      if (b.votes !== a.votes) {
+        return b.votes - a.votes;
+      }
+      return a.listnum - b.listnum;
+    });
+
+  return {
+    algorithm: 'hare_niemeyer',
+    seats_to_fill,
+    total_votes: totalVotes,
+    allocation: sortedAllocation,
     ties_detected: false,
   };
 };

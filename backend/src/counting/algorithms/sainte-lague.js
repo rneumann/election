@@ -212,18 +212,89 @@ export const countSainteLague = ({ votes, config }) => {
   }
 
   // Build result object
-  const result = {
-    algorithm: 'sainte_lague',
-    seats_to_fill,
-    total_votes: totalVotes,
-    allocation: candidates.map((candidate) => ({
+  // Collect all listnums involved in ties across all rounds
+  const tiedListnums = new Set();
+  if (finalTieCandidates && finalTieCandidates.length > 0) {
+    finalTieCandidates.forEach((tc) => tiedListnums.add(tc.listnum));
+  }
+
+  // Sort allocation by seats (desc), then votes (desc), then listnum (asc)
+  const sortedAllocation = candidates
+    .map((candidate) => ({
       listnum: candidate.listnum,
       candidate: candidate.name,
       firstname: candidate.firstname,
       lastname: candidate.lastname,
       votes: candidate.votes,
       seats: candidate.seats,
-    })),
+      is_tie: false, // Will be set below if vote equity violation exists
+    }))
+    .sort((a, b) => {
+      if (b.seats !== a.seats) {
+        return b.seats - a.seats;
+      }
+      if (b.votes !== a.votes) {
+        return b.votes - a.votes;
+      }
+      return a.listnum - b.listnum;
+    });
+
+  // Check for vote equity violations: candidates with equal votes but different seats
+  // Mark ALL candidates involved in such violations
+  const voteToSeatsMap = new Map();
+  candidates.forEach((c) => {
+    if (!voteToSeatsMap.has(c.votes)) {
+      voteToSeatsMap.set(c.votes, new Set());
+    }
+    voteToSeatsMap.get(c.votes).add(c.seats);
+  });
+
+  // Check if vote equity violations exist
+  let hasVoteEquityViolations = false;
+  const equityViolations = [];
+  for (const [votes, seatsSet] of voteToSeatsMap.entries()) {
+    if (seatsSet.size > 1) {
+      hasVoteEquityViolations = true;
+      const affectedCandidates = candidates.filter((c) => c.votes === votes);
+      equityViolations.push({
+        votes,
+        seats: [...seatsSet].sort((a, b) => b - a),
+        candidates: affectedCandidates
+          .map((c) => `${c.name} (${c.seats} ${c.seats === 1 ? 'Sitz' : 'Sitze'})`)
+          .join(', '),
+      });
+    }
+  }
+
+  // Mark candidates where their vote count maps to multiple different seat counts
+  sortedAllocation.forEach((candidate) => {
+    const seatsForThisVoteCount = voteToSeatsMap.get(candidate.votes);
+    if (seatsForThisVoteCount && seatsForThisVoteCount.size > 1) {
+      candidate.is_tie = true;
+    }
+  });
+
+  // Update tie_info if vote equity violations exist
+  // Vote equity violations take precedence or are appended to existing tie info
+  if (hasVoteEquityViolations) {
+    const violationDescriptions = equityViolations
+      .map((v) => `${v.votes} ${v.votes === 1 ? 'Stimme' : 'Stimmen'}: ${v.candidates}`)
+      .join('; ');
+    const equityMessage = `Stimmengleichheit mit unterschiedlicher Sitzzuteilung erkannt. Betroffene Kandidaten: ${violationDescriptions}. Losentscheid erforderlich für faire Verteilung.`;
+
+    if (finalTieInfo) {
+      // Append equity violation to existing tie info
+      finalTieInfo = `${finalTieInfo} --- ${equityMessage}`;
+    } else {
+      finalTieInfo = equityMessage;
+    }
+  }
+
+  const result = {
+    algorithm: 'sainte_lague',
+    seats_to_fill,
+    total_votes: totalVotes,
+    allocation: sortedAllocation,
     calculation_steps: calculationSteps,
     ties_detected: finalTieInfo !== '',
   };
