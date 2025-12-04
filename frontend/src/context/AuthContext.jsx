@@ -130,19 +130,47 @@ export const AuthProvider = ({ children }) => {
    * @returns {Promise<{success: boolean, message?: string}>} Login result
    */
   const login = async (username, password) => {
+    const ERROR_INVALID_CREDENTIALS = 'Benutzername oder Passwort ist falsch.';
+
     try {
       const user = await authService.login(username, password);
-      setUser(user);
-      setIsAuthenticated(true);
-      sessionStorage.setItem('isAuthenticated', 'true');
 
-      logger.debug(`CSRF From local storage: ${localStorage.getItem('csrfToken')}`);
+      if (user && user.username) {
+        setUser(user);
+        setIsAuthenticated(true);
+        sessionStorage.setItem('isAuthenticated', 'true');
 
-      return { success: true };
+        logger.debug(`CSRF From local storage: ${localStorage.getItem('csrfToken')}`);
+
+        return { success: true, user };
+      } else {
+        return { success: false, message: ERROR_INVALID_CREDENTIALS };
+      }
     } catch (error) {
+      logger.error('Login failed:', error);
+
+      // Check for specific error codes/messages
+      if (error.response?.status === 401) {
+        return {
+          success: false,
+          message: ERROR_INVALID_CREDENTIALS,
+        };
+      } else if (error.response?.status === 500) {
+        return {
+          success: false,
+          message: 'Ein Serverfehler ist aufgetreten. Bitte versuchen Sie es später erneut.',
+        };
+      } else if (error.code === 'ERR_NETWORK' || error.message.includes('Network')) {
+        return {
+          success: false,
+          message:
+            'Keine Verbindung zum Server möglich. Bitte überprüfen Sie Ihre Internetverbindung.',
+        };
+      }
+
       return {
         success: false,
-        message: error.message || 'Login failed. Please try again.',
+        message: ERROR_INVALID_CREDENTIALS,
       };
     }
   };

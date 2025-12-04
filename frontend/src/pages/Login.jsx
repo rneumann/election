@@ -44,20 +44,6 @@ const Login = () => {
   }, [searchParams]);
 
   /**
-   * Clear error message after 5 seconds.
-   */
-  useEffect(() => {
-    if (error) {
-      const timer = setTimeout(() => {
-        return setError('');
-      }, 5000);
-      return () => {
-        return clearTimeout(timer);
-      };
-    }
-  }, [error]);
-
-  /**
    * Handle login form submission.
    * Calls backend API via AuthContext and redirects on success.
    * Redirects to returnUrl from query params if present, otherwise to /home for users or /admin for admins.
@@ -90,7 +76,7 @@ const Login = () => {
         navigate(destination, { replace: true });
       } else {
         // Show error message from backend
-        setError(result.message || 'Login failed. Please try again.');
+        setError(result.message || 'Benutzername oder Passwort ist falsch.');
       }
     } catch {
       setError('An unexpected error occurred. Please try again.');
@@ -127,21 +113,55 @@ const Login = () => {
 
         {/* Error Message */}
         {error && (
-          <div className="bg-red-50 border-l-4 border-red-500 text-red-800 px-4 py-3 rounded-r mb-4 flex items-start gap-3 animate-pulse">
-            <svg
-              className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5"
-              fill="currentColor"
-              viewBox="0 0 20 20"
-            >
-              <path
-                fillRule="evenodd"
-                d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                clipRule="evenodd"
-              />
-            </svg>
-            <div>
-              <p className="font-semibold text-sm">Fehler bei der Anmeldung</p>
-              <p className="text-xs mt-1">{error}</p>
+          <div role="alert" aria-live="assertive" className="mb-4 animate-slide-in">
+            <div className="bg-gradient-to-r from-red-50 to-red-100 border-l-4 border-red-500 rounded-lg shadow-md overflow-hidden">
+              <div className="p-4">
+                <div className="flex items-start gap-3">
+                  {/* Icon */}
+                  <div className="flex-shrink-0">
+                    <div className="w-8 h-8 rounded-full bg-red-500 flex items-center justify-center">
+                      <svg
+                        className="w-5 h-5 text-white"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M6 18L18 6M6 6l12 12"
+                        />
+                      </svg>
+                    </div>
+                  </div>
+
+                  {/* Content */}
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-sm font-bold text-red-900 mb-1">
+                      Anmeldung fehlgeschlagen
+                    </h3>
+                    <p className="text-sm text-red-800">{error}</p>
+                  </div>
+
+                  {/* Close Button */}
+                  <button
+                    type="button"
+                    onClick={() => setError('')}
+                    className="flex-shrink-0 text-red-400 hover:text-red-600 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 rounded"
+                    aria-label="Fehlermeldung schließen"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -158,7 +178,12 @@ const Login = () => {
               name="username"
               ref={usernameRef}
               value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              onChange={(e) => {
+                setUsername(e.target.value);
+                if (error) {
+                  setError('');
+                }
+              }}
               className="w-full px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent outline-none transition-shadow duration-200 hover:border-brand-primary"
               placeholder="Ihr Benutzername"
               required
@@ -174,7 +199,12 @@ const Login = () => {
               id="password"
               name="password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                if (error) {
+                  setError('');
+                }
+              }}
               className="w-full px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent outline-none transition-shadow duration-200 hover:border-brand-primary"
               placeholder="Ihr Passwort"
               required
