@@ -4,9 +4,8 @@ import { EXPECTED_SHEET_NAMES } from '../../schemas/election.schema.js';
 
 /**
  * Parse Excel file containing election configuration.
- *
- * @param {File} file - The uploaded Excel file to parse
- * @returns {Promise<{success: boolean, data?: Object, errors?: Array, sheets?: Array}>} Result object indicating success/failure and containing data
+ * @param {File} file - The Excel file to parse.
+ * @returns {Promise<{success: boolean, data?: {info: Object, candidates: Array}, sheets?: Array, errors?: Array}>}
  */
 export const parseElectionExcel = async (file) => {
   try {
@@ -44,7 +43,7 @@ export const parseElectionExcel = async (file) => {
 
         if (val === 'Wahlzeitraum von') {
           startDate = row.getCell(colNumber + 2).value;
-        } // Annahme: Wert steht 2 Spalten weiter
+        }
         if (val === 'bis') {
           endDate = row.getCell(colNumber + 2).value;
         }
@@ -61,7 +60,7 @@ export const parseElectionExcel = async (file) => {
           if (dataRow) {
             infoDataRow = {};
             dataRow.eachCell((dataCell, dataCol) => {
-              const key = infoHeaders[dataCol];
+              const key = infoHeaders[dataCol]; // Wir nutzen den Namen aus dem Header, nicht den Index!
               if (key) {
                 let value = dataCell.value;
                 if (value && typeof value === 'object' && value.result !== undefined) {
@@ -82,7 +81,6 @@ export const parseElectionExcel = async (file) => {
     if (endDate) {
       info['Endzeitpunkt'] = endDate;
     }
-
     const candidatesRaw = [];
     let candidateHeaders = [];
 
