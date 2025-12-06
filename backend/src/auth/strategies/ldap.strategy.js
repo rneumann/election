@@ -44,7 +44,7 @@ export const login = async (username, password) => {
     logger.debug(`Authenticating user via LDAP with: cn=${username},cn=users,${AD_BASE_DN}`);
 
     logger.debug(`Attempting final user bind with DN: uid=${username},ou=students,${AD_BASE_DN}`);
-    await client.bind(`uid=${username},ou=students,${AD_BASE_DN}`, `${password}`);
+    await client.bind(`uid=${username},${AD_BASE_DN}`, `${password}`);
     logger.info(
       `User uid=${username},ou=students,${AD_BASE_DN} authenticated successfully via LDAP.`,
     );

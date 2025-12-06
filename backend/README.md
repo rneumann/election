@@ -34,8 +34,8 @@ PORT=3000
 NODE_ENV=development
 
 AD_URL={...}
-AD_BASE_DN={...}
-AD_DOMAIN={...}
+AD_BASE_DN={...}    # LDAP Base DN -> Volle DN angeben, nötig für Authentifizierung bind (BASE_DN, Passwort), der eingegebene username wird als UID interpretiert.
+AD_DOMAIN={...}     # LDAP Domain
 
 
 ADMIN_PASSWORD={...}
