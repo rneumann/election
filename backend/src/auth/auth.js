@@ -202,27 +202,24 @@ export const logoutRoute = async (req, res) => {
           `Try to logout user from Keycloak with redirect_uri: ${KC_BASE_URL}/realms/${KC_REALM}/protocol/openid-connect/logout?redirect_uri=${encodeURIComponent('http://localhost:5173/login')}`,
         );
 
-        try {
-          const response = await axios.post(
-            `${KC_BASE_URL}/realms/${KC_REALM}/protocol/openid-connect/logout`,
-            qs.stringify({
-              client_id: CLIENT_ID,
-              client_secret: CLIENT_SECRET,
-              refresh_token: user.refreshToken,
-            }),
-            {
-              headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-              },
+        const response = await axios.post(
+          `${KC_BASE_URL}/realms/${KC_REALM}/protocol/openid-connect/logout`,
+          qs.stringify({
+            client_id: CLIENT_ID,
+            client_secret: CLIENT_SECRET,
+            refresh_token: user.refreshToken,
+          }),
+          {
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
             },
-          );
-          logger.debug(`Keycloak user logged out successfully: ${response.status}`);
-          if (response.status !== 204) {
-            return res.status(500).json({ message: 'Logout error' });
-          }
-        } catch (error) {
-          logger.error('Keycloak logout error:', error);
+          },
+        );
+        logger.debug(`Keycloak user logged out successfully: ${response.status}`);
+        if (response.status !== 204) {
+          return res.status(500).json({ message: 'Logout error' });
         }
+        return res.status(200).json({ message: 'Logout successful' });
       }
 
       // Fallback für andere Auth-Provider

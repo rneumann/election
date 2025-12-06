@@ -76,20 +76,6 @@ app.use(
 );
 
 /**
- * Middleware to prevent caching of authenticated pages
- * This ensures the browser always fetches fresh content from the server
- * and prevents displaying stale cached pages after logout
- */
-app.use((req, res, next) => {
-  res.set({
-    'Cache-Control': 'no-store, no-cache, must-revalidate, private',
-    Pragma: 'no-cache',
-    Expires: '0',
-  });
-  next();
-});
-
-/**
  * Body parsers
  */
 app.use(express.json());
