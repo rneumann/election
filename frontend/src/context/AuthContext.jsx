@@ -33,7 +33,7 @@ export const useAuth = () => {
  * @returns {React.ReactElement} Provider component
  */
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(() => authService.getCurrentUser());
+  const [user, setUser] = useState(undefined);
   const [isAuthenticated, setIsAuthenticated] = useState(() => authService.isAuthenticated());
   const [loading, setLoading] = useState(true);
 
@@ -45,15 +45,29 @@ export const AuthProvider = ({ children }) => {
    */
   const logout = async () => {
     try {
-      const response = await api.delete('/auth/logout', { withCredentials: true });
-      const redirectUrl = response.data.redirectUrl;
-      localStorage.removeItem('csrfToken');
-      window.location.href = redirectUrl; // Browser folgt Redirect → Keycloak-Session wird beendet
-    } catch {
-      throw new Error('Logout failed');
-    } finally {
+      // Clear state BEFORE making the API call to prevent any race conditions
       setUser(undefined);
       setIsAuthenticated(false);
+      localStorage.removeItem('csrfToken');
+      sessionStorage.removeItem('isAuthenticated');
+
+      const response = await api.delete('/auth/logout', { withCredentials: true });
+      const redirectUrl = response.data.redirectUrl;
+
+      // Replace the current history entry so "back" button won't work
+      window.history.replaceState(null, '', '/login');
+
+      // Hard redirect to Keycloak logout
+      window.location.href = redirectUrl;
+    } catch {
+      // Even if logout fails, clear local state
+      setUser(undefined);
+      setIsAuthenticated(false);
+      localStorage.removeItem('csrfToken');
+      sessionStorage.removeItem('isAuthenticated');
+
+      // Redirect to login page
+      window.location.href = '/login';
     }
   };
 
@@ -116,18 +130,47 @@ export const AuthProvider = ({ children }) => {
    * @returns {Promise<{success: boolean, message?: string}>} Login result
    */
   const login = async (username, password) => {
+    const ERROR_INVALID_CREDENTIALS = 'Benutzername oder Passwort ist falsch.';
+
     try {
       const user = await authService.login(username, password);
-      setUser(user);
-      setIsAuthenticated(true);
 
-      logger.debug(`CSRF From local storage: ${localStorage.getItem('csrfToken')}`);
+      if (user && user.username) {
+        setUser(user);
+        setIsAuthenticated(true);
+        sessionStorage.setItem('isAuthenticated', 'true');
 
-      return { success: true };
+        logger.debug(`CSRF From local storage: ${localStorage.getItem('csrfToken')}`);
+
+        return { success: true, user };
+      } else {
+        return { success: false, message: ERROR_INVALID_CREDENTIALS };
+      }
     } catch (error) {
+      logger.error('Login failed:', error);
+
+      // Check for specific error codes/messages
+      if (error.response?.status === 401) {
+        return {
+          success: false,
+          message: ERROR_INVALID_CREDENTIALS,
+        };
+      } else if (error.response?.status === 500) {
+        return {
+          success: false,
+          message: 'Ein Serverfehler ist aufgetreten. Bitte versuchen Sie es später erneut.',
+        };
+      } else if (error.code === 'ERR_NETWORK' || error.message.includes('Network')) {
+        return {
+          success: false,
+          message:
+            'Keine Verbindung zum Server möglich. Bitte überprüfen Sie Ihre Internetverbindung.',
+        };
+      }
+
       return {
         success: false,
-        message: error.message || 'Login failed. Please try again.',
+        message: ERROR_INVALID_CREDENTIALS,
       };
     }
   };

@@ -1,7 +1,7 @@
 id,info,description,listvotes,seats_to_fill,votes_per_ballot,max_cumulative_votes,test_election_active,start,end,election_type,counting_method
 9d9eb7d5-42a0-4b65-a7ac-681d08b67e7c,Wahl 2025,Wahl der Fachschaft,0,7,3,2,false,2025-06-01 08:00:00,2026-06-01 18:00:00,majority_vote,highest_votes_absolute
 b474b81b-b264-4411-b1f7-57e9d6c9e437,Präsidentenwahl 2025,Wahl des Präsidenten,0,1,1,1,false,2027-07-01 08:00:00,2027-07-01 18:00:00,majority_vote,highest_votes_simple
-c1f9f7b2-73e4-4c0e-a0b9-9b0f3b0399a1,Studierendenparlament 2025,Verhältniswahl StuPa,1,25,3,2,false,2025-03-01 08:00:00,2026-03-15 18:00:00,proportional_representation,sainte_lague
+c1f9f7b2-73e4-4c0e-a0b9-9b0f3b0399a1,Studierendenparlament 2025,Verhältniswahl StuPa,1,10,3,2,false,2025-03-01 08:00:00,2025-03-15 18:00:00,proportional_representation,sainte_lague
 0c83bc8c-9b58-4458-8df3-b1460d85bb7f,Senat Studierende 2025,Verhältniswahl Senat (Studierende),0,3,3,2,true,2026-04-01 08:00:00,2026-04-15 18:00:00,proportional_representation,hare_niemeyer
 97ab2fb6-d1a8-4ea0-ab68-67e8c27478df,Fakultätsrat Technik 2025,Verhältniswahl Fakultätsrat,0,3,5,2,false,2025-05-01 08:00:00,2025-05-15 18:00:00,proportional_representation,hare_niemeyer
 3f4c7df1-6e5a-4d8a-9c8a-871b9d55f0d0,Urabstimmung Semesterticket,Abstimmung über Semesterticket,0,1,1,1,false,2025-11-01 08:00:00,2025-11-10 18:00:00,referendum,yes_no_referendum

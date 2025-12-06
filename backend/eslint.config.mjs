@@ -16,7 +16,7 @@ import jsdoc from 'eslint-plugin-jsdoc';
 
 export default [
   {
-    ignores: ['__tests__/**/*.js'],
+    ignores: ['__tests__/**/*.js', 'node_modules/**'],
   },
   js.configs.recommended,
 
