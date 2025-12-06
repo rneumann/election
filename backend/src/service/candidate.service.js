@@ -84,6 +84,27 @@ export const updateCandidateInformation = async (candidateInfo) => {
 };
 
 /**
+ * Deletes a candidate's information from the database.
+ * @param {string} candidate_uid - The candidate's ID.
+ * @returns {Promise<boolean>} A promise resolving to true if the candidate's information was deleted successfully, false otherwise.
+ */
+export const deleteCandidateInformation = async (candidate_uid) => {
+  const query = `
+    DELETE FROM candidate_information
+    WHERE candidate_uid = $1
+  `;
+  const values = [candidate_uid];
+  try {
+    const result = await client.query(query, values);
+    return result.rowCount > 0;
+  } catch (error) {
+    logger.debug('Error deleting candidate information:', error);
+    logger.error('Failed to delete candidate information from the database.');
+    throw new Error('Database delete operation failed.');
+  }
+};
+
+/**
  * Checks if a voter is a candidate by checking if the voter's ID exists in the candidates table.
  * @param {number} uid - The ID of the voter to check.
  * @returns {Promise<boolean>} A promise resolving to true if the voter is a candidate, false otherwise.
