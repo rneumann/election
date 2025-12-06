@@ -33,20 +33,20 @@ export const importElectionData = async (filePath) => {
 
     const electionSheet = workbook.worksheets[0];
     if (!electionSheet) {
-      throw new Error('Die Excel-Datei ist leer.');
+      throw new Error('This workbook has no worksheets.');
     }
 
     const startDateStr = electionSheet.getCell('D3').value;
     const endDateStr = electionSheet.getCell('D4').value;
 
     if (!startDateStr || !endDateStr) {
-      throw new Error('Start- oder Enddatum fehlt (erwartet in Zellen D3 und D4).');
+      throw new Error('Start or end date missing expected in D3 and D4.');
     }
 
     const startDate = parseDate(startDateStr);
     const endDate = parseDate(endDateStr);
 
-    logger.info(`Importiere Wahlen für Zeitraum: ${startDate} -> ${endDate}`);
+    logger.info(`Importing elections for period ${startDate} → ${endDate}`);
 
     await db.query('BEGIN');
 
@@ -71,17 +71,25 @@ export const importElectionData = async (filePath) => {
       const maxCumulativeVotes = Number(maxKumValue) || 0;
 
       if (!Number.isInteger(seatsToFill) || seatsToFill < 1) {
-        throw new Error(`Zeile ${rowIndex}: 'Plätze' ungültig.`);
+        throw new Error(
+          `Invalid seats_to_fill in row ${rowIndex}: must be a positive integer, got ${seatsValue}`,
+        );
       }
       const electionType = ELECTION_TYPE_MAPPING.get(electionTypeText);
       if (!electionType) {
-        throw new Error(`Zeile ${rowIndex}: Unbekannter Wahltyp '${electionTypeText}'`);
+        throw new Error(
+          `Missing election_type (column H) in row ${rowIndex}. Expected: Mehrheitswahl, Verhältniswahl, or Urabstimmung.`,
+        );
       }
       const countingMethod = COUNTING_METHOD_MAPPING.get(countingMethodText);
       if (!countingMethod) {
-        throw new Error(`Zeile ${rowIndex}: Unbekanntes Zählverfahren '${countingMethodText}'`);
+        throw new Error(
+          `Missing counting_method (column I) in row ${rowIndex}. Expected: Sainte-Laguë, Hare-Niemeyer, Einfache Mehrheit, Absolute Mehrheit, or Ja/Nein/Enthaltung.`,
+        );
       }
-      logger.info(`Zeile ${rowIndex}: Importiere Wahl "${identifier}"`);
+      logger.info(
+        `Row ${rowIndex}: ${info} → election_type=${electionType}, counting_method=${countingMethod}`,
+      );
 
       const insertElectionQuery = `
         INSERT INTO elections (
@@ -179,7 +187,7 @@ export const importElectionData = async (filePath) => {
     return importedCount;
   } catch (err) {
     await db.query('ROLLBACK');
-    logger.error('Fehler beim Excel-Import:', err);
+    logger.error('Error during Excel import:', err);
 
     if (err.message.includes('relation "electioncandidates" does not exist')) {
       throw new Error(
