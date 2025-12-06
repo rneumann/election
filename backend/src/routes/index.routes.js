@@ -237,8 +237,16 @@ router.get(
   async (req, res) => {
     try {
       const startedOnly = req.query.startedOnly === 'true';
+      const endedOnly = req.query.endedOnly === 'true';
 
-      const whereClause = startedOnly ? 'WHERE start <= NOW()' : '';
+      let whereClause = '';
+      if (startedOnly && endedOnly) {
+        whereClause = 'WHERE start <= NOW() AND "end" <= NOW()';
+      } else if (startedOnly) {
+        whereClause = 'WHERE start <= NOW()';
+      } else if (endedOnly) {
+        whereClause = 'WHERE "end" <= NOW()';
+      }
 
       const result = await client.query(`
         SELECT 

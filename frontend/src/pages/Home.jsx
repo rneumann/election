@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useTheme } from '../hooks/useTheme.js';
@@ -29,7 +29,7 @@ const Home = () => {
    * It fetches the list of elections from the API and updates the state with the new data.
    * If an error occurs, it logs an error message to the console.
    */
-  const refreshElections = async () => {
+  const refreshElections = useCallback(async () => {
     try {
       const [active, future, alreadyVoted] = await Promise.all([
         voterApi.getElections('active', user.username, false),
@@ -42,7 +42,7 @@ const Home = () => {
     } catch (err) {
       logger.error('Fehler beim Nachladen der Wahlen', err);
     }
-  };
+  }, [user]);
 
   // Redirect admins to admin page
   useEffect(() => {
@@ -69,7 +69,7 @@ const Home = () => {
     };
 
     init();
-  }, [user.username]); // eslint-disable-line
+  }, [user?.username, refreshElections]);
 
   const dateOptions = {
     day: '2-digit',
