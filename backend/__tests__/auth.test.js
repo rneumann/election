@@ -81,7 +81,12 @@ describe('login', () => {
 
   test('should return LDAP-user with correct credentials', async () => {
     const result = await login('user1', 'pass1');
-    expect(result).toEqual({ username: 'user1', role: 'voter', authProvider: 'ldap' });
+    expect(result).toEqual({
+      username: 'user1',
+      role: 'voter',
+      authProvider: 'ldap',
+      isCandidate: false,
+    });
 
     expect(bindMock).toHaveBeenCalledWith(
       `uid=user1,ou=students,${process.env.AD_BASE_DN}`,
