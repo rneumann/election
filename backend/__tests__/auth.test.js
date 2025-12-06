@@ -3,14 +3,14 @@ import { describe, test, expect, vi, beforeEach } from 'vitest';
 process.env.ADMIN_PASSWORD = 'admin123';
 process.env.COMMITTEE_PASSWORD = 'committee123';
 process.env.AD_URL = 'ldap://mockserver';
-process.env.AD_BASE_DN = 'dc=example,dc=com';
+process.env.AD_BASE_DN = 'ou=students,dc=example,dc=com';
 process.env.AD_DOMAIN = 'EXAMPLE';
 process.env.ADMIN_DN = 'cn=admin,dc=ads,dc=hs-karlsruhe,dc=de';
 process.env.ADMIN_PASSWORD_LDAP = 'p';
 
 const ADMIN_DN = process.env.ADMIN_DN;
 const ADMIN_PASSWORD_LDAP = process.env.ADMIN_PASSWORD_LDAP;
-const USER_DN = `uid=user1,ou=students,${process.env.AD_BASE_DN}`;
+const USER_DN = `uid=user1,${process.env.AD_BASE_DN}`;
 vi.mock('../src/conf/logger/logger.js', () => ({
   logger: {
     debug: vi.fn(),
@@ -74,10 +74,7 @@ describe('login', () => {
     const password = 'wrongpass';
     const result = await login(username, password);
     expect(result).toBeUndefined();
-    expect(bindMock).toHaveBeenCalledWith(
-      `uid=${username},ou=students,${process.env.AD_BASE_DN}`,
-      password,
-    );
+    expect(bindMock).toHaveBeenCalledWith(`uid=${username},${process.env.AD_BASE_DN}`, password);
     expect(logger.error).toHaveBeenCalledWith(
       `Error authenticating user user1 via LDAP: Unexpected bind call with DN: uid=${username},ou=students,dc=example,dc=com`,
     );
