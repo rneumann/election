@@ -88,10 +88,7 @@ describe('login', () => {
       isCandidate: false,
     });
 
-    expect(bindMock).toHaveBeenCalledWith(
-      `uid=user1,ou=students,${process.env.AD_BASE_DN}`,
-      'pass1',
-    );
+    expect(bindMock).toHaveBeenCalledWith(`${USER_DN}`, 'pass1');
 
     expect(bindMock).toHaveBeenCalledTimes(1);
 
