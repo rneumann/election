@@ -20,6 +20,10 @@ vi.mock('../src/conf/logger/logger.js', () => ({
   },
 }));
 
+vi.mock('../src/service/candidate.service.js', () => ({
+  checkIfVoterIsCandidate: vi.fn().mockResolvedValue(false),
+}));
+
 import { ensureHasRole } from '../src/auth/auth.js';
 import { logger } from '../src/conf/logger/logger.js';
 import { login } from '../src/auth/strategies/ldap.strategy.js';
