@@ -23,6 +23,10 @@ export const voterRouter = Router();
  *     tags:
  *       - Elections
  *     parameters:
+ *       - in: header
+ *         name: X-CSRF-Token
+ *         required: true
+ *         description: CSRF token for security.
  *       - name: voterId
  *         in: path
  *         description: ID of the voter
@@ -141,6 +145,10 @@ voterRouter.get(
  *    tags:
  *      - Elections
  *    parameters:
+ *      - in: header
+ *        name: X-CSRF-Token
+ *        required: true
+ *        description: CSRF token for security.
  *      - name: id
  *        in: path
  *        description: ID of the election

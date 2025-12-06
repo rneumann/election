@@ -7,6 +7,7 @@ import { logger } from '../conf/logger/logger.js';
 import { readSecret } from '../security/secret-reader.js';
 // NEU: Audit Import
 import { writeAuditLog } from '../audit/auditLogger.js';
+import { checkIfVoterIsCandidate } from '../service/candidate.service.js';
 const { KC_BASE_URL, KC_REALM, CLIENT_ID, CLIENT_SECRET } = process.env;
 
 /**
@@ -105,7 +106,7 @@ export const loginRoute =
       }
       if (!user) {
         logger.warn('Authentication failed for user:', username);
-        // NEU: Login Failed Audit
+        // Login Failed Audit
         writeAuditLog({
           actionType: 'LOGIN_FAILED',
           level: 'WARN',
@@ -120,7 +121,7 @@ export const loginRoute =
           return res.status(500).json({ message: 'Login error' });
         }
         logger.debug('User authenticated successfully:', username);
-        // NEU: Login Success Audit
+        // Login Success Audit
         writeAuditLog({
           actionType: 'LOGIN_SUCCESS',
           level: 'INFO',
@@ -244,7 +245,14 @@ export const getUserInfo = async (username, authProvider) => {
   if (username === committeeUser.username) {
     return { username: committeeUser.username, role: 'committee', authProvider: authProvider };
   }
-  return { username: username, role: 'voter', authProvider: authProvider };
+
+  const isCandidate = await checkIfVoterIsCandidate(username);
+  logger.debug(`User ${username} is candidate: ${isCandidate}`);
+  if (isCandidate) {
+    return { username: username, role: 'voter', authProvider: authProvider, isCandidate: true };
+  }
+
+  return { username: username, role: 'voter', authProvider: authProvider, isCandidate: false };
 };
 
 /**

@@ -1,21 +1,21 @@
-id,lastname,firstname,mtknr,faculty,keyword,notes,approved
-2c9e57f4-543b-4b78-9301-b4363df31a4d,Müller,Max,9876543,Informatik,IT Security,Sehr engagiert,true
-42b1fbd1-7c42-4b42-8260-2f9f19824fcb,Schmidt,Anna,8765432,Maschinenbau,Robotik,Gute Führungskompetenz,false
-4b9a5353-e080-493b-a3e1-82908f8504c7,Weber,Julia,7654321,Wirtschaft,Marketing,Sehr erfahren,true
-4b9a5353-e080-493b-a3e1-82908f8504c8,Wolf,Julian,7654331,Informatik,Software,Sehr erfahren,true
-8f3b1c2a-6a4e-4d7b-9c1f-0a1b2c3d4e5f,Huber,Lena,6543210,Biologie,Nachhaltigkeit,Engagiert in Umweltschutz,true
-c4d5e6f7-1234-4abc-9def-0a1b2c3d4e5f,Meier,Thomas,5432109,Elektrotechnik,Netzwerke,Stark in praktischer Arbeit,false
-b7a6c5d4-9f8e-4b3a-8c7d-6e5f4a3b2c1d,Fischer,Sophia,4321098,Jura,Recht,Sehr präzise,true
-a9b8c7d6-5e4f-4a3b-9c8d-7e6f5a4b3c2d,Braun,Jonas,3210987,Medizin,Gesundheitswesen,Gute Teamfähigkeit,false
-e2d3c4b5-6a7b-4c8d-9e1f-2a3b4c5d6e7f,Klein,Maria,2109876,Wirtschaft,Data Science,Erfahren in Statistik,true
-f1e2d3c4-b5a6-4c7d-8e9f-0a1b2c3d4e8f,Lang,Oliver,1098765,Informatik,Künstliche Intelligenz,Machine Learning Fokus,true
-1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d,Schwarz,Emily,1987654,Maschinenbau,Robotik,Leitet Projektgruppen,false
-0f1e2d3c-4b5a-4c6d-8e7f-9a0b1c2d3e4f,Wagner,Eric,2876543,Informatik,Software,Fullstack-Erfahrung,true
-d1e2f3a4-b5c6-4d7e-8f9a-0b1c2d3e4f5a,Becker,Sarah,3876542,Wirtschaft,Finanzen,Erfahren in Projektmanagement,true
-e2f3a4b5-c6d7-4e8f-9a0b-1c2d3e4f5a6b,Richter,David,4876541,Informatik,Cybersecurity,Spezialisiert auf IT-Sicherheit,true
-f3a4b5c6-d7e8-4f9a-0b1c-2d3e4f5a6b7c,Koch,Laura,5876540,Biologie,Genetik,Forschungserfahrung,false
-a4b5c6d7-e8f9-4a0b-1c2d-3e4f5a6b7c8d,Zimmermann,Tom,6876539,Jura,Verfassungsrecht,Ausgezeichnete Rhetorik,true
-b5c6d7e8-f9a0-4b1c-2d3e-4f5a6b7c8d9e,Schulz,Nina,7876538,Medizin,Chirurgie,Praktische Erfahrung,false
-ffffff00-0000-4000-8000-000000000001,Ja,-,,,,Referendum Option: Ja,true
-ffffff00-0000-4000-8000-000000000002,Nein,-,,,,Referendum Option: Nein,true
-ffffff00-0000-4000-8000-000000000003,Enthaltung,-,,,,Referendum Option: Enthaltung,true
+id,uid,lastname,firstname,mtknr,faculty,keyword,notes,approved
+2c9e57f4-543b-4b78-9301-b4363df31a4d,u001,Müller,Max,9876543,Informatik,IT Security,Sehr engagiert,true
+42b1fbd1-7c42-4b42-8260-2f9f19824fcb,u002,Schmidt,Anna,8765432,Maschinenbau,Robotik,Gute Führungskompetenz,false
+4b9a5353-e080-493b-a3e1-82908f8504c7,u003,Weber,Julia,7654321,Wirtschaft,Marketing,Sehr erfahren,true
+4b9a5353-e080-493b-a3e1-82908f8504c8,u004,Wolf,Julian,7654331,Informatik,Software,Sehr erfahren,true
+8f3b1c2a-6a4e-4d7b-9c1f-0a1b2c3d4e5f,u005,Huber,Lena,6543210,Biologie,Nachhaltigkeit,Engagiert in Umweltschutz,true
+c4d5e6f7-1234-4abc-9def-0a1b2c3d4e5f,u006,Meier,Thomas,5432109,Elektrotechnik,Netzwerke,Stark in praktischer Arbeit,false
+b7a6c5d4-9f8e-4b3a-8c7d-6e5f4a3b2c1d,u007,Fischer,Sophia,4321098,Jura,Recht,Sehr präzise,true
+a9b8c7d6-5e4f-4a3b-9c8d-7e6f5a4b3c2d,u008,Braun,Jonas,3210987,Medizin,Gesundheitswesen,Gute Teamfähigkeit,false
+e2d3c4b5-6a7b-4c8d-9e1f-2a3b4c5d6e7f,u009,Klein,Maria,2109876,Wirtschaft,Data Science,Erfahren in Statistik,true
+f1e2d3c4-b5a6-4c7d-8e9f-0a1b2c3d4e8f,u010,Lang,Oliver,1098765,Informatik,Künstliche Intelligenz,Machine Learning Fokus,true
+1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d,u011,Schwarz,Emily,1987654,Maschinenbau,Robotik,Leitet Projektgruppen,false
+0f1e2d3c-4b5a-4c6d-8e7f-9a0b1c2d3e4f,u012,Wagner,Eric,2876543,Informatik,Software,Fullstack-Erfahrung,true
+d1e2f3a4-b5c6-4d7e-8f9a-0b1c2d3e4f5a,u013,Becker,Sarah,3876542,Wirtschaft,Finanzen,Erfahren in Projektmanagement,true
+e2f3a4b5-c6d7-4e8f-9a0b-1c2d3e4f5a6b,u014,Richter,David,4876541,Informatik,Cybersecurity,Spezialisiert auf IT-Sicherheit,true
+f3a4b5c6-d7e8-4f9a-0b1c-2d3e4f5a6b7c,u015,Koch,Laura,5876540,Biologie,Genetik,Forschungserfahrung,false
+a4b5c6d7-e8f9-4a0b-1c2d-3e4f5a6b7c8d,u016,Zimmermann,Tom,6876539,Jura,Verfassungsrecht,Ausgezeichnete Rhetorik,true
+b5c6d7e8-f9a0-4b1c-2d3e-4f5a6b7c8d9e,u017,Schulz,Nina,7876538,Medizin,Chirurgie,Praktische Erfahrung,false
+ffffff00-0000-4000-8000-000000000001,u018,Ja,-,,,,Referendum Option: Ja,true
+ffffff00-0000-4000-8000-000000000002,u019,Nein,-,,,,Referendum Option: Nein,true
+ffffff00-0000-4000-8000-000000000003,u020,Enthaltung,-,,,,Referendum Option: Enthaltung,true

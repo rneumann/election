@@ -190,27 +190,6 @@ router.get('/auth/me', (req, res) => {
 router.delete('/auth/logout', logoutRoute);
 
 /**
- * Testing routes for protection
- * @openapi
- * /api/protected:
- *   get:
- *     summary: Protected route
- *     responses:
- *       200:
- *         description: Protected route accessed
- *       401:
- *         description: Unauthorized
- *       403:
- *         description: Forbidden
- */
-router.get('/protected', ensureAuthenticated, (req, res) => {
-  res.json({ message: `Protected route accessed with user: ${req.user.username}` });
-});
-router.get('/protected/role', ensureHasRole(['admin']), (req, res) => {
-  res.json({ message: `Protected route accessed with user: ${req.user.username}` });
-});
-
-/**
  * @openapi
  * /api/admin/elections:
  *   get:
