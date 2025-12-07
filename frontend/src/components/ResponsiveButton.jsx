@@ -36,13 +36,16 @@ const ResponsiveButton = ({
   // Variant styles
   const variantClasses = {
     primary:
-      'bg-brand-primary text-white hover:opacity-90 active:opacity-80 shadow-md hover:shadow-lg disabled:bg-gray-400',
+      'bg-brand-primary dark:bg-red-700 text-white hover:opacity-90 active:opacity-80 shadow-md hover:shadow-lg disabled:bg-gray-400 dark:disabled:bg-gray-600 transition-colors',
     secondary:
-      'bg-white text-brand-primary border-2 border-brand-primary hover:bg-brand-light active:bg-gray-100',
-    danger: 'bg-red-600 text-white hover:bg-red-700 active:bg-red-800 shadow-md hover:shadow-lg',
+      'bg-white dark:bg-gray-700 text-brand-primary dark:text-red-400 border-2 border-brand-primary dark:border-red-600 hover:bg-brand-light dark:hover:bg-gray-600 active:bg-gray-100 dark:active:bg-gray-500 transition-colors',
+    danger:
+      'bg-red-600 dark:bg-red-700 text-white hover:bg-red-700 dark:hover:bg-red-800 active:bg-red-800 dark:active:bg-red-900 shadow-md hover:shadow-lg transition-colors',
     outline:
-      'border-2 border-brand-gray text-brand-dark hover:bg-gray-700 active:bg-gray-200 bg-transparent',
-    icon: 'bg-transparent border-none shadow-none p-0 hover:opacity-80 active:opacity-60',
+      'bg-gray-500 dark:bg-gray-600 border-2 border-gray-600 dark:border-gray-500 text-white hover:bg-gray-600 dark:hover:bg-gray-500 hover:border-gray-700 dark:hover:border-gray-400 active:bg-gray-700 dark:active:bg-gray-400 shadow-md font-semibold transition-colors',
+    ghost:
+      'bg-transparent dark:bg-transparent text-white border-none shadow-none p-0 hover:opacity-80 active:opacity-60 transition-opacity',
+    icon: 'bg-transparent border-none shadow-none p-0 hover:opacity-80 active:opacity-60 transition-opacity',
   };
 
   // Size styles (with mobile-optimized touch targets)
@@ -50,7 +53,7 @@ const ResponsiveButton = ({
     small: 'px-3 py-1.5 text-sm sm:px-4 sm:py-2',
     medium: 'px-4 py-2.5 text-sm sm:px-5 sm:py-3 sm:text-base min-h-touch',
     large: 'px-6 py-3 text-base sm:px-8 sm:py-4 sm:text-lg min-h-touch',
-    icon: 'p-0 h-auto w-auto',
+    icon: 'p-2 h-auto w-auto flex items-center justify-center',
   };
 
   const tooltipPositionClasses = {
@@ -75,6 +78,9 @@ const ResponsiveButton = ({
     }
     if (variant === 'outline') {
       return variantClasses.outline;
+    }
+    if (variant === 'ghost') {
+      return variantClasses.ghost;
     }
     if (variant === 'icon') {
       return variantClasses.icon;
@@ -108,7 +114,7 @@ const ResponsiveButton = ({
       {toolTip && (
         <span
           role="tooltip"
-          className={`absolute ${selectedTooltipPosition} z-50 whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-xs text-white opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity`}
+          className={`absolute ${selectedTooltipPosition} z-50 whitespace-nowrap rounded bg-gray-800 dark:bg-gray-700 px-2 py-1 text-xs text-white opacity-0 group-hover:opacity-100 pointer-events-none transition-all`}
         >
           {toolTip}
         </span>
