@@ -15,6 +15,8 @@ import { voterRouter } from './routes/voter.routes.js';
 import { candidateRouter } from './routes/candidate.route.js';
 import { importRouter } from './routes/upload.route.js';
 import { exportRoute } from './routes/export.route.js';
+//NEU 
+import { committeeRouter } from './routes/committee.routes.js';
 import { verifyCsrfToken } from './security/csrf-logic.js';
 export const app = express();
 
@@ -254,3 +256,5 @@ app.use(errorHandler);
  * Swagger UI
  */
 app.use('/api-docs', swaggerUiExpress.serve, swaggerUiExpress.setup(swaggerSpec));
+
+app.use('/api/committee', committeeRouter);
