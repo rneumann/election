@@ -61,6 +61,7 @@ export const ImageUploadCandidate = ({ setUploadData }) => {
   const [image, setImage] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [freeze, setFreeze] = useState(false);
 
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
@@ -70,7 +71,7 @@ export const ImageUploadCandidate = ({ setUploadData }) => {
 
   const { showAlert } = useAlert();
 
-  const handleSave = async () => {
+  const tempSave = async () => {
     if (!croppedAreaPixels || !image || isLoading) {
       return;
     }
@@ -90,14 +91,11 @@ export const ImageUploadCandidate = ({ setUploadData }) => {
         type: 'image/jpeg',
       });
 
-      const formData = new FormData();
-
-      formData.append('picture', croppedFile);
       logger.debug('Zugeschnittenes Bild:', croppedFile);
-      logger.debug('FormData:', formData);
-      showAlert('success', 'Bild erfolgreich gespeichert und hochgeladen!');
+      showAlert('success', 'Bild wurde im angegebenen Format übernommen.');
+      setFreeze(true);
 
-      setUploadData(formData);
+      setUploadData(croppedFile);
     } catch (error) {
       logger.error('Fehler beim Bild-Upload:', error);
       showAlert('error', `Upload fehlgeschlagen: ${error.message}`);
@@ -160,6 +158,7 @@ export const ImageUploadCandidate = ({ setUploadData }) => {
     setCrop({ x: 0, y: 0 });
     setZoom(1);
     setCroppedAreaPixels(null);
+    setFreeze(false);
   };
 
   if (image) {
@@ -168,19 +167,19 @@ export const ImageUploadCandidate = ({ setUploadData }) => {
         <h2 className="text-xl font-bold text-gray-800">Bild zuschneiden</h2>
 
         {/* CROPPING AREA */}
-        <div className="relative w-full aspect-[3/4] max-w-sm mx-auto bg-gray-100 rounded-lg shadow-lg">
+        <div className="relative w-1/4 aspect-[3/4] max-w-sm mx-auto bg-gray-100 rounded-lg shadow-lg">
           <Cropper
             image={image}
             crop={crop}
             zoom={zoom}
             aspect={3 / 4}
-            onCropChange={setCrop}
-            onZoomChange={setZoom}
-            onCropComplete={onCropComplete}
+            onCropChange={freeze ? () => {} : setCrop}
+            onZoomChange={freeze ? () => {} : setZoom}
+            onCropComplete={freeze ? () => {} : onCropComplete}
             cropShape="rect"
             showGrid={true}
             style={{
-              containerStyle: { borderRadius: '8px', height: '50%', width: '50%' },
+              containerStyle: { borderRadius: '8px' },
               cropAreaStyle: { border: '2px dashed white', borderRadius: '4px' },
             }}
           />
@@ -193,7 +192,14 @@ export const ImageUploadCandidate = ({ setUploadData }) => {
               Zoom ({Math.round(zoom * 100)}%)
             </span>
             <div className="flex-1">
-              <Slider min={1} max={3} step={0.1} value={zoom} onChange={setZoom} />
+              <Slider
+                disabled={freeze}
+                min={1}
+                max={3}
+                step={0.1}
+                value={zoom}
+                onChange={setZoom}
+              />
             </div>
           </div>
 
@@ -208,8 +214,16 @@ export const ImageUploadCandidate = ({ setUploadData }) => {
             Abbrechen / Neu wählen
           </ResponsiveButton>
 
-          <ResponsiveButton onClick={handleSave} variant="primary" className="flex items-center">
-            Bild speichern
+          <ResponsiveButton
+            onClick={async () => {
+              setFreeze(!freeze);
+              await tempSave();
+              return;
+            }}
+            variant="primary"
+            className="flex items-center"
+          >
+            {freeze ? 'Anpassen' : 'Übernehmen'}
           </ResponsiveButton>
         </div>
       </div>

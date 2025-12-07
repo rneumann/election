@@ -96,11 +96,16 @@ const AppRoutes = () => {
       <Route
         path="/candidate"
         element={
-          <ProtectedRoute>
-            <CandidatePage />
-          </ProtectedRoute>
+          user?.isCandidate ? (
+            <ProtectedRoute>
+              <CandidatePage />
+            </ProtectedRoute>
+          ) : (
+            <Navigate to="/login" replace />
+          )
         }
       />
+
       <Route
         path="/admin"
         element={

@@ -4,28 +4,31 @@ import { Header } from '../layout/Header';
 import { ImageUploadCandidate } from '../components/ImageUploadCandidate';
 import ResponsiveButton from '../components/ResponsiveButton';
 import { logger } from '../conf/logger/logger';
+import { candidateApi } from '../services/candiateApi';
+import { useAlert } from '../context/AlertContext';
 
 export const CandidatePage = () => {
   const [uploadData, setUploadData] = useState(null);
   const [description, setDescription] = useState('');
-  const [currentData, setCurrentData] = useState({
-    description: '',
-    picture: '',
-  });
+  const [currentData, setCurrentData] = useState(null); // eslint-disable-line
+  const { showAlert } = useAlert();
 
-  const saveNewEntries = () => {
+  const saveNewEntries = async () => {
     logger.info(`description: ${description}, picture: ${uploadData.name || uploadData.type}`);
 
-    const newEntries = { description, picture: uploadData };
+    const formData = new FormData();
+    formData.append('info', description);
+    formData.append('picture', uploadData);
 
-    setCurrentData(newEntries);
+    logger.info(`New entries saved: ${formData.get('description')}, ${formData.get('picture')}`);
 
-    logger.info(
-      `New entries saved: ${JSON.stringify({
-        description: newEntries.description,
-        picture: newEntries.picture,
-      })}`,
-    );
+    try {
+      await candidateApi.createCanidateInformation(formData);
+      showAlert('success', 'Deine Informationen wurden erfolgreich gespeichert.');
+    } catch (error) {
+      logger.error(`Error saving new entries: ${error.message}`);
+      showAlert('error', 'Beim Speichern der Informationen ist ein Fehler aufgetreten.');
+    }
   };
 
   return (
