@@ -6,6 +6,8 @@ import {
   checkIfCandidateAlreadyHasInfo,
   deleteCandidateInformation,
   getAllCandidates,
+  getCandidateInformationByUid,
+  getCandidatesForElection,
   updateCandidateInformation,
   uploadCandidateInformation,
 } from '../service/candidate.service.js';
@@ -351,3 +353,35 @@ candidateRouter.delete(
     }
   },
 );
+
+candidateRouter.get('/election/:electionId', ensureAuthenticated, async (req, res, next) => {
+  try {
+    const electionId = req.params.electionId;
+
+    // 1) Hole Kandidaten, die bei dieser Wahl antreten
+    const candidates = await getCandidatesForElection(electionId);
+
+    // 2) Hole Infos + Bilder
+    const enriched = await Promise.all(
+      candidates.map(async (cand) => {
+        const info = await getCandidateInformationByUid(cand.uid);
+
+        return {
+          uid: cand.uid,
+          firstname: cand.firstname,
+          lastname: cand.lastname,
+          faculty: cand.faculty,
+          info: info?.info || null,
+          picture: info?.picture_data
+            ? `data:${info.picture_content_type};base64,${info.picture_data.toString('base64')}`
+            : null,
+        };
+      }),
+    );
+
+    res.json(enriched);
+  } catch (error) {
+    logger.error(`Error fetching candidate info for election: ${error.message}`);
+    next(error);
+  }
+});

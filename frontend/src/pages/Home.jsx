@@ -9,6 +9,7 @@ import { logger } from '../conf/logger/logger.js';
 import authService from '../services/authService.js';
 import { Header } from '../layout/Header.jsx';
 import { Footer } from '../layout/Footer.jsx';
+import { CandidateInfoModal } from '../components/candidateModal.jsx';
 
 /**
  * Main dashboard for authenticated users.
@@ -19,6 +20,9 @@ const Home = () => {
   const [electionsActive, setElectionsActive] = useState([]);
   const [electionsFuture, setElectionsFuture] = useState([]);
   const [electionsAlreadyVoted, setElectionsAlreadyVoted] = useState([]);
+
+  const [infoOpen, setInfoOpen] = useState(false);
+  const [infoElectionId, setInfoElectionId] = useState(null);
 
   const [open, setOpen] = useState(false);
   const [selectedElectionId, setSelectedElectionId] = useState(undefined);
@@ -259,6 +263,10 @@ const Home = () => {
                           <ResponsiveButton
                             size="small"
                             toolTip={'Hier können Sie Informationen über die Kandidaten abrufen.'}
+                            onClick={() => {
+                              setInfoElectionId(election.id);
+                              setInfoOpen(true);
+                            }}
                           >
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
@@ -284,6 +292,11 @@ const Home = () => {
                       electionId={selectedElectionId}
                       refreshElections={refreshElections}
                     ></Modal>
+                    <CandidateInfoModal
+                      open={infoOpen}
+                      onClose={() => setInfoOpen(false)}
+                      electionId={infoElectionId}
+                    />
                   </ul>
                 )}
               </div>
