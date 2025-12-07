@@ -95,6 +95,19 @@ const Home = () => {
                 <span className="hidden sm:inline"> ({theme.roles[user?.role] || user?.role})</span>
               </p>
             </div>
+            {user.isCandidate && (
+              <div className="self-start sm:self-auto">
+                <ResponsiveButton
+                  toolTip={'Wechsel zur Kandidaten Ansicht'}
+                  toolTipPlacement="bottom"
+                  variant="secondary"
+                  size="small"
+                  onClick={() => {}}
+                >
+                  Kandidaten Ansicht
+                </ResponsiveButton>
+              </div>
+            )}
             <div className="self-start sm:self-auto">
               <ResponsiveButton
                 toolTip={'logout aus der aktuellen Sitzung'}
