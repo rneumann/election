@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { voterApi } from '../services/voterApi';
 import { logger } from '../conf/logger/logger';
+import { candidateApi } from '../services/candiateApi';
 
 export const CandidateInfoModal = ({ open, onClose, electionId }) => {
   const [candidates, setCandidates] = useState([]);
@@ -14,7 +15,7 @@ export const CandidateInfoModal = ({ open, onClose, electionId }) => {
     const loadData = async () => {
       setLoading(true);
       try {
-        const data = await voterApi.getCandidateInfo(electionId);
+        const data = await candidateApi.getCandidateInfo(electionId);
 
         logger.debug('Geladene Kandidaten:', data); // Debugging
 

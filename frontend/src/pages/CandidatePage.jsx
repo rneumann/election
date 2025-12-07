@@ -98,7 +98,7 @@ export const CandidatePage = () => {
                     flex items-center justify-center
                 "
                 >
-                  {currentData.picture_data ? (
+                  {currentData?.picture_data ? (
                     <img
                       src={`data:${currentData.picture_content_type};base64,${btoa(
                         currentData.picture_data.data.map((b) => String.fromCharCode(b)).join(''),
