@@ -24,6 +24,10 @@ const Home = () => {
   const theme = useTheme();
   const navigate = useNavigate();
 
+  const navigateToCandidatePage = () => {
+    navigate('/candidate');
+  };
+
   /**
    * Refreshes the list of active, future and already voted elections for the user.
    * It fetches the list of elections from the API and updates the state with the new data.
@@ -102,7 +106,9 @@ const Home = () => {
                   toolTipPlacement="bottom"
                   variant="secondary"
                   size="small"
-                  onClick={() => {}}
+                  onClick={() => {
+                    navigateToCandidatePage();
+                  }}
                 >
                   Kandidaten Ansicht
                 </ResponsiveButton>
