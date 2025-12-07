@@ -147,3 +147,54 @@ export const checkIfCandidateAlreadyHasInfo = async (candidate_uid) => {
     throw new Error('Database query operation failed.');
   }
 };
+
+/**
+ * Returns all candidates assigned to a specific election.
+ * @param {string} electionId
+ * @returns {Promise<Array>}
+ */
+export const getCandidatesForElection = async (electionId) => {
+  const query = `
+    SELECT 
+      c.uid,
+      c.firstname,
+      c.lastname,
+      c.faculty
+    FROM electioncandidates ec
+    JOIN candidates c ON c.id = ec.candidateId
+    WHERE ec.electionId = $1
+    ORDER BY c.lastname ASC
+  `;
+
+  try {
+    const result = await client.query(query, [electionId]);
+    return result.rows;
+  } catch (error) {
+    logger.error('Failed to fetch candidates for election:', error);
+    throw new Error('Database query operation failed.');
+  }
+};
+
+/**
+ * Returns full information + picture for a candidate if available.
+ * @param {string} candidateUid
+ * @returns {Promise<Object|null>}
+ */
+export const getCandidateInformationByUid = async (candidateUid) => {
+  const query = `
+    SELECT 
+      info,
+      picture_content_type,
+      picture_data
+    FROM candidate_information
+    WHERE candidate_uid = $1
+  `;
+
+  try {
+    const result = await client.query(query, [candidateUid]);
+    return result.rows.length > 0 ? result.rows[0] : null;
+  } catch (error) {
+    logger.error('Failed to fetch candidate information:', error);
+    throw new Error('Database query operation failed.');
+  }
+};
