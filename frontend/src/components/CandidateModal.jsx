@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { voterApi } from '../services/voterApi';
 import { logger } from '../conf/logger/logger';
 import { candidateApi } from '../services/candiateApi';
 
