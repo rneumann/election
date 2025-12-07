@@ -107,6 +107,7 @@ const processParseResult = (results) => {
     return {
       success: false,
       headers: actualHeaders,
+      /* eslint-disable */
       errors: [
         {
           row: 1,

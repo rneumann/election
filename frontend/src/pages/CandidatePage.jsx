@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Footer } from '../layout/Footer';
 import { Header } from '../layout/Header';
 import { ImageUploadCandidate } from '../components/ImageUploadCandidate';
@@ -10,11 +10,11 @@ import { useAlert } from '../context/AlertContext';
 export const CandidatePage = () => {
   const [uploadData, setUploadData] = useState(null);
   const [description, setDescription] = useState('');
-  const [currentData, setCurrentData] = useState(null); // eslint-disable-line
+  const [currentData, setCurrentData] = useState(null);
   const { showAlert } = useAlert();
 
   const saveNewEntries = async () => {
-    logger.info(`description: ${description}, picture: ${uploadData.name || uploadData.type}`);
+    logger.info(`description: ${description}, picture: ${uploadData?.name || uploadData?.type}`);
 
     const formData = new FormData();
     formData.append('info', description);
@@ -23,13 +23,38 @@ export const CandidatePage = () => {
     logger.info(`New entries saved: ${formData.get('description')}, ${formData.get('picture')}`);
 
     try {
-      await candidateApi.createCanidateInformation(formData);
-      showAlert('success', 'Deine Informationen wurden erfolgreich gespeichert.');
+      if (!currentData) {
+        await candidateApi.createCanidateInformation(formData);
+        showAlert('success', 'Deine Informationen wurden erfolgreich gespeichert.');
+        await fetchCandidateInfo();
+        return;
+      }
+      await candidateApi.updateCanidateInformation(formData);
+      showAlert('success', 'Deine Informationen wurden erfolgreich geupdated.');
+      await fetchCandidateInfo();
     } catch (error) {
       logger.error(`Error saving new entries: ${error.message}`);
       showAlert('error', 'Beim Speichern der Informationen ist ein Fehler aufgetreten.');
     }
   };
+
+  const fetchCandidateInfo = async () => {
+    try {
+      const response = await candidateApi.getCandidateInfoByUid();
+      setCurrentData(response);
+      logger.debug(`Fetched candidate info: ${JSON.stringify(response)}`);
+      setDescription(response.info);
+    } catch (error) {
+      logger.error(`Error fetching candidate info: ${error.message}`);
+    }
+  };
+
+  useEffect(() => {
+    const fetchData = async () => {
+      await fetchCandidateInfo();
+    };
+    fetchData();
+  }, []);
 
   return (
     <div className="min-h-screen flex flex-col bg-brand-light">
@@ -73,9 +98,11 @@ export const CandidatePage = () => {
                     flex items-center justify-center
                 "
                 >
-                  {currentData?.url ? (
+                  {currentData.picture_data ? (
                     <img
-                      src={currentData.url}
+                      src={`data:${currentData.picture_content_type};base64,${btoa(
+                        currentData.picture_data.data.map((b) => String.fromCharCode(b)).join(''),
+                      )}`}
                       alt="Aktuelles Profilbild"
                       className="w-full h-full object-cover"
                     />

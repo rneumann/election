@@ -1,26 +1,29 @@
 import { useEffect, useState } from 'react';
 import { voterApi } from '../services/voterApi';
+import { logger } from '../conf/logger/logger';
 
 export const CandidateInfoModal = ({ open, onClose, electionId }) => {
   const [candidates, setCandidates] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!open || !electionId) return;
+    if (!open || !electionId) {
+      return;
+    }
 
     const loadData = async () => {
       setLoading(true);
       try {
         const data = await voterApi.getCandidateInfo(electionId);
 
-        console.log(`Geladene Kandidaten:`, data); // Debugging
+        logger.debug('Geladene Kandidaten:', data); // Debugging
 
         // Fallback, falls die API die Daten in einem Unterobjekt zurückgibt (z.B. data.candidates)
         const candidatesArray = Array.isArray(data) ? data : data.candidates || [];
 
         setCandidates(candidatesArray);
       } catch (err) {
-        console.error('Fehler beim Laden der Kandidateninfo', err);
+        logger.error('Fehler beim Laden der Kandidateninfo', err);
       } finally {
         setLoading(false);
       }
@@ -29,7 +32,9 @@ export const CandidateInfoModal = ({ open, onClose, electionId }) => {
     loadData();
   }, [open, electionId]);
 
-  if (!open) return null;
+  if (!open) {
+    return null;
+  }
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50 p-4">

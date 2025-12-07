@@ -210,7 +210,12 @@ export const ImageUploadCandidate = ({ setUploadData }) => {
 
         {/* BUTTONS */}
         <div className="flex justify-center space-x-4 pt-2">
-          <ResponsiveButton onClick={handleReset} variant="secondary" className="flex items-center">
+          <ResponsiveButton
+            size="small"
+            onClick={handleReset}
+            variant="secondary"
+            className="flex items-center"
+          >
             Abbrechen / Neu wählen
           </ResponsiveButton>
 
@@ -222,6 +227,7 @@ export const ImageUploadCandidate = ({ setUploadData }) => {
             }}
             variant="primary"
             className="flex items-center"
+            size="small"
           >
             {freeze ? 'Anpassen' : 'Übernehmen'}
           </ResponsiveButton>
