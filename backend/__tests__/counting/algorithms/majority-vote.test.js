@@ -147,8 +147,8 @@ describe('Majority Vote Algorithm', () => {
       expect(result.tie_info).toContain('Manual resolution');
       // all_candidates tie flags
       const tieMarked = result.all_candidates.filter((c) => c.is_tie);
-      expect(tieMarked).toHaveLength(1);
-      expect(tieMarked[0].listnum).toBe(3);
+      expect(tieMarked).toHaveLength(2);
+      expect(tieMarked.map((c) => c.listnum).sort()).toEqual([2, 3]);
       // Elected + non-elected present
       expect(result.all_candidates).toHaveLength(votes.length);
     });
@@ -170,7 +170,7 @@ describe('Majority Vote Algorithm', () => {
       expect(result.tie_candidates).toHaveLength(2); // 2 additional candidates with 300 votes
       expect(result.seats_allocated).toBe(2);
       const tieMarked = result.all_candidates.filter((c) => c.is_tie);
-      expect(tieMarked.map((c) => c.listnum).sort()).toEqual([3, 4]);
+      expect(tieMarked.map((c) => c.listnum).sort()).toEqual([2, 3, 4]);
     });
 
     it('should NOT detect tie when cutoff candidate is unique', () => {
@@ -289,8 +289,8 @@ describe('Majority Vote Algorithm', () => {
       expect(result.tie_candidates).toHaveLength(1); // Charlie not elected
       // Tie flags: third candidate marked
       const tieMarked = result.all_candidates.filter((c) => c.is_tie);
-      expect(tieMarked).toHaveLength(1);
-      expect(tieMarked[0].listnum).toBe(3);
+      expect(tieMarked).toHaveLength(3);
+      expect(tieMarked.map((c) => c.listnum).sort()).toEqual([1, 2, 3]);
     });
   });
 

@@ -263,13 +263,23 @@ export const generateElectionResultExcel = async (resultId) => {
           row.getCell(COL_D).value = candidate.seats || 0;
           row.getCell(COL_E).value = candidate.percentage ? `${candidate.percentage}%` : '-';
 
-          // Highlight elected candidates (seats > 0)
-          if (candidate.seats > 0) {
+          // Highlight candidates with ties (yellow) - has priority
+          if (candidate.is_tie) {
             row.eachCell((cell) => {
               cell.fill = {
                 type: 'pattern',
                 pattern: 'solid',
-                fgColor: { argb: 'FFD4EDDA' },
+                fgColor: { argb: 'FFFFF4E6' }, // Light yellow
+              };
+            });
+          }
+          // Highlight elected candidates (green) - only if NOT in a tie
+          else if (candidate.seats > 0) {
+            row.eachCell((cell) => {
+              cell.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'FFD4EDDA' }, // Light green
               };
             });
           }

@@ -40,6 +40,10 @@ const LOG_INVALID_ELECTION_ID = 'Invalid electionId parameter';
  *     security:
  *       - cookieAuth: []
  *     parameters:
+ *       - in: header
+ *         name: X-CSRF-Token
+ *         required: true
+ *         description: CSRF token for security.
  *       - name: electionId
  *         in: path
  *         description: UUID of the election to count
@@ -179,6 +183,10 @@ countingRouter.post(
  *     security:
  *       - cookieAuth: []
  *     parameters:
+ *       - in: header
+ *         name: X-CSRF-Token
+ *         required: true
+ *         description: CSRF token for security.
  *       - name: electionId
  *         in: path
  *         description: UUID of the election
@@ -324,6 +332,10 @@ countingRouter.get(
  *     security:
  *       - cookieAuth: []
  *     parameters:
+ *       - in: header
+ *         name: X-CSRF-Token
+ *         required: true
+ *         description: CSRF token for security.
  *       - name: electionId
  *         in: path
  *         description: UUID of the election

@@ -33,6 +33,20 @@ export default {
       minWidth: {
         touch: '44px',
       },
+      keyframes: {
+        slideIn: {
+          '0%': { opacity: '0', transform: 'translateY(-10px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        shrink: {
+          '0%': { width: '100%' },
+          '100%': { width: '0%' },
+        },
+      },
+      animation: {
+        'slide-in': 'slideIn 0.3s ease-out',
+        shrink: 'shrink 5s linear forwards',
+      },
     },
   },
   plugins: [],

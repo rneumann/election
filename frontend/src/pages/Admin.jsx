@@ -56,7 +56,7 @@ const CountingSection = ({
     setCountingError('');
 
     try {
-      const response = await api.get('/admin/elections?startedOnly=true');
+      const response = await api.get('/admin/elections?startedOnly=true&endedOnly=true');
       setElections(response.data || []);
     } catch (error) {
       setCountingError(`Fehler beim Laden der Wahlen: ${error.message}`);
@@ -428,7 +428,8 @@ const CountingSection = ({
                                             </span>
                                             <div className="text-right flex flex-col items-end">
                                               <span className="font-bold text-gray-900">
-                                                {candidate.votes} Stimmen
+                                                {candidate.votes}{' '}
+                                                {candidate.votes === 1 ? 'Stimme' : 'Stimmen'}
                                               </span>
                                               <div className="flex gap-2 mt-1">
                                                 {candidate.percentage && (
@@ -473,7 +474,8 @@ const CountingSection = ({
                                             </span>
                                             <div className="text-right">
                                               <span className="font-bold text-gray-900">
-                                                {candidate.votes} Stimmen
+                                                {candidate.votes}{' '}
+                                                {candidate.votes === 1 ? 'Stimme' : 'Stimmen'}
                                               </span>
                                               {candidate.percentage && (
                                                 <span className="ml-2 text-gray-600">
@@ -506,27 +508,37 @@ const CountingSection = ({
                                       (candidate, idx) => (
                                         <div
                                           key={idx}
-                                          className="flex justify-between items-center p-2 bg-gray-50 rounded text-xs"
+                                          className={`flex justify-between items-center p-2 rounded text-xs ${candidate.is_tie ? 'bg-yellow-50 border border-yellow-200' : 'bg-gray-50'}`}
                                         >
                                           <span className="font-medium text-gray-900">
                                             {candidate.candidate ||
                                               `${candidate.firstname} ${candidate.lastname}`}
                                           </span>
-                                          <div className="text-right">
-                                            <span className="font-bold text-gray-900">
-                                              {candidate.votes} Stimmen
-                                            </span>
-                                            {candidate.seats !== undefined && (
-                                              <span className="ml-2 text-blue-600 font-semibold">
-                                                · {candidate.seats}{' '}
-                                                {candidate.seats === 1 ? 'Sitz' : 'Sitze'}
+                                          <div className="text-right flex flex-col items-end">
+                                            <div className="flex items-center gap-2">
+                                              <span className="font-bold text-gray-900">
+                                                {candidate.votes}{' '}
+                                                {candidate.votes === 1 ? 'Stimme' : 'Stimmen'}
                                               </span>
-                                            )}
-                                            {candidate.quota && (
-                                              <span className="ml-2 text-gray-500 text-xs">
-                                                (Quote: {candidate.quota})
-                                              </span>
-                                            )}
+                                              {candidate.seats !== undefined && (
+                                                <span className="text-blue-600 font-semibold">
+                                                  · {candidate.seats}{' '}
+                                                  {candidate.seats === 1 ? 'Sitz' : 'Sitze'}
+                                                </span>
+                                              )}
+                                            </div>
+                                            <div className="flex items-center gap-2 mt-1">
+                                              {candidate.quota && (
+                                                <span className="text-gray-500 text-xs">
+                                                  Quote: {candidate.quota}
+                                                </span>
+                                              )}
+                                              {candidate.is_tie && (
+                                                <span className="px-1.5 py-0.5 bg-yellow-500 text-white rounded-sm text-[10px] font-semibold">
+                                                  Gleichstand
+                                                </span>
+                                              )}
+                                            </div>
                                           </div>
                                         </div>
                                       ),
@@ -1128,40 +1140,6 @@ const AdminUpload = () => {
 
                 <div className="mb-6">
                   <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                    Wählerverzeichnis
-                  </div>
-                  <button
-                    onClick={() => {
-                      setActiveSection('upload');
-                      setMobileMenuOpen(false);
-                      handleReset();
-                    }}
-                    style={getNavButtonStyle('upload')}
-                    className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span>CSV-Datei hochladen</span>
-                      <span className="text-xs opacity-60">2.1</span>
-                    </div>
-                  </button>
-                  <button
-                    onClick={() => {
-                      setActiveSection('download');
-                      setMobileMenuOpen(false);
-                      handleReset();
-                    }}
-                    style={getNavButtonStyle('download')}
-                    className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span>Wählerverzeichnis herunterladen</span>
-                      <span className="text-xs opacity-60">2.2</span>
-                    </div>
-                  </button>
-                </div>
-
-                <div className="mb-6">
-                  <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
                     Wahlen definieren
                   </div>
                   <button
@@ -1175,7 +1153,7 @@ const AdminUpload = () => {
                   >
                     <div className="flex items-center justify-between">
                       <span>Excel-Vorlage herunterladen</span>
-                      <span className="text-xs opacity-60">3.1</span>
+                      <span className="text-xs opacity-60">2.1</span>
                     </div>
                   </button>
                   <button
@@ -1189,21 +1167,41 @@ const AdminUpload = () => {
                   >
                     <div className="flex items-center justify-between">
                       <span>Wahleinstellung hochladen</span>
-                      <span className="text-xs opacity-60">3.2</span>
+                      <span className="text-xs opacity-60">2.2</span>
+                    </div>
+                  </button>
+                </div>
+
+                <div className="mb-6">
+                  <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                    Wählerverzeichnis
+                  </div>
+                  <button
+                    onClick={() => {
+                      setActiveSection('upload');
+                      setMobileMenuOpen(false);
+                      handleReset();
+                    }}
+                    style={getNavButtonStyle('upload')}
+                    className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span>CSV-Datei hochladen</span>
+                      <span className="text-xs opacity-60">3.1</span>
                     </div>
                   </button>
                   <button
                     onClick={() => {
-                      setActiveSection('load');
+                      setActiveSection('download');
                       setMobileMenuOpen(false);
                       handleReset();
                     }}
-                    style={getNavButtonStyle('load')}
+                    style={getNavButtonStyle('download')}
                     className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
                   >
                     <div className="flex items-center justify-between">
-                      <span>Einstellungen laden</span>
-                      <span className="text-xs opacity-60">3.3</span>
+                      <span>Wählerverzeichnis herunterladen</span>
+                      <span className="text-xs opacity-60">3.2</span>
                     </div>
                   </button>
                 </div>
@@ -1225,7 +1223,7 @@ const AdminUpload = () => {
                   >
                     <div className="flex items-center justify-between">
                       <span>CSV-Datei hochladen</span>
-                      <span className="text-xs opacity-60">3.1</span>
+                      <span className="text-xs opacity-60">4.1</span>
                     </div>
                   </button>
 
@@ -1240,7 +1238,7 @@ const AdminUpload = () => {
                   >
                     <div className="flex items-center justify-between">
                       <span>Kandidatenverzeichnis herunterladen</span>
-                      <span className="text-xs opacity-60">3.2</span>
+                      <span className="text-xs opacity-60">4.2</span>
                     </div>
                   </button>
                 </div>
@@ -1260,7 +1258,7 @@ const AdminUpload = () => {
                   >
                     <div className="flex items-center justify-between">
                       <span>Wahlergebnisse auszählen</span>
-                      <span className="text-xs opacity-60">4</span>
+                      <span className="text-xs opacity-60">5</span>
                     </div>
                   </button>
                 </div>

@@ -1,74 +1,83 @@
 import { useState, useEffect, useMemo } from 'react';
 import PropTypes from 'prop-types';
-import {
-  Box,
-  Collapse,
-  IconButton,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TablePagination,
-  TableRow,
-  TableSortLabel,
-  Typography,
-  Paper,
-  Chip,
-  Toolbar,
-  FormControlLabel,
-  Switch,
-  CircularProgress,
-} from '@mui/material';
-import {
-  KeyboardArrowDown,
-  KeyboardArrowUp,
-  Warning,
-  ErrorOutline,
-  Info,
-  FilterList,
-} from '@mui/icons-material';
-import { visuallyHidden } from '@mui/utils';
+import { Spinner } from './Spinner';
 
-// --- HILFSFUNKTIONEN FÜR SORTIERUNG ---
+// --- ICONS ---
+const ChevronDownIcon = () => (
+  <svg className="w-5 h-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+  </svg>
+);
 
-/**
- * Holt den Wert eines Objekts sicher ohne dynamischen Zugriff (verhindert Object Injection).
- * @param {object} obj - Das Datenobjekt
- * @param {string} key - Der Schlüssel
- * @returns {string|number} Der Wert
- */
-const getSafeValue = (obj, key) => {
+const ChevronUpIcon = () => (
+  <svg className="w-5 h-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+  </svg>
+);
+
+const SortIcon = ({ direction }) => (
+  <svg
+    className={`w-4 h-4 inline-block ml-1 transition-transform ${
+      direction === 'desc' ? 'rotate-180' : ''
+    }`}
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+  >
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+  </svg>
+);
+
+SortIcon.propTypes = { direction: PropTypes.string };
+
+const FilterIcon = () => (
+  <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
+    />
+  </svg>
+);
+
+const SearchIcon = () => (
+  <svg
+    className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+    />
+  </svg>
+);
+
+// --- SORTIERUNG ---
+
+const getSafeValue = (row, key) => {
   /* eslint-disable */
   switch (key) {
     case 'id':
-      return obj.id;
+      return row.id;
     case 'timestamp':
-      return obj.timestamp;
+      return row.timestamp;
     case 'action_type':
-      return obj.action_type;
+      return row.action_type;
     case 'actor_id':
-      return obj.actor_id;
+      return row.actor_id;
     case 'level':
-      return obj.level;
-    case 'details':
-      // Details ist ein Objekt, für Sortierung machen wir es zum String oder ignorieren es
-      return '';
+      return row.level;
     default:
       return '';
   }
 };
 
-/**
- * Vergleicht zwei Objekte basierend auf einem Schlüssel in absteigender Reihenfolge.
- * @param {object} a - Erstes Objekt
- * @param {object} b - Zweites Objekt
- * @param {string} orderBy - Der Schlüssel, nach dem sortiert werden soll
- * @returns {number} -1, 0 oder 1
- */
 const descendingComparator = (a, b, orderBy) => {
-  // Fix für "Generic Object Injection Sink":
-  // Statt a[orderBy] nutzen wir eine explizite Switch-Funktion.
   const valA = getSafeValue(a, orderBy);
   const valB = getSafeValue(b, orderBy);
 
@@ -81,24 +90,12 @@ const descendingComparator = (a, b, orderBy) => {
   return 0;
 };
 
-/**
- * Erstellt eine Vergleichsfunktion basierend auf der Sortierreihenfolge.
- * @param {string} order - 'asc' oder 'desc'
- * @param {string} orderBy - Der Schlüssel
- * @returns {Function} Die Vergleichsfunktion
- */
 const getComparator = (order, orderBy) => {
   return order === 'desc'
     ? (a, b) => descendingComparator(a, b, orderBy)
     : (a, b) => -descendingComparator(a, b, orderBy);
 };
 
-/**
- * Stabilisiert die Sortierung, damit Elemente mit gleichem Wert ihre relative Position behalten.
- * @param {Array} array - Das zu sortierende Array
- * @param {Function} comparator - Die Vergleichsfunktion
- * @returns {Array} Das sortierte Array
- */
 const stableSort = (array, comparator) => {
   const stabilizedThis = array.map((el, index) => [el, index]);
   stabilizedThis.sort((a, b) => {
@@ -111,157 +108,91 @@ const stableSort = (array, comparator) => {
   return stabilizedThis.map((el) => el[0]);
 };
 
-const headCells = [
-  { id: 'id', numeric: false, disablePadding: false, label: 'ID' },
-  { id: 'timestamp', numeric: false, disablePadding: false, label: 'Zeitstempel' },
-  { id: 'action_type', numeric: false, disablePadding: false, label: 'Aktion' },
-  { id: 'actor_id', numeric: false, disablePadding: false, label: 'Akteur (ID)' },
-  { id: 'level', numeric: false, disablePadding: false, label: 'Level' },
-  { id: 'details', numeric: false, disablePadding: false, label: 'Details' },
-];
-
 // --- SUB-KOMPONENTEN ---
 
-/**
- * Erweiterter Tabellenkopf mit Sortierfunktion.
- * @param {object} props - Die Props der Komponente
- * @returns {JSX.Element} Der Tabellenkopf
- */
-const EnhancedTableHead = (props) => {
-  const { order, orderBy, onRequestSort } = props;
-  const createSortHandler = (property) => (event) => {
-    onRequestSort(event, property);
-  };
-
-  return (
-    <TableHead className="bg-gray-100">
-      <TableRow>
-        <TableCell padding="none" />
-        {headCells.map((headCell) =>
-          headCell.id !== 'details' ? (
-            <TableCell
-              key={headCell.id}
-              align={headCell.numeric ? 'right' : 'left'}
-              padding={headCell.disablePadding ? 'none' : 'normal'}
-              sortDirection={orderBy === headCell.id ? order : false}
-              className="font-bold text-gray-700"
-            >
-              <TableSortLabel
-                active={orderBy === headCell.id}
-                direction={orderBy === headCell.id ? order : 'asc'}
-                onClick={createSortHandler(headCell.id)}
-              >
-                {headCell.label}
-                {orderBy === headCell.id ? (
-                  <Box component="span" sx={visuallyHidden}>
-                    {order === 'desc' ? 'sorted descending' : 'sorted ascending'}
-                  </Box>
-                ) : null}
-              </TableSortLabel>
-            </TableCell>
-          ) : (
-            <TableCell key="details" padding="none" />
-          ),
-        )}
-      </TableRow>
-    </TableHead>
-  );
-};
-
-EnhancedTableHead.propTypes = {
-  onRequestSort: PropTypes.func.isRequired,
-  order: PropTypes.oneOf(['asc', 'desc']).isRequired,
-  orderBy: PropTypes.string.isRequired,
-};
-
-/*
- * Eine einzelne Zeile in der Audit-Tabelle (aufklappbar).
- * @param {object} props - Die Props (enthält row data)
- * @returns {JSX.Element} Die Tabellenzeile
- */
 const AuditRow = ({ row }) => {
   const [open, setOpen] = useState(false);
 
-  /**
-   * Bestimmt die Farbe des Status-Chips basierend auf dem Log-Level.
-   * @param {string} level - Das Log-Level (INFO, WARN, ERROR, etc.)
-   * @returns {object} Objekt mit color und icon
-   */
-  /* eslint-disable */
-  const getLevelColor = (level) => {
+  const getStatusStyles = (level) => {
+    /* eslint-disable */
     switch (level) {
       case 'FATAL':
       case 'CRITICAL':
       case 'ERROR':
-        return { color: 'error', icon: <ErrorOutline fontSize="small" /> };
+        return 'bg-red-100 text-red-800 border-red-200';
       case 'WARN':
-        return { color: 'warning', icon: <Warning fontSize="small" /> };
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
       default:
-        return { color: 'primary', icon: <Info fontSize="small" /> };
+        return 'bg-blue-100 text-blue-800 border-blue-200';
     }
   };
-  const status = getLevelColor(row.level);
 
   return (
     <>
-      <TableRow hover sx={{ '& > *': { borderBottom: 'unset' } }}>
-        <TableCell>
-          <IconButton aria-label="expand row" size="small" onClick={() => setOpen(!open)}>
-            {open ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
-          </IconButton>
-        </TableCell>
-        <TableCell component="th" scope="row">
-          {row.id}
-        </TableCell>
-        <TableCell>{new Date(row.timestamp).toLocaleString()}</TableCell>
-        <TableCell className="font-medium">{row.action_type}</TableCell>
-        <TableCell>{row.actor_id}</TableCell>
-        <TableCell>
-          <Chip
-            icon={status.icon}
-            label={row.level}
-            color={status.color}
-            size="small"
-            variant="outlined"
-          />
-        </TableCell>
-        <TableCell padding="none" />
-      </TableRow>
-      <TableRow>
-        <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={7}>
-          <Collapse in={open} timeout="auto" unmountOnExit>
-            <Box margin={2} className="bg-gray-50 p-4 rounded border border-gray-200">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Typography variant="subtitle2" className="text-gray-500">
-                    Event Details (JSON)
-                  </Typography>
-                  <pre className="text-xs bg-white p-2 border rounded overflow-auto mt-1">
-                    {JSON.stringify(row.details, null, 2)}
-                  </pre>
-                </div>
-                <div>
-                  <Typography variant="subtitle2" className="text-gray-500 mb-1">
-                    Integrität & Hash-Chain
-                  </Typography>
-                  <div className="flex flex-col gap-2">
-                    <div className="text-xs">
-                      <span className="font-bold block text-gray-400">ENTRY HASH</span>
-                      <code className="break-all bg-blue-50 text-blue-800 p-1 rounded block">
-                        {row.entry_hash}
-                      </code>
-                    </div>
-                    <div className="text-xs">
-                      <span className="font-bold block text-gray-400">PREV HASH</span>
-                      <code className="break-all text-gray-500 p-1 block">{row.prev_hash}</code>
-                    </div>
+      <tr
+        onClick={() => setOpen(!open)}
+        className="hover:bg-gray-50 cursor-pointer transition-colors border-b border-gray-200"
+      >
+        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 w-10">
+          <button className="focus:outline-none p-1 rounded hover:bg-gray-200">
+            {open ? <ChevronUpIcon /> : <ChevronDownIcon />}
+          </button>
+        </td>
+        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{row.id}</td>
+        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+          {new Date(row.timestamp).toLocaleString('de-DE')}
+        </td>
+        <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-700">
+          {row.action_type}
+        </td>
+        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{row.actor_id || '-'}</td>
+        <td className="px-6 py-4 whitespace-nowrap text-sm">
+          <span
+            className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full border ${getStatusStyles(
+              row.level,
+            )}`}
+          >
+            {row.level}
+          </span>
+        </td>
+      </tr>
+
+      {open && (
+        <tr className="bg-gray-50 border-b border-gray-200">
+          <td colSpan="6" className="px-6 py-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-fadeIn">
+              <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+                <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+                  Event Details (JSON)
+                </h4>
+                <pre className="text-xs text-gray-700 overflow-x-auto whitespace-pre-wrap font-mono bg-gray-50 p-2 rounded">
+                  {JSON.stringify(row.details, null, 2)}
+                </pre>
+              </div>
+
+              <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+                <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+                  Blockchain Integrität
+                </h4>
+                <div className="space-y-3">
+                  <div>
+                    <span className="block text-xs font-semibold text-gray-400">ENTRY HASH</span>
+                    <code className="block mt-1 text-xs bg-blue-50 text-blue-800 p-2 rounded border border-blue-100 break-all font-mono">
+                      {row.entry_hash}
+                    </code>
+                  </div>
+                  <div>
+                    <span className="block text-xs font-semibold text-gray-400">PREV HASH</span>
+                    <code className="block mt-1 text-xs text-gray-500 p-2 break-all font-mono">
+                      {row.prev_hash}
+                    </code>
                   </div>
                 </div>
               </div>
-            </Box>
-          </Collapse>
-        </TableCell>
-      </TableRow>
+            </div>
+          </td>
+        </tr>
+      )}
     </>
   );
 };
@@ -281,126 +212,314 @@ AuditRow.propTypes = {
 
 // --- HAUPTKOMPONENTE ---
 
-/**
- * Die Hauptkomponente für die Audit-Log-Tabelle.
- * Lädt Daten vom Backend und stellt sie dar.
- * @returns {JSX.Element} Die Tabelle
- */
 const AuditLogTable = () => {
   const [order, setOrder] = useState('desc');
   const [orderBy, setOrderBy] = useState('id');
-  const [page, setPage] = useState(0);
-  const [dense, setDense] = useState(false);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
-
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Daten laden (Async/Await statt Promise-Chains für saubereren Code)
+  // Filter State
+  const [searchTerm, setSearchTerm] = useState('');
+  const [levelFilter, setLevelFilter] = useState('ALL');
+
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10); // NEU: State für RowsPerPage
+
   useEffect(() => {
     const fetchLogs = async () => {
       try {
-        // Falls du in vite.config.js einen Proxy hast, nutze '/api/audit/logs'
         const response = await fetch('/api/audit/logs');
         if (!response.ok) {
-          throw new Error('Fehler beim Laden');
+          throw new Error('Fehler beim Laden der Protokolle');
         }
         const data = await response.json();
         setLogs(data);
+        setError(null);
       } catch (err) {
-        console.error(err);
+        setError('Verbindung zum Server fehlgeschlagen.');
       } finally {
         setLoading(false);
       }
     };
-
     void fetchLogs();
   }, []);
 
-  const handleRequestSort = (event, property) => {
+  const filteredLogs = useMemo(() => {
+    return logs.filter((log) => {
+      const matchesSearch =
+        searchTerm === '' ||
+        log.action_type.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (log.actor_id && log.actor_id.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        log.id.toString().includes(searchTerm);
+
+      const matchesLevel = levelFilter === 'ALL' || log.level === levelFilter;
+
+      return matchesSearch && matchesLevel;
+    });
+  }, [logs, searchTerm, levelFilter]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, levelFilter]);
+
+  const handleRequestSort = (property) => {
     const isAsc = orderBy === property && order === 'asc';
     setOrder(isAsc ? 'desc' : 'asc');
     setOrderBy(property);
   };
 
-  const handleChangePage = (event, newPage) => {
-    setPage(newPage);
-  };
-
   const handleChangeRowsPerPage = (event) => {
     setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
+    setCurrentPage(1);
   };
 
-  const handleChangeDense = (event) => {
-    setDense(event.target.checked);
-  };
-
-  const visibleRows = useMemo(
-    () =>
-      stableSort(logs, getComparator(order, orderBy)).slice(
-        page * rowsPerPage,
-        page * rowsPerPage + rowsPerPage,
-      ),
-    [order, orderBy, page, rowsPerPage, logs],
+  const sortedLogs = useMemo(
+    () => stableSort(filteredLogs, getComparator(order, orderBy)),
+    [filteredLogs, order, orderBy],
   );
 
-  return (
-    <Box sx={{ width: '100%' }}>
-      <Paper sx={{ width: '100%', mb: 2, overflow: 'hidden' }}>
-        <Toolbar className="pl-2 pr-1 flex justify-between">
-          <Typography sx={{ flex: '1 1 100%' }} variant="h6" id="tableTitle" component="div">
-            Einträge: {logs.length}
-          </Typography>
-          <IconButton title="Filter list">
-            <FilterList />
-          </IconButton>
-        </Toolbar>
+  const totalPages = Math.ceil(sortedLogs.length / rowsPerPage);
+  const currentLogs = sortedLogs.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
 
-        <TableContainer sx={{ maxHeight: 650 }}>
-          <Table
-            stickyHeader
-            sx={{ minWidth: 750 }}
-            aria-labelledby="tableTitle"
-            size={dense ? 'small' : 'medium'}
-          >
-            <EnhancedTableHead order={order} orderBy={orderBy} onRequestSort={handleRequestSort} />
-            <TableBody>
+  const headCells = [
+    { id: 'id', label: 'ID' },
+    { id: 'timestamp', label: 'Zeitstempel' },
+    { id: 'action_type', label: 'Aktion' },
+    { id: 'actor_id', label: 'Akteur' },
+    { id: 'level', label: 'Level' },
+  ];
+
+  return (
+    <div className="w-full">
+      {/* --- FILTER BAR --- */}
+      <div className="mb-6 flex flex-col sm:flex-row gap-4 justify-between items-end sm:items-center">
+        <div>
+          <h2 className="text-lg font-bold text-gray-800">Audit Logs</h2>
+          <p className="text-sm text-gray-500">{filteredLogs.length} Einträge gefunden</p>
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+          {/* Suche */}
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Suche (Aktion, Akteur, ID)..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-9 pr-4 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-brand-primary focus:border-transparent outline-none w-full sm:w-64"
+            />
+            <SearchIcon />
+          </div>
+
+          {/* Level Filter */}
+          <div className="relative">
+            <select
+              value={levelFilter}
+              onChange={(e) => setLevelFilter(e.target.value)}
+              className="pl-9 pr-8 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-brand-primary focus:border-transparent outline-none appearance-none bg-white cursor-pointer w-full sm:w-auto"
+            >
+              <option value="ALL">Alle Level</option>
+              <option value="INFO">INFO</option>
+              <option value="WARN">WARN</option>
+              <option value="ERROR">ERROR</option>
+              <option value="CRITICAL">CRITICAL</option>
+              <option value="FATAL">FATAL</option>
+            </select>
+            <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+              <FilterIcon />
+            </div>
+            <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none">
+              <ChevronDownIcon />
+            </div>
+          </div>
+
+          {/* Reset Button */}
+          {(searchTerm || levelFilter !== 'ALL') && (
+            <button
+              onClick={() => {
+                setSearchTerm('');
+                setLevelFilter('ALL');
+              }}
+              className="text-sm text-gray-500 hover:text-brand-primary underline"
+            >
+              Reset
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* --- TABELLE --- */}
+      <div className="bg-white shadow-sm border border-gray-200 rounded-lg overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th scope="col" className="w-10 px-6 py-3"></th>
+                {headCells.map((headCell) => (
+                  <th
+                    key={headCell.id}
+                    scope="col"
+                    className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors select-none"
+                    onClick={() => handleRequestSort(headCell.id)}
+                  >
+                    <div className="flex items-center gap-1">
+                      {headCell.label}
+                      {orderBy === headCell.id && <SortIcon direction={order} />}
+                    </div>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
               {loading ? (
-                <TableRow>
-                  <TableCell colSpan={7} align="center" className="py-10">
-                    <CircularProgress />
-                  </TableCell>
-                </TableRow>
+                <tr>
+                  <td colSpan="6" className="px-6 py-12 text-center">
+                    <div className="flex justify-center">
+                      <Spinner />
+                    </div>
+                    <p className="mt-2 text-gray-500">Lade Protokolle...</p>
+                  </td>
+                </tr>
+              ) : error ? (
+                <tr>
+                  <td colSpan="6" className="px-6 py-12 text-center">
+                    <div className="flex flex-col items-center justify-center text-red-500">
+                      <svg
+                        className="w-8 h-8 mb-2"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                      <p className="font-medium">{error}</p>
+                      <p className="text-sm mt-1 text-gray-500">
+                        Bitte versuchen Sie es später erneut.
+                      </p>
+                    </div>
+                  </td>
+                </tr>
+              ) : currentLogs.length > 0 ? (
+                currentLogs.map((row) => <AuditRow key={row.id} row={row} />)
               ) : (
-                visibleRows.map((row) => <AuditRow key={row.id} row={row} />)
+                <tr>
+                  <td colSpan="6" className="px-6 py-12 text-center text-gray-500">
+                    Keine Einträge gefunden.
+                  </td>
+                </tr>
               )}
-              {visibleRows.length === 0 && !loading && (
-                <TableRow>
-                  <TableCell colSpan={7} align="center">
-                    Keine Logs gefunden.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
-        <TablePagination
-          rowsPerPageOptions={[10, 25, 50, 100]}
-          component="div"
-          count={logs.length}
-          rowsPerPage={rowsPerPage}
-          page={page}
-          onPageChange={handleChangePage}
-          onRowsPerPageChange={handleChangeRowsPerPage}
-        />
-      </Paper>
-      <FormControlLabel
-        control={<Switch checked={dense} onChange={handleChangeDense} />}
-        label="Kompakte Ansicht"
-        className="ml-2"
-      />
-    </Box>
+            </tbody>
+          </table>
+        </div>
+
+        {/* --- PAGINATION & ROWS PER PAGE --- */}
+        {totalPages >= 1 && !error && (
+          <div className="bg-white px-4 py-3 flex flex-col sm:flex-row items-center justify-between border-t border-gray-200 sm:px-6 gap-4">
+            {/* NEU: Rows per Page Dropdown */}
+            <div className="flex items-center gap-2 text-sm text-gray-700">
+              <span>Zeilen pro Seite:</span>
+              <select
+                value={rowsPerPage}
+                onChange={handleChangeRowsPerPage}
+                className="border border-gray-300 rounded px-2 py-1 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent cursor-pointer"
+              >
+                <option value={10}>10</option>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+                <option value={1000000}>1000000</option>
+                <option value={-1}>-1</option>
+              </select>
+            </div>
+
+            <div className="flex-1 flex justify-center sm:justify-end">
+              <div className="flex items-center gap-4">
+                <p className="text-sm text-gray-700 hidden sm:block">
+                  Seite <span className="font-medium">{currentPage}</span> von{' '}
+                  <span className="font-medium">{totalPages || 1}</span>
+                </p>
+                <nav
+                  className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px"
+                  aria-label="Pagination"
+                >
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                  >
+                    <span className="sr-only">Zurück</span>
+                    <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path
+                        fillRule="evenodd"
+                        d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </button>
+
+                  {/* Seitenzahlen */}
+                  <div className="hidden sm:flex">
+                    {[...Array(totalPages)].map((_, i) => {
+                      if (
+                        i + 1 === 1 ||
+                        i + 1 === totalPages ||
+                        (i + 1 >= currentPage - 1 && i + 1 <= currentPage + 1)
+                      ) {
+                        return (
+                          <button
+                            key={i}
+                            onClick={() => setCurrentPage(i + 1)}
+                            className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                              currentPage === i + 1
+                                ? 'z-10 bg-brand-primary border-brand-primary text-white'
+                                : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                            }`}
+                          >
+                            {i + 1}
+                          </button>
+                        );
+                      } else if (i + 1 === currentPage - 2 || i + 1 === currentPage + 2) {
+                        return (
+                          <span
+                            key={i}
+                            className="px-2 py-2 border border-gray-300 bg-white text-gray-700"
+                          >
+                            ...
+                          </span>
+                        );
+                      }
+                      return null;
+                    })}
+                  </div>
+
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages || totalPages === 0}
+                    className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                  >
+                    <span className="sr-only">Weiter</span>
+                    <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path
+                        fillRule="evenodd"
+                        d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </button>
+                </nav>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   );
 };
 

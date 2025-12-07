@@ -248,7 +248,7 @@ export const Modal = ({ open, setOpen, electionId, refreshElections }) => {
                 checked={invalidHandOver}
                 onChange={(e) => setInvalidHandOver(e.target.checked)}
               />
-              <span>Ich möchte die Wahl ungültig abgeben!</span>
+              <span>Ich möchte meinen Stimmzettel ungültig abgeben!</span>
             </label>
 
             <div className="flex items-center gap-2 sm:gap-3 justify-end">

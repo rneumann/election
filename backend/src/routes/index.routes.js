@@ -190,27 +190,6 @@ router.get('/auth/me', (req, res) => {
 router.delete('/auth/logout', logoutRoute);
 
 /**
- * Testing routes for protection
- * @openapi
- * /api/protected:
- *   get:
- *     summary: Protected route
- *     responses:
- *       200:
- *         description: Protected route accessed
- *       401:
- *         description: Unauthorized
- *       403:
- *         description: Forbidden
- */
-router.get('/protected', ensureAuthenticated, (req, res) => {
-  res.json({ message: `Protected route accessed with user: ${req.user.username}` });
-});
-router.get('/protected/role', ensureHasRole(['admin']), (req, res) => {
-  res.json({ message: `Protected route accessed with user: ${req.user.username}` });
-});
-
-/**
  * @openapi
  * /api/admin/elections:
  *   get:
@@ -237,8 +216,16 @@ router.get(
   async (req, res) => {
     try {
       const startedOnly = req.query.startedOnly === 'true';
+      const endedOnly = req.query.endedOnly === 'true';
 
-      const whereClause = startedOnly ? 'WHERE start <= NOW()' : '';
+      let whereClause = '';
+      if (startedOnly && endedOnly) {
+        whereClause = 'WHERE start <= NOW() AND "end" <= NOW()';
+      } else if (startedOnly) {
+        whereClause = 'WHERE start <= NOW()';
+      } else if (endedOnly) {
+        whereClause = 'WHERE "end" <= NOW()';
+      }
 
       const result = await client.query(`
         SELECT 

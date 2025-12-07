@@ -16,7 +16,7 @@ import jsdoc from 'eslint-plugin-jsdoc';
 
 export default [
   {
-    ignores: ['__tests__/**/*.js'],
+    ignores: ['__tests__/**/*.js', 'node_modules/**'],
   },
   js.configs.recommended,
 
@@ -75,7 +75,9 @@ export default [
       'no-magic-numbers': [
         'error',
         {
-          ignore: [0, 1, -1, 2, 3, 32, 60, 200, 201, 400, 401, 403, 404, 405, 409, 415, 500, 1000],
+          ignore: [
+            0, 1, -1, 2, 3, 30, 32, 60, 200, 201, 204, 400, 401, 403, 404, 405, 409, 415, 500, 1000,
+          ],
         },
       ],
       curly: ['error', 'all'],

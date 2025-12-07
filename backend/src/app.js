@@ -138,8 +138,6 @@ app.use((req, res, next) => {
   if (req.session.freshUser) {
     logger.debug('Fresh user detected');
     req.session.fingerprint = fingerprint;
-    //logger.debug(`Session fingerprint set to: ${fingerprint}`);
-    //logger.debug(`Req.Session after fingerprint check: ${JSON.stringify(req.session)}`);
     delete req.session.freshUser;
     return next();
   }
@@ -152,7 +150,7 @@ app.use((req, res, next) => {
   if (expected !== req.session.fingerprint) {
     logger.warn('Session fingerprint mismatch');
 
-    // NEU: Audit Log bei Hijacking-Verdacht
+    // Audit log if session hijacking is suspected
     writeAuditLog({
       actionType: 'SESSION_HIJACKING_SUSPECTED',
       level: 'CRITICAL',
@@ -188,7 +186,7 @@ app.use(async (req, res, next) => {
   if (diff > 2 * 60 * 1000) {
     logger.debug('Session timeout detected logging out user');
 
-    // NEU: Audit Log bei Timeout
+    // Audit Log bei Timeout
     if (user) {
       writeAuditLog({
         actionType: 'SESSION_TIMEOUT',
