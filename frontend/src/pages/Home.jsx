@@ -7,6 +7,8 @@ import { voterApi } from '../services/voterApi.js';
 import { Modal } from '../components/Modal.jsx';
 import { logger } from '../conf/logger/logger.js';
 import authService from '../services/authService.js';
+import { Header } from '../layout/Header.jsx';
+import { Footer } from '../layout/Footer.jsx';
 
 /**
  * Main dashboard for authenticated users.
@@ -20,13 +22,9 @@ const Home = () => {
 
   const [open, setOpen] = useState(false);
   const [selectedElectionId, setSelectedElectionId] = useState(undefined);
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const theme = useTheme();
   const navigate = useNavigate();
-
-  const navigateToCandidatePage = () => {
-    navigate('/candidate');
-  };
 
   /**
    * Refreshes the list of active, future and already voted elections for the user.
@@ -86,48 +84,7 @@ const Home = () => {
   return (
     <div className="min-h-screen flex flex-col bg-brand-light">
       {/* Header - Sticky on scroll */}
-      <header className="bg-brand-primary text-white shadow-lg sticky top-0 z-10">
-        <div className="container mx-auto px-3 sm:px-6 py-2 sm:py-3 md:py-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
-            <div className="flex-1 min-w-0">
-              <h1 className="text-base sm:text-xl md:text-2xl font-bold truncate">
-                {theme.institution.name} {theme.text.appTitle}
-              </h1>
-              <p className="text-xs sm:text-sm opacity-90 truncate">
-                <span className="hidden sm:inline">Angemeldet als: </span>
-                <span className="font-semibold">{user?.username}</span>
-                <span className="hidden sm:inline"> ({theme.roles[user?.role] || user?.role})</span>
-              </p>
-            </div>
-            {user.isCandidate && (
-              <div className="self-start sm:self-auto">
-                <ResponsiveButton
-                  toolTip={'Wechsel zur Kandidaten Ansicht'}
-                  toolTipPlacement="bottom"
-                  variant="secondary"
-                  size="small"
-                  onClick={() => {
-                    navigateToCandidatePage();
-                  }}
-                >
-                  Kandidaten Ansicht
-                </ResponsiveButton>
-              </div>
-            )}
-            <div className="self-start sm:self-auto">
-              <ResponsiveButton
-                toolTip={'logout aus der aktuellen Sitzung'}
-                toolTipPlacement="bottom"
-                variant="secondary"
-                size="small"
-                onClick={logout}
-              >
-                Abmelden
-              </ResponsiveButton>
-            </div>
-          </div>
-        </div>
-      </header>
+      <Header />
 
       {/* Main Content - Flex-1 to push footer down */}
       <main className="flex-1 container mx-auto px-4 sm:px-6 py-6 sm:py-8">
@@ -424,11 +381,7 @@ const Home = () => {
       </main>
 
       {/* Footer - Always visible at bottom */}
-      <footer className="bg-brand-dark text-white py-3 sm:py-4 mt-auto border-t border-gray-800">
-        <div className="container mx-auto px-4 sm:px-6 text-center">
-          <p className="text-xs sm:text-sm opacity-90">{theme.text.copyright}</p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 };
