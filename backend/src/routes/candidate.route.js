@@ -354,6 +354,58 @@ candidateRouter.delete(
   },
 );
 
+/**
+ * @openapi
+ * /api/candidates/election/{electionId}:
+ *   get:
+ *     summary: Get candidates for an election
+ *     description: Retrieves a list of all candidates participating in a specific election, including their biography and profile picture.
+ *     tags:
+ *       - Candidates
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: electionId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: The unique identifier of the election.
+ *     responses:
+ *       200:
+ *         description: A list of candidates with enriched information.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   uid:
+ *                     type: string
+ *                     description: Unique user ID of the candidate.
+ *                   firstname:
+ *                     type: string
+ *                     description: First name of the candidate.
+ *                   lastname:
+ *                     type: string
+ *                     description: Last name of the candidate.
+ *                   faculty:
+ *                     type: string
+ *                     description: Faculty the candidate belongs to.
+ *                   info:
+ *                     type: string
+ *                     nullable: true
+ *                     description: Biography or additional information text.
+ *                   picture:
+ *                     type: string
+ *                     nullable: true
+ *                     description: Base64 encoded image string (Data URI format).
+ *       401:
+ *         description: Unauthorized. User must be logged in.
+ *       500:
+ *         description: Internal server error.
+ */
 candidateRouter.get('/election/:electionId', ensureAuthenticated, async (req, res, next) => {
   try {
     const electionId = req.params.electionId;

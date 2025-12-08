@@ -47,12 +47,4 @@ export const voterApi = {
     logger.debug(`createBallot res: ${JSON.stringify(response.data)}`);
     return response.data;
   },
-
-  getCandidateInfo: async (electionId) => {
-    const response = await fetch(`/api/candidates/election/${electionId}`, {
-      credentials: 'include',
-    });
-    if (!response.ok) throw new Error('Fehler beim Laden der Kandidateninformationen');
-    return response.json();
-  },
 };
