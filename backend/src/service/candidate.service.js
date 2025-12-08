@@ -1,6 +1,8 @@
 import { logger } from '../conf/logger/logger.js';
 import { client } from '../database/db.js';
 
+const DATABASE_QUERY_ERROR = 'Database query operation failed.';
+
 /**
  * Fetches all required rows of all candidates from the database.
  * @returns {Promise<Array>} The List of all candidates.
@@ -47,7 +49,7 @@ export const uploadCandidateInformation = async (candidateInfo) => {
   } catch (error) {
     logger.debug('Error inserting candidate information:', error);
     logger.error('Failed to insert candidate information in the database.');
-    throw new Error('Database insert operation failed.');
+    throw new Error(DATABASE_QUERY_ERROR);
   }
 };
 
@@ -79,7 +81,7 @@ export const updateCandidateInformation = async (candidateInfo) => {
   } catch (error) {
     logger.debug('Error updating candidate information:', error);
     logger.error('Failed to update candidate information in the database.');
-    throw new Error('Database update operation failed.');
+    throw new Error(DATABASE_QUERY_ERROR);
   }
 };
 
@@ -100,7 +102,7 @@ export const deleteCandidateInformation = async (candidate_uid) => {
   } catch (error) {
     logger.debug('Error deleting candidate information:', error);
     logger.error('Failed to delete candidate information from the database.');
-    throw new Error('Database delete operation failed.');
+    throw new Error(DATABASE_QUERY_ERROR);
   }
 };
 
@@ -144,7 +146,7 @@ export const checkIfCandidateAlreadyHasInfo = async (candidate_uid) => {
   } catch (error) {
     logger.debug('Error checking if candidate already has information:', error);
     logger.error('Failed to check if candidate already has information in the database.');
-    throw new Error('Database query operation failed.');
+    throw new Error(DATABASE_QUERY_ERROR);
   }
 };
 
@@ -171,7 +173,7 @@ export const getCandidatesForElection = async (electionId) => {
     return result.rows;
   } catch (error) {
     logger.error('Failed to fetch candidates for election:', error);
-    throw new Error('Database query operation failed.');
+    throw new Error(DATABASE_QUERY_ERROR);
   }
 };
 
@@ -195,6 +197,6 @@ export const getCandidateInformationByUid = async (candidateUid) => {
     return result.rows.length > 0 ? result.rows[0] : null;
   } catch (error) {
     logger.error('Failed to fetch candidate information:', error);
-    throw new Error('Database query operation failed.');
+    throw new Error(DATABASE_QUERY_ERROR);
   }
 };
