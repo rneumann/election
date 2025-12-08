@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { candidateApi } from '../services/candidateApi';
+import { logger } from '../conf/logger/logger';
 
 /**
  * Modal component that displays a list of candidates for a specific election.
@@ -21,7 +22,9 @@ export const CandidateInfoModal = ({ open, onClose, electionId }) => {
    * Resets the selected candidate and handles the loading state.
    */
   useEffect(() => {
-    if (!open || !electionId) return;
+    if (!open || !electionId) {
+      return;
+    }
 
     // Reset selection to ensure list view is shown first
     setSelectedCandidate(null);
@@ -30,13 +33,13 @@ export const CandidateInfoModal = ({ open, onClose, electionId }) => {
       setLoading(true);
       try {
         const data = await candidateApi.getCandidateInfo(electionId);
-        console.log('API Response Candidates:', data);
+        logger.log('API Response Candidates:', data);
 
         // Ensure we strictly work with an array
         const candidatesArray = Array.isArray(data) ? data : data.candidates || [];
         setCandidates(candidatesArray);
       } catch (err) {
-        console.error('Error loading candidate info:', err);
+        logger.error('Error loading candidate info:', err);
       } finally {
         setLoading(false);
       }
@@ -48,10 +51,10 @@ export const CandidateInfoModal = ({ open, onClose, electionId }) => {
   /**
    * Handles the click event on a candidate item.
    * Sets the specific candidate to display their details.
-   * * @param {Object} candidate - The selected candidate object
+   * @param {Object} candidate - The selected candidate object
    */
   const handleCandidateClick = (candidate) => {
-    console.log('Candidate clicked:', candidate);
+    logger.log('Candidate clicked:', candidate);
     setSelectedCandidate(candidate);
   };
 
@@ -62,7 +65,9 @@ export const CandidateInfoModal = ({ open, onClose, electionId }) => {
     setSelectedCandidate(null);
   };
 
-  if (!open) return null;
+  if (!open) {
+    return null;
+  }
 
   return (
     // Overlay container with backdrop blur
