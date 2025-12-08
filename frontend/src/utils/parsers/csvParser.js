@@ -1,3 +1,4 @@
+/* eslint-disable indent */
 import Papa from 'papaparse';
 import { logger } from '../../conf/logger/logger';
 

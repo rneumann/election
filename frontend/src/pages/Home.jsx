@@ -177,12 +177,6 @@ const Home = () => {
                         </div>
                       </li>
                     ))}
-                    <Modal
-                      open={open}
-                      setOpen={setOpen}
-                      electionId={selectedElectionId}
-                      refreshElections={refreshElections}
-                    ></Modal>
                   </ul>
                 )}
               </div>
@@ -286,17 +280,6 @@ const Home = () => {
                         </div>
                       </li>
                     ))}
-                    <Modal
-                      open={open}
-                      setOpen={setOpen}
-                      electionId={selectedElectionId}
-                      refreshElections={refreshElections}
-                    ></Modal>
-                    <CandidateInfoModal
-                      open={infoOpen}
-                      onClose={() => setInfoOpen(false)}
-                      electionId={infoElectionId}
-                    />
                   </ul>
                 )}
               </div>
@@ -390,6 +373,17 @@ const Home = () => {
               </div>
             </div>
           </div>
+          <Modal
+            open={open}
+            setOpen={setOpen}
+            electionId={selectedElectionId}
+            refreshElections={refreshElections}
+          />
+          <CandidateInfoModal
+            open={infoOpen}
+            onClose={() => setInfoOpen(false)}
+            electionId={infoElectionId}
+          />
         </div>
       </main>
 
