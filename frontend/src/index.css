@@ -48,6 +48,57 @@
       'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Custom Tooltip Styles */
+  .tooltip-wrapper {
+    position: relative;
+  }
+
+  .tooltip-wrapper[data-tooltip]:hover::before,
+  .tooltip-wrapper[data-tooltip]:focus::before {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%) translateY(-8px);
+    background-color: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    z-index: 1000;
+    pointer-events: none;
+    opacity: 1;
+    transition: opacity 0.2s ease-in-out;
+  }
+
+  .dark .tooltip-wrapper[data-tooltip]:hover::before,
+  .dark .tooltip-wrapper[data-tooltip]:focus::before {
+    background-color: rgba(255, 255, 255, 0.95);
+    color: #1f2937;
+  }
+
+  .tooltip-wrapper[data-tooltip]:hover::after,
+  .tooltip-wrapper[data-tooltip]:focus::after {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%) translateY(-2px);
+    border: 6px solid transparent;
+    border-top-color: rgba(0, 0, 0, 0.9);
+    z-index: 1000;
+    pointer-events: none;
+    opacity: 1;
+    transition: opacity 0.2s ease-in-out;
+  }
+
+  .dark .tooltip-wrapper[data-tooltip]:hover::after,
+  .dark .tooltip-wrapper[data-tooltip]:focus::after {
+    border-top-color: rgba(255, 255, 255, 0.95);
     overflow-x: hidden;
     transition:
       background-color 0.2s ease-in-out,

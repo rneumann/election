@@ -31,20 +31,22 @@ const AccessibilityMenu = ({ isOpen, onClose }) => {
           <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
             <h2 className="text-2xl font-bold">Barrierefreiheit</h2>
             <div className="flex items-center gap-2">
-              <button
-                onClick={resetSettings}
-                className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition-colors"
-                title="Zurücksetzen"
-              >
-                <RefreshCw size={20} />
-              </button>
-              <button
-                onClick={onClose}
-                className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition-colors"
-                title="Schließen"
-              >
-                <X size={24} />
-              </button>
+              <div className="tooltip-wrapper" data-tooltip="Zurücksetzen">
+                <button
+                  onClick={resetSettings}
+                  className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition-colors"
+                >
+                  <RefreshCw size={20} />
+                </button>
+              </div>
+              <div className="tooltip-wrapper" data-tooltip="Menü schließen">
+                <button
+                  onClick={onClose}
+                  className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition-colors"
+                >
+                  <X size={24} />
+                </button>
+              </div>
             </div>
           </div>
 
@@ -58,24 +60,27 @@ const AccessibilityMenu = ({ isOpen, onClose }) => {
                     <span className="font-medium">Größerer Text</span>
                   </div>
                   <div className="flex items-center justify-around bg-gray-200 dark:bg-gray-600 rounded-full p-2">
-                    <button
-                      onClick={() => updateSetting('textSize', 1)}
-                      className={getSizeButtonClasses(settings.textSize === 1)}
-                      aria-label="Textgröße 1x"
-                      title="Normal"
-                    />
-                    <button
-                      onClick={() => updateSetting('textSize', 1.5)}
-                      className={getSizeButtonClasses(settings.textSize === 1.5)}
-                      aria-label="Textgröße 1.5x"
-                      title="Größer"
-                    />
-                    <button
-                      onClick={() => updateSetting('textSize', 2.0)}
-                      className={getSizeButtonClasses(settings.textSize === 2.0)}
-                      aria-label="Textgröße 2x"
-                      title="Am größten"
-                    />
+                    <div className="tooltip-wrapper" data-tooltip="Normal">
+                      <button
+                        onClick={() => updateSetting('textSize', 1)}
+                        className={getSizeButtonClasses(settings.textSize === 1)}
+                        aria-label="Textgröße 1x"
+                      />
+                    </div>
+                    <div className="tooltip-wrapper" data-tooltip="Größer">
+                      <button
+                        onClick={() => updateSetting('textSize', 1.5)}
+                        className={getSizeButtonClasses(settings.textSize === 1.5)}
+                        aria-label="Textgröße 1.5x"
+                      />
+                    </div>
+                    <div className="tooltip-wrapper" data-tooltip="Am größten">
+                      <button
+                        onClick={() => updateSetting('textSize', 2.0)}
+                        className={getSizeButtonClasses(settings.textSize === 2.0)}
+                        aria-label="Textgröße 2x"
+                      />
+                    </div>
                   </div>
                 </div>
                 <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
@@ -84,24 +89,27 @@ const AccessibilityMenu = ({ isOpen, onClose }) => {
                     <span className="font-medium">Zeilenhöhe</span>
                   </div>
                   <div className="flex items-center justify-around bg-gray-200 dark:bg-gray-600 rounded-full p-2">
-                    <button
-                      onClick={() => updateSetting('lineHeight', 1)}
-                      className={getLineHeightButtonClasses(settings.lineHeight === 1)}
-                      aria-label="Zeilenhöhe 1x"
-                      title="Normal"
-                    />
-                    <button
-                      onClick={() => updateSetting('lineHeight', 1.3)}
-                      className={getLineHeightButtonClasses(settings.lineHeight === 1.3)}
-                      aria-label="Zeilenhöhe 1.3x"
-                      title="Mittel"
-                    />
-                    <button
-                      onClick={() => updateSetting('lineHeight', 1.6)}
-                      className={getLineHeightButtonClasses(settings.lineHeight === 1.6)}
-                      aria-label="Zeilenhöhe 1.6x"
-                      title="Groß"
-                    />
+                    <div className="tooltip-wrapper" data-tooltip="Normal">
+                      <button
+                        onClick={() => updateSetting('lineHeight', 1)}
+                        className={getLineHeightButtonClasses(settings.lineHeight === 1)}
+                        aria-label="Zeilenhöhe 1x"
+                      />
+                    </div>
+                    <div className="tooltip-wrapper" data-tooltip="Mittel">
+                      <button
+                        onClick={() => updateSetting('lineHeight', 1.3)}
+                        className={getLineHeightButtonClasses(settings.lineHeight === 1.3)}
+                        aria-label="Zeilenhöhe 1.3x"
+                      />
+                    </div>
+                    <div className="tooltip-wrapper" data-tooltip="Groß">
+                      <button
+                        onClick={() => updateSetting('lineHeight', 1.6)}
+                        className={getLineHeightButtonClasses(settings.lineHeight === 1.6)}
+                        aria-label="Zeilenhöhe 1.6x"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>

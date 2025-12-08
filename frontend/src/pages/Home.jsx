@@ -158,7 +158,7 @@ const HomeContent = () => {
 
           {/* User Role Info */}
           <div className="bg-blue-50 dark:bg-blue-900/30 border-l-4 border-blue-500 dark:border-blue-400 p-3 sm:p-4 mb-4 sm:mb-6 transition-colors">
-            <p className="text-xs sm:text-sm text-blue-700 dark:text-blue-300 transition-colors">
+            <p className="text-xs sm:text-sm text-blue-700 dark:text-white transition-colors">
               <strong>Ihre Rolle:</strong>{' '}
               {user?.role === 'committee' && 'Sie können Wahlen verwalten und Ergebnisse einsehen.'}
               {user?.role === 'voter' && 'Sie können an verfügbaren Wahlen teilnehmen.'}
@@ -181,17 +181,17 @@ const HomeContent = () => {
                   </svg>
                 </div>
                 <div>
-                  <h3 className="text-lg sm:text-xl font-semibold text-blue-900 dark:text-blue-100 mb-1 transition-colors">
+                  <h3 className="text-lg sm:text-xl font-semibold text-blue-900 dark:text-white mb-1 transition-colors">
                     Aktuelle Wahlen
                   </h3>
-                  <p className="text-blue-700 dark:text-blue-300 text-xs sm:text-sm transition-colors">
+                  <p className="text-blue-700 dark:text-white text-xs sm:text-sm transition-colors">
                     Hier werden verfügbare Wahlen angezeigt, für Sie aktuell teilnehmen können.
                   </p>
                 </div>
               </div>
               <div className="mt-4 pt-4 border-t border-blue-200 dark:border-blue-700 transition-colors">
                 {Array.isArray(electionsActive) && electionsActive.length === 0 ? (
-                  <p className="text-sm text-blue-600 dark:text-blue-300 transition-colors">
+                  <p className="text-sm text-blue-600 dark:text-white transition-colors">
                     Aktuell finden keine Wahlen statt.
                   </p>
                 ) : (
@@ -203,19 +203,19 @@ const HomeContent = () => {
                       >
                         {/* Wahlart */}
                         <div className="flex flex-col sm:flex-row sm:items-center gap-1">
-                          <span className="font-semibold text-sm text-blue-600 dark:text-blue-300 transition-colors">
+                          <span className="font-semibold text-sm text-blue-600 dark:text-white transition-colors">
                             Wahlart:
                           </span>
-                          <span className="text-sm text-blue-600 dark:text-blue-300 transition-colors">
+                          <span className="text-sm text-blue-600 dark:text-white transition-colors">
                             {election.description}
                           </span>
                         </div>
 
                         <div className="flex flex-col sm:flex-row sm:items-center gap-1">
-                          <span className="font-semibold text-sm text-blue-600 dark:text-blue-300 transition-colors">
+                          <span className="font-semibold text-sm text-blue-600 dark:text-white transition-colors">
                             Datum:
                           </span>
-                          <span className="text-sm text-blue-600 dark:text-blue-300 transition-colors">
+                          <span className="text-sm text-blue-600 dark:text-white transition-colors">
                             <span className="block sm:inline">
                               von: {new Date(election.start).toLocaleString('de-DE', dateOptions)}
                             </span>
@@ -273,17 +273,17 @@ const HomeContent = () => {
                   </svg>
                 </div>
                 <div>
-                  <h3 className="text-lg sm:text-xl font-semibold text-blue-900 dark:text-blue-100 mb-1 transition-colors">
+                  <h3 className="text-lg sm:text-xl font-semibold text-blue-900 dark:text-white mb-1 transition-colors">
                     Zukünftige Wahlen
                   </h3>
-                  <p className="text-blue-700 dark:text-blue-300 text-xs sm:text-sm transition-colors">
+                  <p className="text-blue-700 dark:text-white text-xs sm:text-sm transition-colors">
                     Hier werden Wahlen angezeigt, für die Sie bald abstimmen können!
                   </p>
                 </div>
               </div>
               <div className="mt-4 pt-4 border-t border-blue-200 dark:border-blue-700 transition-colors">
                 {Array.isArray(electionsFuture) && electionsFuture.length === 0 ? (
-                  <p className="text-sm text-blue-600 dark:text-blue-300 transition-colors">
+                  <p className="text-sm text-blue-600 dark:text-white transition-colors">
                     Keine zukünftigen Wahlen gefunden.
                   </p>
                 ) : (
@@ -295,19 +295,19 @@ const HomeContent = () => {
                       >
                         {/* Wahlart */}
                         <div className="flex flex-col sm:flex-row sm:items-center gap-1">
-                          <span className="font-semibold text-sm text-blue-600 dark:text-blue-300 transition-colors">
+                          <span className="font-semibold text-sm text-blue-600 dark:text-white transition-colors">
                             Wahlart:
                           </span>
-                          <span className="text-sm text-blue-600 dark:text-blue-300 transition-colors">
+                          <span className="text-sm text-blue-600 dark:text-white transition-colors">
                             {election.description}
                           </span>
                         </div>
 
                         <div className="flex flex-col sm:flex-row sm:items-center gap-1">
-                          <span className="font-semibold text-sm text-blue-600 dark:text-blue-300 transition-colors">
+                          <span className="font-semibold text-sm text-blue-600 dark:text-white transition-colors">
                             Datum:
                           </span>
-                          <span className="text-sm text-blue-600 dark:text-blue-300 transition-colors">
+                          <span className="text-sm text-blue-600 dark:text-white transition-colors">
                             <span className="block sm:inline">
                               von: {new Date(election.start).toLocaleString('de-DE', dateOptions)}
                             </span>
@@ -379,19 +379,19 @@ const HomeContent = () => {
                   </svg>
                 </div>
                 <div>
-                  <h3 className="text-lg sm:text-xl font-semibold text-green-900 dark:text-green-100 mb-1 transition-colors">
+                  <h3 className="text-lg sm:text-xl font-semibold text-green-900 dark:text-white mb-1 transition-colors">
                     Meine Stimmen
                   </h3>
-                  <p className="text-green-700 dark:text-green-300 text-xs sm:text-sm transition-colors">
+                  <p className="text-green-700 dark:text-white text-xs sm:text-sm transition-colors">
                     Ihre abgegebenen Wahlstimmen
                   </p>
                 </div>
               </div>
               <div className="mt-4 pt-4 border-t border-green-200 dark:border-green-700 transition-colors">
-                <span className="text-2xl font-bold text-green-600 dark:text-green-400 transition-colors">
-                  {Array.isArray(electionsAlreadyVoted) ? electionsAlreadyVoted.length : '0'}
+                <span className="text-2xl font-bold text-green-600 dark:text-white transition-colors">
+                  {Array.isArray(electionsAlreadyVoted) ? electionsAlreadyVoted.length : 0}
                 </span>
-                <span className="text-xs text-green-600 dark:text-green-400 ml-1 transition-colors">
+                <span className="text-xs text-green-600 dark:text-white ml-1 transition-colors">
                   abgegeben
                 </span>
               </div>
@@ -403,7 +403,7 @@ const HomeContent = () => {
                         key={election.id}
                         className="p-3 bg-white dark:bg-gray-800 shadow-sm border border-green-100 dark:border-green-700 rounded-xl flex items-start gap-3 hover:shadow-md transition-all"
                       >
-                        <div className="text-green-600 dark:text-green-400 mt-0.5 transition-colors">
+                        <div className="text-green-600 dark:text-white mt-0.5 transition-colors">
                           <svg
                             xmlns="http://www.w3.org/2000/svg"
                             className="h-5 w-5"
@@ -419,7 +419,7 @@ const HomeContent = () => {
                             />
                           </svg>
                         </div>
-                        <span className="font-medium text-sm text-gray-700 dark:text-gray-300 transition-colors">
+                        <span className="font-medium text-sm text-gray-700 dark:text-white transition-colors">
                           {election.description}
                         </span>
                       </li>
@@ -443,19 +443,19 @@ const HomeContent = () => {
                   </svg>
                 </div>
                 <div>
-                  <h3 className="text-lg sm:text-xl font-semibold text-purple-900 dark:text-purple-100 mb-1 transition-colors">
+                  <h3 className="text-lg sm:text-xl font-semibold text-purple-900 dark:text-white mb-1 transition-colors">
                     Ergebnisse
                   </h3>
-                  <p className="text-purple-700 dark:text-purple-300 text-xs sm:text-sm transition-colors">
+                  <p className="text-purple-700 dark:text-white text-xs sm:text-sm transition-colors">
                     Veröffentlichte Wahlergebnisse
                   </p>
                 </div>
               </div>
               <div className="mt-4 pt-4 border-t border-purple-200 dark:border-purple-700 transition-colors">
-                <span className="text-2xl font-bold text-purple-600 dark:text-purple-400 transition-colors">
+                <span className="text-2xl font-bold text-purple-600 dark:text-white transition-colors">
                   0
                 </span>
-                <span className="text-xs text-purple-600 dark:text-purple-400 ml-1 transition-colors">
+                <span className="text-xs text-purple-600 dark:text-white ml-1 transition-colors">
                   verfügbar
                 </span>
               </div>
