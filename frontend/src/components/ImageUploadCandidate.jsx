@@ -155,6 +155,7 @@ export const ImageUploadCandidate = ({ setUploadData }) => {
   const handleReset = () => {
     setImage(null);
     setSelectedFile(null);
+    setUploadData(null);
     setCrop({ x: 0, y: 0 });
     setZoom(1);
     setCroppedAreaPixels(null);
@@ -221,8 +222,10 @@ export const ImageUploadCandidate = ({ setUploadData }) => {
 
           <ResponsiveButton
             onClick={async () => {
+              if (freeze === false) {
+                await tempSave();
+              }
               setFreeze(!freeze);
-              await tempSave();
               return;
             }}
             variant="primary"

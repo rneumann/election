@@ -61,18 +61,35 @@ export const uploadCandidateInformation = async (candidateInfo) => {
  * @returns {Promise<Object>} The updated candidate information.
  */
 export const updateCandidateInformation = async (candidateInfo) => {
+  const allowedFields = ['info', 'picture_content_type', 'picture_data'];
+
+  const updates = [];
+  const values = [];
+  let valueIndex = 1;
+
+  // 2. Iteriere über die erlaubten Felder und baue Updates + Values auf
+  for (const field of allowedFields) {
+    // eslint-disable-next-line
+    if (candidateInfo[field] !== undefined) {
+      updates.push(`${field} = $${valueIndex}`);
+      values.push(candidateInfo[field]); // eslint-disable-line
+      valueIndex++;
+    }
+  }
+  if (updates.length === 0) {
+    logger.debug('No fields to update for candidate:', candidateInfo.candidate_uid);
+    return undefined;
+  }
+  values.push(candidateInfo.candidate_uid);
+  const uidPlaceholder = `$${valueIndex}`;
+
   const query = `
     UPDATE candidate_information
-    SET info = $1, picture_content_type = $2, picture_data = $3
-    WHERE candidate_uid = $4
+    SET ${updates.join(', ')}
+    WHERE candidate_uid = ${uidPlaceholder}
     RETURNING id
   `;
-  const values = [
-    candidateInfo.info,
-    candidateInfo.picture_content_type,
-    candidateInfo.picture_data,
-    candidateInfo.candidate_uid,
-  ];
+
   try {
     const result = await client.query(query, values);
     return result.rows[0];

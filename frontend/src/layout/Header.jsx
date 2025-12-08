@@ -10,7 +10,10 @@ export const Header = () => {
   const navigate = useNavigate();
 
   const navigateToCandidatePage = () => {
-    navigate('/candidate');
+    navigate('/candidate'); // eslint-disable-line
+  };
+  const navigateToHomePage = () => {
+    navigate('/home');
   };
   return (
     <header className="bg-brand-primary text-white shadow-lg sticky top-0 z-10">
@@ -29,7 +32,8 @@ export const Header = () => {
           {user.isCandidate && window.location.pathname !== '/candidate' && (
             <div className="self-start sm:self-auto">
               <ResponsiveButton
-                toolTip={'Wechsel zur Kandidaten Ansicht'}
+                className="group inline-flex items-center"
+                toolTip={'Wechsel zur Hauptansicht'}
                 toolTipPlacement="bottom"
                 variant="secondary"
                 size="small"
@@ -38,6 +42,50 @@ export const Header = () => {
                 }}
               >
                 Kandidaten Ansicht
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth="2"
+                  stroke="currentColor"
+                  className="size-5 ml-2 transition-transform duration-300 group-hover:translate-x-1"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"
+                  />
+                </svg>
+              </ResponsiveButton>
+            </div>
+          )}
+          {user.isCandidate && window.location.pathname === '/candidate' && (
+            <div className="self-start sm:self-auto">
+              <ResponsiveButton
+                className="group inline-flex items-center"
+                toolTip={'Wechsel zur Hauptansicht'}
+                toolTipPlacement="bottom"
+                variant="secondary"
+                size="small"
+                onClick={() => {
+                  navigateToHomePage();
+                }}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth="1.5"
+                  stroke="currentColor"
+                  className="size-5 mr-2 transition-transform duration-300 group-hover:-translate-x-1"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"
+                  />
+                </svg>
+                Hauptansicht
               </ResponsiveButton>
             </div>
           )}

@@ -1,3 +1,4 @@
+import { logger } from '../conf/logger/logger';
 import { hnadleHttpStatus } from '../utils/exception-handler/exception-handler';
 import api from './api';
 
@@ -9,7 +10,7 @@ export const candidateApi = {
         'Content-Type': 'multipart/form-data',
       },
     });
-
+    logger.debug(`createCanidateInformation res: ${JSON.stringify(response)}`);
     if (response.status !== 201) {
       hnadleHttpStatus(response);
       return undefined;
@@ -23,12 +24,22 @@ export const candidateApi = {
         'Content-Type': 'multipart/form-data',
       },
     });
-
-    if (response.status !== 200) {
+    logger.debug(`updateCanidateInformation res: ${JSON.stringify(response.data)}`);
+    if (response.status !== 204) {
       hnadleHttpStatus(response);
-      return undefined;
+      return false;
     }
-    return response.data;
+    return true;
+  },
+
+  deleteCanidateInformation: async () => {
+    const response = await api.delete('candidates/information');
+    logger.debug(`deleteCanidateInformation res: ${JSON.stringify(response.data)}`);
+    if (response.status !== 204) {
+      hnadleHttpStatus(response);
+      return false;
+    }
+    return true;
   },
 
   getCandidateInfo: async (electionId) => {

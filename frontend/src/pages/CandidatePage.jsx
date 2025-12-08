@@ -18,7 +18,9 @@ export const CandidatePage = () => {
 
     const formData = new FormData();
     formData.append('info', description);
-    formData.append('picture', uploadData);
+    if (uploadData) {
+      formData.append('picture', uploadData);
+    }
 
     logger.info(`New entries saved: ${formData.get('description')}, ${formData.get('picture')}`);
 
@@ -29,7 +31,11 @@ export const CandidatePage = () => {
         await fetchCandidateInfo();
         return;
       }
-      await candidateApi.updateCanidateInformation(formData);
+      const response = await candidateApi.updateCanidateInformation(formData);
+      if (!response) {
+        showAlert('error', 'Beim Speichern der Informationen ist ein Fehler aufgetreten.');
+        return;
+      }
       showAlert('success', 'Deine Informationen wurden erfolgreich geupdated.');
       await fetchCandidateInfo();
     } catch (error) {
@@ -38,12 +44,28 @@ export const CandidatePage = () => {
     }
   };
 
+  const clearAllEntries = async () => {
+    logger.debug('Clearing all entries');
+    try {
+      const response = await candidateApi.deleteCanidateInformation();
+      if (!response) {
+        showAlert('error', 'Beim Löschen der Informationen ist ein Fehler aufgetreten.');
+        return;
+      }
+      await fetchCandidateInfo();
+      showAlert('success', 'Deine Informationen wurden erfolgreich gelöscht.');
+    } catch (error) {
+      logger.error(`Error clearing entries: ${error.message}`);
+      showAlert('error', 'Beim Löschen der Informationen ist ein Fehler aufgetreten.');
+    }
+  };
+
   const fetchCandidateInfo = async () => {
     try {
       const response = await candidateApi.getCandidateInfoByUid();
       setCurrentData(response);
       logger.debug(`Fetched candidate info: ${JSON.stringify(response)}`);
-      setDescription(response.info);
+      setDescription(response?.info ?? '');
     } catch (error) {
       logger.error(`Error fetching candidate info: ${error.message}`);
     }
@@ -169,7 +191,14 @@ export const CandidatePage = () => {
           </div>
 
           {/* Save Button */}
-          <div className="flex justify-end pt-4">
+          <div className="flex justify-end pt-4 space-x-2">
+            <ResponsiveButton
+              variant="primary"
+              className="w-full sm:w-auto"
+              onClick={clearAllEntries}
+            >
+              bisherige Informationen löschen!
+            </ResponsiveButton>
             <ResponsiveButton
               variant="primary"
               className="w-full sm:w-auto"
