@@ -410,10 +410,10 @@ candidateRouter.get('/election/:electionId', ensureAuthenticated, async (req, re
   try {
     const electionId = req.params.electionId;
 
-    // 1) Hole Kandidaten, die bei dieser Wahl antreten
+    // Get candidates participating in the election
     const candidates = await getCandidatesForElection(electionId);
 
-    // 2) Hole Infos + Bilder
+    // Get and enrich candidate information
     const enriched = await Promise.all(
       candidates.map(async (cand) => {
         const info = await getCandidateInformationByUid(cand.uid);
