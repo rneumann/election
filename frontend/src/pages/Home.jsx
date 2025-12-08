@@ -9,8 +9,7 @@ import { logger } from '../conf/logger/logger.js';
 import authService from '../services/authService.js';
 import { Header } from '../layout/Header.jsx';
 import { Footer } from '../layout/Footer.jsx';
-import { CandidateInfoModal } from '../components/candidateModal.jsx';
-
+import { CandidateInfoModal } from '../components/CandidateModal.jsx';
 /**
  * Main dashboard for authenticated users.
  *

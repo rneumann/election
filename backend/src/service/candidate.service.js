@@ -141,7 +141,6 @@ export const checkIfVoterIsCandidate = async (uid) => {
   } catch (error) {
     logger.debug('Error checking if voter is candidate:', error);
     logger.error('Failed to check if voter is candidate in the database.');
-    // eslint-disable-next-line
     throw new Error('Database query operation failed.');
   }
 };

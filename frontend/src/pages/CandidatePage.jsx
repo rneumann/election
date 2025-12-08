@@ -4,8 +4,8 @@ import { Header } from '../layout/Header';
 import { ImageUploadCandidate } from '../components/ImageUploadCandidate';
 import ResponsiveButton from '../components/ResponsiveButton';
 import { logger } from '../conf/logger/logger';
-import { candidateApi } from '../services/candiateApi';
 import { useAlert } from '../context/AlertContext';
+import { candidateApi } from '../services/candidateApi';
 
 export const CandidatePage = () => {
   const [uploadData, setUploadData] = useState(null);
