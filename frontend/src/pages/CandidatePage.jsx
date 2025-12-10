@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { Footer } from '../layout/Footer';
 import { Header } from '../layout/Header';
 import { ImageUploadCandidate } from '../components/ImageUploadCandidate';
@@ -6,12 +6,36 @@ import ResponsiveButton from '../components/ResponsiveButton';
 import { logger } from '../conf/logger/logger';
 import { useAlert } from '../context/AlertContext';
 import { candidateApi } from '../services/candidateApi';
+import { AccessibilityContext, AccessibilityProvider } from '../context/AccessibilityContext';
+import AccessibilityMenu from '../components/AccessibilityMenu';
 
-export const CandidatePage = () => {
+export const CandidatePageContent = () => {
   const [uploadData, setUploadData] = useState(null);
   const [description, setDescription] = useState('');
   const [currentData, setCurrentData] = useState(null);
   const { showAlert } = useAlert();
+  const { settings } = useContext(AccessibilityContext);
+  const [isAccessibilityMenuOpen, setAccessibilityMenuOpen] = useState(false);
+
+  useEffect(() => {
+    const html = document.documentElement;
+
+    // This preserves Tailwind responsive breakpoints while scaling text
+    html.setAttribute('data-text-scale', settings.textSize.toString());
+
+    return () => {
+      html.removeAttribute('data-text-scale');
+    };
+  }, [settings]);
+
+  // Build accessibility classes for main content (not menu!)
+  const accessibilityClasses = [
+    settings.lineHeight === 1 ? 'accessibility-line-height-1' : '',
+    settings.lineHeight === 1.3 ? 'accessibility-line-height-1-3' : '',
+    settings.lineHeight === 1.6 ? 'accessibility-line-height-1-6' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   const saveNewEntries = async () => {
     logger.info(`description: ${description}, picture: ${uploadData?.name || uploadData?.type}`);
@@ -79,8 +103,10 @@ export const CandidatePage = () => {
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col bg-brand-light">
-      <Header />
+    <div
+      className={`min-h-screen flex flex-col bg-brand-light dark:bg-gray-900 transition-colors ${accessibilityClasses}`}
+    >
+      <Header setAccessibilityMenuOpen={setAccessibilityMenuOpen} />
       {/* Main Content - Flex-1 to push footer down */}
       <main className="flex-1 container mx-auto px-4 sm:px-6 py-6 sm:py-8">
         <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6 md:p-8 border border-gray-100">
@@ -210,6 +236,17 @@ export const CandidatePage = () => {
         </div>
       </main>
       <Footer />
+      {/* Accessibility Sidebar */}
+      <AccessibilityMenu
+        isOpen={isAccessibilityMenuOpen}
+        onClose={() => setAccessibilityMenuOpen(false)}
+      />
     </div>
   );
 };
+
+export const CandidatePage = () => (
+  <AccessibilityProvider>
+    <CandidatePageContent />
+  </AccessibilityProvider>
+);

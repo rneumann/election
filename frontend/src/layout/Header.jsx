@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { PersonStanding } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import ResponsiveButton from '../components/ResponsiveButton';
 import { useTheme } from '../hooks/useTheme';
