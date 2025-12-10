@@ -292,4 +292,10 @@ FROM
 GROUP BY
   b.election;
 
+
+-- Status hinzufügen: 'PENDING' (Wartend), 'ACCEPTED' (Akzeptiert), 'REJECTED' (Abgelehnt)
+ALTER TABLE electioncandidates 
+ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'PENDING';
+
+
 COMMIT;

@@ -10,6 +10,7 @@ import { AlertProvider } from './context/AlertContext.jsx';
 import AuditLogPage from './pages/AuditLogPage.jsx';
 //NEU
 import CommitteeDashboard from './pages/CommitteeDashboard';
+import CandidateReview from './pages/CandidateReview';
 
 /**
  * Protected route wrapper that enforces authentication.
@@ -99,6 +100,7 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
+      <Route path="/committee/candidates" element={<ProtectedRoute allowedRoles={['committee', 'admin']}><CandidateReview /></ProtectedRoute>} />
     </Routes>
   );
 };

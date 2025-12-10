@@ -45,3 +45,61 @@ export const getCandidatesForElection = async (electionId) => {
     throw new Error('Datenbankfehler beim Laden der Kandidaten');
   }
 };
+
+
+/**
+ * Holt alle Kandidaten und gruppiert ihre Wahlen.
+ * Gibt zurück: Kandidat Infos + Liste der Wahlen inkl. Status.
+ */
+export const getAllCandidatesWithElections = async () => {
+  // WICHTIG: Wir nutzen NULL as email/image, solange die Spalten in der DB fehlen.
+  const query = `
+    SELECT 
+      c.id, 
+      c.firstname, 
+      c.lastname, 
+      c.faculty, 
+      NULL as email, -- FIX: Dummy-Wert, da Spalte noch fehlt
+      NULL as image, -- FIX: Dummy-Wert, da Spalte noch fehlt
+      json_agg(json_build_object(
+        'electionId', e.id,
+        'electionInfo', e.info,
+        'status', ec.status,
+        'isActive', (e."end" >= NOW())
+      )) as elections
+    FROM candidates c
+    JOIN electioncandidates ec ON c.id = ec.candidateId
+    JOIN elections e ON ec.electionId = e.id
+    GROUP BY c.id
+    ORDER BY c.lastname ASC
+  `;
+
+  try {
+    const result = await client.query(query);
+    return result.rows;
+  } catch (err) {
+    logger.error('Error fetching grouped candidates:', err);
+    throw new Error('Fehler beim Laden der Kandidatenliste');
+  }
+};
+
+/**
+ * Aktualisiert den Status eines Kandidaten für eine bestimmte Wahl.
+ */
+export const updateCandidateStatus = async (candidateId, electionId, status) => {
+  const query = `
+    UPDATE electioncandidates
+    SET status = $1
+    WHERE candidateId = $2 AND electionId = $3
+    RETURNING status
+  `;
+  
+  try {
+    const result = await client.query(query, [status, candidateId, electionId]);
+    if (result.rowCount === 0) throw new Error('Eintrag nicht gefunden');
+    return result.rows[0];
+  } catch (err) {
+    logger.error(`Error updating status for C:${candidateId} E:${electionId}`, err);
+    throw new Error('Status konnte nicht aktualisiert werden');
+  }
+};

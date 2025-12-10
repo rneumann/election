@@ -105,6 +105,16 @@ const CommitteeDashboard = () => {
       <div className="max-w-7xl mx-auto">
         <h1 className="text-2xl font-bold text-gray-900 mb-8">Wahlausschuss Übersicht</h1>
 
+        <div className="flex justify-between items-center mb-8">
+        <h1 className="...">Wahlausschuss Übersicht</h1>
+        <button 
+          onClick={() => navigate('/committee/candidates')}
+          className="bg-brand-primary text-white px-4 py-2 rounded hover:bg-opacity-90"
+        >
+          Kandidaten verwalten
+        </button>
+      </div>
+
         {/* LAUFENDE WAHLEN */}
         <section className="mb-10">
           <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2">

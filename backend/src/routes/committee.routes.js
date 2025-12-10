@@ -3,6 +3,7 @@ import { ensureAuthenticated, ensureHasRole } from '../auth/auth.js';
 import { getAllCommitteeElections, getCandidatesForElection } from '../service/committee.service.js';
 import { logger } from '../conf/logger/logger.js';
 import { writeAuditLog } from '../audit/auditLogger.js';
+import { getAllCandidatesWithElections, updateCandidateStatus } from '../service/committee.service.js';
 
 export const committeeRouter = express.Router();
 
@@ -41,6 +42,55 @@ committeeRouter.get('/elections/:id/candidates', protect, async (req, res) => {
     }).catch(e => logger.error(e));
 
     res.json(candidates);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+
+
+/**
+ * GET /api/committee/candidates
+ * Übersicht aller Kandidaten und ihrer Bewerbungen
+ */
+committeeRouter.get('/candidates', protect, async (req, res) => {
+  try {
+    const candidates = await getAllCandidatesWithElections();
+    res.json(candidates);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+/**
+ * PATCH /api/committee/candidates/:cid/elections/:eid/status
+ * Kandidat für eine Wahl akzeptieren/ablehnen
+ */
+committeeRouter.patch('/candidates/:cid/elections/:eid/status', protect, async (req, res) => {
+  const { cid, eid } = req.params;
+  const { status } = req.body; // 'ACCEPTED' oder 'REJECTED'
+
+  if (!['ACCEPTED', 'REJECTED', 'PENDING'].includes(status)) {
+    return res.status(400).json({ message: 'Ungültiger Status' });
+  }
+
+  try {
+    await updateCandidateStatus(cid, eid, status);
+
+    // WICHTIG: Entscheidung revisionssicher loggen!
+    writeAuditLog({
+      actionType: 'COMMITTEE_DECISION',
+      level: 'WARN', // Warn, weil es den Wahlausgang beeinflusst
+      actorId: req.user.username,
+      actorRole: req.user.role,
+      details: { 
+        candidateId: cid, 
+        electionId: eid, 
+        new_status: status 
+      }
+    }).catch(e => logger.error(e));
+
+    res.json({ message: 'Status aktualisiert', status });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
