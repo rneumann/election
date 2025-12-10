@@ -1,9 +1,12 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useContext } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { PersonStanding } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useTheme } from '../hooks/useTheme.js';
 import ResponsiveButton from '../components/ResponsiveButton.jsx';
 import { logger } from '../conf/logger/logger.js';
+import { AccessibilityProvider, AccessibilityContext } from '../context/AccessibilityContext.jsx';
+import AccessibilityMenu from '../components/AccessibilityMenu.jsx';
 
 /**
  * Login page for user authentication.
@@ -11,16 +14,37 @@ import { logger } from '../conf/logger/logger.js';
  *
  * @returns Login form with LDAP, SAML, and Keycloak authentication options
  */
-const Login = () => {
+const LoginContent = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isAccessibilityMenuOpen, setAccessibilityMenuOpen] = useState(false);
   const usernameRef = useRef(null);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { login } = useAuth();
   const theme = useTheme();
+  const { settings } = useContext(AccessibilityContext);
+
+  // Apply accessibility settings
+  useEffect(() => {
+    const html = document.documentElement;
+    html.setAttribute('data-text-scale', settings.textSize.toString());
+
+    return () => {
+      html.removeAttribute('data-text-scale');
+    };
+  }, [settings]);
+
+  // Build accessibility classes
+  const accessibilityClasses = [
+    settings.lineHeight === 1 ? 'accessibility-line-height-1' : '',
+    settings.lineHeight === 1.3 ? 'accessibility-line-height-1-3' : '',
+    settings.lineHeight === 1.6 ? 'accessibility-line-height-1-6' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   /**
    * Auto-focus on username field when component mounts.
@@ -86,8 +110,22 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-brand-light via-gray-50 to-white px-4 sm:px-6 py-8">
-      <div className="bg-white p-6 sm:p-8 rounded-xl shadow-2xl w-full max-w-md border border-gray-100">
+    <div className={`min-h-screen flex items-center justify-center bg-gradient-to-br from-brand-light dark:bg-gray-900 via-gray-50 to-white px-4 sm:px-6 py-8 transition-colors ${accessibilityClasses}`}>
+      {/* Accessibility Button - Fixed Position Top Right */}
+      <div className="fixed top-4 right-4 z-30">
+        <ResponsiveButton
+          toolTip="Barrierefreiheit"
+          toolTipPlacement="bottom"
+          variant="secondary"
+          size="icon"
+          onClick={() => setAccessibilityMenuOpen(true)}
+          className="shadow-lg"
+        >
+          <PersonStanding className="text-brand-primary w-6 h-6" />
+        </ResponsiveButton>
+      </div>
+
+      <div className="login-content bg-white dark:bg-gray-800 p-6 sm:p-8 rounded-xl shadow-2xl w-full max-w-md border border-gray-100 dark:border-gray-700 transition-colors">
         {/* Logo/Header */}
         <div className="text-center mb-6 sm:mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-brand-primary rounded-full mb-4 shadow-lg">
@@ -105,10 +143,10 @@ const Login = () => {
               />
             </svg>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-brand-primary mb-2">
+          <h1 className="text-2xl sm:text-3xl font-bold text-brand-primary dark:text-white mb-2 transition-colors">
             {theme.institution.name} {theme.text.appTitle}
           </h1>
-          <p className="text-brand-gray text-xs sm:text-sm">{theme.text.loginSubtitle}</p>
+          <p className="text-brand-gray dark:text-gray-300 text-xs sm:text-sm transition-colors">{theme.text.loginSubtitle}</p>
         </div>
 
         {/* Error Message */}
@@ -169,7 +207,7 @@ const Login = () => {
         {/* Login Form */}
         <form onSubmit={handleSubmit} className="space-y-6" autoComplete="off">
           <div>
-            <label htmlFor="username" className="block text-sm font-medium text-brand-dark mb-2">
+            <label htmlFor="username" className="block text-sm font-medium text-brand-dark dark:text-gray-200 mb-2 transition-colors">
               Benutzername
             </label>
             <input
@@ -184,14 +222,14 @@ const Login = () => {
                   setError('');
                 }
               }}
-              className="w-full px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent outline-none transition-shadow duration-200 hover:border-brand-primary"
+              className="w-full px-4 py-2.5 sm:py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent outline-none transition-shadow duration-200 hover:border-brand-primary"
               placeholder="Ihr Benutzername"
               required
             />
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-brand-dark mb-2">
+            <label htmlFor="password" className="block text-sm font-medium text-brand-dark dark:text-gray-200 mb-2 transition-colors">
               Passwort
             </label>
             <input
@@ -205,7 +243,7 @@ const Login = () => {
                   setError('');
                 }
               }}
-              className="w-full px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent outline-none transition-shadow duration-200 hover:border-brand-primary"
+              className="w-full px-4 py-2.5 sm:py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent outline-none transition-shadow duration-200 hover:border-brand-primary"
               placeholder="Ihr Passwort"
               required
             />
@@ -230,12 +268,24 @@ const Login = () => {
         </ResponsiveButton>
 
         {/* Footer */}
-        <p className="text-center text-xs sm:text-sm text-brand-gray mt-4 sm:mt-6">
+        <p className="text-center text-xs sm:text-sm text-brand-gray dark:text-gray-400 mt-4 sm:mt-6 transition-colors">
           {theme.text.copyright}
         </p>
       </div>
+
+      {/* Accessibility Sidebar */}
+      <AccessibilityMenu
+        isOpen={isAccessibilityMenuOpen}
+        onClose={() => setAccessibilityMenuOpen(false)}
+      />
     </div>
   );
 };
+
+const Login = () => (
+  <AccessibilityProvider>
+    <LoginContent />
+  </AccessibilityProvider>
+);
 
 export default Login;

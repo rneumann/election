@@ -3,6 +3,7 @@ import { themeConfig } from './theme.config.js';
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ['./index.html', './src/**/*.{js,jsx}'],
+  darkMode: 'class', // Enable manual dark mode toggle via 'dark' class on html
   theme: {
     extend: {
       colors: {
