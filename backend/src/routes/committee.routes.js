@@ -1,14 +1,35 @@
 import express from 'express';
-import { ensureAuthenticated, ensureHasRole } from '../auth/auth.js';
-import { getAllCommitteeElections, getCandidatesForElection } from '../service/committee.service.js';
+import { ensureAuthenticated } from '../auth/auth.js'; // Wir nutzen nur ensureAuthenticated aus auth.js
+import { getAllCommitteeElections, getCandidatesForElection, getAllCandidatesWithElections, updateCandidateStatus } from '../service/committee.service.js';
 import { logger } from '../conf/logger/logger.js';
 import { writeAuditLog } from '../audit/auditLogger.js';
-import { getAllCandidatesWithElections, updateCandidateStatus } from '../service/committee.service.js';
 
 export const committeeRouter = express.Router();
 
-// Middleware: Nur eingeloggte "committee" User (oder Admin) dürfen hier rein
-const protect = [ensureAuthenticated, ensureHasRole(['committee', 'admin'])];
+/**
+ * Eigene Middleware für Rechte-Check.
+ * Erlaubt Zugriff, wenn Rolle = 'admin' ODER 'committee'.
+ */
+const requireCommitteeRights = (req, res, next) => {
+  // 1. Prüfen, ob User überhaupt existiert (durch ensureAuthenticated sichergestellt)
+  if (!req.user) {
+    return res.status(401).json({ message: 'Nicht authentifiziert' });
+  }
+
+  // 2. Prüfen auf Rolle (Admin ODER Committee)
+  if (req.user.role === 'admin' || req.user.role === 'committee') {
+    return next(); // Alles ok, weiter gehts
+  }
+
+  // 3. Sonst: Fehler
+  logger.warn(`Forbidden access attempt by user ${req.user.username} (Role: ${req.user.role})`);
+  return res.status(403).json({ message: 'Zugriff verweigert: Nur für Wahlausschuss oder Admins.' });
+};
+
+// Kombinierte Protection: Erst Login prüfen, dann Rolle prüfen
+const protect = [ensureAuthenticated, requireCommitteeRights];
+
+// --- ROUTES ---
 
 /**
  * GET /api/committee/elections
@@ -24,6 +45,19 @@ committeeRouter.get('/elections', protect, async (req, res) => {
 });
 
 /**
+ * GET /api/committee/candidates
+ * Übersicht aller Kandidaten und ihrer Bewerbungen
+ */
+committeeRouter.get('/candidates', protect, async (req, res) => {
+  try {
+    const candidates = await getAllCandidatesWithElections();
+    res.json(candidates);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+/**
  * GET /api/committee/elections/:id/candidates
  * Lädt Kandidaten für eine Wahl und loggt den Zugriff.
  */
@@ -32,7 +66,7 @@ committeeRouter.get('/elections/:id/candidates', protect, async (req, res) => {
   try {
     const candidates = await getCandidatesForElection(id);
 
-    // AUDIT: Protokollieren, dass Kandidatendaten eingesehen wurden
+    // AUDIT: Protokollieren
     writeAuditLog({
         actionType: 'COMMITTEE_VIEW_CANDIDATES',
         level: 'INFO',
@@ -47,28 +81,13 @@ committeeRouter.get('/elections/:id/candidates', protect, async (req, res) => {
   }
 });
 
-
-
-/**
- * GET /api/committee/candidates
- * Übersicht aller Kandidaten und ihrer Bewerbungen
- */
-committeeRouter.get('/candidates', protect, async (req, res) => {
-  try {
-    const candidates = await getAllCandidatesWithElections();
-    res.json(candidates);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
-
 /**
  * PATCH /api/committee/candidates/:cid/elections/:eid/status
  * Kandidat für eine Wahl akzeptieren/ablehnen
  */
 committeeRouter.patch('/candidates/:cid/elections/:eid/status', protect, async (req, res) => {
   const { cid, eid } = req.params;
-  const { status } = req.body; // 'ACCEPTED' oder 'REJECTED'
+  const { status } = req.body; 
 
   if (!['ACCEPTED', 'REJECTED', 'PENDING'].includes(status)) {
     return res.status(400).json({ message: 'Ungültiger Status' });
@@ -77,10 +96,10 @@ committeeRouter.patch('/candidates/:cid/elections/:eid/status', protect, async (
   try {
     await updateCandidateStatus(cid, eid, status);
 
-    // WICHTIG: Entscheidung revisionssicher loggen!
+    // AUDIT: Entscheidung revisionssicher loggen!
     writeAuditLog({
       actionType: 'COMMITTEE_DECISION',
-      level: 'WARN', // Warn, weil es den Wahlausgang beeinflusst
+      level: 'WARN', 
       actorId: req.user.username,
       actorRole: req.user.role,
       details: { 
@@ -92,6 +111,7 @@ committeeRouter.patch('/candidates/:cid/elections/:eid/status', protect, async (
 
     res.json({ message: 'Status aktualisiert', status });
   } catch (err) {
+    logger.error(err);
     res.status(500).json({ message: err.message });
   }
 });

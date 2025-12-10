@@ -29,17 +29,24 @@ const CandidateReview = () => {
 
   useEffect(() => { fetchCandidates(); }, []);
 
+
   // Status ändern (API Call)
   const handleStatusChange = async (candidateId, electionId, newStatus) => {
+    // 1. Token holen
+    const csrfToken = localStorage.getItem('csrfToken');
+
     try {
       const res = await fetch(`/api/committee/candidates/${candidateId}/elections/${electionId}/status`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': csrfToken // <--- WICHTIG: Das hat gefehlt!
+        },
         body: JSON.stringify({ status: newStatus }),
       });
 
       if (res.ok) {
-        // Lokales Update für schnelles UI-Feedback
+        // Erfolgreich: UI aktualisieren
         setCandidates(prev => prev.map(cand => {
           if (cand.id !== candidateId) return cand;
           return {
@@ -49,9 +56,13 @@ const CandidateReview = () => {
             )
           };
         }));
+      } else {
+        const errData = await res.json();
+        alert(`Fehler vom Server: ${errData.message}`);
       }
     } catch (err) {
-      alert('Fehler beim Speichern');
+      console.error(err);
+      alert('Netzwerkfehler: Server nicht erreichbar.');
     }
   };
 
