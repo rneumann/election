@@ -1,6 +1,11 @@
 import express from 'express';
-import { ensureAuthenticated } from '../auth/auth.js'; // Wir nutzen nur ensureAuthenticated aus auth.js
-import { getAllCommitteeElections, getCandidatesForElection, getAllCandidatesWithElections, updateCandidateStatus } from '../service/committee.service.js';
+import { ensureAuthenticated } from '../auth/auth.js';
+import {
+  getAllCommitteeElections,
+  getCandidatesForElection,
+  getAllCandidatesWithElections,
+  updateCandidateStatus,
+} from '../service/committee.service.js';
 import { logger } from '../conf/logger/logger.js';
 import { writeAuditLog } from '../audit/auditLogger.js';
 
@@ -9,6 +14,10 @@ export const committeeRouter = express.Router();
 /**
  * Eigene Middleware für Rechte-Check.
  * Erlaubt Zugriff, wenn Rolle = 'admin' ODER 'committee'.
+ * @param {object} req - Express Request Objekt
+ * @param {object} res - Express Response Objekt
+ * @param {function} next - Express Next Funktion
+ * @returns {object|void} Response oder Next
  */
 const requireCommitteeRights = (req, res, next) => {
   // 1. Prüfen, ob User überhaupt existiert (durch ensureAuthenticated sichergestellt)
@@ -34,6 +43,8 @@ const protect = [ensureAuthenticated, requireCommitteeRights];
 /**
  * GET /api/committee/elections
  * Lädt die Liste der Wahlen.
+ * @param {object} req - Express Request
+ * @param {object} res - Express Response
  */
 committeeRouter.get('/elections', protect, async (req, res) => {
   try {
@@ -46,7 +57,9 @@ committeeRouter.get('/elections', protect, async (req, res) => {
 
 /**
  * GET /api/committee/candidates
- * Übersicht aller Kandidaten und ihrer Bewerbungen
+ * Übersicht aller Kandidaten und ihrer Bewerbungen.
+ * @param {object} req - Express Request
+ * @param {object} res - Express Response
  */
 committeeRouter.get('/candidates', protect, async (req, res) => {
   try {
@@ -60,6 +73,8 @@ committeeRouter.get('/candidates', protect, async (req, res) => {
 /**
  * GET /api/committee/elections/:id/candidates
  * Lädt Kandidaten für eine Wahl und loggt den Zugriff.
+ * @param {object} req - Express Request
+ * @param {object} res - Express Response
  */
 committeeRouter.get('/elections/:id/candidates', protect, async (req, res) => {
   const { id } = req.params;
@@ -68,12 +83,12 @@ committeeRouter.get('/elections/:id/candidates', protect, async (req, res) => {
 
     // AUDIT: Protokollieren
     writeAuditLog({
-        actionType: 'COMMITTEE_VIEW_CANDIDATES',
-        level: 'INFO',
-        actorId: req.user.username,
-        actorRole: req.user.role,
-        details: { electionId: id, candidate_count: candidates.length }
-    }).catch(e => logger.error(e));
+      actionType: 'COMMITTEE_VIEW_CANDIDATES',
+      level: 'INFO',
+      actorId: req.user.username,
+      actorRole: req.user.role,
+      details: { electionId: id, candidate_count: candidates.length },
+    }).catch((e) => logger.error(e));
 
     res.json(candidates);
   } catch (err) {
@@ -83,11 +98,14 @@ committeeRouter.get('/elections/:id/candidates', protect, async (req, res) => {
 
 /**
  * PATCH /api/committee/candidates/:cid/elections/:eid/status
- * Kandidat für eine Wahl akzeptieren/ablehnen
+ * Kandidat für eine Wahl akzeptieren/ablehnen.
+ * @param {object} req - Express Request
+ * @param {object} res - Express Response
+ * @returns {object} JSON Response
  */
 committeeRouter.patch('/candidates/:cid/elections/:eid/status', protect, async (req, res) => {
   const { cid, eid } = req.params;
-  const { status } = req.body; 
+  const { status } = req.body;
 
   if (!['ACCEPTED', 'REJECTED', 'PENDING'].includes(status)) {
     return res.status(400).json({ message: 'Ungültiger Status' });
@@ -99,15 +117,15 @@ committeeRouter.patch('/candidates/:cid/elections/:eid/status', protect, async (
     // AUDIT: Entscheidung revisionssicher loggen!
     writeAuditLog({
       actionType: 'COMMITTEE_DECISION',
-      level: 'WARN', 
+      level: 'WARN',
       actorId: req.user.username,
       actorRole: req.user.role,
-      details: { 
-        candidateId: cid, 
-        electionId: eid, 
-        new_status: status 
-      }
-    }).catch(e => logger.error(e));
+      details: {
+        candidateId: cid,
+        electionId: eid,
+        new_status: status,
+      },
+    }).catch((e) => logger.error(e));
 
     res.json({ message: 'Status aktualisiert', status });
   } catch (err) {

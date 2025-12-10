@@ -1,6 +1,10 @@
 import { client } from '../database/db.js';
 import { logger } from '../conf/logger/logger.js';
 
+/**
+ * Holt alle relevanten Wahlen (laufende und zukünftige) für den Wahlausschuss.
+ * @returns {Promise<Array>} Liste der Wahlen
+ */
 export const getAllCommitteeElections = async () => {
   const query = `
     SELECT id, info, description, start, "end"
@@ -8,7 +12,7 @@ export const getAllCommitteeElections = async () => {
     WHERE "end" >= NOW()
     ORDER BY start ASC
   `;
-  
+
   try {
     const result = await client.query(query);
     return result.rows;
@@ -18,6 +22,12 @@ export const getAllCommitteeElections = async () => {
   }
 };
 
+/**
+ * Holt die Kandidaten für eine spezifische Wahl.
+ * Enthält Dummy-Werte (NULL) für Spalten, die noch nicht existieren.
+ * @param {string} electionId - Die ID der Wahl
+ * @returns {Promise<Array>} Liste der Kandidaten
+ */
 export const getCandidatesForElection = async (electionId) => {
   const query = `
     SELECT 
@@ -38,7 +48,6 @@ export const getCandidatesForElection = async (electionId) => {
     ORDER BY ec.listnum ASC, c.lastname ASC
   `;
 
-
   try {
     const result = await client.query(query, [electionId]);
     return result.rows;
@@ -48,10 +57,10 @@ export const getCandidatesForElection = async (electionId) => {
   }
 };
 
-
 /**
  * Holt alle Kandidaten und gruppiert ihre Wahlen.
  * Gibt zurück: Kandidat Infos + Liste der Wahlen inkl. Status.
+ * @returns {Promise<Array>} Liste der Kandidaten mit gruppierten Wahlen
  */
 export const getAllCandidatesWithElections = async () => {
   // WICHTIG: Wir nutzen NULL as email/image, solange die Spalten in der DB fehlen.
@@ -87,6 +96,10 @@ export const getAllCandidatesWithElections = async () => {
 
 /**
  * Aktualisiert den Status eines Kandidaten für eine bestimmte Wahl.
+ * @param {string} candidateId - Die ID des Kandidaten
+ * @param {string} electionId - Die ID der Wahl
+ * @param {string} status - Der neue Status (ACCEPTED, REJECTED, PENDING)
+ * @returns {Promise<object>} Der aktualisierte Eintrag
  */
 export const updateCandidateStatus = async (candidateId, electionId, status) => {
   const query = `
@@ -95,10 +108,12 @@ export const updateCandidateStatus = async (candidateId, electionId, status) => 
     WHERE candidateId = $2 AND electionId = $3
     RETURNING status
   `;
-  
+
   try {
     const result = await client.query(query, [status, candidateId, electionId]);
-    if (result.rowCount === 0) throw new Error('Eintrag nicht gefunden');
+    if (result.rowCount === 0) {
+      throw new Error('Eintrag nicht gefunden');
+    }
     return result.rows[0];
   } catch (err) {
     logger.error(`Error updating status for C:${candidateId} E:${electionId}`, err);
