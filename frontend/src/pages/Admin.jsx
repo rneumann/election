@@ -15,6 +15,7 @@ import {
 import { validateElectionExcel } from '../utils/validators/excelValidator.js';
 import { MAX_FILE_SIZE } from '../utils/validators/constants.js';
 import api, { exportElectionResultExcel } from '../services/api.js';
+import { logger } from '../conf/logger/logger.js';
 
 /**
  * CountingSection Component - Handles election vote counting
@@ -833,8 +834,7 @@ const AdminUpload = () => {
         setSuccess('Datei erfolgreich validiert! Sie können nun hochladen.');
       }
     } catch (err) {
-      // eslint-disable-next-line no-console
-      console.error(err);
+      logger.error(`Error validating file: ${err.message}`);
       setError(`Fehler bei der Validierung: ${err.message}`);
     } finally {
       setIsValidating(false);
@@ -973,8 +973,7 @@ const AdminUpload = () => {
         throw new Error(response.data?.message || 'Upload fehlgeschlagen');
       }
     } catch (err) {
-      // eslint-disable-next-line no-console
-      console.error('Upload Error:', err);
+      logger.error('Upload Error');
       const errorMsg =
         err.response?.data?.message || err.message || 'Fehler beim Hochladen der Datei.';
       setError(errorMsg);

@@ -39,7 +39,8 @@ export const CandidateInfoModal = ({ open, onClose, electionId }) => {
         const candidatesArray = Array.isArray(data) ? data : data.candidates || [];
         setCandidates(candidatesArray);
       } catch (err) {
-        logger.error('Error loading candidate info:', err);
+        logger.debug(err);
+        logger.error('Error loading candidate info');
       } finally {
         setLoading(false);
       }

@@ -45,7 +45,8 @@ const Home = () => {
       setElectionsFuture(future);
       setElectionsAlreadyVoted(alreadyVoted);
     } catch (err) {
-      logger.error('Fehler beim Nachladen der Wahlen', err);
+      logger.debug(err);
+      logger.error('Fehler beim Nachladen der Wahlen');
     }
   }, [user]);
 
@@ -69,7 +70,8 @@ const Home = () => {
 
         await refreshElections();
       } catch (err) {
-        logger.error('Fehler beim Initialisieren', err);
+        logger.debug(err);
+        logger.error('Fehler beim Initialisieren');
       }
     };
 
