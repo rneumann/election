@@ -29,7 +29,9 @@ export const getCandidatesForElection = async (electionId) => {
       NULL as email,
       NULL as description, 
       NULL as image,
-      ec.listnum
+      ec.listnum,
+      -- das ist neu, die Spalte status gab es früher nicht
+      ec.status
     FROM candidates c
     JOIN electioncandidates ec ON c.id = ec.candidateId
     WHERE ec.electionId = $1

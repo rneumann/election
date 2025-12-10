@@ -2,7 +2,7 @@ import { Dialog, DialogBackdrop, DialogPanel, DialogTitle } from '@headlessui/re
 import ResponsiveButton from './ResponsiveButton';
 import { Spinner } from './Spinner';
 
-export const CommitteeCandidateModal = ({ open, onClose, election, candidates, loading }) => {
+export const CommitteeCandidateModal = ({ open, onClose, election, candidates, loading, onStatusChange }) => {
   return (
     <Dialog open={open} onClose={onClose} className="relative z-50">
       {/* Hintergrund abdunkeln (Gleicher Style wie im Original) */}
@@ -81,6 +81,40 @@ export const CommitteeCandidateModal = ({ open, onClose, election, candidates, l
                       <p className="text-sm text-gray-400 mb-2">
                         {candidate.faculty ? `Fakultät: ${candidate.faculty}` : 'Keine Fakultät angegeben'}
                       </p>
+
+                      {/* STATUS ACTIONS */}
+                      <div className="flex items-center gap-3 my-3">
+                         {/* AKZEPTIEREN */}
+                         <button
+                          onClick={() => onStatusChange(candidate.id, candidate.status === 'ACCEPTED' ? 'PENDING' : 'ACCEPTED')}
+                          className={`flex items-center gap-1 px-3 py-1.5 rounded text-xs font-bold transition-colors border ${
+                             candidate.status === 'ACCEPTED'
+                               ? 'bg-green-600 text-white border-green-700'
+                               : 'bg-gray-700 text-green-400 border-gray-600 hover:bg-gray-600'
+                          }`}
+                        >
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          {candidate.status === 'ACCEPTED' ? 'Genehmigt' : 'Genehmigen'}
+                        </button>
+
+                        {/* ABLEHNEN */}
+                        <button
+                          onClick={() => onStatusChange(candidate.id, candidate.status === 'REJECTED' ? 'PENDING' : 'REJECTED')}
+                          className={`flex items-center gap-1 px-3 py-1.5 rounded text-xs font-bold transition-colors border ${
+                             candidate.status === 'REJECTED'
+                               ? 'bg-red-600 text-white border-red-700'
+                               : 'bg-gray-700 text-red-400 border-gray-600 hover:bg-gray-600'
+                          }`}
+                        >
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                          {candidate.status === 'REJECTED' ? 'Abgelehnt' : 'Ablehnen'}
+                        </button>
+                      </div>
+                      
 
                       {/* Beschreibung (falls vorhanden) */}
                       {candidate.description ? (

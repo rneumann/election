@@ -98,6 +98,36 @@ const CommitteeDashboard = () => {
     </div>
   );
 
+  // Status ändern (Kopie aus CandidateReview)
+  const handleStatusChange = async (candidateId, newStatus) => {
+    if (!selectedElection) return;
+    const csrfToken = localStorage.getItem('csrfToken');
+
+    try {
+      const res = await fetch(`/api/committee/candidates/${candidateId}/elections/${selectedElection.id}/status`, {
+        method: 'PATCH',
+        headers: { 
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': csrfToken
+        },
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      if (res.ok) {
+        // Lokales Update, damit sich die Farbe sofort ändert
+        setCandidates(prev => prev.map(cand => 
+          cand.id === candidateId ? { ...cand, status: newStatus } : cand
+        ));
+      } else {
+        const errData = await res.json();
+        alert(`Fehler: ${errData.message}`);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+
   if (loading) return <div className="flex justify-center p-10"><Spinner /></div>;
 
   return (
@@ -157,6 +187,7 @@ const CommitteeDashboard = () => {
         election={selectedElection}
         candidates={candidates}
         loading={loadingCandidates}
+        onStatusChange={handleStatusChange} // <--- NEU
       />
     </div>
   );
