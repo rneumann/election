@@ -10,6 +10,7 @@ import api from './services/api.js';
 
 //NEU
 import AuditLogPage from './pages/AuditLogPage.jsx';
+import { CandidatePage } from './pages/CandidatePage.jsx';
 
 /**
  * Protected route wrapper that enforces authentication.
@@ -92,6 +93,19 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/candidate"
+        element={
+          user?.isCandidate ? (
+            <ProtectedRoute>
+              <CandidatePage />
+            </ProtectedRoute>
+          ) : (
+            <Navigate to="/login" replace />
+          )
+        }
+      />
+
       <Route
         path="/admin"
         element={

@@ -1,6 +1,5 @@
 import { useEffect, useState, useCallback, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { PersonStanding } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useTheme } from '../hooks/useTheme.js';
 import ResponsiveButton from '../components/ResponsiveButton.jsx';
@@ -8,6 +7,9 @@ import { voterApi } from '../services/voterApi.js';
 import { Modal } from '../components/Modal.jsx';
 import { logger } from '../conf/logger/logger.js';
 import authService from '../services/authService.js';
+import { Header } from '../layout/Header.jsx';
+import { Footer } from '../layout/Footer.jsx';
+import { CandidateInfoModal } from '../components/CandidateModal.jsx';
 import { AccessibilityProvider, AccessibilityContext } from '../context/AccessibilityContext.jsx';
 import AccessibilityMenu from '../components/AccessibilityMenu.jsx';
 
@@ -20,11 +22,12 @@ const HomeContent = () => {
   const [electionsActive, setElectionsActive] = useState([]);
   const [electionsFuture, setElectionsFuture] = useState([]);
   const [electionsAlreadyVoted, setElectionsAlreadyVoted] = useState([]);
+  const [infoOpen, setInfoOpen] = useState(false);
+  const [infoElectionId, setInfoElectionId] = useState(null);
   const [isAccessibilityMenuOpen, setAccessibilityMenuOpen] = useState(false);
-
   const [open, setOpen] = useState(false);
   const [selectedElectionId, setSelectedElectionId] = useState(undefined);
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const theme = useTheme();
   const navigate = useNavigate();
   const { settings } = useContext(AccessibilityContext);
@@ -65,7 +68,8 @@ const HomeContent = () => {
       setElectionsFuture(future);
       setElectionsAlreadyVoted(alreadyVoted);
     } catch (err) {
-      logger.error('Fehler beim Nachladen der Wahlen', err);
+      logger.debug(err);
+      logger.error('Fehler beim Nachladen der Wahlen');
     }
   }, [user]);
 
@@ -89,7 +93,8 @@ const HomeContent = () => {
 
         await refreshElections();
       } catch (err) {
-        logger.error('Fehler beim Initialisieren', err);
+        logger.debug(err);
+        logger.error('Fehler beim Initialisieren');
       }
     };
 
@@ -109,42 +114,7 @@ const HomeContent = () => {
       className={`min-h-screen flex flex-col bg-brand-light dark:bg-gray-900 transition-colors ${accessibilityClasses}`}
     >
       {/* Header - Sticky on scroll */}
-      <header className="bg-brand-primary dark:bg-gray-800 text-white shadow-lg sticky top-0 z-10 transition-colors">
-        <div className="container mx-auto px-3 sm:px-6 py-2 sm:py-3 md:py-4">
-          <div className="flex items-center justify-between gap-2 sm:gap-4">
-            <div className="flex-1 min-w-0">
-              <h1 className="text-base sm:text-xl md:text-2xl font-bold truncate">
-                {theme.institution.name} {theme.text.appTitle}
-              </h1>
-              <p className="text-xs sm:text-sm opacity-90 truncate">
-                <span className="hidden sm:inline">Angemeldet als: </span>
-                <span className="font-semibold">{user?.username}</span>
-                <span className="hidden sm:inline"> ({theme.roles[user?.role] || user?.role})</span>
-              </p>
-            </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <ResponsiveButton
-                toolTip="Barrierefreiheit"
-                toolTipPlacement="bottom"
-                variant="ghost"
-                size="icon"
-                onClick={() => setAccessibilityMenuOpen(true)}
-              >
-                <PersonStanding className="text-white w-6 h-6" />
-              </ResponsiveButton>
-              <ResponsiveButton
-                toolTip={'logout aus der aktuellen Sitzung'}
-                toolTipPlacement="bottom"
-                variant="secondary"
-                size="small"
-                onClick={logout}
-              >
-                Abmelden
-              </ResponsiveButton>
-            </div>
-          </div>
-        </div>
-      </header>
+      <Header setAccessibilityMenuOpen={setAccessibilityMenuOpen} />
 
       {/* Main Content - Flex-1 to push footer down */}
       <main className="flex-1 container mx-auto px-4 sm:px-6 py-6 sm:py-8">
@@ -241,12 +211,6 @@ const HomeContent = () => {
                         </div>
                       </li>
                     ))}
-                    <Modal
-                      open={open}
-                      setOpen={setOpen}
-                      electionId={selectedElectionId}
-                      refreshElections={refreshElections}
-                    ></Modal>
                   </ul>
                 )}
               </div>
@@ -335,6 +299,10 @@ const HomeContent = () => {
                           <ResponsiveButton
                             size="small"
                             toolTip={'Hier können Sie Informationen über die Kandidaten abrufen.'}
+                            onClick={() => {
+                              setInfoElectionId(election.id);
+                              setInfoOpen(true);
+                            }}
                           >
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
@@ -354,12 +322,6 @@ const HomeContent = () => {
                         </div>
                       </li>
                     ))}
-                    <Modal
-                      open={open}
-                      setOpen={setOpen}
-                      electionId={selectedElectionId}
-                      refreshElections={refreshElections}
-                    ></Modal>
                   </ul>
                 )}
               </div>
@@ -461,15 +423,22 @@ const HomeContent = () => {
               </div>
             </div>
           </div>
+          <Modal
+            open={open}
+            setOpen={setOpen}
+            electionId={selectedElectionId}
+            refreshElections={refreshElections}
+          />
+          <CandidateInfoModal
+            open={infoOpen}
+            onClose={() => setInfoOpen(false)}
+            electionId={infoElectionId}
+          />
         </div>
       </main>
 
       {/* Footer - Always visible at bottom */}
-      <footer className="bg-brand-dark dark:bg-gray-950 text-white py-3 sm:py-4 mt-auto border-t border-gray-800 dark:border-gray-700 transition-colors">
-        <div className="container mx-auto px-4 sm:px-6 text-center">
-          <p className="text-xs sm:text-sm opacity-90">{theme.text.copyright}</p>
-        </div>
-      </footer>
+      <Footer />
 
       {/* Accessibility Sidebar */}
       <AccessibilityMenu

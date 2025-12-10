@@ -8,6 +8,15 @@ import { z } from 'zod';
  * RZ-Kennung,Fakultät,Vorname,Nachname,Matk.Nr,Studienganskürzel,Studiengang
  */
 
+export const VOTER_CSV_MAPPING = {
+  'RZ-Kennung': 'uid',
+  Fakultät: 'faculty',
+  Vorname: 'firstname',
+  Nachname: 'lastname',
+  'Matk.Nr': 'mtknr',
+  Notizen: 'notes',
+};
+
 export const voterSchema = z.object({
   'RZ-Kennung': z
     .string()
@@ -49,17 +58,6 @@ export const voterSchema = z.object({
     .regex(/^\d*$/, 'Matrikelnummer darf nur Ziffern enthalten')
     .optional()
     .default(''),
-  Studienganskürzel: z
-    .string()
-    .trim()
-    .min(1, 'Studienganskürzel darf nicht leer sein')
-    .max(10, 'Studienganskürzel darf maximal 10 Zeichen lang sein')
-    .toUpperCase(),
-  Studiengang: z
-    .string()
-    .trim()
-    .min(1, 'Studiengang darf nicht leer sein')
-    .max(200, 'Studiengang darf maximal 200 Zeichen lang sein'),
 });
 
 /**
@@ -72,15 +70,7 @@ export const voterListSchema = z
 /**
  * Expected CSV headers in correct order.
  */
-export const EXPECTED_CSV_HEADERS = [
-  'RZ-Kennung',
-  'Fakultät',
-  'Vorname',
-  'Nachname',
-  'Matk.Nr',
-  'Studienganskürzel',
-  'Studiengang',
-];
+export const EXPECTED_CSV_HEADERS = ['RZ-Kennung', 'Fakultät', 'Vorname', 'Nachname', 'Matk.Nr'];
 
 export const ballotCandidateInputSchema = z.object({
   listnum: z.number().int().min(1, 'The list number must be greater than 0'),

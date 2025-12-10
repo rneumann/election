@@ -3,14 +3,14 @@ import { describe, test, expect, vi, beforeEach } from 'vitest';
 process.env.ADMIN_PASSWORD = 'admin123';
 process.env.COMMITTEE_PASSWORD = 'committee123';
 process.env.AD_URL = 'ldap://mockserver';
-process.env.AD_BASE_DN = 'dc=example,dc=com';
+process.env.AD_BASE_DN = 'ou=students,dc=example,dc=com';
 process.env.AD_DOMAIN = 'EXAMPLE';
 process.env.ADMIN_DN = 'cn=admin,dc=ads,dc=hs-karlsruhe,dc=de';
 process.env.ADMIN_PASSWORD_LDAP = 'p';
 
 const ADMIN_DN = process.env.ADMIN_DN;
 const ADMIN_PASSWORD_LDAP = process.env.ADMIN_PASSWORD_LDAP;
-const USER_DN = `uid=user1,ou=students,${process.env.AD_BASE_DN}`;
+const USER_DN = `uid=user1,${process.env.AD_BASE_DN}`;
 vi.mock('../src/conf/logger/logger.js', () => ({
   logger: {
     debug: vi.fn(),
@@ -18,6 +18,10 @@ vi.mock('../src/conf/logger/logger.js', () => ({
     info: vi.fn(),
     warn: vi.fn(),
   },
+}));
+
+vi.mock('../src/service/candidate.service.js', () => ({
+  checkIfVoterIsCandidate: vi.fn().mockResolvedValue(false),
 }));
 
 import { ensureHasRole } from '../src/auth/auth.js';
@@ -70,10 +74,7 @@ describe('login', () => {
     const password = 'wrongpass';
     const result = await login(username, password);
     expect(result).toBeUndefined();
-    expect(bindMock).toHaveBeenCalledWith(
-      `uid=${username},ou=students,${process.env.AD_BASE_DN}`,
-      password,
-    );
+    expect(bindMock).toHaveBeenCalledWith(`uid=${username},${process.env.AD_BASE_DN}`, password);
     expect(logger.error).toHaveBeenCalledWith(
       `Error authenticating user user1 via LDAP: Unexpected bind call with DN: uid=${username},ou=students,dc=example,dc=com`,
     );
@@ -81,12 +82,14 @@ describe('login', () => {
 
   test('should return LDAP-user with correct credentials', async () => {
     const result = await login('user1', 'pass1');
-    expect(result).toEqual({ username: 'user1', role: 'voter', authProvider: 'ldap' });
+    expect(result).toEqual({
+      username: 'user1',
+      role: 'voter',
+      authProvider: 'ldap',
+      isCandidate: false,
+    });
 
-    expect(bindMock).toHaveBeenCalledWith(
-      `uid=user1,ou=students,${process.env.AD_BASE_DN}`,
-      'pass1',
-    );
+    expect(bindMock).toHaveBeenCalledWith(`${USER_DN}`, 'pass1');
 
     expect(bindMock).toHaveBeenCalledTimes(1);
 

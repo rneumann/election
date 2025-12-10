@@ -72,7 +72,7 @@ export const safeQuery = async (sql, params = []) => {
   try {
     return await client.query(sql, params);
   } catch (err) {
-    logger.error('DB query failed:', err);
+    logger.error('DB query failed');
     throw err;
   }
 };

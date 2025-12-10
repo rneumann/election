@@ -104,19 +104,22 @@ export const AuthProvider = ({ children }) => {
       return;
     }
     logger.debug('Starting session heartbeat interval');
-    const interval = setInterval(async () => {
-      try {
-        const { data } = await api.get('/auth/me', { withCredentials: true });
+    const interval = setInterval(
+      async () => {
+        try {
+          const { data } = await api.get('/auth/me', { withCredentials: true });
 
-        if (!data?.authenticated) {
-          logger.debug('Session heartbeat: invalid → logout');
+          if (!data?.authenticated) {
+            logger.debug('Session heartbeat: invalid → logout');
+            logout();
+          }
+        } catch {
+          logger.debug('Session heartbeat: error or 401 → logout');
           logout();
         }
-      } catch {
-        logger.debug('Session heartbeat: error or 401 → logout');
-        logout();
-      }
-    }, 130000); // alle 130 Sekunden
+      },
+      (3 * 60 + 55) * 1000,
+    ); // 3 min 55 sec
 
     return () => clearInterval(interval);
   }, [isAuthenticated]);
