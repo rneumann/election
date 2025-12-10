@@ -132,21 +132,42 @@ const CandidateReview = () => {
 
                       {/* Aktionen */}
                       <div className="flex gap-2">
+                        {/* AKZEPTIEREN BUTTON */}
                         <button
-                          onClick={() => handleStatusChange(candidate.id, election.electionId, 'ACCEPTED')}
-                          disabled={election.status === 'ACCEPTED'}
-                          className={`p-2 rounded transition-colors ${election.status === 'ACCEPTED' ? 'bg-green-500 text-white cursor-default' : 'bg-white border border-green-300 text-green-600 hover:bg-green-50'}`}
-                          title="Akzeptieren"
+                          onClick={() => {
+                             // Toggle-Logik: Wenn schon ACCEPTED, dann zurück auf PENDING. Sonst ACCEPTED.
+                             const newStatus = election.status === 'ACCEPTED' ? 'PENDING' : 'ACCEPTED';
+                             handleStatusChange(candidate.id, election.electionId, newStatus);
+                          }}
+                          className={`p-2 rounded transition-colors border ${
+                             election.status === 'ACCEPTED'
+                               ? 'bg-green-500 text-white border-green-600 hover:bg-green-600 shadow-sm' // Aktiv Style
+                               : 'bg-white text-green-600 border-green-200 hover:bg-green-50' // Inaktiv Style
+                          }`}
+                          title={election.status === 'ACCEPTED' ? 'Zurücksetzen (Ausstehend)' : 'Akzeptieren'}
                         >
-                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
                         </button>
+
+                        {/* ABLEHNEN BUTTON */}
                         <button
-                          onClick={() => handleStatusChange(candidate.id, election.electionId, 'REJECTED')}
-                          disabled={election.status === 'REJECTED'}
-                          className={`p-2 rounded transition-colors ${election.status === 'REJECTED' ? 'bg-red-500 text-white cursor-default' : 'bg-white border border-red-300 text-red-600 hover:bg-red-50'}`}
-                          title="Ablehnen"
+                          onClick={() => {
+                             // Toggle-Logik: Wenn schon REJECTED, dann zurück auf PENDING. Sonst REJECTED.
+                             const newStatus = election.status === 'REJECTED' ? 'PENDING' : 'REJECTED';
+                             handleStatusChange(candidate.id, election.electionId, newStatus);
+                          }}
+                          className={`p-2 rounded transition-colors border ${
+                             election.status === 'REJECTED'
+                               ? 'bg-red-500 text-white border-red-600 hover:bg-red-600 shadow-sm' // Aktiv Style
+                               : 'bg-white text-red-600 border-red-200 hover:bg-red-50' // Inaktiv Style
+                          }`}
+                          title={election.status === 'REJECTED' ? 'Zurücksetzen (Ausstehend)' : 'Ablehnen'}
                         >
-                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
                         </button>
                       </div>
 
