@@ -64,16 +64,16 @@ export const Alert = ({
   };
 
   return (
-    <div className="bg-gray-900/95 backdrop-blur-md text-center py-4 px-6 rounded-3xl w-96 h-96 flex flex-col shadow-2xl border border-gray-700">
+    <div className="bg-white dark:bg-gray-800 text-center py-4 px-6 rounded-3xl w-96 h-96 flex flex-col shadow-2xl border border-gray-200 dark:border-gray-700 transition-colors">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
-        <span className="font-bold text-white text-lg">Ihre Auswahl zur Kontrolle</span>
+        <span className="font-bold text-gray-900 dark:text-gray-100 text-lg transition-colors">Ihre Auswahl zur Kontrolle</span>
         <ResponsiveButton
           disabled={showSpinner}
           onClick={() => setShowAlert(false)}
           size="icon"
           variant="icon"
-          className="text-gray-400 hover:text-red-500 transition"
+          className="text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 transition-colors"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -95,18 +95,18 @@ export const Alert = ({
       {/* Content */}
       <div className="flex-1 overflow-auto">
         {cleanedVotes === undefined ? (
-          <p className="text-red-500 font-bold">Ihr Stimmzettel wird ungültig abgegeben!</p>
+          <p className="text-red-500 dark:text-red-400 font-bold transition-colors">Ihr Stimmzettel wird ungültig abgegeben!</p>
         ) : Object.keys(cleanedVotes).length === 0 ? (
-          <p className="text-gray-300">Keine Stimmen vergeben.</p>
+          <p className="text-gray-600 dark:text-gray-400 transition-colors">Keine Stimmen vergeben.</p>
         ) : (
           <ul className="space-y-3">
             {Object.entries(cleanedVotes).map(([listnum, value]) => (
               <li
                 key={listnum}
-                className="bg-gray-800 text-white rounded-xl p-3 flex justify-between items-center shadow hover:shadow-lg transition"
+                className="bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-xl p-3 flex justify-between items-center shadow hover:shadow-lg transition-all border border-gray-200 dark:border-gray-600"
               >
-                <span className="font-semibold">{resolveName(listnum)}</span>
-                <span className="bg-blue-600 text-white rounded-full px-3 py-1 text-sm font-medium">
+                <span className="font-semibold transition-colors">{resolveName(listnum)}</span>
+                <span className="bg-blue-600 dark:bg-blue-500 text-white rounded-full px-3 py-1 text-sm font-medium transition-colors">
                   {value} Stimme{value > 1 ? 'n' : ''}
                 </span>
               </li>
@@ -117,26 +117,26 @@ export const Alert = ({
 
       {/* Footer */}
       <div className="mt-4 flex justify-end">
-        <div className="w-full flex justify-between">
-          <div className="flex items-center gap-2 sm:gap-3 justify-start">
+        <div className="w-full flex justify-between gap-4">
+          <div className="modal-button-container flex items-center gap-2 sm:gap-3 justify-start">
             <ResponsiveButton
               size="small"
               onClick={() => setShowAlert(false)}
               disabled={showSpinner}
-              className="text-white"
               variant="outline"
             >
               zurück
             </ResponsiveButton>
           </div>
-          <div className="flex items-center gap-2 sm:gap-3 justify-end">
+          <div className="modal-button-container flex items-center gap-2 sm:gap-3 justify-end">
             <ResponsiveButton
               disabled={showSpinner}
               onClick={() => {
                 handleOnSubmit();
               }}
               size="small"
-              className="text-white rounded-lg px-4 py-2 transition flex items-center gap-2"
+              variant="primary"
+              className="rounded-lg px-4 py-2 transition flex items-center gap-2"
             >
               {showSpinner ? (
                 <Spinner size={18} thickness={3} color="border-white" />

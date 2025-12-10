@@ -2,12 +2,43 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Line Height Classes */
+.accessibility-line-height-1,
+.accessibility-line-height-1 * {
+  line-height: 1.5 !important;
+}
+
+.accessibility-line-height-1-3,
+.accessibility-line-height-1-3 * {
+  line-height: 1.95 !important;
+}
+
+.accessibility-line-height-1-6,
+.accessibility-line-height-1-6 * {
+  line-height: 2.4 !important;
+}
+
 @layer base {
+  /* CSS Custom Property for accessibility text scaling */
+  :root {
+    --text-scale: 1;
+  }
+
   * {
     /* Prevent text size adjustment on orientation change (iOS Safari) */
     -webkit-text-size-adjust: 100%;
     -moz-text-size-adjust: 100%;
     text-size-adjust: 100%;
+  }
+
+  /* Base font size for all devices */
+  html {
+    font-size: 16px; /* Fixed base for all devices - Web standard */
+    scroll-behavior: smooth;
+    overflow-x: hidden;
+    transition:
+      background-color 0.2s ease-in-out,
+      color 0.2s ease-in-out;
   }
 
   body {
@@ -17,6 +48,64 @@
       'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Custom Tooltip Styles */
+  .tooltip-wrapper {
+    position: relative;
+  }
+
+  .tooltip-wrapper[data-tooltip]:hover::before,
+  .tooltip-wrapper[data-tooltip]:focus::before {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%) translateY(-8px);
+    background-color: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    z-index: 1000;
+    pointer-events: none;
+    opacity: 1;
+    transition: opacity 0.2s ease-in-out;
+  }
+
+  .dark .tooltip-wrapper[data-tooltip]:hover::before,
+  .dark .tooltip-wrapper[data-tooltip]:focus::before {
+    background-color: rgba(255, 255, 255, 0.95);
+    color: #1f2937;
+  }
+
+  .tooltip-wrapper[data-tooltip]:hover::after,
+  .tooltip-wrapper[data-tooltip]:focus::after {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%) translateY(-2px);
+    border: 6px solid transparent;
+    border-top-color: rgba(0, 0, 0, 0.9);
+    z-index: 1000;
+    pointer-events: none;
+    opacity: 1;
+    transition: opacity 0.2s ease-in-out;
+  }
+
+  .dark .tooltip-wrapper[data-tooltip]:hover::after,
+  .dark .tooltip-wrapper[data-tooltip]:focus::after {
+    border-top-color: rgba(255, 255, 255, 0.95);
+  }
+
+  body {
+    overflow-x: hidden;
+    transition:
+      background-color 0.2s ease-in-out,
+      color 0.2s ease-in-out;
   }
 
   /* Better touch feedback for mobile devices */
@@ -32,9 +121,22 @@
     touch-action: manipulation;
   }
 
-  /* Smooth scrolling for better UX */
-  html {
-    scroll-behavior: smooth;
+  /* Accessibility text scale attributes */
+  /* Use CSS zoom to scale content without breaking layout */
+  [data-text-scale='1'] {
+    --text-scale: 1;
+  }
+
+  [data-text-scale='1.5'] main,
+  [data-text-scale='1.5'] .modal-content,
+  [data-text-scale='1.5'] .login-content {
+    zoom: 1.5;
+  }
+
+  [data-text-scale='2'] main,
+  [data-text-scale='2'] .modal-content,
+  [data-text-scale='2'] .login-content {
+    zoom: 2;
   }
 }
 
@@ -52,5 +154,246 @@
 
   .animate-slideDown {
     animation: slideDown 0.3s ease-out;
+  }
+
+  /* Accessibility menu MUST stay at fixed 16px base - override EVERYTHING including Tailwind */
+  /* Use viewport-based positioning (vw) which is NOT affected by font-size */
+  .accessibility-menu {
+    /* Reset font-size to absolute 16px - breaks inheritance from html */
+    font-size: 16px !important;
+    filter: none !important;
+    line-height: 1.5 !important;
+    overflow: visible !important;
+
+    /* Force exact positioning using viewport width calculation */
+    /* left: calc(100vw - 320px) = Always 320px from right edge, regardless of font-size */
+    position: fixed !important;
+    top: 0 !important;
+    left: calc(100vw - 320px) !important;
+    bottom: 0 !important;
+    width: 320px !important;
+    min-width: 320px !important;
+    max-width: 320px !important;
+    height: 100vh !important;
+    z-index: 50 !important;
+
+    /* Use transform for animation - with absolute pixel values */
+    transition: transform 0.3s ease-in-out !important;
+    transform: translateX(0) !important;
+  }
+
+  /* When menu is CLOSED - move it 320px to the right (off-screen) */
+  .accessibility-menu.translate-x-full {
+    transform: translateX(320px) !important;
+  }
+
+  /* When menu is OPEN - keep it at calculated left position */
+  .accessibility-menu.translate-x-0 {
+    transform: translateX(0) !important;
+  }
+
+  /* Force ALL children to use absolute pixels - override ALL Tailwind classes */
+  .accessibility-menu *,
+  .accessibility-menu h1,
+  .accessibility-menu h2,
+  .accessibility-menu h3,
+  .accessibility-menu h4,
+  .accessibility-menu h5,
+  .accessibility-menu h6,
+  .accessibility-menu span,
+  .accessibility-menu button,
+  .accessibility-menu div,
+  .accessibility-menu p,
+  .accessibility-menu .text-2xl,
+  .accessibility-menu .text-xl,
+  .accessibility-menu .text-lg,
+  .accessibility-menu .text-base,
+  .accessibility-menu .text-sm,
+  .accessibility-menu .text-xs {
+    filter: none !important;
+    line-height: 1.5 !important;
+    font-size: 16px !important;
+  }
+
+  /* Specific sizes for headings */
+  .accessibility-menu h2,
+  .accessibility-menu .text-2xl {
+    font-size: 24px !important;
+  }
+
+  .accessibility-menu h3,
+  .accessibility-menu .text-lg {
+    font-size: 18px !important;
+  }
+
+  /* Fix button sizes - override Tailwind width/height classes */
+  .accessibility-menu button {
+    font-size: 16px !important;
+  }
+
+  .accessibility-menu button.w-8,
+  .accessibility-menu .w-8 {
+    width: 28px !important;
+    height: 28px !important;
+  }
+
+  .accessibility-menu button.w-7,
+  .accessibility-menu .w-7 {
+    width: 28px !important;
+    height: 28px !important;
+  }
+
+  /* Fix icon sizes inside buttons */
+  .accessibility-menu button svg,
+  .accessibility-menu svg {
+    width: 20px !important;
+    height: 20px !important;
+  }
+
+  /* Allow tooltips inside menu to display properly - override position but keep styling */
+  .accessibility-menu .tooltip-wrapper {
+    position: relative !important;
+    overflow: visible !important;
+  }
+
+  .accessibility-menu .tooltip-wrapper[data-tooltip]:hover::before,
+  .accessibility-menu .tooltip-wrapper[data-tooltip]:focus::before {
+    content: attr(data-tooltip) !important;
+    position: absolute !important;
+    bottom: 100% !important;
+    left: 50% !important;
+    transform: translateX(-50%) translateY(-8px) !important;
+    background-color: rgba(0, 0, 0, 0.9) !important;
+    color: white !important;
+    padding: 6px 12px !important;
+    border-radius: 6px !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    white-space: nowrap !important;
+    z-index: 10000 !important;
+    pointer-events: none !important;
+    opacity: 1 !important;
+  }
+
+  .dark .accessibility-menu .tooltip-wrapper[data-tooltip]:hover::before,
+  .dark .accessibility-menu .tooltip-wrapper[data-tooltip]:focus::before {
+    background-color: rgba(255, 255, 255, 0.95) !important;
+    color: #1f2937 !important;
+  }
+
+  .accessibility-menu .tooltip-wrapper[data-tooltip]:hover::after,
+  .accessibility-menu .tooltip-wrapper[data-tooltip]:focus::after {
+    content: '' !important;
+    position: absolute !important;
+    bottom: 100% !important;
+    left: 50% !important;
+    transform: translateX(-50%) translateY(-2px) !important;
+    border: 6px solid transparent !important;
+    border-top-color: rgba(0, 0, 0, 0.9) !important;
+    z-index: 10000 !important;
+    pointer-events: none !important;
+    opacity: 1 !important;
+  }
+
+  .dark .accessibility-menu .tooltip-wrapper[data-tooltip]:hover::after,
+  .dark .accessibility-menu .tooltip-wrapper[data-tooltip]:focus::after {
+    border-top-color: rgba(255, 255, 255, 0.95) !important;
+  }
+
+  /* Special positioning for header tooltips - show them below instead of above */
+  .accessibility-menu > div > div:first-child .tooltip-wrapper[data-tooltip]:hover::before,
+  .accessibility-menu > div > div:first-child .tooltip-wrapper[data-tooltip]:focus::before {
+    bottom: auto !important;
+    top: 100% !important;
+    left: auto !important;
+    right: 0 !important;
+    transform: translateY(8px) !important;
+  }
+
+  .accessibility-menu > div > div:first-child .tooltip-wrapper[data-tooltip]:hover::after,
+  .accessibility-menu > div > div:first-child .tooltip-wrapper[data-tooltip]:focus::after {
+    bottom: auto !important;
+    top: 100% !important;
+    left: auto !important;
+    right: 12px !important;
+    transform: translateY(2px) !important;
+    border-top-color: transparent !important;
+    border-bottom-color: rgba(0, 0, 0, 0.9) !important;
+  }
+
+  .dark .accessibility-menu > div > div:first-child .tooltip-wrapper[data-tooltip]:hover::after,
+  .dark .accessibility-menu > div > div:first-child .tooltip-wrapper[data-tooltip]:focus::after {
+    border-bottom-color: rgba(255, 255, 255, 0.95) !important;
+  }
+
+  /* Fix ALL spacing classes - padding, margin, gap */
+  .accessibility-menu .p-2 {
+    padding: 8px !important;
+  }
+  .accessibility-menu .p-4 {
+    padding: 16px !important;
+  }
+  .accessibility-menu .p-6 {
+    padding: 24px !important;
+  }
+  .accessibility-menu .pb-4 {
+    padding-bottom: 16px !important;
+  }
+  .accessibility-menu .mb-2 {
+    margin-bottom: 8px !important;
+  }
+  .accessibility-menu .mb-3 {
+    margin-bottom: 12px !important;
+  }
+  .accessibility-menu .mb-6 {
+    margin-bottom: 24px !important;
+  }
+  .accessibility-menu .mr-2 {
+    margin-right: 8px !important;
+  }
+  .accessibility-menu .gap-2 {
+    gap: 8px !important;
+  }
+  .accessibility-menu .space-y-3 > * + * {
+    margin-top: 12px !important;
+  }
+  .accessibility-menu .space-y-4 > * + * {
+    margin-top: 16px !important;
+  }
+  .accessibility-menu .space-y-6 > * + * {
+    margin-top: 24px !important;
+  }
+
+  /* Fix border radius */
+  .accessibility-menu .rounded-lg {
+    border-radius: 8px !important;
+  }
+  .accessibility-menu .rounded-full {
+    border-radius: 9999px !important;
+  }
+
+  /* Fix width and height classes used in menu */
+  .accessibility-menu .w-80 {
+    width: 320px !important;
+  }
+  .accessibility-menu .w-full {
+    width: 100% !important;
+  }
+  .accessibility-menu .h-full {
+    height: 100% !important;
+  }
+
+  /* Responsive button layout: Stack vertically at larger text sizes */
+  /* Apply to Modal and Alert button containers */
+  [data-text-scale='1.5'] .modal-button-container,
+  [data-text-scale='2'] .modal-button-container {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    width: 100% !important;
+  }
+
+  [data-text-scale='1.5'] .modal-button-container button,
+  [data-text-scale='2'] .modal-button-container button {
+    width: 100% !important;
   }
 }
