@@ -1074,6 +1074,48 @@ const AdminUpload = () => {
               </div>
 
               <nav className="p-2">
+                
+                {/* WAHLAUSSCHUSS (Neu) */}
+                <div className="mt-6">
+                  <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                    Wahlausschuss
+                  </div>
+                  <button
+                    onClick={() => navigate('/committee')}
+                    className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50 text-gray-700"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="bg-indigo-50 p-1.5 rounded-md text-indigo-600">
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <span className="block text-gray-900">Übersicht</span>
+                        <span className="text-xs text-gray-500 font-normal">Wahlen verwalten</span>
+                      </div>
+                    </div>
+                  </button>
+                  
+                  <button
+                    onClick={() => navigate('/committee/candidates')}
+                    className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50 text-gray-700 mt-1"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="bg-indigo-50 p-1.5 rounded-md text-indigo-600">
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <span className="block text-gray-900">Prüfung</span>
+                        <span className="text-xs text-gray-500 font-normal">Kandidaten freigeben</span>
+                      </div>
+                    </div>
+                  </button>
+                </div>
+
+
                 {/*NEU*/}
                 <div className="mt-8 border-t pt-4">
                   <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">

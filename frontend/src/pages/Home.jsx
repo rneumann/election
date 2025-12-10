@@ -129,6 +129,9 @@ const Home = () => {
             </p>
           </div>
 
+          
+
+
           {/* Info Cards - For all users */}
           <div className="grid grid-cols-1 sm:grid-cols-1 lg:grid-cols-1 gap-4 sm:gap-6 mt-6 sm:mt-8">
             {/* Card 1: Zukünftige Wahlen */}
@@ -401,6 +404,63 @@ const Home = () => {
               </div>
             </div>
           </div>
+
+
+          {/* NEU: Wahlausschuss Bereich (Rose/Pink Style) */}
+          {(user?.role === 'committee' || user?.role === 'admin') && (
+            <div className="mb-6 sm:mb-8 mt-2">
+              <h2 className="text-xl font-bold text-gray-900 mb-4 text-pink-900">Wahlausschuss Bereich</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                
+                {/* Kachel 1: Übersicht */}
+                <div 
+                  onClick={() => navigate('/committee')}
+                  className="bg-gradient-to-br from-pink-50 to-pink-100 p-4 sm:p-6 rounded-lg border border-pink-200 hover:shadow-lg transition-shadow duration-200 cursor-pointer"
+                >
+                  <div className="flex items-start gap-3 mb-3">
+                    <div className="bg-pink-600 text-white rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0">
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="text-lg sm:text-xl font-semibold text-pink-900 mb-1">
+                        Wahl-Übersicht
+                      </h3>
+                      <p className="text-pink-700 text-xs sm:text-sm">
+                        Laufende und geplante Wahlen einsehen
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Kachel 2: Kandidaten Check */}
+                <div 
+                  onClick={() => navigate('/committee/candidates')}
+                  className="bg-gradient-to-br from-pink-50 to-pink-100 p-4 sm:p-6 rounded-lg border border-pink-200 hover:shadow-lg transition-shadow duration-200 cursor-pointer"
+                >
+                  <div className="flex items-start gap-3 mb-3">
+                    <div className="bg-pink-600 text-white rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0">
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="text-lg sm:text-xl font-semibold text-pink-900 mb-1">
+                        Kandidaten-Prüfung
+                      </h3>
+                      <p className="text-pink-700 text-xs sm:text-sm">
+                        Kandidaten freigeben oder ablehnen
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          )}
+
+          
         </div>
       </main>
 
