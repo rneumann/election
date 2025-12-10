@@ -99,6 +99,9 @@
   .dark .tooltip-wrapper[data-tooltip]:hover::after,
   .dark .tooltip-wrapper[data-tooltip]:focus::after {
     border-top-color: rgba(255, 255, 255, 0.95);
+  }
+
+  body {
     overflow-x: hidden;
     transition:
       background-color 0.2s ease-in-out,
@@ -125,12 +128,14 @@
   }
 
   [data-text-scale='1.5'] main,
-  [data-text-scale='1.5'] .modal-content {
+  [data-text-scale='1.5'] .modal-content,
+  [data-text-scale='1.5'] .login-content {
     zoom: 1.5;
   }
 
   [data-text-scale='2'] main,
-  [data-text-scale='2'] .modal-content {
+  [data-text-scale='2'] .modal-content,
+  [data-text-scale='2'] .login-content {
     zoom: 2;
   }
 }
@@ -158,6 +163,7 @@
     font-size: 16px !important;
     filter: none !important;
     line-height: 1.5 !important;
+    overflow: visible !important;
 
     /* Force exact positioning using viewport width calculation */
     /* left: calc(100vw - 320px) = Always 320px from right edge, regardless of font-size */
@@ -242,6 +248,82 @@
   .accessibility-menu svg {
     width: 20px !important;
     height: 20px !important;
+  }
+
+  /* Allow tooltips inside menu to display properly - override position but keep styling */
+  .accessibility-menu .tooltip-wrapper {
+    position: relative !important;
+    overflow: visible !important;
+  }
+
+  .accessibility-menu .tooltip-wrapper[data-tooltip]:hover::before,
+  .accessibility-menu .tooltip-wrapper[data-tooltip]:focus::before {
+    content: attr(data-tooltip) !important;
+    position: absolute !important;
+    bottom: 100% !important;
+    left: 50% !important;
+    transform: translateX(-50%) translateY(-8px) !important;
+    background-color: rgba(0, 0, 0, 0.9) !important;
+    color: white !important;
+    padding: 6px 12px !important;
+    border-radius: 6px !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    white-space: nowrap !important;
+    z-index: 10000 !important;
+    pointer-events: none !important;
+    opacity: 1 !important;
+  }
+
+  .dark .accessibility-menu .tooltip-wrapper[data-tooltip]:hover::before,
+  .dark .accessibility-menu .tooltip-wrapper[data-tooltip]:focus::before {
+    background-color: rgba(255, 255, 255, 0.95) !important;
+    color: #1f2937 !important;
+  }
+
+  .accessibility-menu .tooltip-wrapper[data-tooltip]:hover::after,
+  .accessibility-menu .tooltip-wrapper[data-tooltip]:focus::after {
+    content: '' !important;
+    position: absolute !important;
+    bottom: 100% !important;
+    left: 50% !important;
+    transform: translateX(-50%) translateY(-2px) !important;
+    border: 6px solid transparent !important;
+    border-top-color: rgba(0, 0, 0, 0.9) !important;
+    z-index: 10000 !important;
+    pointer-events: none !important;
+    opacity: 1 !important;
+  }
+
+  .dark .accessibility-menu .tooltip-wrapper[data-tooltip]:hover::after,
+  .dark .accessibility-menu .tooltip-wrapper[data-tooltip]:focus::after {
+    border-top-color: rgba(255, 255, 255, 0.95) !important;
+  }
+
+  /* Special positioning for header tooltips - show them below instead of above */
+  .accessibility-menu > div > div:first-child .tooltip-wrapper[data-tooltip]:hover::before,
+  .accessibility-menu > div > div:first-child .tooltip-wrapper[data-tooltip]:focus::before {
+    bottom: auto !important;
+    top: 100% !important;
+    left: auto !important;
+    right: 0 !important;
+    transform: translateY(8px) !important;
+  }
+
+  .accessibility-menu > div > div:first-child .tooltip-wrapper[data-tooltip]:hover::after,
+  .accessibility-menu > div > div:first-child .tooltip-wrapper[data-tooltip]:focus::after {
+    bottom: auto !important;
+    top: 100% !important;
+    left: auto !important;
+    right: 12px !important;
+    transform: translateY(2px) !important;
+    border-top-color: transparent !important;
+    border-bottom-color: rgba(0, 0, 0, 0.9) !important;
+  }
+
+  .dark .accessibility-menu > div > div:first-child .tooltip-wrapper[data-tooltip]:hover::after,
+  .dark .accessibility-menu > div > div:first-child .tooltip-wrapper[data-tooltip]:focus::after {
+    border-bottom-color: rgba(255, 255, 255, 0.95) !important;
   }
 
   /* Fix ALL spacing classes - padding, margin, gap */

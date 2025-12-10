@@ -1,19 +1,53 @@
-import { useContext } from 'react';
+import { useContext, useEffect, useRef } from 'react';
 import { X, RefreshCw, Type, AlignJustify, Moon, Sun } from 'lucide-react';
 import { AccessibilityContext } from '../context/AccessibilityContext';
 
 const AccessibilityMenu = ({ isOpen, onClose }) => {
   const { settings, updateSetting, resetSettings } = useContext(AccessibilityContext);
+  const menuRef = useRef(null);
 
-  const buttonClass = 'p-4 rounded-lg flex flex-col items-center justify-center';
-  const inactiveClass = 'bg-gray-100 dark:bg-gray-700';
-  const activeClass = 'bg-blue-500 text-white';
+  // Close menu on ESC key press
+  useEffect(() => {
+    const handleEsc = (e) => {
+      if (isOpen && e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [isOpen, onClose]);
+
+  // Focus first button when menu opens
+  useEffect(() => {
+    if (isOpen && menuRef.current) {
+      setTimeout(() => {
+        const firstButton = menuRef.current.querySelector('button');
+        if (firstButton) {
+          firstButton.focus();
+        }
+      }, 50);
+    }
+  }, [isOpen]);
+
+  // Text size options for mapping
+  const textSizeOptions = [
+    { value: 1, label: 'Normal', ariaLabel: 'Textgröße Normal' },
+    { value: 1.5, label: 'Größer', ariaLabel: 'Textgröße Größer' },
+    { value: 2.0, label: 'Am größten', ariaLabel: 'Textgröße Am größten' },
+  ];
+
+  // Line height options for mapping
+  const lineHeightOptions = [
+    { value: 1, label: 'Normal', ariaLabel: 'Zeilenhöhe Normal' },
+    { value: 1.3, label: 'Mittel', ariaLabel: 'Zeilenhöhe Mittel' },
+    { value: 1.6, label: 'Groß', ariaLabel: 'Zeilenhöhe Groß' },
+  ];
 
   // Helper function for size control buttons
   const getSizeButtonClasses = (isActive) =>
-    `w-8 h-8 rounded-full transition-all ${isActive ? 'bg-blue-500 scale-110' : 'bg-gray-400 hover:bg-gray-500'}`;
+    `w-8 h-8 rounded-full transition-all ${isActive ? 'bg-blue-500 scale-110 ring-2 ring-blue-300 dark:ring-blue-700' : 'bg-gray-400 hover:bg-gray-500'}`;
   const getLineHeightButtonClasses = (isActive) =>
-    `w-7 h-7 rounded-full transition-all ${isActive ? 'bg-blue-500 scale-110' : 'bg-gray-400 hover:bg-gray-500'}`;
+    `w-7 h-7 rounded-full transition-all ${isActive ? 'bg-blue-500 scale-110 ring-2 ring-blue-300 dark:ring-blue-700' : 'bg-gray-400 hover:bg-gray-500'}`;
 
   return (
     <>
@@ -21,10 +55,15 @@ const AccessibilityMenu = ({ isOpen, onClose }) => {
       <div
         className={`fixed inset-0 bg-black transition-opacity duration-300 z-40 ${isOpen ? 'bg-opacity-50' : 'bg-opacity-0 pointer-events-none'}`}
         onClick={onClose}
+        aria-hidden="true"
       />
 
       {/* Sidebar */}
-      <div
+      <aside
+        ref={menuRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Einstellungen für Barrierefreiheit"
         className={`fixed top-0 right-0 h-full w-80 bg-white dark:bg-gray-800 shadow-2xl z-50 transform transition-transform duration-300 ease-in-out accessibility-menu ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
       >
         <div className="flex flex-col h-full p-6 text-gray-800 dark:text-gray-200">
@@ -34,7 +73,8 @@ const AccessibilityMenu = ({ isOpen, onClose }) => {
               <div className="tooltip-wrapper" data-tooltip="Zurücksetzen">
                 <button
                   onClick={resetSettings}
-                  className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition-colors"
+                  className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  aria-label="Einstellungen zurücksetzen"
                 >
                   <RefreshCw size={20} />
                 </button>
@@ -42,7 +82,8 @@ const AccessibilityMenu = ({ isOpen, onClose }) => {
               <div className="tooltip-wrapper" data-tooltip="Menü schließen">
                 <button
                   onClick={onClose}
-                  className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition-colors"
+                  className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  aria-label="Menü schließen"
                 >
                   <X size={24} />
                 </button>
@@ -60,27 +101,16 @@ const AccessibilityMenu = ({ isOpen, onClose }) => {
                     <span className="font-medium">Größerer Text</span>
                   </div>
                   <div className="flex items-center justify-around bg-gray-200 dark:bg-gray-600 rounded-full p-2">
-                    <div className="tooltip-wrapper" data-tooltip="Normal">
-                      <button
-                        onClick={() => updateSetting('textSize', 1)}
-                        className={getSizeButtonClasses(settings.textSize === 1)}
-                        aria-label="Textgröße 1x"
-                      />
-                    </div>
-                    <div className="tooltip-wrapper" data-tooltip="Größer">
-                      <button
-                        onClick={() => updateSetting('textSize', 1.5)}
-                        className={getSizeButtonClasses(settings.textSize === 1.5)}
-                        aria-label="Textgröße 1.5x"
-                      />
-                    </div>
-                    <div className="tooltip-wrapper" data-tooltip="Am größten">
-                      <button
-                        onClick={() => updateSetting('textSize', 2.0)}
-                        className={getSizeButtonClasses(settings.textSize === 2.0)}
-                        aria-label="Textgröße 2x"
-                      />
-                    </div>
+                    {textSizeOptions.map((option) => (
+                      <div key={option.value} className="tooltip-wrapper" data-tooltip={option.label}>
+                        <button
+                          onClick={() => updateSetting('textSize', option.value)}
+                          className={getSizeButtonClasses(settings.textSize === option.value)}
+                          aria-label={option.ariaLabel}
+                          aria-pressed={settings.textSize === option.value}
+                        />
+                      </div>
+                    ))}
                   </div>
                 </div>
                 <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
@@ -89,27 +119,16 @@ const AccessibilityMenu = ({ isOpen, onClose }) => {
                     <span className="font-medium">Zeilenhöhe</span>
                   </div>
                   <div className="flex items-center justify-around bg-gray-200 dark:bg-gray-600 rounded-full p-2">
-                    <div className="tooltip-wrapper" data-tooltip="Normal">
-                      <button
-                        onClick={() => updateSetting('lineHeight', 1)}
-                        className={getLineHeightButtonClasses(settings.lineHeight === 1)}
-                        aria-label="Zeilenhöhe 1x"
-                      />
-                    </div>
-                    <div className="tooltip-wrapper" data-tooltip="Mittel">
-                      <button
-                        onClick={() => updateSetting('lineHeight', 1.3)}
-                        className={getLineHeightButtonClasses(settings.lineHeight === 1.3)}
-                        aria-label="Zeilenhöhe 1.3x"
-                      />
-                    </div>
-                    <div className="tooltip-wrapper" data-tooltip="Groß">
-                      <button
-                        onClick={() => updateSetting('lineHeight', 1.6)}
-                        className={getLineHeightButtonClasses(settings.lineHeight === 1.6)}
-                        aria-label="Zeilenhöhe 1.6x"
-                      />
-                    </div>
+                    {lineHeightOptions.map((option) => (
+                      <div key={option.value} className="tooltip-wrapper" data-tooltip={option.label}>
+                        <button
+                          onClick={() => updateSetting('lineHeight', option.value)}
+                          className={getLineHeightButtonClasses(settings.lineHeight === option.value)}
+                          aria-label={option.ariaLabel}
+                          aria-pressed={settings.lineHeight === option.value}
+                        />
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -120,22 +139,26 @@ const AccessibilityMenu = ({ isOpen, onClose }) => {
               <div className="space-y-3">
                 <button
                   onClick={() => updateSetting('darkMode', !settings.darkMode)}
-                  className={`${buttonClass} w-full transition-colors ${settings.darkMode ? activeClass : inactiveClass}`}
+                  className={`p-4 rounded-lg flex items-center justify-between w-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${settings.darkMode ? 'bg-blue-500 text-white' : 'bg-gray-100 dark:bg-gray-700'}`}
+                  aria-pressed={settings.darkMode}
+                  aria-label={settings.darkMode ? 'Dark Mode deaktivieren' : 'Dark Mode aktivieren'}
                 >
-                  {settings.darkMode ? (
-                    <Sun size={24} className="mb-2" />
-                  ) : (
-                    <Moon size={24} className="mb-2" />
-                  )}
-                  <span className="font-medium">
-                    {settings.darkMode ? 'Light Mode' : 'Dark Mode'}
+                  <span className="flex items-center gap-2 font-medium">
+                    {settings.darkMode ? <Moon size={24} /> : <Sun size={24} />}
+                    {settings.darkMode ? 'Dark Mode' : 'Light Mode'}
                   </span>
+                  {/* Toggle Switch Visual */}
+                  <div className={`w-10 h-5 rounded-full relative transition-colors ${settings.darkMode ? 'bg-blue-300' : 'bg-gray-300'}`}>
+                    <div 
+                      className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-transform duration-200 ${settings.darkMode ? 'translate-x-5' : 'translate-x-0.5'}`}
+                    />
+                  </div>
                 </button>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </aside>
     </>
   );
 };
