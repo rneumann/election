@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import ResponsiveButton from '../components/ResponsiveButton';
 import { useTheme } from '../hooks/useTheme';
 
-export const Header = () => {
+export const Header = ({ setAccessibilityMenuOpen }) => {
   const { logout } = useAuth();
   const { user } = useAuth();
   const theme = useTheme();
@@ -29,6 +29,16 @@ export const Header = () => {
               <span className="hidden sm:inline"> ({theme.roles[user?.role] || user?.role})</span>
             </p>
           </div>
+
+          <ResponsiveButton
+            toolTip="Barrierefreiheit"
+            toolTipPlacement="bottom"
+            variant="ghost"
+            size="icon"
+            onClick={() => setAccessibilityMenuOpen(true)}
+          >
+            <PersonStanding className="text-white w-6 h-6" />
+          </ResponsiveButton>
           {user.isCandidate && window.location.pathname !== '/candidate' && (
             <div className="self-start sm:self-auto">
               <ResponsiveButton
