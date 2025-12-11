@@ -23,6 +23,36 @@ export const userLogin = async (
   await expect(page).toHaveURL('/home');
 };
 
+export const secondUserLogin = async (
+  page,
+  username = information.secondUser,
+  password = information.secondUserPassword,
+) => {
+  if (!page.url().includes('/login')) {
+    await page.goto('/login');
+  }
+
+  await page.getByPlaceholder('Ihr Benutzername').fill(username);
+  await page.getByPlaceholder('Ihr Passwort').fill(password);
+  await page.getByRole('button', { name: 'Anmelden', exact: true }).click();
+  await expect(page).toHaveURL('/home');
+};
+
+export const thirdUserLogin = async (
+  page,
+  username = information.thirdUser,
+  password = information.thirdUserPassword,
+) => {
+  if (!page.url().includes('/login')) {
+    await page.goto('/login');
+  }
+
+  await page.getByPlaceholder('Ihr Benutzername').fill(username);
+  await page.getByPlaceholder('Ihr Passwort').fill(password);
+  await page.getByRole('button', { name: 'Anmelden', exact: true }).click();
+  await expect(page).toHaveURL('/home');
+};
+
 /**
  * Führt einen Admin-Login durch und prüft auf erfolgreiche Weiterleitung.
  * @param {import('@playwright/test').Page} page

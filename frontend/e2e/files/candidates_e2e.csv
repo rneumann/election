@@ -1,0 +1,25 @@
+id,Nachname,Vorname,MatrikelNr,Fakultaet,Schl�sselworte,Notizen,IstZugelassen
+9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d,M�ller,Thomas,220001,Informatik,Kandidat,Sehr erfahren in Java,true
+1f8b3c2a-9e4a-4d5b-8f6c-7a8b9c0d1e2f,Schmidt,Laura,220002,BWL,Nachr�cker,,false
+a2c3e4f5-6b78-9012-3456-7890abcdef12,Weber,Lukas,220003,Maschinenbau,Student,Hat ein Auslandssemester gemacht,true
+b3d4e5f6-7890-1234-5678-90abcdef1234,Fischer,Sarah,220004,Design,Kandidat,,true
+c4e5f6a7-8901-2345-6789-0abcdef12345,Wagner,Jonas,220005,Architektur,Extern,Portfolio liegt vor,false
+d5f6a7b8-9012-3456-7890-abcdef123456,Becker,Anna,220006,Psychologie,Kandidat,,true
+e6a7b8c9-0123-4567-890a-bcdef1234567,Hoffmann,Felix,220007,Informatik,Tutor,Kennt sich mit Datenbanken aus,true
+f7b8c9d0-1234-5678-90ab-cdef12345678,Sch�fer,Julia,220008,Elektrotechnik,Kandidat,,false
+08c9d0e1-2345-6789-0abc-def123456789,Koch,Leon,220009,Medizin,Student,Sehr gute Noten,true
+19d0e1f2-3456-7890-abcd-ef1234567890,Bauer,Sophie,220010,Jura,Kandidat,,true
+2ae1f2a3-4567-8901-bcde-f12345678901,Richter,Maximilian,220011,Physik,Nachr�cker,,false
+3bf2a3b4-5678-9012-cdef-123456789012,Klein,Lena,220012,Chemie,Kandidat,Interesse an Forschung,true
+4c03b4c5-6789-0123-def0-123456789013,Wolf,Elias,220013,Biologie,Student,,true
+5d14c5d6-7890-1234-ef01-234567890124,Schr�der,Marie,220014,Soziologie,Extern,,false
+6e25d6e7-8901-2345-f012-345678901235,Neumann,Tim,220015,Informatik,Kandidat,Fullstack Entwickler,true
+7f36e7f8-9012-3456-0123-456789012346,Schwarz,Emily,220016,Mathematik,Tutor,,true
+8047f8a9-0123-4567-1234-567890123457,Zimmermann,Noah,220017,Geschichte,Kandidat,Engagiert in der Fachschaft,true
+9158a9b0-1234-5678-2345-678901234568,Braun,Lea,220018,Germanistik,Student,,false
+a269b0c1-2345-6789-3456-789012345679,Kr�ger,Ben,220019,Sportwissenschaft,Kandidat,,true
+b37ac1d2-3456-7890-4567-890123456780,Hofmann,Mia,220020,Informatik,Kandidat,Interesse an KI,true
+c48bd2e3-4567-8901-5678-901234567891,Hartmann,Paul,220021,BWL,Nachr�cker,,false
+d59ce3f4-5678-9012-6789-012345678902,Lange,Clara,220022,Maschinenbau,Student,,true
+e6adf405-6789-0123-7890-123456789013,Schmitt,Luis,220023,Design,Extern,Freiberuflich t�tig,true
+f7beg516-7890-1234-8901-234567890124,Werner,Lina,220024,Architektur,Kandidat,,false
