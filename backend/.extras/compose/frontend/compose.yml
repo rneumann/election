@@ -4,11 +4,11 @@ services:
     container_name: frontend
     ports:
       - '80:80'
+      - '443:443'
+    networks:
+      - frontend_net
     depends_on:
       - backend
-    networks:
-      - election-network
-
-networks:
-  election-network:
-    external: true
+    volumes:
+      - ./certs/dev.crt:/etc/ssl/certs/dev.crt:ro
+      - ./certs/dev.key:/etc/ssl/private/dev.key:ro

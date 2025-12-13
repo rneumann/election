@@ -171,7 +171,7 @@ export const createBallot = async (ballot, voter) => {
     const prevHash = await getPreviousBallotHash(ballot.electionId);
     logger.debug(`Previous ballot hash: ${prevHash}`);
 
-    const ballotHash = generateBallotHashes({
+    const ballotHash = await generateBallotHashes({
       electionId: ballot.electionId,
       voteDecision: ballot.voteDecision,
       valid: ballot.valid,

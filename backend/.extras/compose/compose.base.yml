@@ -1,0 +1,7 @@
+name: election
+
+networks:
+  frontend_net:
+  backend_net:
+    internal: true
+  admin_net:
