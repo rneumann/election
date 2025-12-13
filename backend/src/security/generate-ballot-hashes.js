@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { readSecret } from './secret-reader.js';
 
 /**
  * Generates a SHA256 hash for a given ballot.
@@ -16,7 +17,7 @@ import crypto from 'crypto';
  * @returns {string} The generated hash.
  */
 export const generateBallotHashes = ({ electionId, voteDecision, valid, previousHash }) => {
-  const { BALLOT_SECRET } = process.env;
+  const BALLOT_SECRET = readSecret('BALLOT_SECRET');
   if (!BALLOT_SECRET) {
     throw new Error('BALLOT_SECRET is not defined in environment variables');
   }

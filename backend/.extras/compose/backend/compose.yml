@@ -5,6 +5,8 @@ secrets:
     file: ./secrets/committee_pw.txt
   SESSION_SECRET:
     file: ./secrets/session_secret.txt
+  BALLOT_SECRET:
+    file: ./secrets/ballot_secret.txt
 
 services:
   backend:
@@ -12,17 +14,17 @@ services:
     image: backend_image
     env_file:
       - .env
-    ports:
-      - '3000:3000'
+    expose:
+      - 3000
+    #ports:
+    #  - '3000:3000'
     secrets:
       - ADMIN_PASSWORD
       - COMMITTEE_PASSWORD
       - SESSION_SECRET
+      - BALLOT_SECRET
     networks:
-      - election-network
+      - frontend_net
+      - backend_net
     volumes:
-      - ./secrets/keys:/run/secrets/keys:ro #
-
-networks:
-  election-network:
-    external: true
+      - ./secrets/keys:/run/secrets/keys:ro
