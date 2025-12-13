@@ -1,5 +1,4 @@
 process.env.BALLOT_SECRET = 'test_secret';
-
 import { describe, test, expect, vi, beforeEach, beforeAll } from 'vitest';
 
 vi.mock('../src/conf/logger/logger.js', () => ({
@@ -15,10 +14,6 @@ vi.mock('../src/database/db.js', () => ({
   client: {
     query: (...args) => queryMock(...args),
   },
-}));
-
-vi.mock('../src/security/secret-reader.js', () => ({
-  readSecret: vi.fn().mockResolvedValue('test_secret'), // dein gewünschter Wert
 }));
 
 import {
@@ -364,10 +359,10 @@ describe('Data service - createBallot', () => {
         .join('|');
 
       // readSecret ist gemockt und liefert 'test_secret'
-      const BALLOT_SECRET = await readSecret('BALLOT_SECRET');
+      //const BALLOT_SECRET = await readSecret('BALLOT_SECRET');
 
       // Funktion aufrufen (synchron oder async je nach implementierung)
-      const hash = generateBallotHashes({
+      const hash = await generateBallotHashes({
         electionId: mock.electionId,
         voteDecision: mock.voteDecision,
         valid: mock.valid,
@@ -376,7 +371,9 @@ describe('Data service - createBallot', () => {
 
       const expected = crypto
         .createHash('sha256')
-        .update(`${mock.previousHash}|${sortedVotes}|${mock.electionId}|${BALLOT_SECRET}`)
+        .update(
+          `${mock.previousHash}|${sortedVotes}|${mock.electionId}|${process.env.BALLOT_SECRET}`,
+        )
         .digest('hex');
 
       expect(hash).toBe(expected);

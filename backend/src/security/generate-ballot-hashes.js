@@ -16,8 +16,8 @@ import { readSecret } from './secret-reader.js';
  * @param {?string} previousHash - The hash of the previous ballot, if any.
  * @returns {string} The generated hash.
  */
-export const generateBallotHashes = ({ electionId, voteDecision, valid, previousHash }) => {
-  const BALLOT_SECRET = readSecret('BALLOT_SECRET');
+export const generateBallotHashes = async ({ electionId, voteDecision, valid, previousHash }) => {
+  const BALLOT_SECRET = await readSecret('BALLOT_SECRET');
   if (!BALLOT_SECRET) {
     throw new Error('BALLOT_SECRET is not defined in environment variables');
   }
