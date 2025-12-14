@@ -135,8 +135,8 @@ export const candidateApi = {
    * @function getCandidateInfoByUid
    * @returns {Promise<Object|undefined>} A promise that resolves to the candidate information data or undefined on failure.
    */
-  getCandidateInfoByUid: async () => {
-    const response = await api.get('candidates/information');
+  getCandidateInfoByUid: async (uid) => {
+    const response = await api.get(`candidates/information/public/${uid}`);
     if (response.status !== 200) {
       hnadleHttpStatus(response);
       return undefined;
