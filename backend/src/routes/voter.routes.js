@@ -340,10 +340,21 @@ voterRouter.post(
       }
       // check if election is active
       const currentTime = new Date();
-      if (currentTime < new Date(election.start) || currentTime > new Date(election.end)) {
-        logger.warn('Election is not active');
+      if (currentTime > new Date(election.end)) {
+        logger.warn('Election is over');
+        return res.status(400).json({ message: 'Election is over' });
+      }
+
+      if (currentTime < new Date(election.start) && !election.test_election_active) {
+        logger.warn('Election is in the future and no test election is active');
         return res.status(400).json({ message: 'Election is not active' });
       }
+      if (currentTime < new Date(election.start) && election.test_election_active) {
+        logger.warn(
+          'Election is in the future and a test election is active, proceeding with test election',
+        );
+      }
+
       // checlk number of votes is valid
       const validVotes = checkIfNumberOfVotesIsValid(
         req.body,
