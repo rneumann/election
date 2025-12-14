@@ -19,7 +19,7 @@ services:
     env_file:
       - .env.ui
     ports:
-      - 6443:80
+      - 6443:80 # openldap-admin-ui port for local development
     depends_on:
       - ldap
     networks:
