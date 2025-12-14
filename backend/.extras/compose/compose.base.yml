@@ -3,5 +3,5 @@ name: election
 networks:
   frontend_net:
   backend_net:
-    internal: true
+    #internal: true
   admin_net:
