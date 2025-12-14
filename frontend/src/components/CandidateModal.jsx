@@ -45,7 +45,7 @@ export const CandidateInfoModal = ({ open, onClose, electionId }) => {
 
       if (uid) {
         const infoData = await candidateApi.getCandidateInfoByUid(uid);
-        logger.log('Nachgeladene Info:', infoData);
+        logger.debug('Nachgeladene Info:', infoData);
 
         if (infoData && (infoData.info || infoData.picture)) {
           setSelectedCandidate((prev) => ({
