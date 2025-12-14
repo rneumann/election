@@ -1,6 +1,7 @@
 /* eslint-disable security/detect-object-injection */
 import Papa from 'papaparse';
-import { voterListSchema } from '../../schemas/voter.schema.js';
+// IMPORTANT: Import VOTER_CSV_MAPPING here!
+import { voterListSchema, VOTER_CSV_MAPPING } from '../../schemas/voter.schema.js';
 import { parseVoterCSV } from '../parsers/csvParser.js';
 import { logger } from '../../conf/logger/logger.js';
 import { CANDIDATE_CSV_MAPPING } from '../../schemas/candidate.schema.js';
@@ -10,8 +11,8 @@ import { MAX_FILE_SIZE } from './constants.js';
  * Validate CSV file containing voter data.
  * Combines parsing and Zod schema validation.
  *
- * @param {File} file - CSV file to validate
- * @returns {Promise<{success: boolean, data?: Array, errors?: Array, stats?: Object}>}
+ * @param {File} file - The CSV file to validate.
+ * @returns {Promise<Object>} Validation result with success, errors, and data/stats if successful.
  */
 export const validateVoterCSV = async (file) => {
   const fileExtension = file.name.split('.').pop();
@@ -67,7 +68,6 @@ export const validateVoterCSV = async (file) => {
         const path = error.path;
 
         if (path.length === 0) {
-          // Array-level error (e.g., minimum length)
           errors.push({
             row: null,
             field: null,
@@ -75,20 +75,18 @@ export const validateVoterCSV = async (file) => {
             code: 'VALIDATION_ERROR',
           });
         } else if (path.length === 1) {
-          // Array index only (row-level error)
           errors.push({
-            row: path[0] + 2, // +2 for header and 0-index
+            row: path[0] + 2,
             field: null,
             message: error.message,
             code: 'ROW_ERROR',
           });
         } else {
-          // Field-level error
           const rowIndex = path[0];
           const fieldName = path[1];
 
           errors.push({
-            row: rowIndex + 2, // +2 for header and 0-index
+            row: rowIndex + 2,
             field: fieldName,
             message: error.message,
             code: 'FIELD_ERROR',
@@ -103,7 +101,7 @@ export const validateVoterCSV = async (file) => {
     };
   }
 
-  // Step 3: Check for duplicate RZ-Kennungen and Matrikelnummern (combined for performance)
+  // Step 3: Check for duplicate RZ-Kennungen and Matrikelnummern
   const uidSet = new Set();
   const mtknrSet = new Set();
   const duplicateErrors = [];
@@ -112,7 +110,6 @@ export const validateVoterCSV = async (file) => {
     const uid = voter['RZ-Kennung'];
     const mtknr = voter['Matk.Nr'];
 
-    // Check for duplicate RZ-Kennung
     if (uidSet.has(uid)) {
       duplicateErrors.push({
         row: index + 2,
@@ -124,7 +121,6 @@ export const validateVoterCSV = async (file) => {
       uidSet.add(uid);
     }
 
-    // Check for duplicate Matrikelnummer (if present)
     if (mtknr && mtknr.trim() !== '') {
       if (mtknrSet.has(mtknr)) {
         duplicateErrors.push({
@@ -167,10 +163,11 @@ export const validateVoterCSV = async (file) => {
 };
 
 /**
- * Validates a candidate CSV file against the required schema.
- * Expected columns: Nachname, Vorname, MatrikelNr, Fakultät, Schlüsselworte, Notizen, IstZugelassen
- * @param {File} file - The CSV file to validate
- * @returns {Promise<{success: boolean, data?: Array, errors?: Array, stats?: Object}>}
+ * Validate CSV file containing candidate data.
+ * Checks for required headers and missing values.
+ *
+ * @param {File} file - The CSV file to validate.
+ * @returns {Promise<Object>} Validation result with success, errors, and data/stats if successful.
  */
 export const validateCandidateCSV = async (file) => {
   return new Promise((resolve) => {
@@ -191,16 +188,9 @@ export const validateCandidateCSV = async (file) => {
 
       const headers = lines[0].split(',').map((h) => h.trim().replace(/"/g, ''));
 
-      // Die Spalten, die für Kandidaten erwartet werden
-      const requiredHeaders = [
-        'Nachname',
-        'Vorname',
-        'MatrikelNr',
-        'Fakultaet',
-        // 'Schlüsselworte', 'Notizen', 'IstZugelassen' sind oft optional
-      ];
+      // The columns expected for candidates
+      const requiredHeaders = ['Nachname', 'Vorname', 'MatrikelNr', 'Fakultaet'];
 
-      // 1. Kopfzeile prüfen
       const missingHeaders = requiredHeaders.filter(
         (req) => !headers.some((h) => h.toLowerCase() === req.toLowerCase()),
       );
@@ -220,24 +210,19 @@ export const validateCandidateCSV = async (file) => {
       const errors = [];
       const data = [];
 
-      // 2. Zeilen prüfen
       for (let i = 1; i < lines.length; i++) {
         const values = lines[i].split(',').map((v) => v.trim().replace(/"/g, ''));
-
-        // Simples Mapping basierend auf Index
         const rowData = {};
         headers.forEach((h, idx) => (rowData[h] = values[idx]));
 
-        // Pflichtfeld-Prüfung (Beispiel)
         if (!rowData['MatrikelNr'] && !rowData['matrikelnr']) {
           errors.push({
-            row: i + 1, // +1 weil Zeile 1 der Header ist
+            row: i + 1,
             field: 'MatrikelNr',
             message: 'Matrikelnummer fehlt',
             code: 'MISSING_VALUE',
           });
         }
-
         data.push(rowData);
       }
 
@@ -255,9 +240,10 @@ export const validateCandidateCSV = async (file) => {
 };
 
 /**
- * Liest die CSV, benennt die Header um und gibt ein NEUES File-Objekt zurück.
- * @param {File} file - Die Originaldatei (mit deutschen Headern)
- * @returns {Promise<File>} - Die neue Datei (mit englischen Headern)
+ * Transforms the uploaded candidate file (with German headers) to a file with English headers.
+ *
+ * @param {File} file - The original candidate CSV file.
+ * @returns {Promise<File>} The new CSV file with mapped headers.
  */
 export const transformCandidateFile = (file) => {
   return new Promise((resolve, reject) => {
@@ -267,12 +253,10 @@ export const transformCandidateFile = (file) => {
       encoding: 'UTF-8',
       complete: (results) => {
         const data = results.data;
-
         const transformedData = data.map((row) => {
           const newRow = {};
           Object.keys(row).forEach((germanKey) => {
             const englishKey = CANDIDATE_CSV_MAPPING[germanKey.trim()];
-
             if (englishKey) {
               if (englishKey === 'approved') {
                 const val = row[germanKey];
@@ -297,10 +281,63 @@ export const transformCandidateFile = (file) => {
           type: 'text/csv',
           lastModified: new Date().getTime(),
         });
-
         resolve(newFile);
       },
       error: (err) => reject(err),
     });
   });
+};
+
+/**
+ * Takes the uploaded file (with German headers),
+ * renames the headers to English keys based on the mapping.
+ * USES parseVoterCSV to avoid encoding (ISO-8859-1) and BOM issues.
+ *
+ * @param {File} file - The uploaded CSV file with German headers.
+ * @returns {Promise<File>} - The transformed CSV file with English headers.
+ */
+export const transformVoterFile = async (file) => {
+  try {
+    // 1. We use the more robust parser from csvParser.js
+    // This handles encoding detection (Umlauts!) and BOM.
+    const result = await parseVoterCSV(file);
+
+    if (!result.success) {
+      throw new Error('Fehler beim Verarbeiten der CSV für den Upload.');
+    }
+
+    const data = result.data; // These are the clean data with German keys
+
+    // 2. Map data
+    const transformedData = data.map((row) => {
+      const newRow = {};
+
+      Object.keys(row).forEach((germanKey) => {
+        // .trim() is good for safety, although parseVoterCSV usually does this already
+        const cleanGermanKey = germanKey.trim();
+        const englishKey = VOTER_CSV_MAPPING[cleanGermanKey];
+
+        if (englishKey) {
+          newRow[englishKey] = row[germanKey];
+        }
+      });
+
+      return newRow;
+    });
+
+    // 3. Convert back to CSV (Standard format for backend)
+    const newCSV = Papa.unparse(transformedData, {
+      quotes: true,
+      delimiter: ',', // Backend parser (csv-parser) handles commas well
+    });
+
+    // 4. Create new file
+    return new File([newCSV], 'voters_import_mapped.csv', {
+      type: 'text/csv',
+      lastModified: new Date().getTime(),
+    });
+  } catch (error) {
+    logger.error('Fehler in transformVoterFile', error);
+    throw error;
+  }
 };

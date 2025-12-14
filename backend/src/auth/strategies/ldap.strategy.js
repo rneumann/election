@@ -2,6 +2,7 @@ import { Strategy } from 'passport-local';
 import { Client } from 'ldapts';
 import { checkAdminOrCommittee } from '../auth.js';
 import { logger } from '../../conf/logger/logger.js';
+import { checkIfVoterIsCandidate } from '../../service/candidate.service.js';
 
 export const ldapStrategy = new Strategy(async (username, password, done) => {
   const user = await login(username, password);
@@ -42,12 +43,12 @@ export const login = async (username, password) => {
   try {
     logger.debug(`Authenticating user via LDAP with: cn=${username},cn=users,${AD_BASE_DN}`);
 
-    logger.debug(`Attempting final user bind with DN: uid=${username},ou=students,${AD_BASE_DN}`);
-    await client.bind(`uid=${username},ou=students,${AD_BASE_DN}`, `${password}`);
-    logger.info(
-      `User uid=${username},ou=students,${AD_BASE_DN} authenticated successfully via LDAP.`,
-    );
-    return { username, role: 'voter', authProvider: 'ldap' };
+    logger.debug(`Attempting final user bind with DN: uid=${username},${AD_BASE_DN}`);
+    await client.bind(`uid=${username},${AD_BASE_DN}`, `${password}`);
+    logger.info(`User uid=${username},${AD_BASE_DN} authenticated successfully via LDAP.`);
+    const isCandidate = await checkIfVoterIsCandidate(username);
+    logger.debug(`Is user: ${username} a candidate? ${isCandidate}`);
+    return { username, role: 'voter', authProvider: 'ldap', isCandidate };
   } catch (error) {
     logger.error(`Error authenticating user ${username} via LDAP: ${error.message}`);
     return undefined;

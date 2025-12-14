@@ -6,6 +6,7 @@ import { client } from '../src/database/db.js';
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { logger } from '../src/conf/logger/logger.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -35,7 +36,7 @@ describe('Election Importer - election_type and counting_method', () => {
       try {
         await client.query(`DELETE FROM elections WHERE id = ANY($1::uuid[])`, [testElectionIds]);
       } catch (error) {
-        console.error('Cleanup error:', error);
+        logger.error('Cleanup error:', error);
       }
       testElectionIds = [];
     }

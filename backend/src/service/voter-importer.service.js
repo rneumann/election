@@ -1,64 +1,165 @@
 /* eslint-disable security/detect-object-injection */
-/* eslint-disable no-unused-vars */
 import fs from 'fs';
+import csv from 'csv-parser';
+import ExcelJS from 'exceljs';
 import { logger } from '../conf/logger/logger.js';
 import { client } from '../database/db.js';
-import { parseCsv, parseExcel } from '../utils/parsers.js';
+
+/**
+ * Imports required modules for file operations, CSV parsing, Excel parsing,
+ * logging, and database access.
+ */
 
 const allowedColumns = ['uid', 'lastname', 'firstname', 'mtknr', 'faculty', 'notes'];
 
 /**
- * Ensures all allowed columns exist with null fallback.
- * @param {Object} row - The input row object
- * @returns {Object} The cleaned row object
+ * Normalizes a raw row object into a safe, fixed-column object.
+ * @param {Object} row
+ * @returns {Object}
  */
-export const safeRow = (row) => {
-  const cleaned = {};
-  for (const col of allowedColumns) {
-    cleaned[col] = row[col] ?? null;
-  }
-  return cleaned;
+const safeRow = (row) => {
+  const r = {
+    uid: row.uid,
+    lastname: row.lastname,
+    firstname: row.firstname,
+    mtknr: row.mtknr,
+    faculty: row.faculty,
+    notes: row.notes,
+  };
+
+  return {
+    uid: r.uid ?? null,
+    lastname: r.lastname ?? null,
+    firstname: r.firstname ?? null,
+    mtknr: r.mtknr ?? null,
+    faculty: r.faculty ?? null,
+    notes: r.notes ?? null,
+  };
 };
 
 /**
- * Inserts an array of voter objects into the database.
- * @param {Array<Object>} data - Array of voter objects
+ * Parses a CSV file and returns an array of objects.
+ * @param {string} path - The path to the CSV file.
+ * @returns {Promise<Object[]>} A promise resolved with all rows as objects.
+ */
+const parseCsv = (path) => {
+  return new Promise((resolve, reject) => {
+    const results = [];
+    fs.createReadStream(path)
+      .pipe(csv())
+      .on('data', (data) => {
+        results.push(safeRow(data));
+      })
+      .on('end', () => resolve(results))
+      .on('error', reject);
+  });
+};
+
+/**
+ * Parses an Excel file (first sheet) using ExcelJS.
+ * Replaces the old xlsx/SheetJS implementation.
+ * @param {string} path - The path to the Excel file.
+ * @returns {Promise<Object[]>} The parsed data.
+ */
+const parseExcel = async (path) => {
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.readFile(path);
+
+  const worksheet = workbook.worksheets[0];
+
+  if (!worksheet) {
+    logger.warn('Excel file has no worksheets');
+    return [];
+  }
+
+  const results = [];
+  let headers = [];
+
+  worksheet.eachRow((row, rowNumber) => {
+    if (rowNumber === 1) {
+      row.eachCell((cell, colNumber) => {
+        headers[colNumber] = cell.value ? String(cell.value).trim() : '';
+      });
+    } else {
+      const rowData = {};
+
+      headers.forEach((headerKey, colNumber) => {
+        if (!headerKey) {
+          return;
+        }
+
+        const cell = row.getCell(colNumber);
+        let val = cell.value;
+        if (val && typeof val === 'object') {
+          if (val.text) {
+            val = val.text;
+          } else if (val.result) {
+            val = val.result;
+          }
+        }
+        rowData[headerKey] = val !== null && val !== undefined ? String(val) : null;
+      });
+
+      results.push(safeRow(rowData));
+    }
+  });
+
+  return results;
+};
+
+/**
+ * Inserts validated voter data into the PostgreSQL database.
+ * Only whitelisted columns are accepted to prevent object injection.
+ * @param {Object[]} data - An array of voter objects.
  * @returns {Promise<void>}
  */
 const insertVoters = async (data) => {
-  if (!data.length) {
+  if (data.length === 0) {
     logger.info('No data found to insert.');
     return;
   }
 
-  const cols = allowedColumns.join(', ');
-  const placeholders = data
-    .map(
-      (_, i) =>
-        `(${allowedColumns.map((__, j) => `$${i * allowedColumns.length + (j + 1)}`).join(', ')})`,
-    )
+  const columns = allowedColumns.join(', ');
+  const numColumns = allowedColumns.length;
+  const valuePlaceholders = data
+    .map((_, rowIdx) => {
+      const startIdx = rowIdx * numColumns + 1;
+      const values = Array.from(
+        { length: numColumns },
+        (_, colIdx) => `$${startIdx + colIdx}`,
+      ).join(', ');
+      return `(${values})`;
+    })
     .join(', ');
 
-  const flatValues = data.flatMap((row) => allowedColumns.map((col) => row[col]));
+  const allValues = data.flatMap((row) => [
+    row.uid,
+    row.lastname,
+    row.firstname,
+    row.mtknr,
+    row.faculty,
+    row.notes,
+  ]);
 
   const query = {
-    text: `INSERT INTO voters (${cols}) VALUES ${placeholders}`,
-    values: flatValues,
+    text: `INSERT INTO voters (${columns}) VALUES ${valuePlaceholders}`,
+    values: allValues,
   };
 
   try {
     const res = await client.query(query);
-    logger.info(`Inserted ${res.rowCount} voters.`);
-  } catch (err) {
-    logger.error('DB insert error:', err);
-    throw new Error('Database error while inserting voters.');
+    logger.info(`Successfully inserted ${res.rowCount} voters into the database.`);
+  } catch (error) {
+    logger.error('Error inserting voter data into the database:', error);
+    throw new Error('Database error while inserting voter data.');
   }
 };
 
 /**
- * Main entry for voter import.
- * @param {string} path - Path to the input file
- * @param {string} mimeType - MIME type of the input file
+ * Imports voter data from CSV or Excel files, parses it, and loads it into the database.
+ * Only safe MIME types are supported.
+ * @param {string} path - The file path of the uploaded file.
+ * @param {string} mimeType - The MIME type of the file.
  * @returns {Promise<void>}
  */
 export const importVoterData = async (path, mimeType) => {
@@ -79,6 +180,11 @@ export const importVoterData = async (path, mimeType) => {
   try {
     const rows = await parser(path);
     logger.debug(`Parsed ${rows.length} rows.`);
+
+    if (rows.length > 0) {
+      logger.debug('Parsed Excel/CSV Row Sample:', JSON.stringify(rows[0]));
+    }
+
     await insertVoters(rows);
   } catch (err) {
     logger.error('Import process error:', err);

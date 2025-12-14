@@ -29,7 +29,7 @@ export const errorHandler = (err, req, res, next) => {
       path: req.path,
       method: req.method,
     },
-  }).catch((e) => console.error('Audit Log failed:', e));
+  }).catch((e) => logger.error('Audit Log failed:', e));
 
   res.status(500).json({ error: 'Internal Server Error' });
 };

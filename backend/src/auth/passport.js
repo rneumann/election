@@ -17,6 +17,7 @@ passport.serializeUser((user, done) => {
     accessToken: user.accessToken,
     refreshToken: user.refreshToken,
     role: user.role,
+    isCandidate: user.isCandidate || false,
   });
 });
 
