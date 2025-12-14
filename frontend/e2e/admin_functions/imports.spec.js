@@ -55,11 +55,10 @@ test.describe('Admin Import tests', () => {
     await expect(fileButton).toBeVisible();
 
     const [fileChooser] = await Promise.all([page.waitForEvent('filechooser'), fileButton.click()]);
-    await fileChooser.setFiles('e2e/files/voter_e2e.xlsx');
+    await fileChooser.setFiles('e2e/files/voters_e2e.csv');
 
     await expect(page.getByText('Validierung erfolgreich')).toBeVisible({ timeout: 15000 });
-    await expect(page.getByText(/Wahlbezeichnung:/)).toBeVisible();
-    await expect(page.getByText(/Kandidaten:/)).toBeVisible();
+    await expect(page.getByText(/Wähler:/)).toBeVisible({ timeout: 15000 });
 
     await expect(page.getByText('Upload erfolgreich')).toBeVisible({ timeout: 15000 });
     await expect(page.getByText(/Datei erfolgreich validiert/)).toBeVisible();
@@ -69,7 +68,7 @@ test.describe('Admin Import tests', () => {
 
     const [uploadResponse] = await Promise.all([
       page.waitForResponse(
-        (resp) => resp.url().includes('/upload/elections') && resp.status() === 200,
+        (resp) => resp.url().includes('/upload/voters') && resp.status() === 200,
       ),
       finalUploadBtn.click(),
     ]);
