@@ -86,7 +86,7 @@ export const CandidatePageContent = () => {
 
   const fetchCandidateInfo = async () => {
     try {
-      const response = await candidateApi.getCandidateInfoByUid();
+      const response = await candidateApi.getCandidateInfoPersonal();
       setCurrentData(response);
       logger.debug(`Fetched candidate info: ${JSON.stringify(response)}`);
       setDescription(response?.info ?? '');
