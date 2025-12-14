@@ -505,3 +505,28 @@ candidateRouter.get('/information/public/:uid', ensureAuthenticated, async (req,
     next(error);
   }
 });
+
+// eslint-disable-next-line
+candidateRouter.get('/information/personal', ensureAuthenticated, async (req, res, next) => {
+  try {
+    if (!req.user.username) {
+      logger.warn(`Not authenticated user attempted to update candidate information.`);
+      return res
+        .status(403)
+        .json({ message: 'Forbidden: Cannot update information for another user.' });
+    }
+
+    const isCandidate = req.user.isCandidate;
+    if (!isCandidate) {
+      logger.warn(
+        `User ${req.user.username} attempted to update candidate information without being a candidate.`,
+      );
+      return res.status(403).json({ message: 'Forbidden: User is not a candidate.' });
+    }
+    const info = await getCandidateInformationByUid(req.user.username);
+    res.json(info);
+  } catch (error) {
+    logger.error(`Error fetching candidate info: ${error.message}`);
+    return res.status(500).json({ message: 'Database read operation failed.' });
+  }
+});
