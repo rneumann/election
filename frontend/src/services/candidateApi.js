@@ -131,6 +131,7 @@ export const candidateApi = {
    * If the request is successful (Status 200), it returns the candidate information data.
    * If the request fails (non-200 status), it logs an error and returns undefined.
    *
+   * @param uid - Represents the UID of the candidate.
    * @async
    * @function getCandidateInfoByUid
    * @returns {Promise<Object|undefined>} A promise that resolves to the candidate information data or undefined on failure.

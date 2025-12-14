@@ -9,7 +9,9 @@ export const CandidateInfoModal = ({ open, onClose, electionId }) => {
   const [selectedCandidate, setSelectedCandidate] = useState(null);
 
   useEffect(() => {
-    if (!open || !electionId) return;
+    if (!open || !electionId) {
+      return;
+    }
 
     setSelectedCandidate(null);
     setLoadingList(true);
@@ -71,7 +73,9 @@ export const CandidateInfoModal = ({ open, onClose, electionId }) => {
   const getAvatarUrl = (c) =>
     `https://ui-avatars.com/api/?name=${c?.firstname || '?'}+${c?.lastname || '?'}&background=random&color=fff&size=256`;
 
-  if (!open) return null;
+  if (!open) {
+    return null;
+  }
 
   return (
     <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50 p-4 backdrop-blur-sm">
