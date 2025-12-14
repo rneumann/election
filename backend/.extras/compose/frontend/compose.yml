@@ -2,13 +2,10 @@ services:
   frontend:
     image: frontend_image
     container_name: frontend
-    ports:
-      - '80:80'
-      - '443:443'
+    expose:
+      - '8080'
     networks:
+      - backend_net
       - frontend_net
     depends_on:
       - backend
-    volumes:
-      - ./certs/dev.crt:/etc/ssl/certs/dev.crt:ro
-      - ./certs/dev.key:/etc/ssl/private/dev.key:ro

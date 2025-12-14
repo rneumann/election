@@ -24,6 +24,7 @@ services:
       - ldap
     networks:
       - backend_net
+      - frontend_net
 
 volumes:
   ldap-data:

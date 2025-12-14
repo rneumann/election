@@ -23,8 +23,9 @@ services:
       - COMMITTEE_PASSWORD
       - SESSION_SECRET
       - BALLOT_SECRET
+    depends_on:
+      - postgres-dev
     networks:
-      - frontend_net
       - backend_net
     volumes:
       - ./secrets/keys:/run/secrets/keys:ro
