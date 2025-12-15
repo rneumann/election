@@ -1,67 +1,51 @@
-import { expect, test } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 import { userLogin, secondUserLogin } from '../utils/authentication';
+import { HomePage } from '../pages/HomePage';
+import { CandidateProfilePage } from '../pages/candidateProfile';
+import { CandidateListPage } from '../pages/candidateList';
 
 test.describe('Candidate Functionalities', () => {
   test('Should upload a profile picture', async ({ page }) => {
+    const homePage = new HomePage(page);
+    const candidatePage = new CandidateProfilePage(page);
+
     await secondUserLogin(page);
     await expect(page).toHaveURL('/home');
-    const candidateButton = page.getByText('Kandidaten Ansicht');
-    await expect(candidateButton).toBeVisible();
-    await candidateButton.click();
-    await expect(page).toHaveURL('/candidate');
+
+    // Navigation zum Profil
+    await homePage.navigateToCandidateProfile();
+
+    // Bild hochladen
     await expect(page.getByText('Persönliche Kandidateninformationen')).toBeVisible();
-    await expect(page.getByText('Bild hochladen')).toBeVisible();
-    const fileButton = page.getByText('Datei auswählen');
-    await expect(fileButton).toBeVisible();
-    const [fileChooser] = await Promise.all([page.waitForEvent('filechooser'), fileButton.click()]);
-    await fileChooser.setFiles('e2e/files/goat_e2e.png');
-    const applyButton = page.getByText('Übernehmen');
-    await expect(applyButton).toBeVisible();
-    await applyButton.click();
+    await candidatePage.uploadProfilePicture('e2e/files/goat_e2e.png');
+
+    // Beschreibung aktualisieren
     await expect(page.getByText('Persönliche Beschreibung')).toBeVisible();
-    const descriptionField = page.getByLabel('Ihre Beschreibung');
-    await expect(descriptionField).toBeVisible();
-    await descriptionField.fill('Dies ist eine Test-Beschreibung für den Kandidaten.');
-    const saveButton = page.getByRole('button', { name: 'Beschreibung speichern' });
-    await expect(saveButton).toBeVisible();
-    await saveButton.click();
-    await expect(page.getByText(/Deine Informationen wurden erfolgreich geupdated./)).toBeVisible();
+    await candidatePage.updateDescription('Dies ist eine Test-Beschreibung für den Kandidaten.');
+
+    // Zurück zur Hauptansicht und Überprüfung
+    await candidatePage.returnToMainView();
+
+    // Erneuter Aufruf zur Prüfung, ob das Bild gespeichert wurde
+    await homePage.navigateToCandidateProfile();
+    await candidatePage.expectProfileImageVisible();
   });
 
   test('Should see Candidate List and view Candidate Details', async ({ page }) => {
-    await userLogin(page);
+    const homePage = new HomePage(page);
+    const candidateList = new CandidateListPage(page);
 
+    await userLogin(page);
     await expect(page).toHaveURL('/home');
 
-    await expect(page.getByText('Zukünftige Wahlen')).toBeVisible();
+    // Liste für eine bestimmte Wahl öffnen
+    await homePage.openElectionCandidates('Testwahl');
 
-    const infoButton = page
-      .locator('li')
-      .filter({ hasText: 'Testwahl' })
-      .getByRole('button')
-      .nth(1);
+    // Kandidatendetails prüfen
+    await candidateList.selectCandidate('Max Müller');
+    await candidateList.verifyCandidateDetails('Max Müller');
 
-    await expect(infoButton).toBeVisible();
-    await infoButton.click();
-
-    const modalHeader = page.getByText('Kandidatenliste');
-    await expect(modalHeader).toBeVisible();
-
-    await expect(page.locator('.animate-spin')).not.toBeVisible();
-    const candidate = page.getByText('Max Müller');
-    await expect(candidate).toBeVisible();
-    await candidate.click();
-
-    await expect(page.getByText('Kandidatendetails')).toBeVisible();
-
-    await expect(page.getByText('Max Müller')).toBeVisible();
-
-    await expect(page.getByText('Info', { exact: true })).toBeVisible();
-
-    const backButton = page.getByRole('button', { name: 'Zurück zur Liste' });
-    await expect(backButton).toBeVisible();
-
-    await backButton.click();
-    await expect(modalHeader).toBeVisible();
+    // Zurück zur Liste navigieren
+    await candidateList.goBackToList();
   });
 });
