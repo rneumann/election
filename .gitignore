@@ -79,6 +79,7 @@ web_modules/
 *pem*
 *ou.ldif*
 *users.ldif*
+*certs
 # dotenv configuration files
 .*.env
 
