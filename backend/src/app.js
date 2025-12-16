@@ -16,6 +16,8 @@ import { candidateRouter } from './routes/candidate.route.js';
 import { importRouter } from './routes/upload.route.js';
 import { exportRoute } from './routes/export.route.js';
 import { verifyCsrfToken } from './security/csrf-logic.js';
+//NEU
+import { downloadRouter as templatesRouter } from './routes/templates-download.route.js';
 export const app = express();
 
 // NEU: Audit Imports
@@ -25,7 +27,6 @@ import { auditRouter } from './routes/audit.routes.js';
 /**
  * Setup Express middlewares and routes
  */
-
 /**
  * Helmet for setting various HTTP headers for app security
  */
@@ -242,6 +243,8 @@ app.use('/api/upload/', importRouter);
 app.use('/api/export/', exportRoute);
 // NEU: Audit API Route registrieren
 app.use('/api/audit', auditRouter);
+//NEU
+app.use('/api/templates-download', templatesRouter);
 
 /**
  * Error handling middleware
