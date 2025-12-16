@@ -462,3 +462,71 @@ candidateRouter.get('/information', ensureAuthenticated, async (req, res, next) 
     return res.status(500).json({ message: 'Database read operation failed.' });
   }
 });
+
+/**
+ * @openapi
+ * /api/candidates/information/public/{uid}:
+ *   get:
+ *     summary: Get public candidate information by UID
+ *     description: Fetches picture and info for a specific candidate.
+ *     tags: [Candidates]
+ *     parameters:
+ *       - in: path
+ *         name: uid
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Success
+ *       404:
+ *         description: Not found
+ */
+candidateRouter.get('/information/public/:uid', ensureAuthenticated, async (req, res, next) => {
+  try {
+    const { uid } = req.params;
+
+    const info = await getCandidateInformationByUid(uid);
+
+    if (!info) {
+      return res.json({ info: null, picture: null });
+    }
+
+    const picture = info.picture_data
+      ? `data:${info.picture_content_type};base64,${info.picture_data.toString('base64')}`
+      : null;
+
+    res.json({
+      info: info.info,
+      picture: picture,
+    });
+  } catch (error) {
+    logger.error(`Error fetching public info for ${req.params.uid}: ${error.message}`);
+    next(error);
+  }
+});
+
+// eslint-disable-next-line
+candidateRouter.get('/information/personal', ensureAuthenticated, async (req, res, next) => {
+  try {
+    if (!req.user.username) {
+      logger.warn(`Not authenticated user attempted to update candidate information.`);
+      return res
+        .status(403)
+        .json({ message: 'Forbidden: Cannot update information for another user.' });
+    }
+
+    const isCandidate = req.user.isCandidate;
+    if (!isCandidate) {
+      logger.warn(
+        `User ${req.user.username} attempted to update candidate information without being a candidate.`,
+      );
+      return res.status(403).json({ message: 'Forbidden: User is not a candidate.' });
+    }
+    const info = await getCandidateInformationByUid(req.user.username);
+    res.json(info);
+  } catch (error) {
+    logger.error(`Error fetching candidate info: ${error.message}`);
+    return res.status(500).json({ message: 'Database read operation failed.' });
+  }
+});

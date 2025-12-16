@@ -131,12 +131,33 @@ export const candidateApi = {
    * If the request is successful (Status 200), it returns the candidate information data.
    * If the request fails (non-200 status), it logs an error and returns undefined.
    *
+   * @param uid - Represents the UID of the candidate.
    * @async
    * @function getCandidateInfoByUid
    * @returns {Promise<Object|undefined>} A promise that resolves to the candidate information data or undefined on failure.
    */
-  getCandidateInfoByUid: async () => {
-    const response = await api.get('candidates/information');
+  getCandidateInfoByUid: async (uid) => {
+    const response = await api.get(`candidates/information/public/${uid}`);
+    if (response.status !== 200) {
+      hnadleHttpStatus(response);
+      return undefined;
+    }
+    return response.data;
+  },
+
+  /**
+   * Retrieves the candidate information entry for the currently logged-in user.
+   *
+   * Sends a GET request to the `/candidates/information/personal` endpoint.
+   * If the request is successful (Status 200), it returns the candidate information data.
+   * If the request fails (non-200 status), it logs an error and returns undefined.
+   *
+   * @async
+   * @function getCandidateInfoPersonal
+   * @returns {Promise<Object|undefined>} A promise that resolves to the candidate information data or undefined on failure.
+   */
+  getCandidateInfoPersonal: async () => {
+    const response = await api.get('candidates/information/personal');
     if (response.status !== 200) {
       hnadleHttpStatus(response);
       return undefined;
