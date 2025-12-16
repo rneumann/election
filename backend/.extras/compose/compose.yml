@@ -1,6 +1,7 @@
 include:
   - ./compose.base.yml
   #- ./frontend/compose.yml
+  #- ./admin-frontend/compose.yml
   #- ./backend/compose.yml
   - ./postgres/compose.yml
   - ./keycloak/compose.yml

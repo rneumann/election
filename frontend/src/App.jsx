@@ -5,11 +5,7 @@ import { AlertProvider } from './context/AlertContext.jsx';
 import Login from './pages/Login';
 import Home from './pages/Home';
 import AuthCallback from './pages/AuthCallback';
-import Admin from './pages/Admin';
 import api from './services/api.js';
-
-//NEU
-import AuditLogPage from './pages/AuditLogPage.jsx';
 import { CandidatePage } from './pages/CandidatePage.jsx';
 
 /**
@@ -76,13 +72,7 @@ const AppRoutes = () => {
     <Routes>
       <Route
         path="/login"
-        element={
-          isAuthenticated ? (
-            <Navigate to={user?.role === 'admin' ? '/admin' : '/home'} replace />
-          ) : (
-            <Login />
-          )
-        }
+        element={isAuthenticated ? <Navigate to="/home" replace /> : <Login />}
       />
       <Route path="/auth/callback" element={<AuthCallback />} />
       <Route
@@ -105,26 +95,7 @@ const AppRoutes = () => {
           )
         }
       />
-
-      <Route
-        path="/admin"
-        element={
-          <ProtectedRoute>
-            <Admin />
-          </ProtectedRoute>
-        }
-      />
       <Route path="*" element={<Navigate to="/login" replace />} />
-
-      {/* NEU: Audit Log Route */}
-      <Route
-        path="/admin/audit"
-        element={
-          <ProtectedRoute allowedRoles={['admin']}>
-            <AuditLogPage />
-          </ProtectedRoute>
-        }
-      />
     </Routes>
   );
 };

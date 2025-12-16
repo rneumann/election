@@ -1,0 +1,221 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Line Height Classes */
+.accessibility-line-height-1,
+.accessibility-line-height-1 * {
+  line-height: 1.5 !important;
+}
+
+.accessibility-line-height-1-3,
+.accessibility-line-height-1-3 * {
+  line-height: 1.95 !important;
+}
+
+.accessibility-line-height-1-6,
+.accessibility-line-height-1-6 * {
+  line-height: 2.4 !important;
+}
+
+@layer base {
+  /* CSS Custom Property for accessibility text scaling */
+  :root {
+    --text-scale: 1;
+  }
+
+  * {
+    /* Prevent text size adjustment on orientation change (iOS Safari) */
+    -webkit-text-size-adjust: 100%;
+    -moz-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  /* Base font size for all devices */
+  html {
+    font-size: 16px; /* Fixed base for all devices - Web standard */
+    scroll-behavior: smooth;
+    overflow-x: hidden;
+    transition:
+      background-color 0.2s ease-in-out,
+      color 0.2s ease-in-out;
+  }
+
+  body {
+    margin: 0;
+    font-family:
+      -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
+      "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
+      sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Custom Tooltip Styles */
+  .tooltip-wrapper {
+    position: relative;
+  }
+
+  .tooltip-wrapper[data-tooltip]:hover::before,
+  .tooltip-wrapper[data-tooltip]:focus::before {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%) translateY(-8px);
+    background-color: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    z-index: 1000;
+    pointer-events: none;
+    opacity: 1;
+    transition: opacity 0.2s ease-in-out;
+  }
+
+  .dark .tooltip-wrapper[data-tooltip]:hover::before,
+  .dark .tooltip-wrapper[data-tooltip]:focus::before {
+    background-color: rgba(255, 255, 255, 0.95);
+    color: #1f2937;
+  }
+
+  .tooltip-wrapper[data-tooltip]:hover::after,
+  .tooltip-wrapper[data-tooltip]:focus::after {
+    content: "";
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%) translateY(-2px);
+    border: 6px solid transparent;
+    border-top-color: rgba(0, 0, 0, 0.9);
+    z-index: 1000;
+    pointer-events: none;
+    opacity: 1;
+    transition: opacity 0.2s ease-in-out;
+  }
+
+  .dark .tooltip-wrapper[data-tooltip]:hover::after,
+  .dark .tooltip-wrapper[data-tooltip]:focus::after {
+    border-top-color: rgba(255, 255, 255, 0.95);
+  }
+
+  body {
+    overflow-x: hidden;
+    transition:
+      background-color 0.2s ease-in-out,
+      color 0.2s ease-in-out;
+  }
+
+  /* Better touch feedback for mobile devices */
+  button,
+  a,
+  [role="button"] {
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+  }
+
+  /* Prevent double-tap zoom on buttons and links */
+  button,
+  a {
+    touch-action: manipulation;
+  }
+
+  /* Accessibility text scale attributes */
+  /* Use CSS zoom to scale content without breaking layout */
+  [data-text-scale="1"] {
+    --text-scale: 1;
+  }
+
+  [data-text-scale="1.5"] main,
+  [data-text-scale="1.5"] .modal-content,
+  [data-text-scale="1.5"] .login-content {
+    zoom: 1.5;
+  }
+
+  [data-text-scale="2"] main,
+  [data-text-scale="2"] .modal-content,
+  [data-text-scale="2"] .login-content {
+    zoom: 2;
+  }
+}
+
+@layer utilities {
+  @keyframes slideDown {
+    0% {
+      opacity: 0;
+      transform: translate(-50%, -20px);
+    }
+    100% {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+  }
+
+  .animate-slideDown {
+    animation: slideDown 0.3s ease-out;
+  }
+
+  /* Accessibility menu styling */
+  .accessibility-menu {
+    font-size: 16px !important;
+    filter: none !important;
+    line-height: 1.5 !important;
+    overflow: visible !important;
+
+    position: fixed !important;
+    top: 0 !important;
+    left: calc(100vw - 320px) !important;
+    bottom: 0 !important;
+    width: 320px !important;
+    min-width: 320px !important;
+    max-width: 320px !important;
+    height: 100vh !important;
+    z-index: 50 !important;
+
+    transition: transform 0.3s ease-in-out !important;
+    transform: translateX(0) !important;
+  }
+
+  .accessibility-menu.translate-x-full {
+    transform: translateX(320px) !important;
+  }
+
+  .accessibility-menu.translate-x-0 {
+    transform: translateX(0) !important;
+  }
+
+  .accessibility-menu * {
+    filter: none !important;
+    line-height: 1.5 !important;
+    font-size: 16px !important;
+  }
+
+  /* Responsive button layout: Stack vertically at larger text sizes */
+  [data-text-scale="1.5"] .modal-button-container,
+  [data-text-scale="2"] .modal-button-container {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    width: 100% !important;
+  }
+
+  [data-text-scale="1.5"] .modal-button-container button,
+  [data-text-scale="2"] .modal-button-container button {
+    width: 100% !important;
+  }
+}
+
+/* Shimmer Animation für Progress Bar */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s infinite;
+}
