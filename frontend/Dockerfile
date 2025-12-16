@@ -1,4 +1,4 @@
-FROM node:24.11.0-alpine3.21 AS build
+FROM node:25.0.0-alpine3.22 AS build
 
 RUN addgroup -S app && adduser -S app -G app
 
@@ -20,7 +20,7 @@ ENV NODE_ENV=production
 RUN npm run build
 
 
-FROM nginx:1.28.0-alpine AS prod
+FROM nginx:1.29.3-alpine3.22 AS prod
 
 COPY --from=build /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/nginx.conf

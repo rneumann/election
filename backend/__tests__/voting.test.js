@@ -1,5 +1,4 @@
 process.env.BALLOT_SECRET = 'test_secret';
-
 import { describe, test, expect, vi, beforeEach, beforeAll } from 'vitest';
 
 vi.mock('../src/conf/logger/logger.js', () => ({
@@ -23,11 +22,13 @@ import {
   getVoterById,
   createBallot,
 } from '../src/service/voter.service.js';
+import { generateBallotHashes } from '../src/security/generate-ballot-hashes.js'; // mock muss vorher stehen
 
 import { logger } from '../src/conf/logger/logger.js';
 import { client } from '../src/database/db.js';
 import { generateBallotHashes } from '../src/security/generate-ballot-hashes.js';
 import crypto from 'crypto';
+import { readSecret } from '../src/security/secret-reader.js';
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -339,7 +340,7 @@ describe('Data service - createBallot', () => {
   });
 
   describe('generateBallotHashes', () => {
-    test('generates correct hash for valid ballot with previous hash', () => {
+    test('hashes ballot correctly', async () => {
       const mock = {
         electionId: 'e1',
         voteDecision: [
@@ -349,21 +350,33 @@ describe('Data service - createBallot', () => {
         valid: true,
         previousHash: 'prevhash123',
       };
-      const sortedVotes = '1:5|2:3';
-      const hash = generateBallotHashes({
+
+      // berechne sortedVotes genauso wie die Implementierung (defensiv)
+      const sortedVotes = mock.voteDecision
+        .slice() // kopie, damit original nicht verändert wird
+        .sort((a, b) => a.listnum - b.listnum)
+        .map((v) => `${v.listnum}:${v.votes}`)
+        .join('|');
+
+      // readSecret ist gemockt und liefert 'test_secret'
+      //const BALLOT_SECRET = await readSecret('BALLOT_SECRET');
+
+      // Funktion aufrufen (synchron oder async je nach implementierung)
+      const hash = await generateBallotHashes({
         electionId: mock.electionId,
         voteDecision: mock.voteDecision,
         valid: mock.valid,
         previousHash: mock.previousHash,
       });
-      expect(hash).toBe(
-        crypto
-          .createHash('sha256')
-          .update(
-            `${mock.previousHash}|${sortedVotes}|${mock.electionId}|${process.env.BALLOT_SECRET}`,
-          )
-          .digest('hex'),
-      );
+
+      const expected = crypto
+        .createHash('sha256')
+        .update(
+          `${mock.previousHash}|${sortedVotes}|${mock.electionId}|${process.env.BALLOT_SECRET}`,
+        )
+        .digest('hex');
+
+      expect(hash).toBe(expected);
     });
   });
 });
