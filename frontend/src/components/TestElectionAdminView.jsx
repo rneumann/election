@@ -55,7 +55,7 @@ export const TestElectionAdminView = () => {
     <>
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
         <div className="border-b border-gray-200 px-6 py-4">
-          <h2 className="text-xl font-bold text-gray-900">Test Wahl Starten/Stoppen</h2>
+          <h2 className="text-xl font-bold text-gray-900">Testwahl Starten/Stoppen</h2>
           <ul className="list-disc list-inside pl-5">
             <li>Hier können Sie die Testwahl starten und stoppen.</li>
             <li>Zudem können Sie Daten einer Testwahl löschen.</li>
@@ -136,7 +136,7 @@ export const TestElectionAdminView = () => {
                       className="group inline-flex items-center"
                       onClick={() => handleToggle(election.id)}
                     >
-                      Wahl {election.test_election_active ? 'stoppen' : 'starten'}
+                      Testwahl {election.test_election_active ? 'stoppen' : 'starten'}
                       {!election.test_election_active ? (
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
@@ -184,8 +184,7 @@ export const TestElectionAdminView = () => {
             </ul>
           ) : (
             <div className="text-center py-8">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4" />
-              <p className="text-gray-600 mb-6">Keine Zukunftswahlen gefunden</p>
+              <p className="text-gray-600 mb-6">Keine möglichen Testwahlen vorhanden!</p>
             </div>
           )}
         </div>

@@ -79,7 +79,7 @@ const deterministicStringify = (obj) => {
 
 /**
  * Schreibt einen Audit-Log-Eintrag in die Datenbank.
- * @param {object} event - Das Event-Objekt
+ * @param event object: { actorId, ip, sessionId, actorRole, actionType, level, details } - Das Event-Objekt
  * @returns {Promise<void>}
  */
 export const writeAuditLog = async (event) => {

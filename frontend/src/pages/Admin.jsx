@@ -1147,7 +1147,7 @@ const AdminUpload = () => {
                     className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
                   >
                     <div className="flex items-center justify-between">
-                      <span>Test Wahl</span>
+                      <span>Testwahl</span>
                       <span className="text-xs opacity-60">1.2</span>
                     </div>
                   </button>

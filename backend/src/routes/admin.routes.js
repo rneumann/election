@@ -1,7 +1,7 @@
 import express from 'express';
 import { ensureAuthenticated, ensureHasRole } from '../auth/auth.js';
 import { logger } from '../conf/logger/logger.js';
-import { getElectionById, getElections } from '../service/voter.service.js';
+import { getElectionById } from '../service/voter.service.js';
 import {
   controlTestElection,
   getElectionsForAdmin,

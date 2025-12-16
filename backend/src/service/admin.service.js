@@ -1,3 +1,4 @@
+import { writeAuditLog } from '../audit/auditLogger.js';
 import { logger } from '../conf/logger/logger.js';
 import { client } from '../database/db.js';
 
@@ -47,29 +48,43 @@ export const resetElectionData = async (electionId) => {
   try {
     await client.query('BEGIN');
 
-    const checkResult = await client.query(
-      'SELECT test_election_active FROM elections WHERE id = $1',
-      [electionId],
-    );
+    const checkResult = await client.query('SELECT start FROM elections WHERE id = $1', [
+      electionId,
+    ]);
 
     if (checkResult.rows.length === 0) {
       throw new Error(`Election with ID ${electionId} not found.`);
     }
-
-    if (!checkResult.rows[0].test_election_active) {
-      throw new Error('Election is not marked as a test election. Aborting data deletion.');
+    if (checkResult.rows[0].start <= new Date()) {
+      throw new Error(`Election with ID ${electionId} has already started.`);
     }
     await client.query('DELETE FROM election_results WHERE election_id = $1', [electionId]);
     await client.query('UPDATE votingnotes SET voted = false WHERE electionId = $1', [electionId]);
     await client.query('DELETE FROM ballotvotes WHERE election = $1', [electionId]);
     await client.query('DELETE FROM ballots WHERE election = $1', [electionId]);
 
+    await client.query('UPDATE elections SET test_election_active = false WHERE id = $1', [
+      electionId,
+    ]);
+
     await client.query('COMMIT');
+    writeAuditLog({
+      actorRole: 'ADMIN',
+      actionType: 'RESET_ELECTION_DATA',
+      level: 'INFO',
+      details: `Reset all voting data for test election ID: ${electionId}`,
+    });
     logger.info(`Successfully reset all voting data for election ID: ${electionId}`);
   } catch (error) {
     await client.query('ROLLBACK');
     logger.debug(`Failed to reset election data for ${electionId}: ${error.message}`);
     logger.error(`Failed to reset election data for ${electionId}`);
+    writeAuditLog({
+      actorRole: 'ADMIN',
+      actionType: 'RESET_ELECTION_DATA',
+      level: 'ERROR',
+      details: `Failed to reset all voting data for test election ID: ${electionId}`,
+    });
     throw new Error(`Failed to reset election data for ${electionId}`);
   }
 };
@@ -84,14 +99,38 @@ export const resetElectionData = async (electionId) => {
  */
 export const controlTestElection = async (electionId) => {
   try {
+    const checkResult = await client.query(
+      'SELECT start, test_election_active FROM elections WHERE id = $1',
+      [electionId],
+    );
+
+    if (checkResult.rows.length === 0) {
+      throw new Error(`Election with ID ${electionId} not found.`);
+    }
+
+    if (checkResult.rows[0].start <= new Date()) {
+      throw new Error(`Election with ID ${electionId} has already started.`);
+    }
     logger.debug(`Toggling test election status for election ID: ${electionId}`);
     await client.query(
       'UPDATE elections SET test_election_active = NOT test_election_active WHERE id = $1',
       [electionId],
     );
+    writeAuditLog({
+      actorRole: 'ADMIN',
+      actionType: 'TOGGLE_TEST_ELECTION',
+      level: 'INFO',
+      details: `Toggled test election status for election ID: ${electionId} from ${checkResult.rows[0].test_election_active} to ${!checkResult.rows[0].test_election_active}`,
+    });
   } catch (error) {
     logger.debug(`Failed to reset election data for ${electionId}: ${error.message}`);
     logger.error(`Failed to reset election data for ${electionId}`);
+    writeAuditLog({
+      actorRole: 'ADMIN',
+      actionType: 'TOGGLE_TEST_ELECTION',
+      level: 'ERROR',
+      details: `Failed to toggle test election status for election ID: ${electionId}`,
+    });
     throw new Error(`Failed to reset election data for ${electionId}`);
   }
 };
