@@ -733,6 +733,7 @@ const AdminUpload = () => {
   const [validationErrors, setValidationErrors] = useState([]);
   const [validationStats, setValidationStats] = useState(null);
   const [isValidating, setIsValidating] = useState(false);
+  const [templateType, setTemplateType] = useState('generic'); // 'elections' oder 'voters'
 
   // const [clearingDatabase, setClearingDatabase] = useState(false);
 
@@ -789,10 +790,15 @@ const AdminUpload = () => {
 
   const handleDownloadTemplate = async () => {
     try {
-      await templateApi.downloadElectionTemplate();
-      // Optional: Success Alert anzeigen
+      if (templateType === 'voters') {
+        await templateApi.downloadVoterTemplate();
+      } else {
+        // Alles andere ist ein Wahl-Preset (z.B. 'stupa_verhaeltnis')
+        await templateApi.downloadElectionTemplate(templateType);
+      }
+      setSuccess('Vorlage erfolgreich heruntergeladen');
     } catch (err) {
-      alert('Fehler beim Download der Vorlage');
+      setError('Fehler beim Download der Vorlage');
     }
   };
 
@@ -2259,63 +2265,127 @@ const AdminUpload = () => {
               </div>
             )}
 
-            {/* Datenbank leeren Section */}
-            {activeSection === 'clear' && (
+            {/* Excel-Vorlage herunterladen Section */}
+            {activeSection === 'template' && (
               <div className="bg-white rounded-lg shadow-sm border border-gray-200">
                 <div className="border-b border-gray-200 px-6 py-4">
-                  <h2 className="text-xl font-bold text-gray-900">Datenbank leeren</h2>
+                  <h2 className="text-xl font-bold text-gray-900">Excel-Vorlage herunterladen</h2>
                   <p className="text-sm text-gray-600 mt-1">
-                    Alle Daten aus der Datenbank entfernen, einschließlich Wahleinstellungen,
-                    Stimmzettel, Wähler, Kandidaten usw.
+                    Wählen Sie hier die Art der Vorlage aus, die Sie benötigen.
                   </p>
                 </div>
+
                 <div className="p-6">
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-                    <div className="flex gap-3">
+                  <div className="bg-gray-50 border border-gray-300 rounded-lg p-8 text-center max-w-2xl mx-auto">
+                    {/* Icon */}
+                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white border border-gray-200 mb-6 shadow-sm">
                       <svg
-                        className="w-5 h-5 text-yellow-600 flex-shrink-0"
+                        className="w-8 h-8 text-brand-primary"
                         fill="none"
-                        stroke="currentColor"
                         viewBox="0 0 24 24"
+                        stroke="currentColor"
                       >
                         <path
                           strokeLinecap="round"
                           strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                          strokeWidth={1.5}
+                          d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                         />
                       </svg>
-                      <div className="text-sm text-yellow-900">
-                        <p className="font-semibold mb-1">Warnung:</p>
-                        <p className="text-yellow-800">
-                          Sie werden aufgefordert, diesen Schritt zu bestätigen, um die Daten nicht
-                          versehentlich zu löschen.
-                        </p>
-                      </div>
                     </div>
-                  </div>
-                  <div className="text-center py-8">
-                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
-                      <svg
-                        className="w-8 h-8 text-gray-400"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
+
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                      Welche Vorlage benötigen Sie?
+                    </h3>
+
+                    {/* Auswahl-Dropdown */}
+                    <div className="mb-6 max-w-md mx-auto">
+                      <label className="block text-sm font-medium text-gray-700 mb-2 text-left">
+                        Vorlage auswählen:
+                      </label>
+                      <select
+                        value={templateType}
+                        onChange={(e) => setTemplateType(e.target.value)}
+                        className="block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-primary focus:ring-brand-primary sm:text-sm p-2.5 border bg-white"
                       >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                        />
-                      </svg>
+                        <optgroup label="Allgemein">
+                          <option value="generic">📝 Leere Wahl-Vorlage (Standard)</option>
+                          <option value="voters">👥 Wählerverzeichnis (Import)</option>
+                        </optgroup>
+
+                        <optgroup label="Studierendenparlament (StuPa)">
+                          <option value="stupa_verhaeltnis">
+                            🗳️ StuPa - Verhältniswahl (Sainte-Laguë)
+                          </option>
+                          <option value="stupa_mehrheit">🗳️ StuPa - Mehrheitswahl</option>
+                        </optgroup>
+
+                        <optgroup label="Senat">
+                          <option value="senat_verhaeltnis">
+                            🏛️ Senat - Verhältniswahl (Hare-Niemeyer)
+                          </option>
+                          <option value="senat_mehrheit">🏛️ Senat - Mehrheitswahl</option>
+                        </optgroup>
+
+                        <optgroup label="Fakultätsrat">
+                          <option value="fakrat_verhaeltnis">
+                            🎓 Fakultätsrat - Verhältniswahl
+                          </option>
+                          <option value="fakrat_mehrheit">🎓 Fakultätsrat - Mehrheitswahl</option>
+                        </optgroup>
+
+                        <optgroup label="Sonstige">
+                          <option value="fachschaft">
+                            📢 Fachschaftsvorstand (Absolute Mehrheit)
+                          </option>
+                          <option value="urabstimmung">🙋 Urabstimmung (Ja/Nein)</option>
+                        </optgroup>
+                      </select>
+
+                      {/* Hilfetext dynamisch anzeigen */}
+                      <p className="text-xs text-gray-500 mt-2 text-left bg-blue-50 p-2 rounded border border-blue-100">
+                        {templateType === 'voters' &&
+                          'Liste für Matrikelnummern/E-Mails aller Wahlberechtigten.'}
+                        {templateType === 'generic' &&
+                          'Leeres Formular für benutzerdefinierte Wahlen.'}
+                        {templateType === 'stupa_verhaeltnis' &&
+                          'Vorkonfiguriert: Verhältniswahl, Sainte-Laguë, Listen zulässig.'}
+                        {templateType === 'stupa_mehrheit' &&
+                          'Vorkonfiguriert: Mehrheitswahl (Höchststimmen), keine Listen.'}
+                        {templateType === 'senat_verhaeltnis' &&
+                          'Vorkonfiguriert: Verhältniswahl, Hare-Niemeyer, 2 Stimmen/Kandidat (Kumulieren).'}
+                        {templateType === 'fachschaft' &&
+                          'Vorkonfiguriert: Absolute Mehrheit, 1 Stimme/Person.'}
+                        {templateType === 'urabstimmung' &&
+                          'Vorkonfiguriert: Abstimmung über Sachfragen (Ja/Nein/Enthaltung).'}
+                      </p>
                     </div>
-                    <p className="text-gray-600 mb-6">
-                      Diese Funktion wird demnächst verfügbar sein.
-                    </p>
-                    <ResponsiveButton variant="outline" size="medium">
-                      Bald verfügbar
-                    </ResponsiveButton>
+
+                    {/* Download Button */}
+                    <div className="flex justify-center">
+                      <ResponsiveButton
+                        onClick={handleDownloadTemplate}
+                        variant="primary"
+                        size="large"
+                      >
+                        <div className="flex items-center gap-2">
+                          <svg
+                            className="w-5 h-5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                            />
+                          </svg>
+                          <span>Ausgewählte Vorlage laden</span>
+                        </div>
+                      </ResponsiveButton>
+                    </div>
                   </div>
                 </div>
               </div>
