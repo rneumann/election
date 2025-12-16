@@ -17,6 +17,7 @@ import { MAX_FILE_SIZE } from '../utils/validators/constants.js';
 import api, { exportElectionResultExcel } from '../services/api.js';
 import { logger } from '../conf/logger/logger.js';
 import { TestElectionAdminView } from '../components/TestElectionAdminView.jsx';
+import { TestElectionCountingAdminView } from '../components/TestElectionCountingAdminView.jsx';
 
 /**
  * CountingSection Component - Handles election vote counting
@@ -39,7 +40,7 @@ import { TestElectionAdminView } from '../components/TestElectionAdminView.jsx';
  * @param {Function} props.setCountingError - Set error message
  * @returns {JSX.Element} Counting interface
  */
-const CountingSection = ({
+export const CountingSection = ({
   theme,
   elections,
   setElections,
@@ -1136,6 +1137,12 @@ const AdminUpload = () => {
                       <span className="text-xs opacity-60">1</span>
                     </div>
                   </button>
+                </div>
+
+                <div className="mb-6">
+                  <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                    Testwahlen
+                  </div>
 
                   <button
                     onClick={() => {
@@ -1147,8 +1154,23 @@ const AdminUpload = () => {
                     className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
                   >
                     <div className="flex items-center justify-between">
-                      <span>Testwahl</span>
-                      <span className="text-xs opacity-60">1.2</span>
+                      <span>steuern</span>
+                      <span className="text-xs opacity-60">2.1</span>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setActiveSection('test-election-counting');
+                      setMobileMenuOpen(false);
+                      handleReset();
+                    }}
+                    style={getNavButtonStyle('test-election-counting')}
+                    className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span>auszählen</span>
+                      <span className="text-xs opacity-60">2.3</span>
                     </div>
                   </button>
                 </div>
@@ -2346,6 +2368,21 @@ const AdminUpload = () => {
             )}
 
             {activeSection === 'test-election' && <TestElectionAdminView />}
+            {activeSection === 'test-election-counting' && (
+              <TestElectionCountingAdminView
+                theme={theme}
+                elections={elections}
+                setElections={setElections}
+                loadingElections={loadingElections}
+                setLoadingElections={setLoadingElections}
+                countingElectionId={countingElectionId}
+                setCountingElectionId={setCountingElectionId}
+                countingResult={countingResult}
+                setCountingResult={setCountingResult}
+                countingError={countingError}
+                setCountingError={setCountingError}
+              />
+            )}
 
             {/* Einstellungen laden Section */}
             {activeSection === 'load' && (

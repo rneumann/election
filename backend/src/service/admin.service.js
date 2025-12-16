@@ -69,22 +69,26 @@ export const resetElectionData = async (electionId) => {
 
     await client.query('COMMIT');
     writeAuditLog({
-      actorRole: 'ADMIN',
       actionType: 'RESET_ELECTION_DATA',
       level: 'INFO',
-      details: `Reset all voting data for test election ID: ${electionId}`,
-    });
+      actorRole: 'ADMIN',
+      details: {
+        info: `Reset all voting data for test election ID: ${electionId}`,
+      },
+    }).catch((e) => logger.error(e));
     logger.info(`Successfully reset all voting data for election ID: ${electionId}`);
   } catch (error) {
     await client.query('ROLLBACK');
     logger.debug(`Failed to reset election data for ${electionId}: ${error.message}`);
     logger.error(`Failed to reset election data for ${electionId}`);
     writeAuditLog({
-      actorRole: 'ADMIN',
       actionType: 'RESET_ELECTION_DATA',
       level: 'ERROR',
-      details: `Failed to reset all voting data for test election ID: ${electionId}`,
-    });
+      actorRole: 'ADMIN',
+      details: {
+        info: `Failed to reset election data for ${electionId}: ${error.message}`,
+      },
+    }).catch((e) => logger.error(e));
     throw new Error(`Failed to reset election data for ${electionId}`);
   }
 };
@@ -117,19 +121,25 @@ export const controlTestElection = async (electionId) => {
       [electionId],
     );
     writeAuditLog({
-      actorRole: 'ADMIN',
       actionType: 'TOGGLE_TEST_ELECTION',
       level: 'INFO',
-      details: `Toggled test election status for election ID: ${electionId} from ${checkResult.rows[0].test_election_active} to ${!checkResult.rows[0].test_election_active}`,
-    });
+      actorRole: 'ADMIN',
+      details: {
+        info: `Toggled test election status for election ID: ${electionId} from ${checkResult.rows[0].test_election_active} to ${!checkResult.rows[0].test_election_active}`,
+      },
+    }).catch((e) => logger.error(e));
   } catch (error) {
     logger.debug(`Failed to reset election data for ${electionId}: ${error.message}`);
     logger.error(`Failed to reset election data for ${electionId}`);
     writeAuditLog({
-      actorRole: 'ADMIN',
       actionType: 'TOGGLE_TEST_ELECTION',
       level: 'ERROR',
-      details: `Failed to toggle test election status for election ID: ${electionId}`,
+      actorRole: 'ADMIN',
+      details: {
+        info: `Failed to reset election data for ${electionId}: ${error.message}`,
+      },
+    }).catch((e) => {
+      logger.error(e);
     });
     throw new Error(`Failed to reset election data for ${electionId}`);
   }

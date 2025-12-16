@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import log from 'loglevel';
 import { adminService } from '../services/adminApi';
 import { useAlert } from '../context/AlertContext';
+import { logger } from '../conf/logger/logger';
 import ResponsiveButton from './ResponsiveButton';
 
 export const TestElectionAdminView = () => {
@@ -22,9 +22,9 @@ export const TestElectionAdminView = () => {
       await adminService.handleToggleElection(electionId);
       const elections = await adminService.getElectionsForAdmin();
       setFutureElections(elections);
-      log.debug('Updated futureElections:', futureElections);
+      logger.debug('Updated futureElections:', futureElections);
     } catch (error) {
-      log.error('Error toggling election:', error);
+      logger.error('Error toggling election:', error);
     }
   };
 
@@ -34,8 +34,8 @@ export const TestElectionAdminView = () => {
       setFutureElections(await adminService.getElectionsForAdmin());
       showAlert('success', 'Testdaten wurden geloescht');
     } catch (error) {
-      log.error('Error deleting test data');
-      log.debug(error);
+      logger.error('Error deleting test data');
+      logger.debug(error);
       showAlert('error', 'Testdaten konnten nicht geloescht werden');
     }
   };
@@ -44,7 +44,7 @@ export const TestElectionAdminView = () => {
     const fetchFutureElections = async () => {
       const elections = await adminService.getElectionsForAdmin();
       if (elections.length === 0) {
-        log.debug('No future elections found');
+        logger.debug('No future elections found');
       }
       setFutureElections(elections);
     };
@@ -171,7 +171,6 @@ export const TestElectionAdminView = () => {
                     </ResponsiveButton>
 
                     <ResponsiveButton
-                      disabled={!election.test_election_active}
                       size="small"
                       variant="primary"
                       onClick={async () => await handleDeleteTestData(election.id)}
