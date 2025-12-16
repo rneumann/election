@@ -89,9 +89,53 @@ const ELECTION_PRESETS = {
     votes: 1,
     kum: 0,
   },
+
+  // NEU: 7. Wahl der Prorektoren
+  prorektor: {
+    info: 'Wahl der Prorektoren',
+    type: 'Urabstimmung', // Technisch im System als Referendum umgesetzt (Ja/Nein)
+    method: 'Ja/Nein/Enthaltung',
+    listen: 0,
+    seats: 1, // Pro Wahlgang wird 1 Person gewählt/bestätigt
+    votes: 1,
+    kum: 0,
+  },
+
+  // NEU: 8. & 10. Wahl der Dekane / Prodekane / Studiendekane (1. Wahlgang)
+  dekan_wahlgang1: {
+    info: 'Wahl Dekan/Prodekan (1. Wahlgang)',
+    type: 'Mehrheitswahl',
+    method: 'Absolute Mehrheit', // Wichtig: 50% Hürde
+    listen: 0,
+    seats: 1,
+    votes: 1,
+    kum: 0,
+  },
+
+  // NEU: Wahl der Dekane (2. Wahlgang - falls nötig)
+  dekan_wahlgang2: {
+    info: 'Wahl Dekan/Prodekan (2. Wahlgang / Stichwahl)',
+    type: 'Mehrheitswahl',
+    method: 'Einfache Mehrheit', // Im 2. Gang reicht die einfache Mehrheit
+    listen: 0,
+    seats: 1,
+    votes: 1,
+    kum: 0,
+  },
+
+  // NEU: 11. Professorenwahl zum Senat
+  senat_professoren: {
+    info: 'Wahl der Professoren in den Senat',
+    type: 'Mehrheitswahl', // Immer Mehrheitswahl laut Dok
+    method: 'Einfache Mehrheit', // Höchststimmenprinzip
+    listen: 0, // Keine Listen
+    seats: 2, // Laut Dok: "Anzahl der Sitze: 2"
+    votes: 2, // "Stimmen pro Wähler: so viele wie Sitze"
+    kum: 2, // "Maximal pro Kandidat: 2 Stimmen"
+  },
 };
 
-/**
+/*
  * Erstellt das Template, optional mit vorausgefüllten Daten eines Presets.
  * @param {string} presetKey - Der Schlüssel des gewählten Presets (z.B. 'stupa_verhaeltnis')
  */
@@ -228,7 +272,7 @@ export const generateElectionTemplate = async (presetKey = 'generic') => {
   return workbook;
 };
 
-/**
+/*
  * Erstellt das Template für das Wählerverzeichnis.
  */
 export const generateVoterTemplate = async () => {

@@ -2322,9 +2322,15 @@ const AdminUpload = () => {
 
                         <optgroup label="Senat">
                           <option value="senat_verhaeltnis">
-                            🏛️ Senat - Verhältniswahl (Hare-Niemeyer)
+                            🏛️ Senat - Verhältniswahl (Listen)
                           </option>
-                          <option value="senat_mehrheit">🏛️ Senat - Mehrheitswahl</option>
+                          <option value="senat_mehrheit">
+                            🏛️ Senat - Mehrheitswahl (Allgemein)
+                          </option>
+                          <option value="senat_professoren">
+                            🎓 Senat - Professorenwahl (2 Sitze, Kumulieren)
+                          </option>{' '}
+                          {/* NEU */}
                         </optgroup>
 
                         <optgroup label="Fakultätsrat">
@@ -2334,28 +2340,65 @@ const AdminUpload = () => {
                           <option value="fakrat_mehrheit">🎓 Fakultätsrat - Mehrheitswahl</option>
                         </optgroup>
 
+                        <optgroup label="Einzelwahlen & Ämter">
+                          <option value="fachschaft">📢 Fachschaftsvorstand</option>
+                          <option value="prorektor">
+                            ⚖️ Prorektoren (Ja/Nein Bestätigung)
+                          </option>{' '}
+                          {/* NEU */}
+                          <option value="dekan_wahlgang1">
+                            👤 Dekan/Prodekan - 1. Wahlgang (Absolute Mehrheit)
+                          </option>{' '}
+                          {/* NEU */}
+                          <option value="dekan_wahlgang2">
+                            👤 Dekan/Prodekan - 2. Wahlgang (Einfache Mehrheit)
+                          </option>{' '}
+                          {/* NEU */}
+                        </optgroup>
+
                         <optgroup label="Sonstige">
-                          <option value="fachschaft">
-                            📢 Fachschaftsvorstand (Absolute Mehrheit)
-                          </option>
-                          <option value="urabstimmung">🙋 Urabstimmung (Ja/Nein)</option>
+                          <option value="urabstimmung">🙋 Urabstimmung (Sachfragen)</option>
                         </optgroup>
                       </select>
 
                       {/* Hilfetext dynamisch anzeigen */}
                       <p className="text-xs text-gray-500 mt-2 text-left bg-blue-50 p-2 rounded border border-blue-100">
+                        {/* Allgemein */}
                         {templateType === 'voters' &&
                           'Liste für Matrikelnummern/E-Mails aller Wahlberechtigten.'}
                         {templateType === 'generic' &&
                           'Leeres Formular für benutzerdefinierte Wahlen.'}
+
+                        {/* StuPa */}
                         {templateType === 'stupa_verhaeltnis' &&
                           'Vorkonfiguriert: Verhältniswahl, Sainte-Laguë, Listen zulässig.'}
                         {templateType === 'stupa_mehrheit' &&
                           'Vorkonfiguriert: Mehrheitswahl (Höchststimmen), keine Listen.'}
+
+                        {/* Senat */}
                         {templateType === 'senat_verhaeltnis' &&
-                          'Vorkonfiguriert: Verhältniswahl, Hare-Niemeyer, 2 Stimmen/Kandidat (Kumulieren).'}
+                          'Vorkonfiguriert: Verhältniswahl, Hare-Niemeyer, 2 Stimmen/Kandidat.'}
+                        {templateType === 'senat_mehrheit' &&
+                          'Vorkonfiguriert: Mehrheitswahl, 2 Stimmen/Kandidat.'}
+                        {templateType === 'senat_professoren' &&
+                          'Spezialfall Professoren: Mehrheitswahl, 2 Sitze, Panaschieren/Kumulieren erlaubt.'}
+
+                        {/* Fakultätsrat */}
+                        {templateType === 'fakrat_verhaeltnis' &&
+                          'Vorkonfiguriert: Verhältniswahl (Fakultätsrat).'}
+                        {templateType === 'fakrat_mehrheit' &&
+                          'Vorkonfiguriert: Mehrheitswahl (Fakultätsrat).'}
+
+                        {/* Einzelwahlen & Ämter */}
                         {templateType === 'fachschaft' &&
                           'Vorkonfiguriert: Absolute Mehrheit, 1 Stimme/Person.'}
+                        {templateType === 'prorektor' && 'Bestätigungswahl (Ja/Nein/Enthaltung).'}
+                        {templateType === 'dekan_wahlgang1' &&
+                          'Erfordert Absolute Mehrheit (>50%) der Stimmen.'}
+                        {templateType === 'dekan_wahlgang2' &&
+                          'Stichwahl: Einfache Mehrheit genügt.'}
+
+                        {/* Sonstige */}
                         {templateType === 'urabstimmung' &&
                           'Vorkonfiguriert: Abstimmung über Sachfragen (Ja/Nein/Enthaltung).'}
                       </p>
