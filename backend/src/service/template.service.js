@@ -8,6 +8,7 @@ const HKA_GREY = 'FFEEEEEE';
 
 // --- HKA WAHL-VOREINSTELLUNGEN (PRESETS) ---
 // Basierend auf "Wahlarten_Ueberblick_2.docx"
+// WICHTIG: null bedeutet "Kein Wert vorgegeben" -> Admin muss es ausfüllen!
 const ELECTION_PRESETS = {
   // Standard (Leer)
   generic: {
@@ -15,39 +16,39 @@ const ELECTION_PRESETS = {
     type: '',
     method: '',
     listen: 1,
-    seats: 7,
-    votes: 7,
-    kum: 3,
+    seats: null,
+    votes: null,
+    kum: null,
   },
   // 1.1 Studierendenparlament (Verhältniswahl) [cite: 105]
   stupa_verhaeltnis: {
     info: 'Studierendenparlament (Verhältniswahl)',
     type: 'Verhältniswahl',
     method: 'Sainte-Laguë', // [cite: 106]
-    listen: 1, // Listenwahl
-    seats: 25, // Beispielwert, Admin muss prüfen
-    votes: 25,
-    kum: 0, // Keine Kumulierung bei StuPa Verhältniswahl laut Dok
+    listen: 1, // Ja, Listenwahl
+    seats: null, // Variabel ("Mindestens 3" laut Dok, kein fester Wert) [cite: 105]
+    votes: null, // Hängt von Sitzanzahl ab
+    kum: 0, // "keine Kumulierung" [cite: 106]
   },
   // 1.2 Studierendenparlament (Mehrheitswahl) [cite: 108]
   stupa_mehrheit: {
     info: 'Studierendenparlament (Mehrheitswahl)',
     type: 'Mehrheitswahl',
-    method: 'Einfache Mehrheit', // Höchststimmenprinzip [cite: 109]
-    listen: 0, // Keine Listenbindung
-    seats: 25,
-    votes: 25,
-    kum: 1,
+    method: 'Einfache Mehrheit', // "Höchststimmenprinzip" [cite: 109]
+    listen: 0, // "Keine Listenbindung" [cite: 109]
+    seats: null, // Variabel
+    votes: null, // "so viele Stimmen wie Sitze" [cite: 109] -> Muss Admin eintragen
+    kum: null, // Nicht explizit definiert (Standard bei Höchststimmen ist oft 1, aber besser leer lassen)
   },
   // 2. Fachschaftsvorstand [cite: 111]
   fachschaft: {
     info: 'Wahl des Fachschaftsvorstands',
-    type: 'Mehrheitswahl',
-    method: 'Absolute Mehrheit', // [cite: 112]
+    type: 'Mehrheitswahl', // "Persönlichkeitswahl" [cite: 111]
+    method: 'Absolute Mehrheit', // 1. & 2. Wahlgang [cite: 112]
     listen: 0,
-    seats: 1,
-    votes: 1, // Stimmen pro Person: 1
-    kum: 0,
+    seats: null, // Nicht definiert
+    votes: 1, // "Stimmen pro Person: 1" [cite: 111]
+    kum: 0, // Impliziert durch 1 Stimme
   },
   // 4. Senat (Verhältniswahl) [cite: 116]
   senat_verhaeltnis: {
@@ -55,89 +56,99 @@ const ELECTION_PRESETS = {
     type: 'Verhältniswahl',
     method: 'Hare-Niemeyer', // [cite: 117]
     listen: 1,
-    seats: 3,
-    votes: 3,
+    seats: null, // Hängt von der Gruppe ab
+    votes: null, // "so viele Stimmen wie Sitze" [cite: 117]
     kum: 2, // "Maximal 2 Stimmen pro Bewerber" [cite: 117]
   },
   // 5.2 Senat (Mehrheitswahl) [cite: 124]
   senat_mehrheit: {
     info: 'Senat (Mehrheitswahl)',
-    type: 'Mehrheitswahl',
-    method: 'Einfache Mehrheit', // Höchststimmenprinzip
+    type: 'Mehrheitswahl', // "immer Mehrheitswahl" bei Hochschullehrern [cite: 124]
+    method: 'Einfache Mehrheit', // "Höchststimmenprinzip"
     listen: 0,
-    seats: 3,
-    votes: 3,
-    kum: 2,
+    seats: null,
+    votes: null,
+    kum: 2, // "Maximal 2 Stimmen pro Bewerber" [cite: 124]
   },
   // 6.1 Fakultätsrat (Verhältniswahl) [cite: 131]
   fakrat_verhaeltnis: {
     info: 'Fakultätsrat (Verhältniswahl)',
     type: 'Verhältniswahl',
     method: 'Hare-Niemeyer', // [cite: 132]
-    listen: 1,
-    seats: 7,
-    votes: 7,
-    kum: 2, // Analog Senat meistens
+    listen: 1, // Ja, Listenwahl
+    seats: null,
+    votes: null,
+    kum: null, // Im Dokument für 6.1 nicht explizit definiert -> Leer lassen!
+  },
+  // 6.2 Fakultätsrat (Mehrheitswahl) - NEU ergänzt für Vollständigkeit [cite: 133]
+  fakrat_mehrheit: {
+    info: 'Fakultätsrat (Mehrheitswahl)',
+    type: 'Mehrheitswahl',
+    method: 'Einfache Mehrheit', // "Höchststimmenprinzip" [cite: 133]
+    listen: 0,
+    seats: null,
+    votes: null,
+    kum: null,
   },
   // 3. Urabstimmung [cite: 113]
   urabstimmung: {
     info: 'Urabstimmung',
     type: 'Urabstimmung',
-    method: 'Ja/Nein/Enthaltung',
+    method: 'Ja/Nein/Enthaltung', // [cite: 113]
+    listen: 0,
+    seats: 1, // Sachfrage -> 1 Entscheidung
+    votes: 1,
+    kum: 0,
+  },
+
+  // 7. Wahl der Prorektoren [cite: 134]
+  prorektor: {
+    info: 'Wahl der Prorektoren',
+    type: 'Urabstimmung',
+    method: 'Ja/Nein/Enthaltung', // [cite: 134]
     listen: 0,
     seats: 1,
     votes: 1,
     kum: 0,
   },
 
-  // NEU: 7. Wahl der Prorektoren
-  prorektor: {
-    info: 'Wahl der Prorektoren',
-    type: 'Urabstimmung', // Technisch im System als Referendum umgesetzt (Ja/Nein)
-    method: 'Ja/Nein/Enthaltung',
-    listen: 0,
-    seats: 1, // Pro Wahlgang wird 1 Person gewählt/bestätigt
-    votes: 1,
-    kum: 0,
-  },
-
-  // NEU: 8. & 10. Wahl der Dekane / Prodekane / Studiendekane (1. Wahlgang)
+  // 8. & 10. Wahl der Dekane / Prodekane (1. Wahlgang) [cite: 135]
   dekan_wahlgang1: {
     info: 'Wahl Dekan/Prodekan (1. Wahlgang)',
     type: 'Mehrheitswahl',
-    method: 'Absolute Mehrheit', // Wichtig: 50% Hürde
+    method: 'Absolute Mehrheit', // [cite: 135]
     listen: 0,
     seats: 1,
     votes: 1,
     kum: 0,
   },
 
-  // NEU: Wahl der Dekane (2. Wahlgang - falls nötig)
+  // Wahl der Dekane (2. Wahlgang) [cite: 135]
   dekan_wahlgang2: {
-    info: 'Wahl Dekan/Prodekan (2. Wahlgang / Stichwahl)',
+    info: 'Wahl Dekan/Prodekan (2. Wahlgang)',
     type: 'Mehrheitswahl',
-    method: 'Einfache Mehrheit', // Im 2. Gang reicht die einfache Mehrheit
+    method: 'Einfache Mehrheit', // [cite: 135]
     listen: 0,
     seats: 1,
     votes: 1,
     kum: 0,
   },
 
-  // NEU: 11. Professorenwahl zum Senat
+  // 11. Professorenwahl zum Senat [cite: 136]
   senat_professoren: {
     info: 'Wahl der Professoren in den Senat',
-    type: 'Mehrheitswahl', // Immer Mehrheitswahl laut Dok
-    method: 'Einfache Mehrheit', // Höchststimmenprinzip
-    listen: 0, // Keine Listen
-    seats: 2, // Laut Dok: "Anzahl der Sitze: 2"
-    votes: 2, // "Stimmen pro Wähler: so viele wie Sitze"
-    kum: 2, // "Maximal pro Kandidat: 2 Stimmen"
+    type: 'Mehrheitswahl', // "Immer Mehrheitswahl" [cite: 136]
+    method: 'Einfache Mehrheit', // "Höchststimmen"
+    listen: 0, // "Keine Listen" [cite: 136]
+    seats: 2, // EXPLIZIT: "Anzahl der Sitze: 2" [cite: 136]
+    votes: 2, // "so viele wie Sitze" -> 2 [cite: 136]
+    kum: 2, // "Maximal pro Kandidat: 2 Stimmen" [cite: 136]
   },
 };
 
 /*
  * Erstellt das Template, optional mit vorausgefüllten Daten eines Presets.
- * @param {string} presetKey - Der Schlüssel des gewählten Presets (z.B. 'stupa_verhaeltnis')
+ * @param {string} presetKey - Der Schlüssel des gewählten Presets
  */
 export const generateElectionTemplate = async (presetKey = 'generic') => {
   const workbook = new ExcelJS.Workbook();
@@ -160,7 +171,7 @@ export const generateElectionTemplate = async (presetKey = 'generic') => {
     { width: 30 }, // H: Zählverfahren
   ];
 
-  // Header & Styling (wie gehabt)
+  // Header & Styling
   sheet.mergeCells('A1:H2');
   const titleCell = sheet.getCell('A1');
   titleCell.value = 'Gremienwahlen - Konfiguration';
@@ -204,9 +215,9 @@ export const generateElectionTemplate = async (presetKey = 'generic') => {
     presetKey === 'generic' ? 'wahl_kennung' : presetKey, // A: Kennung
     config.info, // B: Info
     config.listen, // C: Listen
-    config.seats, // D: Plätze
-    config.votes, // E: Stimmen
-    config.kum, // F: Kumulieren
+    config.seats, // D: Plätze (bleibt leer, wenn null)
+    config.votes, // E: Stimmen (bleibt leer, wenn null)
+    config.kum, // F: Kumulieren (bleibt leer, wenn null)
     config.type, // G: Wahltyp
     config.method, // H: Verfahren
   ];
@@ -256,7 +267,7 @@ export const generateElectionTemplate = async (presetKey = 'generic') => {
     cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: HKA_BLACK } };
   });
 
-  // Beispiel-Kandidat passend zur Kennung
+  // Beispiel-Kandidat
   candSheet.getRow(2).values = [
     presetKey === 'generic' ? 'wahl_kennung' : presetKey,
     '123456',
@@ -272,39 +283,25 @@ export const generateElectionTemplate = async (presetKey = 'generic') => {
   return workbook;
 };
 
-/*
- * Erstellt das Template für das Wählerverzeichnis.
- */
+// ... generateVoterTemplate (unverändert) ...
 export const generateVoterTemplate = async () => {
   const workbook = new ExcelJS.Workbook();
   workbook.creator = 'HKA E-Voting System';
 
   const sheet = workbook.addWorksheet('Wählerverzeichnis');
 
-  // Spaltenbreiten
-  sheet.columns = [
-    { width: 15 }, // A: MatrikelNr / ID
-    { width: 30 }, // B: E-Mail
-    { width: 20 }, // C: Vorname
-    { width: 20 }, // D: Nachname
-    { width: 15 }, // E: Fakultät
-  ];
+  sheet.columns = [{ width: 15 }, { width: 30 }, { width: 20 }, { width: 20 }, { width: 15 }];
 
-  // Header
   const headers = ['MatrikelNr', 'E-Mail', 'Vorname', 'Nachname', 'Fakultät'];
   const headerRow = sheet.getRow(1);
   headerRow.values = headers;
 
-  // HKA Style Header
   headerRow.eachCell((cell) => {
     cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
-    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE30613' } }; // HKA Rot
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: HKA_RED } };
   });
 
-  // Beispiel-Daten
   sheet.getRow(2).values = ['123456', 'muma1011@h-ka.de', 'Max', 'Mustermann', 'IWI'];
-  sheet.getRow(3).values = ['654321', 'susi.muster@h-ka.de', 'Susi', 'Sorglos', 'MMT'];
 
-  logger.info('Wähler-Template erfolgreich generiert');
   return workbook;
 };
