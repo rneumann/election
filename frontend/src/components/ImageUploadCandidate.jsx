@@ -105,8 +105,17 @@ export const ImageUploadCandidate = ({ setUploadData }) => {
   };
 
   const handleFile = (file) => {
+    const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
+
     if (!file || !file.type.startsWith('image/')) {
       showAlert('error', 'Bitte laden Sie eine Bild-Datei hoch');
+      return;
+    }
+
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+      const maxMb = (MAX_FILE_SIZE_BYTES / 1024 / 1024).toFixed(0);
+      showAlert('error', `Die Datei ist zu groß. Maximal ${maxMb} MB erlaubt.`);
+      logger.warn(`Datei zu groß: ${file.size} Bytes`);
       return;
     }
 
