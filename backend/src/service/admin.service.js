@@ -2,6 +2,39 @@ import { logger } from '../conf/logger/logger.js';
 import { client } from '../database/db.js';
 
 /**
+ * Retrieves all elections that are active or will be active in the future.
+ * @returns {Promise<Array>} - An array of election objects.
+ */
+export const getElectionsForAdmin = async () => {
+  const sql = `
+    SELECT 
+      e.id,
+      e.info,
+      e.description,
+      e.listvotes,
+      e.votes_per_ballot,
+      e.max_cumulative_votes,
+      e.test_election_active,
+      e.start,
+      e.end
+    FROM elections e
+    WHERE e.start > now()
+    ORDER BY e.start
+  `;
+
+  try {
+    logger.debug(`getElectionsForAdmin with sql: ${sql}`);
+    const res = await client.query(sql);
+    logger.debug(`getElectionsForAdmin res: ${JSON.stringify(res.rows)}`);
+    return res.rows || [];
+  } catch (err) {
+    logger.error('Error while retrieving elections');
+    logger.debug(err.stack);
+    throw new Error('Database query failed');
+  }
+};
+
+/**
  * Resets all voting data for an election.
  * This function is intended to be used for test elections only.
  * It will delete all results, voting notes and ballots associated with the election.
@@ -27,7 +60,7 @@ export const resetElectionData = async (electionId) => {
       throw new Error('Election is not marked as a test election. Aborting data deletion.');
     }
     await client.query('DELETE FROM election_results WHERE election_id = $1', [electionId]);
-    await client.query('DELETE FROM votingnotes WHERE electionId = $1', [electionId]);
+    await client.query('UPDATE votingnotes SET voted = false WHERE electionId = $1', [electionId]);
     await client.query('DELETE FROM ballotvotes WHERE election = $1', [electionId]);
     await client.query('DELETE FROM ballots WHERE election = $1', [electionId]);
 

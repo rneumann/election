@@ -4,6 +4,11 @@ import api from './api';
 
 export const voterApi = {
   getElections: async (status, voterId, alreadyVoted) => {
+    logger.debug(
+      `send request with url: voter/${voterId}/elections${status ? `?status=${status}` : ''}${
+        alreadyVoted !== undefined ? `${status ? '&' : '?'}alreadyVoted=${alreadyVoted}` : ''
+      }`,
+    );
     const response = await api.get(
       `voter/${voterId}/elections${status ? `?status=${status}` : ''}${
         alreadyVoted !== undefined ? `${status ? '&' : '?'}alreadyVoted=${alreadyVoted}` : ''

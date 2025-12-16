@@ -16,6 +16,7 @@ import { validateElectionExcel } from '../utils/validators/excelValidator.js';
 import { MAX_FILE_SIZE } from '../utils/validators/constants.js';
 import api, { exportElectionResultExcel } from '../services/api.js';
 import { logger } from '../conf/logger/logger.js';
+import { TestElectionAdminView } from '../components/TestElectionAdminView.jsx';
 
 /**
  * CountingSection Component - Handles election vote counting
@@ -727,7 +728,7 @@ const AdminUpload = () => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [activeSection, setActiveSection] = useState('upload'); // 'upload' | 'manage' | 'counting' | 'uploadCandidates'
+  const [activeSection, setActiveSection] = useState('upload'); // 'upload' | 'manage' | 'counting' | 'uploadCandidates | 'test-election'
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [validationErrors, setValidationErrors] = useState([]);
   const [validationStats, setValidationStats] = useState(null);
@@ -1133,6 +1134,21 @@ const AdminUpload = () => {
                     <div className="flex items-center justify-between">
                       <span>Datenbank leeren</span>
                       <span className="text-xs opacity-60">1</span>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setActiveSection('test-election');
+                      setMobileMenuOpen(false);
+                      handleReset();
+                    }}
+                    style={getNavButtonStyle('test-election')}
+                    className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span>Test Wahl</span>
+                      <span className="text-xs opacity-60">1.2</span>
                     </div>
                   </button>
                 </div>
@@ -2328,6 +2344,8 @@ const AdminUpload = () => {
                 </div>
               </div>
             )}
+
+            {activeSection === 'test-election' && <TestElectionAdminView />}
 
             {/* Einstellungen laden Section */}
             {activeSection === 'load' && (

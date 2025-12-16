@@ -61,7 +61,7 @@ const HomeContent = () => {
     try {
       const [active, future, alreadyVoted] = await Promise.all([
         voterApi.getElections('active', user.username, false),
-        voterApi.getElections('future', user.username, false),
+        voterApi.getElections('future', user.username, undefined),
         voterApi.getElections('active', user.username, true),
       ]);
       setElectionsActive(active);
@@ -287,7 +287,7 @@ const HomeContent = () => {
                           <ResponsiveButton
                             toolTip={election.test_election_active ? '' : 'Testwahl nicht aktiv'}
                             size="small"
-                            disabled={!election.test_election_active}
+                            disabled={!election.test_election_active || election.voted}
                             onClick={() => {
                               setOpen(true);
                               logger.debug(`current election id settet to: ${election.id}`);
