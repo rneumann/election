@@ -1,8 +1,6 @@
-// services/adminService.js
-import { logger } from '../../../frontend/src/conf/logger/logger';
-import { hnadleHttpStatus } from '../../../frontend/src/utils/exception-handler/exception-handler';
-import api from '../../../frontend/src/services/api';
-
+import { logger } from '../conf/logger/logger.js';
+import { hnadleHttpStatus } from '../utils/exception-handler/exception-handler.js';
+import api from './api.js';
 export const adminService = {
   getElectionsForAdmin: async (status) => {
     try {

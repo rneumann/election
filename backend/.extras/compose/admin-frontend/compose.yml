@@ -4,6 +4,8 @@ services:
     container_name: admin-frontend
     expose:
       - '8081'
+    ports:
+      - '8081:8081'
     networks:
       - backend_net
       - admin_net
