@@ -9,7 +9,7 @@ services:
     volumes:
       - kc-db-data:/var/lib/postgresql/data
     networks:
-      - election-network
+      - backend_net
     restart: unless-stopped
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U ${KC_DB_USERNAME}']
@@ -21,7 +21,7 @@ services:
     image: quay.io/keycloak/keycloak:26.1.0
     container_name: keycloak-test
     networks:
-      - election-network
+      - backend_net
     environment:
       KEYCLOAK_BOOTSTRAP_ADMIN: ${KEYCLOAK_ADMIN}
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
@@ -34,15 +34,11 @@ services:
 
     command: start-dev
     ports:
-      - 8080:8080
+      - 8080:8080 # Expose Keycloak on port 8080 for local development
     restart: unless-stopped
     depends_on:
       keycloak_db:
         condition: service_healthy
-
-networks:
-  election-network:
-    external: true
 
 volumes:
   kc-db-data:

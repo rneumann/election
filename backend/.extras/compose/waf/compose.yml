@@ -1,0 +1,22 @@
+services:
+  waf:
+    image: owasp/modsecurity-crs:nginx
+    networks:
+      - frontend_net
+    ports:
+      - '443:443'
+    volumes:
+      - ./conf.d/waf.conf:/etc/nginx/conf.d/waf.conf:ro
+      #- ./rules/rules.conf:/etc/modsecurity.d/owasp-crs/rules/REQUEST-900-EXCLUSION-RULES-BEFORE-CRS.conf:ro
+      - ./certs:/etc/nginx/certs:ro
+      - ./tmp/host-fs-auditlog.log:/var/log/modsec_audit.log
+      - ./tmp/host-fs-errorlog.log:/var/log/modsec_error.log
+    depends_on:
+      - frontend
+    environment:
+      - MODSEC_AUDIT_ENGINE=on
+      - MODSEC_AUDIT_LOG=/var/log/modsec_audit.log
+      - LOGLEVEL=debug
+      - ERRORLOG=/var/log/modsec_error.log
+      - ALLOWED_METHODS=GET POST PUT DELETE
+      - MAX_FILE_SIZE=5000000

@@ -1,7 +1,8 @@
 include:
-  - ./ldap/compose.yml
-  #- ./saml/compose.yml
-  - ./keycloak/compose.yml
-  - ./postgres/compose.yml
-  #- ./backend/compose.yml
+  - ./compose.base.yml
   #- ./frontend/compose.yml
+  #- ./backend/compose.yml
+  - ./postgres/compose.yml
+  - ./keycloak/compose.yml
+  - ./ldap/compose.yml
+  #- ./waf/compose.yml

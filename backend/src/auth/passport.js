@@ -2,12 +2,11 @@
 import passport from 'passport';
 import { ldapStrategy } from './strategies/ldap.strategy.js';
 import { getUserInfo } from './auth.js';
-import { samlStrategy } from './strategies/saml.strategy.js';
 import { keycloakStrategy } from './strategies/keycloak.strategy.js';
 
 // Registrierung
 passport.use('ldap', ldapStrategy);
-passport.use('saml', samlStrategy);
+//passport.use('saml', samlStrategy);
 passport.use('oidc_kc', keycloakStrategy);
 
 passport.serializeUser((user, done) => {

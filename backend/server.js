@@ -6,12 +6,17 @@ import { connectDb } from './src/database/db.js';
 import { swaggerSpec } from './src/conf/swagger/swagger.js';
 // NEU: Audit Log Import
 import { writeAuditLog } from './src/audit/auditLogger.js';
+import { connectDbWithRetry } from './src/database/db-connect-retries.js';
 
 dotenv.config();
 
 const { PORT, NODE_ENV } = process.env;
 
-await connectDb();
+await connectDbWithRetry(connectDb, {
+  retries: 5,
+  initialDelayMs: 2000,
+  backoffFactor: 2,
+});
 
 app.listen(PORT, () => {
   logger.info(String.raw`
