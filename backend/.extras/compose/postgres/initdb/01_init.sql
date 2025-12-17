@@ -142,7 +142,7 @@ CREATE INDEX IF NOT EXISTS idx_ballotvotes_list ON ballotvotes (election, listnu
 
 CREATE INDEX IF NOT EXISTS idx_votingnotes_voter ON votingnotes (voterId, electionId);
 
-CREATE INDEX IF NOT EXISTS idx_elections_start_end ON elections (start, end);
+CREATE INDEX IF NOT EXISTS idx_elections_start_end ON elections (start, "end");
 
 CREATE
 OR REPLACE VIEW ballotlist AS

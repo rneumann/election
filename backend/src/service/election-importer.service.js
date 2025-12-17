@@ -130,14 +130,15 @@ export const importElectionData = async (filePath) => {
         const electionUUID = electionIdMap.get(electionRef);
 
         if (electionUUID) {
-          const lastname = candidateSheet.getCell(`D${candRow}`).value?.toString() || '';
+          const uid = candidateSheet.getCell(`D${candRow}`).value?.toString() || ' ';
+          const lastname = candidateSheet.getCell(`F${candRow}`).value?.toString() || '';
           const firstname = candidateSheet.getCell(`E${candRow}`).value?.toString() || '';
-          const matrNr = candidateSheet.getCell(`B${candRow}`).value?.toString() || '';
-          const faculty = candidateSheet.getCell(`C${candRow}`).value?.toString() || '';
-          const keywords = candidateSheet.getCell(`F${candRow}`).value?.toString() || '';
-          const notes = candidateSheet.getCell(`G${candRow}`).value?.toString() || '';
+          const matrNr = candidateSheet.getCell(`G${candRow}`).value?.toString() || '';
+          const faculty = candidateSheet.getCell(`H${candRow}`).value?.toString() || '';
+          const keywords = candidateSheet.getCell(`I${candRow}`).value?.toString() || '';
+          const notes = candidateSheet.getCell(`A${candRow}`).value?.toString() || '';
 
-          const admittedRaw = candidateSheet.getCell(`H${candRow}`).value;
+          const admittedRaw = candidateSheet.getCell(`C${candRow}`).value;
           const isAdmitted =
             admittedRaw === false ||
             String(admittedRaw).toLowerCase() === 'false' ||
@@ -148,12 +149,13 @@ export const importElectionData = async (filePath) => {
           if (lastname) {
             const insertCandidateQuery = `
               INSERT INTO candidates 
-              (lastname, firstname, mtknr, faculty, keyword, notes, approved)
-              VALUES ($1, $2, $3, $4, $5, $6, $7)
+              (uid, lastname, firstname, mtknr, faculty, keyword, notes, approved)
+              VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
               RETURNING id
             `;
 
             const candRes = await db.query(insertCandidateQuery, [
+              uid,
               lastname,
               firstname,
               matrNr,

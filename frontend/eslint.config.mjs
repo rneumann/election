@@ -15,7 +15,7 @@ import jsdoc from 'eslint-plugin-jsdoc';
 
 export default [
   {
-    ignores: ['dist/', 'node_modules/', '*.config.js', '*.config.mjs'],
+    ignores: ['dist/', 'playwright-report/', 'node_modules/', '*.config.js', '*.config.mjs'],
   },
   js.configs.recommended,
   {
