@@ -40,6 +40,7 @@ export const generateElectionResultExcel = async (resultId) => {
         er.result_data,
         er.counted_at,
         er.counted_by,
+        er.test_election,
         e.id as election_id,
         e.info as election_name,
         e.description,
@@ -90,6 +91,7 @@ export const generateElectionResultExcel = async (resultId) => {
     const electionInfo = [
       ['Election Name:', result.election_name],
       ['Description:', result.description || '-'],
+      ['Test Election:', result.test_election ? 'Yes' : 'No'],
       ['Election Type:', formatElectionType(result.election_type)],
       ['Counting Method:', formatCountingMethod(result.counting_method)],
       ['Seats to Fill:', result.seats_to_fill],

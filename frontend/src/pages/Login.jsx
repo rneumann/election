@@ -85,18 +85,18 @@ const LoginContent = () => {
       const result = await login(username, password);
 
       if (result.success) {
+        // Check if user is admin - admins cannot login to user frontend
+        if (result.user?.role === 'admin') {
+          setError('Admins können sich nicht im Wähler-Frontend anmelden.');
+          setLoading(false);
+          return;
+        }
+
         // Check if there's a return URL from query params
         const returnUrl = searchParams.get('returnUrl');
 
-        // Determine destination based on role if no returnUrl
-        let destination = '/home';
-        if (returnUrl && returnUrl.startsWith('/')) {
-          destination = returnUrl;
-        } else if (result.user?.role === 'admin') {
-          destination = '/admin';
-        }
-
-        // Redirect to destination on successful login
+        // Redirect regular users
+        const destination = returnUrl && returnUrl.startsWith('/') ? returnUrl : '/home';
         navigate(destination, { replace: true });
       } else {
         // Show error message from backend
@@ -110,7 +110,9 @@ const LoginContent = () => {
   };
 
   return (
-    <div className={`min-h-screen flex items-center justify-center bg-gradient-to-br from-brand-light dark:bg-gray-900 via-gray-50 to-white px-4 sm:px-6 py-8 transition-colors ${accessibilityClasses}`}>
+    <div
+      className={`min-h-screen flex items-center justify-center bg-gradient-to-br from-brand-light dark:bg-gray-900 via-gray-50 to-white px-4 sm:px-6 py-8 transition-colors ${accessibilityClasses}`}
+    >
       {/* Accessibility Button - Fixed Position Top Right */}
       <div className="fixed top-4 right-4 z-30">
         <ResponsiveButton
@@ -146,7 +148,9 @@ const LoginContent = () => {
           <h1 className="text-2xl sm:text-3xl font-bold text-brand-primary dark:text-white mb-2 transition-colors">
             {theme.institution.name} {theme.text.appTitle}
           </h1>
-          <p className="text-brand-gray dark:text-gray-300 text-xs sm:text-sm transition-colors">{theme.text.loginSubtitle}</p>
+          <p className="text-brand-gray dark:text-gray-300 text-xs sm:text-sm transition-colors">
+            {theme.text.loginSubtitle}
+          </p>
         </div>
 
         {/* Error Message */}
@@ -207,7 +211,10 @@ const LoginContent = () => {
         {/* Login Form */}
         <form onSubmit={handleSubmit} className="space-y-6" autoComplete="off">
           <div>
-            <label htmlFor="username" className="block text-sm font-medium text-brand-dark dark:text-gray-200 mb-2 transition-colors">
+            <label
+              htmlFor="username"
+              className="block text-sm font-medium text-brand-dark dark:text-gray-200 mb-2 transition-colors"
+            >
               Benutzername
             </label>
             <input
@@ -229,7 +236,10 @@ const LoginContent = () => {
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-brand-dark dark:text-gray-200 mb-2 transition-colors">
+            <label
+              htmlFor="password"
+              className="block text-sm font-medium text-brand-dark dark:text-gray-200 mb-2 transition-colors"
+            >
               Passwort
             </label>
             <input

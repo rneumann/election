@@ -75,6 +75,7 @@ web_modules/
 .e2e-env
 !.env.example
 *secrets*
+*key*
 *crt*
 *pem*
 *ou.ldif*

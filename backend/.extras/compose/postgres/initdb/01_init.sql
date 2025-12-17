@@ -127,6 +127,7 @@ CREATE TABLE
     result_data JSONB NOT NULL,
     counted_at TIMESTAMPTZ NOT NULL DEFAULT NOW (),
     counted_by TEXT,
+    test_election BOOLEAN NOT NULL DEFAULT FALSE,
     CONSTRAINT uq_election_version UNIQUE (election_id, version)
   );
 

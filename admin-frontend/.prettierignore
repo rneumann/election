@@ -1,0 +1,22 @@
+# Ignore artifacts:
+build
+dist
+coverage
+node_modules
+.vscode
+
+# Config files
+*.config.js
+*.config.mjs
+eslint.config.mjs
+.prettierrc.json
+tailwind.config.js
+postcss.config.js
+vite.config.js
+
+# Package files
+package-lock.json
+package.json
+
+# Documentation
+README.md

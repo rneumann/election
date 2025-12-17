@@ -34,8 +34,9 @@ export const validateElection = async (election, db) => {
   // Check 1: Election must have ended (BSI requirement)
   const now = new Date();
   const endDate = new Date(election.end);
+  const startDate = new Date(election.start);
 
-  if (endDate > now) {
+  if (endDate > now && startDate < now) {
     const timeRemaining = Math.ceil((endDate - now) / (1000 * 60)); // Minutes
     throw new Error(
       `Election has not ended yet. Ends at ${endDate.toISOString()} (${timeRemaining} minutes remaining)`,

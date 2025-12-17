@@ -21,6 +21,10 @@ COPY package*.json ./
 COPY server.js ./
 COPY src/ ./src/
 
+RUN mkdir -p /app/uploads \
+ && chown node:node /app/uploads \
+ && chmod 700 /app/uploads
+
 # Set environment variable
 ENV NODE_ENV=production
 # Run in non-root user (node user is created by base image)

@@ -16,11 +16,11 @@ import { candidateRouter } from './routes/candidate.route.js';
 import { importRouter } from './routes/upload.route.js';
 import { exportRoute } from './routes/export.route.js';
 import { verifyCsrfToken } from './security/csrf-logic.js';
-export const app = express();
-
-// NEU: Audit Imports
 import { writeAuditLog } from './audit/auditLogger.js';
 import { auditRouter } from './routes/audit.routes.js';
+import { adminRouter } from './routes/admin.routes.js';
+
+export const app = express();
 
 /**
  * Setup Express middlewares and routes
@@ -242,6 +242,7 @@ app.use('/api/upload/', importRouter);
 app.use('/api/export/', exportRoute);
 // NEU: Audit API Route registrieren
 app.use('/api/audit', auditRouter);
+app.use('/api/admin', adminRouter);
 
 /**
  * Error handling middleware

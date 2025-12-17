@@ -91,12 +91,12 @@ export const voterRouter = Router();
 voterRouter.get(
   '/:voterUid/elections',
   ensureAuthenticated,
-  ensureHasRole(['admin', 'voter', 'committee']),
+  ensureHasRole(['voter']),
   async (req, res) => {
     logger.debug('Election route accessed');
     const voterUid = req.params.voterUid;
     const status = req.query.status;
-    const alreadyVoted = req.query.alreadyVoted === 'true';
+    const alreadyVoted = req.query.alreadyVoted;
     if (
       status !== 'active' &&
       status !== 'finished' &&
@@ -106,6 +106,22 @@ voterRouter.get(
       logger.warn(`Invalid status parameter: ${status}`);
       return res.status(400).json({ message: 'Invalid status parameter' });
     }
+
+    if (alreadyVoted !== 'true' && alreadyVoted !== 'false' && alreadyVoted !== undefined) {
+      logger.warn(`Invalid alreadyVoted parameter: ${alreadyVoted}`);
+      return res.status(400).json({ message: 'Invalid alreadyVoted parameter' });
+    }
+    let voted;
+    if (alreadyVoted === 'true') {
+      voted = true;
+    } else if (alreadyVoted === 'false') {
+      voted = false;
+    } else {
+      voted = undefined;
+    }
+    logger.debug(
+      `GET ELECTIONS Request params: voterUid: ${voterUid}, status: ${status}, alreadyVoted: ${voted}`,
+    );
 
     if (!voterUid) {
       logger.warn('Voter id is required');
@@ -118,16 +134,16 @@ voterRouter.get(
         logger.warn('Voter not found');
         return res.status(404).json({ message: 'Voter not found' });
       }
-      logger.debug(`Voter retrieved successfully res: ${JSON.stringify(voter)}`);
+      //logger.debug(`Voter retrieved successfully res: ${JSON.stringify(voter)}`);
 
-      const elections = await getElections(status, voter.id, alreadyVoted);
+      const elections = await getElections(status, voter.id, voted);
 
       if (!elections || elections.length === 0) {
         logger.warn('No elections found');
         return res.status(404).json({ message: 'No elections found' });
       }
 
-      logger.debug(`Elections retrieved successfully res: ${JSON.stringify(elections)}`);
+      //logger.debug(`Elections retrieved successfully res: ${JSON.stringify(elections)}`);
       res.status(200).json(elections);
     } catch {
       // eslint-disable-next-line
@@ -340,10 +356,21 @@ voterRouter.post(
       }
       // check if election is active
       const currentTime = new Date();
-      if (currentTime < new Date(election.start) || currentTime > new Date(election.end)) {
-        logger.warn('Election is not active');
+      if (currentTime > new Date(election.end)) {
+        logger.warn('Election is over');
+        return res.status(400).json({ message: 'Election is over' });
+      }
+
+      if (currentTime < new Date(election.start) && !election.test_election_active) {
+        logger.warn('Election is in the future and no test election is active');
         return res.status(400).json({ message: 'Election is not active' });
       }
+      if (currentTime < new Date(election.start) && election.test_election_active) {
+        logger.warn(
+          'Election is in the future and a test election is active, proceeding with test election',
+        );
+      }
+
       // checlk number of votes is valid
       const validVotes = checkIfNumberOfVotesIsValid(
         req.body,
