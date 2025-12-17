@@ -7,6 +7,8 @@ import {
   exportBallotsRoute,
   exportElectionDefinitionRoute,
 } from '../service/export.service.js';
+//NEU
+import { generateOfficialReport } from '../service/hka-exporter.js';
 
 // Constants
 const RESULT_ID_SUBSTRING_LENGTH = 8;
@@ -206,5 +208,25 @@ exportRoute.get('/election-result/:resultId', async (req, res) => {
     }
 
     return res.status(500).json({ error: 'Failed to generate Excel export' });
+  }
+});
+
+// NEU: Die Route für den neuen Button
+exportRoute.get('/results/:electionId/official', ensureAuthenticated, async (req, res) => {
+  try {
+    const { electionId } = req.params;
+    const buffer = await generateOfficialReport(electionId);
+
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    );
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="Amtliches_Ergebnis_${electionId}.xlsx"`,
+    );
+    res.send(buffer);
+  } catch (err) {
+    res.status(500).json({ message: 'Export fehlgeschlagen', error: err.message });
   }
 });

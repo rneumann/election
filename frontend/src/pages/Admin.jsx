@@ -161,6 +161,26 @@ const CountingSection = ({
     }
   };
 
+  // Neuer Handler für den offiziellen Export
+  const handleExportOfficial = async (resultId) => {
+    try {
+      // Wir rufen die NEUE Route auf
+      const response = await api.get(`/export/results/${resultId}/official`, {
+        responseType: 'blob',
+      });
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `Amtliches_Ergebnis.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (err) {
+      alert('Fehler beim Download des amtlichen Ergebnisses');
+    }
+  };
+
   /**
    * Format date to German locale
    *
@@ -643,6 +663,29 @@ const CountingSection = ({
                             </button>
                           </div>
                         )}
+
+                        {/* NEUER BUTTON */}
+                        <button
+                          onClick={() =>
+                            handleExportOfficial(election.countingResult.fullResults.id)
+                          }
+                          className="mt-3 w-full px-4 py-3 bg-brand-primary text-white font-bold rounded-lg hover:opacity-90 flex items-center justify-center gap-2 shadow-sm"
+                        >
+                          <svg
+                            className="w-5 h-5"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                            />
+                          </svg>
+                          Amtliches Ergebnis (HKA-Design) laden
+                        </button>
                       </div>
                     </div>
                   </div>
