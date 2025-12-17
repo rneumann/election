@@ -1,4 +1,4 @@
-import { useTheme } from "../hooks/useTheme.js";
+import { useTheme } from '../hooks/useTheme.js';
 
 /**
  * Component for displaying validation errors in a structured table format.
@@ -9,14 +9,14 @@ import { useTheme } from "../hooks/useTheme.js";
  * @param {string} props.fileType - Type of file ('CSV' or 'Excel')
  * @returns {React.ReactElement} Validation errors component
  */
-const ValidationErrors = ({ errors, fileType = "CSV" }) => {
+const ValidationErrors = ({ errors, fileType = 'CSV' }) => {
   const theme = useTheme();
 
   if (!errors || errors.length === 0) {
     return null;
   }
 
-  const isExcel = fileType === "Excel";
+  const isExcel = fileType === 'Excel';
 
   return (
     <div className="mt-6 bg-red-50 border border-red-200 rounded-lg overflow-hidden">
@@ -35,12 +35,10 @@ const ValidationErrors = ({ errors, fileType = "CSV" }) => {
             />
           </svg>
           <div>
-            <h3 className="text-lg font-bold text-red-900">
-              Validierungsfehler gefunden
-            </h3>
+            <h3 className="text-lg font-bold text-red-900">Validierungsfehler gefunden</h3>
             <p className="text-sm text-red-800 mt-0.5">
-              Die Datei konnte nicht hochgeladen werden. Bitte korrigieren Sie
-              die folgenden Fehler und versuchen Sie es erneut.
+              Die Datei konnte nicht hochgeladen werden. Bitte korrigieren Sie die folgenden Fehler
+              und versuchen Sie es erneut.
             </p>
           </div>
         </div>
@@ -49,7 +47,7 @@ const ValidationErrors = ({ errors, fileType = "CSV" }) => {
       {/* Error count */}
       <div className="px-6 py-3 bg-red-50 border-b border-red-200">
         <p className="text-sm font-semibold text-red-900">
-          {errors.length} Fehler {errors.length === 1 ? "gefunden" : "gefunden"}
+          {errors.length} Fehler {errors.length === 1 ? 'gefunden' : 'gefunden'}
         </p>
       </div>
 
@@ -79,9 +77,7 @@ const ValidationErrors = ({ errors, fileType = "CSV" }) => {
               <tr key={index} className="hover:bg-red-50 transition-colors">
                 {isExcel && (
                   <td className="px-4 py-3 text-gray-900 font-medium">
-                    {error.sheet || (
-                      <span className="text-gray-400 italic">-</span>
-                    )}
+                    {error.sheet || <span className="text-gray-400 italic">-</span>}
                   </td>
                 )}
                 <td className="px-4 py-3 text-gray-900 font-mono">
@@ -90,7 +86,7 @@ const ValidationErrors = ({ errors, fileType = "CSV" }) => {
                       className="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium"
                       style={{
                         backgroundColor: theme.colors.primary,
-                        color: "#ffffff",
+                        color: '#ffffff',
                       }}
                     >
                       {error.row}
@@ -134,22 +130,19 @@ const ValidationErrors = ({ errors, fileType = "CSV" }) => {
           <div className="text-sm text-red-800">
             <p className="font-semibold mb-1">Tipps zur Fehlerbehebung:</p>
             <ul className="list-disc list-inside space-y-1 text-red-700">
+              <li>Überprüfen Sie die angegebenen Zeilen und Spalten in Ihrer Datei</li>
               <li>
-                Überprüfen Sie die angegebenen Zeilen und Spalten in Ihrer Datei
-              </li>
-              <li>
-                Stellen Sie sicher, dass alle Pflichtfelder ausgefüllt sind und
-                das richtige Format haben
+                Stellen Sie sicher, dass alle Pflichtfelder ausgefüllt sind und das richtige Format
+                haben
               </li>
               {isExcel ? (
                 <li>
-                  Prüfen Sie, ob alle erforderlichen Tabellenblätter vorhanden
-                  sind und die richtigen Namen haben
+                  Prüfen Sie, ob alle erforderlichen Tabellenblätter vorhanden sind und die
+                  richtigen Namen haben
                 </li>
               ) : (
                 <li>
-                  Achten Sie darauf, dass die Kopfzeile mit dem erwarteten
-                  Format übereinstimmt
+                  Achten Sie darauf, dass die Kopfzeile mit dem erwarteten Format übereinstimmt
                 </li>
               )}
               <li>Entfernen Sie leere Zeilen und doppelte Einträge</li>

@@ -1,6 +1,6 @@
 /* eslint-disable security/detect-object-injection */
-import ExcelJS from "exceljs";
-import { EXPECTED_SHEET_NAMES } from "../../schemas/election.schema.js";
+import ExcelJS from 'exceljs';
+import { EXPECTED_SHEET_NAMES } from '../../schemas/election.schema.js';
 
 /**
  * Parse Excel file containing election configuration.
@@ -14,30 +14,23 @@ export const parseElectionExcel = async (file) => {
     await workbook.xlsx.load(arrayBuffer);
 
     const actualSheets = workbook.worksheets.map((ws) => ws.name);
-    const requiredSheets = [
-      EXPECTED_SHEET_NAMES.INFO,
-      EXPECTED_SHEET_NAMES.CANDIDATES,
-    ];
-    const missingSheets = requiredSheets.filter(
-      (sheet) => !actualSheets.includes(sheet)
-    );
+    const requiredSheets = [EXPECTED_SHEET_NAMES.INFO, EXPECTED_SHEET_NAMES.CANDIDATES];
+    const missingSheets = requiredSheets.filter((sheet) => !actualSheets.includes(sheet));
 
     if (missingSheets.length > 0) {
       return {
         success: false,
         errors: [
           {
-            message: `Fehlende Tabellenblätter: ${missingSheets.join(", ")}`,
-            code: "MISSING_SHEETS",
+            message: `Fehlende Tabellenblätter: ${missingSheets.join(', ')}`,
+            code: 'MISSING_SHEETS',
           },
         ],
       };
     }
 
     const infoSheet = workbook.getWorksheet(EXPECTED_SHEET_NAMES.INFO);
-    const candidatesSheet = workbook.getWorksheet(
-      EXPECTED_SHEET_NAMES.CANDIDATES
-    );
+    const candidatesSheet = workbook.getWorksheet(EXPECTED_SHEET_NAMES.CANDIDATES);
 
     let infoHeaders = {};
     let infoDataRow = null;
@@ -46,16 +39,16 @@ export const parseElectionExcel = async (file) => {
 
     infoSheet.eachRow((row, rowNumber) => {
       row.eachCell((cell, colNumber) => {
-        const val = cell.value ? String(cell.value).trim() : "";
+        const val = cell.value ? String(cell.value).trim() : '';
 
-        if (val === "Wahlzeitraum von") {
+        if (val === 'Wahlzeitraum von') {
           startDate = row.getCell(colNumber + 2).value;
         }
-        if (val === "bis") {
+        if (val === 'bis') {
           endDate = row.getCell(colNumber + 2).value;
         }
 
-        if (val === "Kennung" || val === "Wahl Kennung") {
+        if (val === 'Kennung' || val === 'Wahl Kennung') {
           row.eachCell((headerCell, headerCol) => {
             const headerName = String(headerCell.value).trim();
             if (headerName) {
@@ -70,11 +63,7 @@ export const parseElectionExcel = async (file) => {
               const key = infoHeaders[dataCol]; // Wir nutzen den Namen aus dem Header, nicht den Index!
               if (key) {
                 let value = dataCell.value;
-                if (
-                  value &&
-                  typeof value === "object" &&
-                  value.result !== undefined
-                ) {
+                if (value && typeof value === 'object' && value.result !== undefined) {
                   value = value.result;
                 }
                 infoDataRow[key] = value;
@@ -87,19 +76,17 @@ export const parseElectionExcel = async (file) => {
 
     const info = infoDataRow || {};
     if (startDate) {
-      info["Startzeitpunkt"] = startDate;
+      info['Startzeitpunkt'] = startDate;
     }
     if (endDate) {
-      info["Endzeitpunkt"] = endDate;
+      info['Endzeitpunkt'] = endDate;
     }
     const candidatesRaw = [];
     let candidateHeaders = [];
 
     candidatesSheet.eachRow((row, rowNumber) => {
       if (rowNumber === 1) {
-        row.eachCell((cell) =>
-          candidateHeaders.push(cell.value ? String(cell.value).trim() : "")
-        );
+        row.eachCell((cell) => candidateHeaders.push(cell.value ? String(cell.value).trim() : ''));
         return;
       }
       const rowData = {};
@@ -108,16 +95,11 @@ export const parseElectionExcel = async (file) => {
         const header = candidateHeaders[colNumber - 1];
         if (header) {
           let value = cell.value;
-          if (
-            value &&
-            typeof value === "object" &&
-            value.result !== undefined
-          ) {
+          if (value && typeof value === 'object' && value.result !== undefined) {
             value = value.result;
           }
-          rowData[header] =
-            value === null || value === undefined ? "" : String(value);
-          if (String(value).trim() !== "") {
+          rowData[header] = value === null || value === undefined ? '' : String(value);
+          if (String(value).trim() !== '') {
             hasData = true;
           }
         }
@@ -138,7 +120,7 @@ export const parseElectionExcel = async (file) => {
         errors: [
           {
             message: `Konnte Kopfzeile 'Kennung' im Blatt '${EXPECTED_SHEET_NAMES.INFO}' nicht finden.`,
-            code: "HEADER_MISSING",
+            code: 'HEADER_MISSING',
           },
         ],
       };
@@ -152,9 +134,7 @@ export const parseElectionExcel = async (file) => {
   } catch (error) {
     return {
       success: false,
-      errors: [
-        { message: `Excel Fehler: ${error.message}`, code: "FILE_READ_ERROR" },
-      ],
+      errors: [{ message: `Excel Fehler: ${error.message}`, code: 'FILE_READ_ERROR' }],
     };
   }
 };

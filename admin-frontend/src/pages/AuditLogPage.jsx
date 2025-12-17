@@ -1,7 +1,7 @@
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext.jsx";
-import { useTheme } from "../hooks/useTheme.js";
-import AuditLogTable from "../components/AuditLogTable.jsx";
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext.jsx';
+import { useTheme } from '../hooks/useTheme.js';
+import AuditLogTable from '../components/AuditLogTable.jsx';
 
 /**
  * Audit Log Page - Security and system monitoring
@@ -21,8 +21,8 @@ const AuditLogPage = () => {
   const navigate = useNavigate();
 
   // Protection: Only admins allowed
-  if (user?.role !== "admin") {
-    navigate("/admin");
+  if (user?.role !== 'admin') {
+    navigate('/admin');
     return null;
   }
 
@@ -44,7 +44,7 @@ const AuditLogPage = () => {
             </div>
             <div className="flex gap-3">
               <button
-                onClick={() => navigate("/admin")}
+                onClick={() => navigate('/admin')}
                 className="px-4 py-2 text-sm font-medium text-white hover:text-gray-200 border border-white/30 rounded hover:bg-white/10 transition-colors"
               >
                 Zurück zum Dashboard
@@ -64,13 +64,11 @@ const AuditLogPage = () => {
       <main className="flex-1 container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <div className="mb-6 border-b pb-4">
-            <h2 className="text-lg font-bold text-gray-800">
-              System-Protokoll
-            </h2>
+            <h2 className="text-lg font-bold text-gray-800">System-Protokoll</h2>
             <p className="text-sm text-gray-500">
-              Hier finden Sie eine revisionssichere Aufzeichnung aller
-              sicherheitsrelevanten Vorgänge im System. Die Integrität wird
-              durch kryptografische Verkettung (Hash-Chain) gewährleistet.
+              Hier finden Sie eine revisionssichere Aufzeichnung aller sicherheitsrelevanten
+              Vorgänge im System. Die Integrität wird durch kryptografische Verkettung (Hash-Chain)
+              gewährleistet.
             </p>
           </div>
 

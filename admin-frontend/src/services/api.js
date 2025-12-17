@@ -1,12 +1,12 @@
-import axios from "axios";
-import { logger } from "../conf/logger/logger.js";
+import axios from 'axios';
+import { logger } from '../conf/logger/logger.js';
 
 /**
  * Base URL for API requests.
  * In production, nginx will handle routing.
  * For local development, Vite proxy will forward /api requests to backend.
  */
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 /**
  * Axios instance with default configuration.
  * All API requests should use this instance.
@@ -14,7 +14,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
-    "Content-Type": "application/json",
+    'Content-Type': 'application/json',
   },
   timeout: 10000, // 10 seconds
   validateStatus: (status) => status >= 200 && status < 500,
@@ -28,18 +28,18 @@ api.interceptors.request.use(
   (config) => {
     logger.debug(`API Request: ${config.method?.toUpperCase()} ${config.url}`);
 
-    const csrfToken = localStorage.getItem("csrfToken");
+    const csrfToken = localStorage.getItem('csrfToken');
     if (csrfToken) {
-      config.headers["X-CSRF-Token"] = csrfToken;
+      config.headers['X-CSRF-Token'] = csrfToken;
       logger.debug(`Added CSRF token to request headers: ${csrfToken}`);
     }
 
     return config;
   },
   (error) => {
-    logger.error("API Request Error:", error);
+    logger.error('API Request Error:', error);
     return Promise.reject(error);
-  }
+  },
 );
 
 /**
@@ -55,21 +55,18 @@ api.interceptors.response.use(
     if (error.response) {
       // Server responded with error status
       logger.error(`API Error ${error.response.status}:`, error.response.data);
-      const errorMessage =
-        error.response.data?.message || "An error occurred on the server";
+      const errorMessage = error.response.data?.message || 'An error occurred on the server';
       return Promise.reject(new Error(errorMessage));
     }
     if (error.request) {
       // Request was made but no response received
-      logger.error("No response from server:", error.request);
-      return Promise.reject(
-        new Error("No response from server. Please check your connection.")
-      );
+      logger.error('No response from server:', error.request);
+      return Promise.reject(new Error('No response from server. Please check your connection.'));
     }
     // Something else happened
-    logger.error("API Error:", error);
+    logger.error('API Error:', error);
     return Promise.reject(error);
-  }
+  },
 );
 
 /**
@@ -81,12 +78,12 @@ api.interceptors.response.use(
 export const exportElectionResultExcel = async (resultId) => {
   try {
     const response = await api.get(`/export/election-result/${resultId}`, {
-      responseType: "blob",
+      responseType: 'blob',
       timeout: 30000, // 30 seconds for file generation
     });
     return response.data;
   } catch (error) {
-    logger.error("Error exporting election result:", error);
+    logger.error('Error exporting election result:', error);
     throw error;
   }
 };

@@ -1,9 +1,9 @@
-import { useState, useRef } from "react";
-import ResponsiveButton from "../ResponsiveButton.jsx";
-import ValidationErrors from "../ValidationErrors.jsx";
-import api from "../../services/api.js";
-import { logger } from "../../conf/logger/logger.js";
-import { MAX_FILE_SIZE } from "../../utils/validators/constants.js";
+import { useState, useRef } from 'react';
+import ResponsiveButton from '../ResponsiveButton.jsx';
+import ValidationErrors from '../ValidationErrors.jsx';
+import api from '../../services/api.js';
+import { logger } from '../../conf/logger/logger.js';
+import { MAX_FILE_SIZE } from '../../utils/validators/constants.js';
 
 /**
  * FileUploadSection - Reusable file upload component with validation
@@ -38,14 +38,14 @@ const FileUploadSection = ({
   acceptedFileTypes,
   formatExample,
   formatExampleData,
-  fileTypeLabel = "CSV",
+  fileTypeLabel = 'CSV',
 }) => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [validationErrors, setValidationErrors] = useState([]);
   const [validationStats, setValidationStats] = useState(null);
   const [isValidating, setIsValidating] = useState(false);
@@ -59,15 +59,15 @@ const FileUploadSection = ({
    */
   const validateFile = (file) => {
     const ext = file.name.toLowerCase();
-    const accepted = acceptedFileTypes.split(",").map((t) => t.trim());
+    const accepted = acceptedFileTypes.split(',').map((t) => t.trim());
 
     if (!accepted.some((type) => ext.endsWith(type))) {
-      setError(`Bitte laden Sie eine ${accepted.join(" oder ")} Datei hoch.`);
+      setError(`Bitte laden Sie eine ${accepted.join(' oder ')} Datei hoch.`);
       return false;
     }
 
     if (file.size > MAX_FILE_SIZE) {
-      setError("Die Datei ist zu groß. Maximale Größe: 10MB");
+      setError('Die Datei ist zu groß. Maximale Größe: 10MB');
       return false;
     }
 
@@ -80,8 +80,8 @@ const FileUploadSection = ({
    * @param {File} file - Selected file
    */
   const handleFileSelect = async (file) => {
-    setError("");
-    setSuccess("");
+    setError('');
+    setSuccess('');
     setValidationErrors([]);
     setValidationStats(null);
 
@@ -97,11 +97,11 @@ const FileUploadSection = ({
       if (!validationResult.success) {
         setValidationErrors(validationResult.errors);
         setSelectedFile(null);
-        setError("Die Datei enthält Validierungsfehler.");
+        setError('Die Datei enthält Validierungsfehler.');
       } else {
         setSelectedFile(file);
         setValidationStats(validationResult.stats);
-        setSuccess("Datei erfolgreich validiert! Sie können nun hochladen.");
+        setSuccess('Datei erfolgreich validiert! Sie können nun hochladen.');
       }
     } catch (err) {
       logger.error(`Error validating file: ${err.message}`);
@@ -120,13 +120,13 @@ const FileUploadSection = ({
     }
 
     if (validationErrors.length > 0) {
-      setError("Bitte korrigieren Sie zuerst die Validierungsfehler.");
+      setError('Bitte korrigieren Sie zuerst die Validierungsfehler.');
       return;
     }
 
     setUploading(true);
-    setError("");
-    setSuccess("");
+    setError('');
+    setSuccess('');
     setUploadProgress(0);
 
     try {
@@ -138,33 +138,31 @@ const FileUploadSection = ({
       }
 
       const formData = new FormData();
-      formData.append("file", fileToUpload);
+      formData.append('file', fileToUpload);
 
-      const csrfToken = localStorage.getItem("csrfToken") || "";
+      const csrfToken = localStorage.getItem('csrfToken') || '';
 
       const response = await api.post(endpoint, formData, {
         headers: {
-          "Content-Type": "multipart/form-data",
-          "X-CSRF-Token": csrfToken,
+          'Content-Type': 'multipart/form-data',
+          'X-CSRF-Token': csrfToken,
         },
         onUploadProgress: (progressEvent) => {
-          const percentCompleted = Math.round(
-            (progressEvent.loaded * 100) / progressEvent.total
-          );
+          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
           setUploadProgress(percentCompleted);
         },
       });
 
       if (response.status === 200) {
-        setSuccess(response.data.message || "Datei erfolgreich hochgeladen!");
+        setSuccess(response.data.message || 'Datei erfolgreich hochgeladen!');
         setSelectedFile(null);
         setValidationStats(null);
         setUploadProgress(0);
         if (fileInputRef.current) {
-          fileInputRef.current.value = "";
+          fileInputRef.current.value = '';
         }
       } else {
-        setError(response.data.message || "Upload fehlgeschlagen.");
+        setError(response.data.message || 'Upload fehlgeschlagen.');
       }
     } catch (err) {
       logger.error(`Error uploading file: ${err.message}`);
@@ -202,11 +200,11 @@ const FileUploadSection = ({
   const handleClearFile = () => {
     setSelectedFile(null);
     setValidationStats(null);
-    setError("");
-    setSuccess("");
+    setError('');
+    setSuccess('');
     setValidationErrors([]);
     if (fileInputRef.current) {
-      fileInputRef.current.value = "";
+      fileInputRef.current.value = '';
     }
   };
 
@@ -220,9 +218,7 @@ const FileUploadSection = ({
       <div className="p-6">
         {/* Format Example */}
         <div className="mb-6 bg-gray-50 rounded-lg p-4 border border-gray-200">
-          <p className="text-xs font-mono text-gray-700 mb-2">
-            Format-Beispiel:
-          </p>
+          <p className="text-xs font-mono text-gray-700 mb-2">Format-Beispiel:</p>
           <code className="text-xs font-mono text-gray-900 block bg-white p-3 rounded border border-gray-300 overflow-x-auto">
             {formatExample}
             {formatExampleData && (
@@ -239,21 +235,19 @@ const FileUploadSection = ({
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
-          onClick={
-            !selectedFile ? () => fileInputRef.current?.click() : undefined
-          }
+          onClick={!selectedFile ? () => fileInputRef.current?.click() : undefined}
           className={`
             relative p-12 border-2 border-dashed rounded-lg transition-all cursor-pointer
-            ${isDragging ? "border-brand-primary bg-blue-50 scale-[1.02]" : selectedFile ? "border-green-500 bg-green-50" : "border-gray-300 hover:border-brand-primary hover:bg-gray-50"}
+            ${isDragging ? 'border-brand-primary bg-blue-50 scale-[1.02]' : selectedFile ? 'border-green-500 bg-green-50' : 'border-gray-300 hover:border-brand-primary hover:bg-gray-50'}
           `}
         >
           {!selectedFile ? (
             <div className="text-center">
               <div
-                className={`inline-flex items-center justify-center w-16 h-16 rounded-full mb-4 transition-all ${isDragging ? "bg-brand-primary scale-110" : "bg-gray-100"}`}
+                className={`inline-flex items-center justify-center w-16 h-16 rounded-full mb-4 transition-all ${isDragging ? 'bg-brand-primary scale-110' : 'bg-gray-100'}`}
               >
                 <svg
-                  className={`w-8 h-8 ${isDragging ? "text-white" : "text-gray-400"}`}
+                  className={`w-8 h-8 ${isDragging ? 'text-white' : 'text-gray-400'}`}
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -266,15 +260,11 @@ const FileUploadSection = ({
                   />
                 </svg>
               </div>
-              <p className="text-lg font-medium text-gray-900 mb-2">
-                Datei hierher ziehen
-              </p>
+              <p className="text-lg font-medium text-gray-900 mb-2">Datei hierher ziehen</p>
               <p className="text-sm text-gray-500 mb-4">
                 oder hier klicken, um eine Datei auszuwählen
               </p>
-              <p className="text-xs text-gray-400">
-                Unterstützte Formate: {acceptedFileTypes}
-              </p>
+              <p className="text-xs text-gray-400">Unterstützte Formate: {acceptedFileTypes}</p>
               <input
                 ref={fileInputRef}
                 type="file"
@@ -290,11 +280,7 @@ const FileUploadSection = ({
           ) : (
             <div className="text-center">
               <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-500 mb-4">
-                <svg
-                  className="w-8 h-8 text-white"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
+                <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
                   <path
                     fillRule="evenodd"
                     d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
@@ -302,9 +288,7 @@ const FileUploadSection = ({
                   />
                 </svg>
               </div>
-              <p className="font-semibold text-green-900 mb-2">
-                Datei bereit zum Upload
-              </p>
+              <p className="font-semibold text-green-900 mb-2">Datei bereit zum Upload</p>
               <p className="text-sm text-gray-700 font-medium truncate max-w-md mx-auto">
                 {selectedFile.name}
               </p>
@@ -318,11 +302,7 @@ const FileUploadSection = ({
         {/* Validation State */}
         {isValidating && (
           <div className="flex items-center gap-3 text-blue-600">
-            <svg
-              className="animate-spin h-5 w-5"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
+            <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
               <circle
                 className="opacity-25"
                 cx="12"
@@ -344,9 +324,7 @@ const FileUploadSection = ({
         {/* Validation Stats */}
         {validationStats && validationErrors.length === 0 && (
           <div className="mt-6 p-4 bg-green-50 rounded-lg border border-green-200">
-            <h4 className="text-sm font-bold text-green-900 mb-3">
-              ✓ Validierung erfolgreich
-            </h4>
+            <h4 className="text-sm font-bold text-green-900 mb-3">✓ Validierung erfolgreich</h4>
             <div className="grid grid-cols-2 gap-3 text-sm">
               {validationStats.totalVoters !== undefined && (
                 <div>
@@ -358,19 +336,13 @@ const FileUploadSection = ({
               )}
               {validationStats.faculties !== undefined && (
                 <div>
-                  <span className="text-green-700 font-medium">
-                    Fakultäten:
-                  </span>
-                  <span className="ml-2 text-green-900 font-bold">
-                    {validationStats.faculties}
-                  </span>
+                  <span className="text-green-700 font-medium">Fakultäten:</span>
+                  <span className="ml-2 text-green-900 font-bold">{validationStats.faculties}</span>
                 </div>
               )}
               {validationStats.totalCandidates !== undefined && (
                 <div>
-                  <span className="text-green-700 font-medium">
-                    Kandidaten:
-                  </span>
+                  <span className="text-green-700 font-medium">Kandidaten:</span>
                   <span className="ml-2 text-green-900 font-bold">
                     {validationStats.totalCandidates}
                   </span>
@@ -378,9 +350,7 @@ const FileUploadSection = ({
               )}
               {validationStats.electionName !== undefined && (
                 <div className="col-span-2">
-                  <span className="text-green-700 font-medium">
-                    Wahlbezeichnung:
-                  </span>
+                  <span className="text-green-700 font-medium">Wahlbezeichnung:</span>
                   <span className="ml-2 text-green-900 font-bold">
                     {validationStats.electionName}
                   </span>
@@ -395,9 +365,7 @@ const FileUploadSection = ({
           <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
             <div className="flex justify-between text-sm mb-2">
               <span className="font-medium text-gray-700">Upload läuft...</span>
-              <span className="text-brand-primary font-bold">
-                {uploadProgress}%
-              </span>
+              <span className="text-brand-primary font-bold">{uploadProgress}%</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
               <div
@@ -432,11 +400,7 @@ const FileUploadSection = ({
 
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg flex gap-3">
-            <svg
-              className="w-5 h-5 flex-shrink-0 mt-0.5"
-              fill="currentColor"
-              viewBox="0 0 20 20"
-            >
+            <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
               <path
                 fillRule="evenodd"
                 d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
@@ -449,10 +413,7 @@ const FileUploadSection = ({
 
         {/* Validation Errors */}
         {validationErrors.length > 0 && (
-          <ValidationErrors
-            errors={validationErrors}
-            fileType={fileTypeLabel}
-          />
+          <ValidationErrors errors={validationErrors} fileType={fileTypeLabel} />
         )}
 
         {/* Action Buttons */}
@@ -463,18 +424,12 @@ const FileUploadSection = ({
                 variant="primary"
                 size="large"
                 onClick={handleUpload}
-                disabled={
-                  uploading || isValidating || validationErrors.length > 0
-                }
+                disabled={uploading || isValidating || validationErrors.length > 0}
                 className="flex-1"
               >
                 {uploading ? (
                   <div className="flex items-center justify-center gap-2">
-                    <svg
-                      className="animate-spin h-5 w-5"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
+                    <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
                       <circle
                         className="opacity-25"
                         cx="12"
@@ -492,9 +447,9 @@ const FileUploadSection = ({
                     <span>Wird hochgeladen...</span>
                   </div>
                 ) : validationErrors.length > 0 ? (
-                  "Fehler beheben"
+                  'Fehler beheben'
                 ) : (
-                  "Hochladen"
+                  'Hochladen'
                 )}
               </ResponsiveButton>
               <ResponsiveButton

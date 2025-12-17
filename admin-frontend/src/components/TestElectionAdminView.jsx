@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { adminService } from '../services/adminApi';
-import { useAlert } from '../context/AlertContext';
 import { logger } from '../conf/logger/logger';
+import { useAlert } from '../context/AlertContext';
 import ResponsiveButton from './ResponsiveButton';
 
 export const TestElectionAdminView = () => {

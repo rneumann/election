@@ -1,7 +1,7 @@
-import { createContext, useContext, useState, useEffect } from "react";
-import authService from "../services/authService.js";
-import api from "../services/api.js";
-import { logger } from "../conf/logger/logger.js";
+import { createContext, useContext, useState, useEffect } from 'react';
+import authService from '../services/authService.js';
+import api from '../services/api.js';
+import { logger } from '../conf/logger/logger.js';
 
 /**
  * Authentication context for managing global auth state.
@@ -19,7 +19,7 @@ const AuthContext = createContext(null);
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error("useAuth must be used within AuthProvider");
+    throw new Error('useAuth must be used within AuthProvider');
   }
   return context;
 };
@@ -34,9 +34,7 @@ export const useAuth = () => {
  */
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(undefined);
-  const [isAuthenticated, setIsAuthenticated] = useState(() =>
-    authService.isAuthenticated()
-  );
+  const [isAuthenticated, setIsAuthenticated] = useState(() => authService.isAuthenticated());
   const [loading, setLoading] = useState(true);
 
   /**
@@ -50,16 +48,16 @@ export const AuthProvider = ({ children }) => {
       // Clear state BEFORE making the API call to prevent any race conditions
       setUser(undefined);
       setIsAuthenticated(false);
-      localStorage.removeItem("csrfToken");
-      sessionStorage.removeItem("isAuthenticated");
+      localStorage.removeItem('csrfToken');
+      sessionStorage.removeItem('isAuthenticated');
 
-      const response = await api.delete("/auth/logout", {
+      const response = await api.delete('/auth/logout', {
         withCredentials: true,
       });
       const redirectUrl = response.data.redirectUrl;
 
       // Replace the current history entry so "back" button won't work
-      window.history.replaceState(null, "", "/login");
+      window.history.replaceState(null, '', '/login');
 
       // Hard redirect to Keycloak logout
       window.location.href = redirectUrl;
@@ -67,11 +65,11 @@ export const AuthProvider = ({ children }) => {
       // Even if logout fails, clear local state
       setUser(undefined);
       setIsAuthenticated(false);
-      localStorage.removeItem("csrfToken");
-      sessionStorage.removeItem("isAuthenticated");
+      localStorage.removeItem('csrfToken');
+      sessionStorage.removeItem('isAuthenticated');
 
       // Redirect to login page
-      window.location.href = "/login";
+      window.location.href = '/login';
     }
   };
 
@@ -107,22 +105,22 @@ export const AuthProvider = ({ children }) => {
     if (!isAuthenticated) {
       return;
     }
-    logger.debug("Starting session heartbeat interval");
+    logger.debug('Starting session heartbeat interval');
     const interval = setInterval(
       async () => {
         try {
-          const { data } = await api.get("/auth/me", { withCredentials: true });
+          const { data } = await api.get('/auth/me', { withCredentials: true });
 
           if (!data?.authenticated) {
-            logger.debug("Session heartbeat: invalid → logout");
+            logger.debug('Session heartbeat: invalid → logout');
             logout();
           }
         } catch {
-          logger.debug("Session heartbeat: error or 401 → logout");
+          logger.debug('Session heartbeat: error or 401 → logout');
           logout();
         }
       },
-      (3 * 60 + 55) * 1000
+      (3 * 60 + 55) * 1000,
     ); // 3 min 55 sec
 
     return () => clearInterval(interval);
@@ -137,7 +135,7 @@ export const AuthProvider = ({ children }) => {
    * @returns {Promise<{success: boolean, message?: string}>} Login result
    */
   const login = async (username, password) => {
-    const ERROR_INVALID_CREDENTIALS = "Benutzername oder Passwort ist falsch.";
+    const ERROR_INVALID_CREDENTIALS = 'Benutzername oder Passwort ist falsch.';
 
     try {
       const user = await authService.login(username, password);
@@ -145,18 +143,16 @@ export const AuthProvider = ({ children }) => {
       if (user && user.username) {
         setUser(user);
         setIsAuthenticated(true);
-        sessionStorage.setItem("isAuthenticated", "true");
+        sessionStorage.setItem('isAuthenticated', 'true');
 
-        logger.debug(
-          `CSRF From local storage: ${localStorage.getItem("csrfToken")}`
-        );
+        logger.debug(`CSRF From local storage: ${localStorage.getItem('csrfToken')}`);
 
         return { success: true, user };
       } else {
         return { success: false, message: ERROR_INVALID_CREDENTIALS };
       }
     } catch (error) {
-      logger.error("Login failed:", error);
+      logger.error('Login failed:', error);
 
       // Check for specific error codes/messages
       if (error.response?.status === 401) {
@@ -167,17 +163,13 @@ export const AuthProvider = ({ children }) => {
       } else if (error.response?.status === 500) {
         return {
           success: false,
-          message:
-            "Ein Serverfehler ist aufgetreten. Bitte versuchen Sie es später erneut.",
+          message: 'Ein Serverfehler ist aufgetreten. Bitte versuchen Sie es später erneut.',
         };
-      } else if (
-        error.code === "ERR_NETWORK" ||
-        error.message.includes("Network")
-      ) {
+      } else if (error.code === 'ERR_NETWORK' || error.message.includes('Network')) {
         return {
           success: false,
           message:
-            "Keine Verbindung zum Server möglich. Bitte überprüfen Sie Ihre Internetverbindung.",
+            'Keine Verbindung zum Server möglich. Bitte überprüfen Sie Ihre Internetverbindung.',
         };
       }
 
@@ -189,7 +181,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const fetchMe = async () => {
-    const { data } = await api.get("/api/auth/me", {
+    const { data } = await api.get('/api/auth/me', {
       withCredentials: true,
     });
     return data;

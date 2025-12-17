@@ -1,5 +1,5 @@
-import { createContext, useContext, useState, useCallback } from "react";
-import { GlobalAlert } from "../components/GlobalAlert";
+import { createContext, useContext, useState, useCallback } from 'react';
+import { GlobalAlert } from '../components/GlobalAlert';
 
 const AlertContext = createContext();
 
@@ -20,13 +20,7 @@ export const AlertProvider = ({ children }) => {
   return (
     <AlertContext.Provider value={{ showAlert }}>
       {children}
-      {alert && (
-        <GlobalAlert
-          status={alert.status}
-          message={alert.message}
-          onClose={closeAlert}
-        />
-      )}
+      {alert && <GlobalAlert status={alert.status} message={alert.message} onClose={closeAlert} />}
     </AlertContext.Provider>
   );
 };

@@ -13,7 +13,6 @@
 //   countingError,
 //   setCountingError,
 // }) => {
-
 //   /**
 //    * Load all elections from API
 //    */

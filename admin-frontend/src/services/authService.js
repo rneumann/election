@@ -1,6 +1,6 @@
-import { logger } from "../conf/logger/logger.js";
-import { hnadleHttpStatus } from "../utils/exception-handler/exception-handler.js";
-import api from "./api.js";
+import { logger } from '../conf/logger/logger.js';
+import { hnadleHttpStatus } from '../utils/exception-handler/exception-handler.js';
+import api from './api.js';
 
 /**
  * Authentication service for handling login and logout operations.
@@ -16,11 +16,11 @@ const authService = {
    * @throws {Error} When authentication fails
    */
   login: async (username, password) => {
-    const { data } = await api.post("/auth/login/ldap", {
+    const { data } = await api.post('/auth/login/ldap', {
       username: username.trim(),
       password: password.trim(),
     });
-    localStorage.setItem("csrfToken", data.csrfToken);
+    localStorage.setItem('csrfToken', data.csrfToken);
     return data.user;
   },
 
@@ -32,11 +32,11 @@ const authService = {
    * @returns {void}
    */
   logout: async () => {
-    const response = await api.delete("/auth/logout", {
+    const response = await api.delete('/auth/logout', {
       withCredentials: true,
     });
     if (response.status !== 200) {
-      throw new Error("Logout failed");
+      throw new Error('Logout failed');
     }
     return response.data.redirectUrl;
   },
@@ -48,7 +48,7 @@ const authService = {
    * @returns {string | undefined} The retrieved CSRF token or undefined if the request fails.
    */
   getCsrfToken: async () => {
-    const csrf = await api.get("/auth/csrf-token", {
+    const csrf = await api.get('/auth/csrf-token', {
       withCredentials: true,
     });
     if (csrf.status !== 200) {
@@ -56,7 +56,7 @@ const authService = {
       return undefined;
     }
     logger.info(`CSRF token retrieved: ${csrf.data.csrfToken}`);
-    return localStorage.setItem("csrfToken", csrf.data.csrfToken);
+    return localStorage.setItem('csrfToken', csrf.data.csrfToken);
   },
 
   /**
@@ -65,7 +65,7 @@ const authService = {
    * @returns {{username: string, role: string} | null} Current user or null
    */
   getCurrentUser: async () => {
-    const response = await api.get("/auth/me", {
+    const response = await api.get('/auth/me', {
       withCredentials: true,
     });
     if (response.status !== 200) {
@@ -80,7 +80,7 @@ const authService = {
    *
    * @returns {boolean} True if user is authenticated
    */
-  isAuthenticated: () => sessionStorage.getItem("isAuthenticated") === "true",
+  isAuthenticated: () => sessionStorage.getItem('isAuthenticated') === 'true',
 };
 
 export default authService;

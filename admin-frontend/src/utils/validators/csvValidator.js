@@ -1,14 +1,11 @@
 /* eslint-disable security/detect-object-injection */
-import Papa from "papaparse";
+import Papa from 'papaparse';
 // IMPORTANT: Import VOTER_CSV_MAPPING here!
-import {
-  voterListSchema,
-  VOTER_CSV_MAPPING,
-} from "../../schemas/voter.schema.js";
-import { parseVoterCSV } from "../parsers/csvParser.js";
-import { logger } from "../../conf/logger/logger.js";
-import { CANDIDATE_CSV_MAPPING } from "../../schemas/candidate.schema.js";
-import { MAX_FILE_SIZE } from "./constants.js";
+import { voterListSchema, VOTER_CSV_MAPPING } from '../../schemas/voter.schema.js';
+import { parseVoterCSV } from '../parsers/csvParser.js';
+import { logger } from '../../conf/logger/logger.js';
+import { CANDIDATE_CSV_MAPPING } from '../../schemas/candidate.schema.js';
+import { MAX_FILE_SIZE } from './constants.js';
 
 /**
  * Validate CSV file containing voter data.
@@ -18,9 +15,9 @@ import { MAX_FILE_SIZE } from "./constants.js";
  * @returns {Promise<Object>} Validation result with success, errors, and data/stats if successful.
  */
 export const validateVoterCSV = async (file) => {
-  const fileExtension = file.name.split(".").pop();
+  const fileExtension = file.name.split('.').pop();
   logger.info(
-    `Starting CSV validation for file type: .${fileExtension}, size: ${(file.size / 1024).toFixed(2)}KB`
+    `Starting CSV validation for file type: .${fileExtension}, size: ${(file.size / 1024).toFixed(2)}KB`,
   );
 
   // Step 0: Check file size
@@ -35,7 +32,7 @@ export const validateVoterCSV = async (file) => {
           row: null,
           field: null,
           message: `Datei zu groß (${fileSizeMB}MB). Maximal ${maxSizeMB}MB erlaubt.`,
-          code: "FILE_TOO_LARGE",
+          code: 'FILE_TOO_LARGE',
         },
       ],
     };
@@ -46,8 +43,8 @@ export const validateVoterCSV = async (file) => {
 
   if (!parseResult.success) {
     logger.warn(
-      "CSV parsing failed:",
-      parseResult.errors.map((e) => e.code)
+      'CSV parsing failed:',
+      parseResult.errors.map((e) => e.code),
     );
     return {
       success: false,
@@ -75,14 +72,14 @@ export const validateVoterCSV = async (file) => {
             row: null,
             field: null,
             message: error.message,
-            code: "VALIDATION_ERROR",
+            code: 'VALIDATION_ERROR',
           });
         } else if (path.length === 1) {
           errors.push({
             row: path[0] + 2,
             field: null,
             message: error.message,
-            code: "ROW_ERROR",
+            code: 'ROW_ERROR',
           });
         } else {
           const rowIndex = path[0];
@@ -92,7 +89,7 @@ export const validateVoterCSV = async (file) => {
             row: rowIndex + 2,
             field: fieldName,
             message: error.message,
-            code: "FIELD_ERROR",
+            code: 'FIELD_ERROR',
           });
         }
       });
@@ -110,27 +107,27 @@ export const validateVoterCSV = async (file) => {
   const duplicateErrors = [];
 
   validationResult.data.forEach((voter, index) => {
-    const uid = voter["RZ-Kennung"];
-    const mtknr = voter["Matk.Nr"];
+    const uid = voter['RZ-Kennung'];
+    const mtknr = voter['Matk.Nr'];
 
     if (uidSet.has(uid)) {
       duplicateErrors.push({
         row: index + 2,
-        field: "RZ-Kennung",
+        field: 'RZ-Kennung',
         message: `Doppelte RZ-Kennung: ${uid} wurde bereits in einer vorherigen Zeile verwendet`,
-        code: "DUPLICATE_UID",
+        code: 'DUPLICATE_UID',
       });
     } else {
       uidSet.add(uid);
     }
 
-    if (mtknr && mtknr.trim() !== "") {
+    if (mtknr && mtknr.trim() !== '') {
       if (mtknrSet.has(mtknr)) {
         duplicateErrors.push({
           row: index + 2,
-          field: "Matk.Nr",
+          field: 'Matk.Nr',
           message: `Doppelte Matrikelnummer: ${mtknr} wurde bereits in einer vorherigen Zeile verwendet`,
-          code: "DUPLICATE_MTKNR",
+          code: 'DUPLICATE_MTKNR',
         });
       } else {
         mtknrSet.add(mtknr);
@@ -139,9 +136,7 @@ export const validateVoterCSV = async (file) => {
   });
 
   if (duplicateErrors.length > 0) {
-    logger.warn(
-      `Duplicate entries found: ${duplicateErrors.length} duplicate(s)`
-    );
+    logger.warn(`Duplicate entries found: ${duplicateErrors.length} duplicate(s)`);
     return {
       success: false,
       errors: duplicateErrors,
@@ -151,7 +146,7 @@ export const validateVoterCSV = async (file) => {
   // Step 4: Calculate statistics
   const faculties = new Set(validationResult.data.map((v) => v.Fakultät));
 
-  logger.info("CSV validation successful:", {
+  logger.info('CSV validation successful:', {
     totalVoters: validationResult.data.length,
     faculties: faculties.size,
   });
@@ -180,31 +175,24 @@ export const validateCandidateCSV = async (file) => {
     reader.onload = async (e) => {
       const text = e.target.result;
       const lines = text
-        .split("\n")
+        .split('\n')
         .map((l) => l.trim())
         .filter((l) => l);
 
       if (lines.length < 1) {
         return resolve({
           success: false,
-          errors: [{ message: "Die Datei ist leer.", code: "EMPTY" }],
+          errors: [{ message: 'Die Datei ist leer.', code: 'EMPTY' }],
         });
       }
 
-      const headers = lines[0]
-        .split(",")
-        .map((h) => h.trim().replace(/"/g, ""));
+      const headers = lines[0].split(',').map((h) => h.trim().replace(/"/g, ''));
 
       // The columns expected for candidates
-      const requiredHeaders = [
-        "Nachname",
-        "Vorname",
-        "MatrikelNr",
-        "Fakultaet",
-      ];
+      const requiredHeaders = ['Nachname', 'Vorname', 'MatrikelNr', 'Fakultaet'];
 
       const missingHeaders = requiredHeaders.filter(
-        (req) => !headers.some((h) => h.toLowerCase() === req.toLowerCase())
+        (req) => !headers.some((h) => h.toLowerCase() === req.toLowerCase()),
       );
 
       if (missingHeaders.length > 0) {
@@ -212,8 +200,8 @@ export const validateCandidateCSV = async (file) => {
           success: false,
           errors: [
             {
-              message: `Falsches Format! Es fehlen Spalten für Kandidaten: ${missingHeaders.join(", ")}.`,
-              code: "MISSING_HEADERS",
+              message: `Falsches Format! Es fehlen Spalten für Kandidaten: ${missingHeaders.join(', ')}.`,
+              code: 'MISSING_HEADERS',
             },
           ],
         });
@@ -223,18 +211,16 @@ export const validateCandidateCSV = async (file) => {
       const data = [];
 
       for (let i = 1; i < lines.length; i++) {
-        const values = lines[i]
-          .split(",")
-          .map((v) => v.trim().replace(/"/g, ""));
+        const values = lines[i].split(',').map((v) => v.trim().replace(/"/g, ''));
         const rowData = {};
         headers.forEach((h, idx) => (rowData[h] = values[idx]));
 
-        if (!rowData["MatrikelNr"] && !rowData["matrikelnr"]) {
+        if (!rowData['MatrikelNr'] && !rowData['matrikelnr']) {
           errors.push({
             row: i + 1,
-            field: "MatrikelNr",
-            message: "Matrikelnummer fehlt",
-            code: "MISSING_VALUE",
+            field: 'MatrikelNr',
+            message: 'Matrikelnummer fehlt',
+            code: 'MISSING_VALUE',
           });
         }
         data.push(rowData);
@@ -264,7 +250,7 @@ export const transformCandidateFile = (file) => {
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
-      encoding: "UTF-8",
+      encoding: 'UTF-8',
       complete: (results) => {
         const data = results.data;
         const transformedData = data.map((row) => {
@@ -272,12 +258,12 @@ export const transformCandidateFile = (file) => {
           Object.keys(row).forEach((germanKey) => {
             const englishKey = CANDIDATE_CSV_MAPPING[germanKey.trim()];
             if (englishKey) {
-              if (englishKey === "approved") {
+              if (englishKey === 'approved') {
                 const val = row[germanKey];
                 const isTrue =
-                  typeof val === "string" &&
-                  ["true", "1", "ja", "wahr"].includes(val.toLowerCase());
-                newRow[englishKey] = isTrue ? "true" : "false";
+                  typeof val === 'string' &&
+                  ['true', '1', 'ja', 'wahr'].includes(val.toLowerCase());
+                newRow[englishKey] = isTrue ? 'true' : 'false';
               } else {
                 newRow[englishKey] = row[germanKey];
               }
@@ -288,11 +274,11 @@ export const transformCandidateFile = (file) => {
 
         const newCSV = Papa.unparse(transformedData, {
           quotes: true,
-          delimiter: ",",
+          delimiter: ',',
         });
 
-        const newFile = new File([newCSV], "candidates_import.csv", {
-          type: "text/csv",
+        const newFile = new File([newCSV], 'candidates_import.csv', {
+          type: 'text/csv',
           lastModified: new Date().getTime(),
         });
         resolve(newFile);
@@ -317,7 +303,7 @@ export const transformVoterFile = async (file) => {
     const result = await parseVoterCSV(file);
 
     if (!result.success) {
-      throw new Error("Fehler beim Verarbeiten der CSV für den Upload.");
+      throw new Error('Fehler beim Verarbeiten der CSV für den Upload.');
     }
 
     const data = result.data; // These are the clean data with German keys
@@ -342,16 +328,16 @@ export const transformVoterFile = async (file) => {
     // 3. Convert back to CSV (Standard format for backend)
     const newCSV = Papa.unparse(transformedData, {
       quotes: true,
-      delimiter: ",", // Backend parser (csv-parser) handles commas well
+      delimiter: ',', // Backend parser (csv-parser) handles commas well
     });
 
     // 4. Create new file
-    return new File([newCSV], "voters_import_mapped.csv", {
-      type: "text/csv",
+    return new File([newCSV], 'voters_import_mapped.csv', {
+      type: 'text/csv',
       lastModified: new Date().getTime(),
     });
   } catch (error) {
-    logger.error("Fehler in transformVoterFile", error);
+    logger.error('Fehler in transformVoterFile', error);
     throw error;
   }
 };

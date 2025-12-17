@@ -1,4 +1,4 @@
-import { themeConfig } from "../../theme.config.js";
+import { themeConfig } from '../../theme.config.js';
 
 /**
  * Hook for accessing application theme configuration.

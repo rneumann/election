@@ -1,17 +1,18 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext.jsx";
-import { useTheme } from "../hooks/useTheme.js";
-import CountingSection from "../components/counting/CountingSection.jsx";
-import FileUploadSection from "../components/upload/FileUploadSection.jsx";
-import ResponsiveButton from "../components/ResponsiveButton.jsx";
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext.jsx';
+import { useTheme } from '../hooks/useTheme.js';
+import CountingSection from '../components/counting/CountingSection.jsx';
+import FileUploadSection from '../components/upload/FileUploadSection.jsx';
+import ResponsiveButton from '../components/ResponsiveButton.jsx';
 import {
   validateVoterCSV,
   validateCandidateCSV,
   transformCandidateFile,
   transformVoterFile,
-} from "../utils/validators/csvValidator.js";
-import { validateElectionExcel } from "../utils/validators/excelValidator.js";
+} from '../utils/validators/csvValidator.js';
+import { validateElectionExcel } from '../utils/validators/excelValidator.js';
+import { TestElectionAdminView } from '../components/TestElectionAdminView.jsx';
 
 /**
  * Admin Dashboard - Main admin interface
@@ -30,14 +31,14 @@ const AdminDashboard = () => {
   const { user, logout } = useAuth();
   const theme = useTheme();
   const navigate = useNavigate();
-  const [activeSection, setActiveSection] = useState("counting");
+  const [activeSection, setActiveSection] = useState('counting');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Counting section state
   const [elections, setElections] = useState([]);
   const [loadingElections, setLoadingElections] = useState(false);
   const [countingElectionId, setCountingElectionId] = useState(null);
-  const [countingError, setCountingError] = useState("");
+  const [countingError, setCountingError] = useState('');
 
   /**
    * Get navigation button style
@@ -46,9 +47,8 @@ const AdminDashboard = () => {
    * @returns {object} Style object
    */
   const getNavButtonStyle = (section) => ({
-    backgroundColor:
-      activeSection === section ? theme.colors.primary : "transparent",
-    color: activeSection === section ? "#ffffff" : theme.colors.dark,
+    backgroundColor: activeSection === section ? theme.colors.primary : 'transparent',
+    color: activeSection === section ? '#ffffff' : theme.colors.dark,
   });
 
   /**
@@ -75,12 +75,7 @@ const AdminDashboard = () => {
                 className="lg:hidden p-2 text-white hover:text-gray-200"
                 aria-label="Toggle menu"
               >
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   {mobileMenuOpen ? (
                     <path
                       strokeLinecap="round"
@@ -99,9 +94,7 @@ const AdminDashboard = () => {
                 </svg>
               </button>
               <div>
-                <h1 className="text-xl sm:text-2xl font-semibold text-white">
-                  Verwaltungsbereich
-                </h1>
+                <h1 className="text-xl sm:text-2xl font-semibold text-white">Verwaltungsbereich</h1>
                 <p className="text-xs sm:text-sm text-gray-100 mt-0.5 opacity-90">
                   {user?.username} · {theme.roles[user?.role]}
                 </p>
@@ -126,7 +119,7 @@ const AdminDashboard = () => {
           <aside
             className={`
             lg:w-72 lg:flex-shrink-0
-            ${mobileMenuOpen ? "block" : "hidden lg:block"}
+            ${mobileMenuOpen ? 'block' : 'hidden lg:block'}
           `}
           >
             <div className="bg-white border border-gray-200 lg:sticky lg:top-8">
@@ -134,17 +127,14 @@ const AdminDashboard = () => {
                 <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">
                   Navigation
                 </h2>
-                <p className="text-xs text-gray-500 mt-1">
-                  Funktionen zur Wahlverwaltung
-                </p>
+                <p className="text-xs text-gray-500 mt-1">Funktionen zur Wahlverwaltung</p>
               </div>
 
               <div className="px-5 py-4 bg-gray-50 border-b border-gray-200">
                 <p className="text-xs text-gray-700 leading-relaxed">
-                  Die folgende Liste enthält alle notwendigen Funktionen zur
-                  Einrichtung/Änderung von Wahlen. Um eine neue Wahl
-                  einzurichten, folgen Sie einfach den Schritten in der
-                  angegebenen Reihenfolge.
+                  Die folgende Liste enthält alle notwendigen Funktionen zur Einrichtung/Änderung
+                  von Wahlen. Um eine neue Wahl einzurichten, folgen Sie einfach den Schritten in
+                  der angegebenen Reihenfolge.
                 </p>
               </div>
 
@@ -155,7 +145,7 @@ const AdminDashboard = () => {
                     Sicherheit
                   </div>
                   <button
-                    onClick={() => navigate("/admin/audit")}
+                    onClick={() => navigate('/admin/audit')}
                     className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50 text-gray-700"
                   >
                     <div className="flex items-center gap-3">
@@ -190,13 +180,42 @@ const AdminDashboard = () => {
                     Verwaltung
                   </div>
                   <button
-                    onClick={() => handleSectionChange("clear")}
-                    style={getNavButtonStyle("clear")}
+                    onClick={() => handleSectionChange('clear')}
+                    style={getNavButtonStyle('clear')}
                     className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
                   >
                     <div className="flex items-center justify-between">
                       <span>Datenbank leeren</span>
                       <span className="text-xs opacity-60">1</span>
+                    </div>
+                  </button>
+                </div>
+
+                <div className="mb-6">
+                  <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                    Testwahlen
+                  </div>
+
+                  <button
+                    /* eslint-disable */
+                    onClick={() => handleSectionChange('test-election')}
+                    style={getNavButtonStyle('test-election')}
+                    className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span>Steuern</span>
+                      <span className="text-xs opacity-60">2.1</span>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => handleSectionChange('test-election-counting')}
+                    style={getNavButtonStyle('test-election-counting')}
+                    className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span>Auszählen</span>
+                      <span className="text-xs opacity-60">2.2</span>
                     </div>
                   </button>
                 </div>
@@ -207,23 +226,23 @@ const AdminDashboard = () => {
                     Wahlen definieren
                   </div>
                   <button
-                    onClick={() => handleSectionChange("template")}
-                    style={getNavButtonStyle("template")}
+                    onClick={() => handleSectionChange('template')}
+                    style={getNavButtonStyle('template')}
                     className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
                   >
                     <div className="flex items-center justify-between">
                       <span>Excel-Vorlage herunterladen</span>
-                      <span className="text-xs opacity-60">2.1</span>
+                      <span className="text-xs opacity-60">3.1</span>
                     </div>
                   </button>
                   <button
-                    onClick={() => handleSectionChange("definition")}
-                    style={getNavButtonStyle("definition")}
+                    onClick={() => handleSectionChange('definition')}
+                    style={getNavButtonStyle('definition')}
                     className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
                   >
                     <div className="flex items-center justify-between">
                       <span>Wahleinstellung hochladen</span>
-                      <span className="text-xs opacity-60">2.2</span>
+                      <span className="text-xs opacity-60">3.2</span>
                     </div>
                   </button>
                 </div>
@@ -234,23 +253,23 @@ const AdminDashboard = () => {
                     Wählerverzeichnis
                   </div>
                   <button
-                    onClick={() => handleSectionChange("upload")}
-                    style={getNavButtonStyle("upload")}
+                    onClick={() => handleSectionChange('upload')}
+                    style={getNavButtonStyle('upload')}
                     className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
                   >
                     <div className="flex items-center justify-between">
                       <span>CSV-Datei hochladen</span>
-                      <span className="text-xs opacity-60">3.1</span>
+                      <span className="text-xs opacity-60">4.1</span>
                     </div>
                   </button>
                   <button
-                    onClick={() => handleSectionChange("download")}
-                    style={getNavButtonStyle("download")}
+                    onClick={() => handleSectionChange('download')}
+                    style={getNavButtonStyle('download')}
                     className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
                   >
                     <div className="flex items-center justify-between">
                       <span>Wählerverzeichnis herunterladen</span>
-                      <span className="text-xs opacity-60">3.2</span>
+                      <span className="text-xs opacity-60">4.2</span>
                     </div>
                   </button>
                 </div>
@@ -261,23 +280,23 @@ const AdminDashboard = () => {
                     Kandidatenverzeichnis
                   </div>
                   <button
-                    onClick={() => handleSectionChange("uploadCandidates")}
-                    style={getNavButtonStyle("uploadCandidates")}
+                    onClick={() => handleSectionChange('uploadCandidates')}
+                    style={getNavButtonStyle('uploadCandidates')}
                     className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
                   >
                     <div className="flex items-center justify-between">
                       <span>CSV-Datei hochladen</span>
-                      <span className="text-xs opacity-60">4.1</span>
+                      <span className="text-xs opacity-60">5.1</span>
                     </div>
                   </button>
                   <button
-                    onClick={() => handleSectionChange("downloadCandidates")}
-                    style={getNavButtonStyle("downloadCandidates")}
+                    onClick={() => handleSectionChange('downloadCandidates')}
+                    style={getNavButtonStyle('downloadCandidates')}
                     className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
                   >
                     <div className="flex items-center justify-between">
                       <span>Kandidatenverzeichnis herunterladen</span>
-                      <span className="text-xs opacity-60">4.2</span>
+                      <span className="text-xs opacity-60">5.2</span>
                     </div>
                   </button>
                 </div>
@@ -288,13 +307,13 @@ const AdminDashboard = () => {
                     Auszählung
                   </div>
                   <button
-                    onClick={() => handleSectionChange("counting")}
-                    style={getNavButtonStyle("counting")}
+                    onClick={() => handleSectionChange('counting')}
+                    style={getNavButtonStyle('counting')}
                     className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
                   >
                     <div className="flex items-center justify-between">
                       <span>Wahlergebnisse auszählen</span>
-                      <span className="text-xs opacity-60">5</span>
+                      <span className="text-xs opacity-60">6</span>
                     </div>
                   </button>
                 </div>
@@ -305,15 +324,13 @@ const AdminDashboard = () => {
           {/* Right Content Area */}
           <div className="flex-1 w-full lg:w-auto">
             {/* Datenbank leeren Section */}
-            {activeSection === "clear" && (
+            {activeSection === 'clear' && (
               <div className="bg-white rounded-lg shadow-sm border border-gray-200">
                 <div className="border-b border-gray-200 px-6 py-4">
-                  <h2 className="text-xl font-bold text-gray-900">
-                    Datenbank leeren
-                  </h2>
+                  <h2 className="text-xl font-bold text-gray-900">Datenbank leeren</h2>
                   <p className="text-sm text-gray-600 mt-1">
-                    Alle Daten aus der Datenbank entfernen, einschließlich
-                    Wahleinstellungen, Stimmzettel, Wähler, Kandidaten usw.
+                    Alle Daten aus der Datenbank entfernen, einschließlich Wahleinstellungen,
+                    Stimmzettel, Wähler, Kandidaten usw.
                   </p>
                 </div>
                 <div className="p-6">
@@ -335,8 +352,8 @@ const AdminDashboard = () => {
                       <div className="text-sm text-yellow-900">
                         <p className="font-semibold mb-1">Warnung:</p>
                         <p className="text-yellow-800">
-                          Sie werden aufgefordert, diesen Schritt zu bestätigen,
-                          um die Daten nicht versehentlich zu löschen.
+                          Sie werden aufgefordert, diesen Schritt zu bestätigen, um die Daten nicht
+                          versehentlich zu löschen.
                         </p>
                       </div>
                     </div>
@@ -369,12 +386,10 @@ const AdminDashboard = () => {
             )}
 
             {/* Excel-Vorlage herunterladen Section */}
-            {activeSection === "template" && (
+            {activeSection === 'template' && (
               <div className="bg-white rounded-lg shadow-sm border border-gray-200">
                 <div className="border-b border-gray-200 px-6 py-4">
-                  <h2 className="text-xl font-bold text-gray-900">
-                    Excel-Vorlage herunterladen
-                  </h2>
+                  <h2 className="text-xl font-bold text-gray-900">Excel-Vorlage herunterladen</h2>
                   <p className="text-sm text-gray-600 mt-1">
                     Excel-Vorlage für eine Wahleinstellung herunterladen
                   </p>
@@ -434,7 +449,7 @@ const AdminDashboard = () => {
             )}
 
             {/* Wahleinstellung hochladen Section */}
-            {activeSection === "definition" && (
+            {activeSection === 'definition' && (
               <FileUploadSection
                 key="upload-elections"
                 title="Wahleinstellung hochladen"
@@ -449,7 +464,7 @@ const AdminDashboard = () => {
             )}
 
             {/* Wähler CSV hochladen Section */}
-            {activeSection === "upload" && (
+            {activeSection === 'upload' && (
               <FileUploadSection
                 key="upload-voters"
                 title="Wählerverzeichnis hochladen"
@@ -466,15 +481,15 @@ const AdminDashboard = () => {
             )}
 
             {/* Wählerverzeichnis herunterladen Section */}
-            {activeSection === "download" && (
+            {activeSection === 'download' && (
               <div className="bg-white rounded-lg shadow-sm border border-gray-200">
                 <div className="border-b border-gray-200 px-6 py-4">
                   <h2 className="text-xl font-bold text-gray-900">
                     Wählerverzeichnis herunterladen
                   </h2>
                   <p className="text-sm text-gray-600 mt-1">
-                    Aktuelles Wählerverzeichnis als Excel-Dokument herunterladen
-                    (enthält ein Tabellenblatt pro Fakultät/Studiengang)
+                    Aktuelles Wählerverzeichnis als Excel-Dokument herunterladen (enthält ein
+                    Tabellenblatt pro Fakultät/Studiengang)
                   </p>
                 </div>
                 <div className="p-6">
@@ -506,7 +521,7 @@ const AdminDashboard = () => {
             )}
 
             {/* Kandidaten CSV hochladen Section */}
-            {activeSection === "uploadCandidates" && (
+            {activeSection === 'uploadCandidates' && (
               <FileUploadSection
                 key="upload-candidates"
                 title="Kandidatenverzeichnis hochladen"
@@ -523,16 +538,15 @@ const AdminDashboard = () => {
             )}
 
             {/* Kandidatenverzeichnis herunterladen Section */}
-            {activeSection === "downloadCandidates" && (
+            {activeSection === 'downloadCandidates' && (
               <div className="bg-white rounded-lg shadow-sm border border-gray-200">
                 <div className="border-b border-gray-200 px-6 py-4">
                   <h2 className="text-xl font-bold text-gray-900">
                     Kandidatenverzeichnis herunterladen
                   </h2>
                   <p className="text-sm text-gray-600 mt-1">
-                    Aktuelles Kandidatenverzeichnis als Excel-Dokument
-                    herunterladen (enthält ein Tabellenblatt pro
-                    Fakultät/Studiengang)
+                    Aktuelles Kandidatenverzeichnis als Excel-Dokument herunterladen (enthält ein
+                    Tabellenblatt pro Fakultät/Studiengang)
                   </p>
                 </div>
                 <div className="p-6">
@@ -563,8 +577,25 @@ const AdminDashboard = () => {
               </div>
             )}
 
+            {activeSection === 'test-election' && <TestElectionAdminView />}
+            {/* {activeSection === 'test-election-counting' && (
+              <TestElectionCountingAdminView
+                theme={theme}
+                elections={elections}
+                setElections={setElections}
+                loadingElections={loadingElections}
+                setLoadingElections={setLoadingElections}
+                countingElectionId={countingElectionId}
+                setCountingElectionId={setCountingElectionId}
+                countingResult={countingResult}
+                setCountingResult={setCountingResult}
+                countingError={countingError}
+                setCountingError={setCountingError}
+              />
+            )} */}
+
             {/* Counting Section */}
-            {activeSection === "counting" && (
+            {activeSection === 'counting' && (
               <CountingSection
                 theme={theme}
                 elections={elections}

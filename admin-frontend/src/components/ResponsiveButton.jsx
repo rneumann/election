@@ -1,4 +1,4 @@
-import PropTypes from "prop-types";
+import PropTypes from 'prop-types';
 
 /**
  * Touch-optimized button component with responsive sizing and variant styles.
@@ -20,82 +20,82 @@ import PropTypes from "prop-types";
  */
 const ResponsiveButton = ({
   children,
-  variant = "primary",
-  size = "medium",
+  variant = 'primary',
+  size = 'medium',
   fullWidth = false,
   disabled = false,
   onClick,
-  type = "button",
-  className = "",
+  type = 'button',
+  className = '',
   toolTip = undefined,
-  toolTipPlacement = "top",
+  toolTipPlacement = 'top',
 }) => {
   const baseClasses =
-    "rounded-lg font-semibold transition-all duration-200 touch-manipulation disabled:cursor-not-allowed disabled:opacity-50";
+    'rounded-lg font-semibold transition-all duration-200 touch-manipulation disabled:cursor-not-allowed disabled:opacity-50';
 
   // Variant styles
   const variantClasses = {
     primary:
-      "bg-brand-primary text-white hover:opacity-90 active:opacity-80 shadow-md hover:shadow-lg disabled:bg-gray-400 transition-colors",
+      'bg-brand-primary text-white hover:opacity-90 active:opacity-80 shadow-md hover:shadow-lg disabled:bg-gray-400 transition-colors',
     secondary:
-      "bg-white text-brand-primary border-2 border-brand-primary hover:bg-brand-light active:bg-gray-100 transition-colors",
+      'bg-white text-brand-primary border-2 border-brand-primary hover:bg-brand-light active:bg-gray-100 transition-colors',
     danger:
-      "bg-red-600 text-white hover:bg-red-700 active:bg-red-800 shadow-md hover:shadow-lg transition-colors",
+      'bg-red-600 text-white hover:bg-red-700 active:bg-red-800 shadow-md hover:shadow-lg transition-colors',
     outline:
-      "bg-gray-500 border-2 border-gray-600 text-white hover:bg-gray-600 hover:border-gray-700 active:bg-gray-700 shadow-md font-semibold transition-colors",
+      'bg-gray-500 border-2 border-gray-600 text-white hover:bg-gray-600 hover:border-gray-700 active:bg-gray-700 shadow-md font-semibold transition-colors',
     ghost:
-      "bg-transparent text-white border-none shadow-none p-0 hover:opacity-80 active:opacity-60 transition-opacity",
-    icon: "bg-transparent border-none shadow-none p-0 hover:opacity-80 active:opacity-60 transition-opacity",
+      'bg-transparent text-white border-none shadow-none p-0 hover:opacity-80 active:opacity-60 transition-opacity',
+    icon: 'bg-transparent border-none shadow-none p-0 hover:opacity-80 active:opacity-60 transition-opacity',
   };
 
   // Size styles (with mobile-optimized touch targets)
   const sizeClasses = {
-    small: "px-3 py-1.5 text-sm sm:px-4 sm:py-2",
-    medium: "px-4 py-2.5 text-sm sm:px-5 sm:py-3 sm:text-base min-h-touch",
-    large: "px-6 py-3 text-base sm:px-8 sm:py-4 sm:text-lg min-h-touch",
-    icon: "p-2 h-auto w-auto flex items-center justify-center",
+    small: 'px-3 py-1.5 text-sm sm:px-4 sm:py-2',
+    medium: 'px-4 py-2.5 text-sm sm:px-5 sm:py-3 sm:text-base min-h-touch',
+    large: 'px-6 py-3 text-base sm:px-8 sm:py-4 sm:text-lg min-h-touch',
+    icon: 'p-2 h-auto w-auto flex items-center justify-center',
   };
 
   const tooltipPositionClasses = {
-    bottom: "top-full mt-2 left-1/2 -translate-x-1/2",
-    top: "bottom-full mb-2 left-1/2 -translate-x-1/2",
-    left: "left-full mr-2 top-1/2 -translate-y-1/2",
-    right: "right-full ml-2 top-1/2 -translate-y-1/2",
+    bottom: 'top-full mt-2 left-1/2 -translate-x-1/2',
+    top: 'bottom-full mb-2 left-1/2 -translate-x-1/2',
+    left: 'left-full mr-2 top-1/2 -translate-y-1/2',
+    right: 'right-full ml-2 top-1/2 -translate-y-1/2',
   };
 
-  const widthClass = fullWidth ? "w-full" : "";
+  const widthClass = fullWidth ? 'w-full' : '';
 
   // Safe property access with defaults
   const getVariantClass = () => {
-    if (variant === "primary") {
+    if (variant === 'primary') {
       return variantClasses.primary;
     }
-    if (variant === "secondary") {
+    if (variant === 'secondary') {
       return variantClasses.secondary;
     }
-    if (variant === "danger") {
+    if (variant === 'danger') {
       return variantClasses.danger;
     }
-    if (variant === "outline") {
+    if (variant === 'outline') {
       return variantClasses.outline;
     }
-    if (variant === "ghost") {
+    if (variant === 'ghost') {
       return variantClasses.ghost;
     }
-    if (variant === "icon") {
+    if (variant === 'icon') {
       return variantClasses.icon;
     }
     return variantClasses.primary;
   };
 
   const getSizeClass = () => {
-    if (size === "small") {
+    if (size === 'small') {
       return sizeClasses.small;
     }
-    if (size === "large") {
+    if (size === 'large') {
       return sizeClasses.large;
     }
-    if (size === "icon") {
+    if (size === 'icon') {
       return sizeClasses.icon;
     }
     return sizeClasses.medium;
@@ -137,12 +137,12 @@ const ResponsiveButton = ({
 
 ResponsiveButton.propTypes = {
   children: PropTypes.node.isRequired,
-  variant: PropTypes.oneOf(["primary", "secondary", "danger", "outline"]),
-  size: PropTypes.oneOf(["small", "medium", "large"]),
+  variant: PropTypes.oneOf(['primary', 'secondary', 'danger', 'outline']),
+  size: PropTypes.oneOf(['small', 'medium', 'large']),
   fullWidth: PropTypes.bool,
   disabled: PropTypes.bool,
   onClick: PropTypes.func,
-  type: PropTypes.oneOf(["button", "submit", "reset"]),
+  type: PropTypes.oneOf(['button', 'submit', 'reset']),
   className: PropTypes.string,
 };
 

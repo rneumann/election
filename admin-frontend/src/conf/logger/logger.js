@@ -1,4 +1,4 @@
-import log from "loglevel";
+import log from 'loglevel';
 
 /**
  * Logger-Konfiguration mit loglevel
@@ -21,8 +21,7 @@ log.methodFactory = (methodName, logLevel, loggerName) => {
 
 // Set log level based on environment (only once, after methodFactory is set)
 const logLevel =
-  import.meta.env.VITE_LOG_LEVEL ||
-  (import.meta.env.MODE === "production" ? "info" : "debug");
+  import.meta.env.VITE_LOG_LEVEL || (import.meta.env.MODE === 'production' ? 'info' : 'debug');
 log.setLevel(logLevel);
 
 export const logger = log;

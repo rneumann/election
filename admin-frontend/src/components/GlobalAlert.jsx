@@ -1,9 +1,9 @@
 export const GlobalAlert = ({ status, message }) => {
   const classForStatus = {
-    success: "bg-green-600",
-    error: "bg-red-600",
-    warning: "bg-yellow-500",
-    info: "bg-blue-600",
+    success: 'bg-green-600',
+    error: 'bg-red-600',
+    warning: 'bg-yellow-500',
+    info: 'bg-blue-600',
   };
 
   return (

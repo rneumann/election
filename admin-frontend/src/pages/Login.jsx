@@ -1,8 +1,8 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext.jsx";
-import { useTheme } from "../hooks/useTheme.js";
-import ResponsiveButton from "../components/ResponsiveButton.jsx";
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext.jsx';
+import { useTheme } from '../hooks/useTheme.js';
+import ResponsiveButton from '../components/ResponsiveButton.jsx';
 
 /**
  * Login page for admin authentication.
@@ -13,9 +13,9 @@ const Login = () => {
   const theme = useTheme();
   const navigate = useNavigate();
   const { login } = useAuth();
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   /**
@@ -27,22 +27,22 @@ const Login = () => {
    */
   const handleLogin = async (e) => {
     e.preventDefault();
-    setError("");
+    setError('');
     setLoading(true);
 
     try {
       const result = await login(username, password);
       if (result.success) {
-        if (result.user.role === "admin") {
-          navigate("/admin");
+        if (result.user.role === 'admin') {
+          navigate('/admin');
         } else {
-          setError("Sie haben keine Admin-Berechtigung.");
+          setError('Sie haben keine Admin-Berechtigung.');
         }
       } else {
-        setError(result.message || "Login fehlgeschlagen.");
+        setError(result.message || 'Login fehlgeschlagen.');
       }
     } catch (err) {
-      setError("Ein unerwarteter Fehler ist aufgetreten.");
+      setError('Ein unerwarteter Fehler ist aufgetreten.');
     } finally {
       setLoading(false);
     }
@@ -52,10 +52,7 @@ const Login = () => {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
         <div className="text-center mb-8">
-          <h1
-            className="text-3xl font-bold mb-2"
-            style={{ color: theme.colors.primary }}
-          >
+          <h1 className="text-3xl font-bold mb-2" style={{ color: theme.colors.primary }}>
             {theme.institution.name} Admin
           </h1>
           <p className="text-gray-600">{theme.text.loginSubtitle}</p>
@@ -69,10 +66,7 @@ const Login = () => {
           )}
 
           <div>
-            <label
-              htmlFor="username"
-              className="block text-sm font-medium text-gray-700 mb-2"
-            >
+            <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
               Benutzername
             </label>
             <input
@@ -106,13 +100,8 @@ const Login = () => {
             />
           </div>
 
-          <ResponsiveButton
-            type="submit"
-            variant="primary"
-            fullWidth
-            disabled={loading}
-          >
-            {loading ? "Anmeldung läuft..." : "Anmelden"}
+          <ResponsiveButton type="submit" variant="primary" fullWidth disabled={loading}>
+            {loading ? 'Anmeldung läuft...' : 'Anmelden'}
           </ResponsiveButton>
         </form>
       </div>

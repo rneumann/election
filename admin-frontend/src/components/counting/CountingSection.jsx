@@ -1,5 +1,5 @@
-import { useEffect } from "react";
-import api, { exportElectionResultExcel } from "../../services/api.js";
+import { useEffect } from 'react';
+import api, { exportElectionResultExcel } from '../../services/api.js';
 
 /**
  * CountingSection Component - Handles election vote counting
@@ -39,12 +39,10 @@ const CountingSection = ({
    */
   const loadElections = async () => {
     setLoadingElections(true);
-    setCountingError("");
+    setCountingError('');
 
     try {
-      const response = await api.get(
-        "/admin/elections?startedOnly=true&endedOnly=true"
-      );
+      const response = await api.get('/admin/elections?startedOnly=true&endedOnly=true');
       setElections(response.data || []);
     } catch (error) {
       setCountingError(`Fehler beim Laden der Wahlen: ${error.message}`);
@@ -66,15 +64,13 @@ const CountingSection = ({
    */
   const handleCount = async (electionId) => {
     setCountingElectionId(electionId);
-    setCountingError("");
+    setCountingError('');
 
     // Clear previous result/error for this election
     setElections((prev) =>
       prev.map((e) =>
-        e.id === electionId
-          ? { ...e, countingResult: null, countingError: null }
-          : e
-      )
+        e.id === electionId ? { ...e, countingResult: null, countingError: null } : e,
+      ),
     );
 
     try {
@@ -84,9 +80,7 @@ const CountingSection = ({
         const countResult = response.data.data;
 
         // Load full results
-        const resultsResponse = await api.get(
-          `/counting/${electionId}/results`
-        );
+        const resultsResponse = await api.get(`/counting/${electionId}/results`);
         if (resultsResponse.data.success) {
           const fullResult = {
             ...countResult,
@@ -96,10 +90,8 @@ const CountingSection = ({
           // Update election with result
           setElections((prev) =>
             prev.map((e) =>
-              e.id === electionId
-                ? { ...e, countingResult: fullResult, countingError: null }
-                : e
-            )
+              e.id === electionId ? { ...e, countingResult: fullResult, countingError: null } : e,
+            ),
           );
         }
       } else {
@@ -109,21 +101,17 @@ const CountingSection = ({
             e.id === electionId
               ? {
                   ...e,
-                  countingError:
-                    response.data.message || "Auszählung fehlgeschlagen",
+                  countingError: response.data.message || 'Auszählung fehlgeschlagen',
                 }
-              : e
-          )
+              : e,
+          ),
         );
       }
     } catch (error) {
       // Store error in election object
-      const errorMessage =
-        error.response?.data?.message || error.message || "Unbekannter Fehler";
+      const errorMessage = error.response?.data?.message || error.message || 'Unbekannter Fehler';
       setElections((prev) =>
-        prev.map((e) =>
-          e.id === electionId ? { ...e, countingError: errorMessage } : e
-        )
+        prev.map((e) => (e.id === electionId ? { ...e, countingError: errorMessage } : e)),
       );
     } finally {
       setCountingElectionId(null);
@@ -141,11 +129,11 @@ const CountingSection = ({
 
       // Create download link
       const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
+      const link = document.createElement('a');
       link.href = url;
 
       // Generate filename with timestamp
-      const timestamp = new Date().toISOString().split("T")[0];
+      const timestamp = new Date().toISOString().split('T')[0];
       link.download = `Wahlergebnis_${resultId.substring(0, 8)}_${timestamp}.xlsx`;
 
       // Trigger download
@@ -168,27 +156,25 @@ const CountingSection = ({
    */
   const formatDate = (dateString) => {
     if (!dateString) {
-      return "";
+      return '';
     }
-    return new Date(dateString).toLocaleString("de-DE", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
+    return new Date(dateString).toLocaleString('de-DE', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
     });
   };
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200">
       <div className="border-b border-gray-200 px-6 py-4">
-        <h2 className="text-xl font-bold text-gray-900">
-          Wahlergebnisse auszählen
-        </h2>
+        <h2 className="text-xl font-bold text-gray-900">Wahlergebnisse auszählen</h2>
         <p className="text-sm text-gray-600 mt-1">
-          Wählen Sie eine Wahl aus, um die Stimmen automatisch auszuzählen. Das
-          System verwendet den für die Wahl konfigurierten Algorithmus
-          (Sainte-Laguë, Hare-Niemeyer, Höchststimmen, oder Referendum).
+          Wählen Sie eine Wahl aus, um die Stimmen automatisch auszuzählen. Das System verwendet den
+          für die Wahl konfigurierten Algorithmus (Sainte-Laguë, Hare-Niemeyer, Höchststimmen, oder
+          Referendum).
         </p>
       </div>
 
@@ -197,11 +183,7 @@ const CountingSection = ({
         {loadingElections && (
           <div className="flex items-center justify-center py-12">
             <div className="flex items-center gap-3">
-              <svg
-                className="animate-spin h-6 w-6 text-blue-600"
-                fill="none"
-                viewBox="0 0 24 24"
-              >
+              <svg className="animate-spin h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24">
                 <circle
                   className="opacity-25"
                   cx="12"
@@ -273,12 +255,8 @@ const CountingSection = ({
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <h3 className="font-bold text-gray-900 text-lg mb-1">
-                      {election.info}
-                    </h3>
-                    <p className="text-sm text-gray-600 mb-2">
-                      {election.description}
-                    </p>
+                    <h3 className="font-bold text-gray-900 text-lg mb-1">{election.info}</h3>
+                    <p className="text-sm text-gray-600 mb-2">{election.description}</p>
                     <div className="flex flex-wrap gap-3 text-xs text-gray-500">
                       <div className="flex items-center gap-1">
                         <svg
@@ -295,16 +273,13 @@ const CountingSection = ({
                           />
                         </svg>
                         <span>
-                          {formatDate(election.start)} -{" "}
-                          {formatDate(election.end)}
+                          {formatDate(election.start)} - {formatDate(election.end)}
                         </span>
                       </div>
                       {election.candidates !== undefined && (
                         <div>Kandidaten: {election.candidates}</div>
                       )}
-                      {election.ballots !== undefined && (
-                        <div>Stimmzettel: {election.ballots}</div>
-                      )}
+                      {election.ballots !== undefined && <div>Stimmzettel: {election.ballots}</div>}
                     </div>
                   </div>
                   <div className="ml-4">
@@ -313,19 +288,13 @@ const CountingSection = ({
                       disabled={countingElectionId === election.id}
                       style={{
                         backgroundColor:
-                          countingElectionId === election.id
-                            ? "#9CA3AF"
-                            : theme.colors.primary,
+                          countingElectionId === election.id ? '#9CA3AF' : theme.colors.primary,
                       }}
                       className="px-4 py-2 text-white font-medium rounded hover:opacity-90 transition-opacity disabled:cursor-not-allowed"
                     >
                       {countingElectionId === election.id ? (
                         <div className="flex items-center gap-2">
-                          <svg
-                            className="animate-spin h-4 w-4"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                          >
+                          <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
                             <circle
                               className="opacity-25"
                               cx="12"
@@ -343,7 +312,7 @@ const CountingSection = ({
                           <span>Zählt...</span>
                         </div>
                       ) : (
-                        "Auszählen"
+                        'Auszählen'
                       )}
                     </button>
                   </div>
@@ -682,12 +651,8 @@ const CountingSection = ({
                         />
                       </svg>
                       <div className="flex-1">
-                        <p className="font-bold text-red-900 mb-1">
-                          ✗ Auszählung fehlgeschlagen
-                        </p>
-                        <p className="text-sm text-red-800">
-                          {election.countingError}
-                        </p>
+                        <p className="font-bold text-red-900 mb-1">✗ Auszählung fehlgeschlagen</p>
+                        <p className="text-sm text-red-800">{election.countingError}</p>
                       </div>
                     </div>
                   </div>
@@ -716,22 +681,12 @@ const CountingSection = ({
             <div className="text-sm text-blue-900">
               <p className="font-semibold mb-1">Hinweise:</p>
               <ul className="list-disc list-inside text-blue-800 space-y-1">
+                <li>Die Auszählung verwendet nur aggregierte Stimmendaten (BSI-konform)</li>
+                <li>Das System erkennt automatisch Stimmengleichheit und zeigt dies an</li>
                 <li>
-                  Die Auszählung verwendet nur aggregierte Stimmendaten
-                  (BSI-konform)
+                  Bei Mehrheitswahlen wird automatisch geprüft, ob eine Stichwahl erforderlich ist
                 </li>
-                <li>
-                  Das System erkennt automatisch Stimmengleichheit und zeigt
-                  dies an
-                </li>
-                <li>
-                  Bei Mehrheitswahlen wird automatisch geprüft, ob eine
-                  Stichwahl erforderlich ist
-                </li>
-                <li>
-                  Jede Auszählung wird mit Versionsnummer und Zeitstempel
-                  gespeichert
-                </li>
+                <li>Jede Auszählung wird mit Versionsnummer und Zeitstempel gespeichert</li>
               </ul>
             </div>
           </div>
