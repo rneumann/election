@@ -27,7 +27,6 @@ import { z } from 'zod';
 
 export const CANDIDATE_CSV_MAPPING = {
   uid: 'uid',
-  uid: 'uid',
   Nachname: 'lastname',
   Vorname: 'firstname',
   MatrikelNr: 'mtknr',
