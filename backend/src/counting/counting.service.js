@@ -58,7 +58,7 @@ export const performCounting = async (electionId, userId) => {
     // Step 1: Load election configuration
     const electionRes = await db.query(
       `SELECT id, info, election_type, counting_method, 
-              seats_to_fill, votes_per_ballot, max_cumulative_votes, "end"
+              seats_to_fill, votes_per_ballot, max_cumulative_votes, start, "end"
        FROM elections 
        WHERE id = $1`,
       [electionId],
@@ -190,13 +190,15 @@ export const performCounting = async (electionId, userId) => {
 
     logger.info(`Storing result as version ${version}`);
 
+    const isElectionTest = election.start > Date.now();
+
     // Step 8: Store result in database (JSONB for flexibility)
     const insertRes = await db.query(
       `INSERT INTO election_results 
-         (election_id, version, result_data, counted_by)
-       VALUES ($1, $2, $3, $4)
+         (election_id, version, result_data, counted_by, test_election)
+       VALUES ($1, $2, $3, $4, $5)
        RETURNING id, counted_at`,
-      [electionId, version, JSON.stringify(result), userId],
+      [electionId, version, JSON.stringify(result), userId, isElectionTest],
     );
 
     const resultId = insertRes.rows[0].id;

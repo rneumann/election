@@ -1,5 +1,4 @@
 import { useEffect, useState, useCallback, useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useTheme } from '../hooks/useTheme.js';
 import ResponsiveButton from '../components/ResponsiveButton.jsx';
@@ -27,9 +26,8 @@ const HomeContent = () => {
   const [isAccessibilityMenuOpen, setAccessibilityMenuOpen] = useState(false);
   const [open, setOpen] = useState(false);
   const [selectedElectionId, setSelectedElectionId] = useState(undefined);
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const theme = useTheme();
-  const navigate = useNavigate();
   const { settings } = useContext(AccessibilityContext);
 
   useEffect(() => {
@@ -61,7 +59,7 @@ const HomeContent = () => {
     try {
       const [active, future, alreadyVoted] = await Promise.all([
         voterApi.getElections('active', user.username, false),
-        voterApi.getElections('future', user.username, false),
+        voterApi.getElections('future', user.username, undefined),
         voterApi.getElections('active', user.username, true),
       ]);
       setElectionsActive(active);
@@ -73,12 +71,12 @@ const HomeContent = () => {
     }
   }, [user]);
 
-  // Redirect admins to admin page
+  // Admins dürfen sich nicht im User-Frontend anmelden
   useEffect(() => {
     if (user?.role === 'admin') {
-      navigate('/admin', { replace: true });
+      logout();
     }
-  }, [user, navigate]);
+  }, [user, logout]);
 
   useEffect(() => {
     if (!user?.username) {
@@ -287,7 +285,7 @@ const HomeContent = () => {
                           <ResponsiveButton
                             toolTip={election.test_election_active ? '' : 'Testwahl nicht aktiv'}
                             size="small"
-                            disabled={!election.test_election_active}
+                            disabled={!election.test_election_active || election.voted}
                             onClick={() => {
                               setOpen(true);
                               logger.debug(`current election id settet to: ${election.id}`);

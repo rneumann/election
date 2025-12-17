@@ -182,44 +182,44 @@ export const Modal = ({ open, setOpen, electionId, refreshElections }) => {
                     <div
                       key={cand.candidateId}
                       className="
-                        grid grid-cols-1 sm:grid-cols-4 gap-4 sm:gap-0
-                        px-4 py-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors
-                        rounded-lg sm:rounded-none
-                      "
+                      flex items-center justify-between sm:grid sm:grid-cols-4 
+                      gap-3 sm:gap-0 px-4 py-3 sm:py-4 
+                      hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors
+                    "
                     >
-                      {/* Nr. */}
-                      <div>
-                        <div className="sm:hidden text-[10px] uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1 transition-colors">
-                          Nr.
+                      {/* Info-Block: Nr, Schlagwort & Name gruppiert auf Mobile */}
+                      <div className="flex items-center gap-3 sm:contents">
+                        {/* Nr. */}
+                        <div className="flex flex-col sm:block min-w-[2rem]">
+                          <div className="sm:hidden text-[10px] uppercase text-gray-500 dark:text-gray-400">
+                            Nr.
+                          </div>
+                          <div className="text-gray-900 dark:text-gray-100 text-sm font-medium sm:font-normal">
+                            {cand.listnum}
+                          </div>
                         </div>
-                        <div className="text-gray-900 dark:text-gray-100 text-sm transition-colors">
-                          {cand.listnum}
+
+                        {/* Name & Keyword kombiniert für Mobile Platzersparnis */}
+                        <div className="flex flex-col sm:contents">
+                          <div className="sm:hidden text-[10px] uppercase text-gray-500 dark:text-gray-400">
+                            Kandidat*in
+                          </div>
+                          <div className="text-gray-900 dark:text-gray-100 text-sm font-semibold sm:font-normal sm:px-3">
+                            {cand.firstname} {cand.lastname}
+                            <span className="block sm:hidden text-[11px] font-normal text-gray-500 dark:text-gray-400 italic">
+                              {cand.keyword}
+                            </span>
+                          </div>
+                          {/* Keyword (Nur Desktop Ansicht) */}
+                          <div className="hidden sm:block text-gray-900 dark:text-gray-100 text-sm sm:px-1">
+                            {cand.keyword}
+                          </div>
                         </div>
                       </div>
 
-                      {/* Keyword */}
-                      <div>
-                        <div className="sm:hidden text-[10px] uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1 transition-colors">
-                          Schlagwort
-                        </div>
-                        <div className="text-gray-900 dark:text-gray-100 text-sm sm:px-1 transition-colors">
-                          {cand.keyword}
-                        </div>
-                      </div>
-
-                      {/* Candidates */}
-                      <div>
-                        <div className="sm:hidden text-[10px] uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1 transition-colors">
-                          Kandidat*in
-                        </div>
-                        <div className="text-gray-900 dark:text-gray-100 text-sm sm:px-3 transition-colors">
-                          {cand.firstname} {cand.lastname}
-                        </div>
-                      </div>
-
-                      {/* Votes (input) */}
-                      <div className="text-right">
-                        <div className="sm:hidden text-[10px] uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1 transition-colors">
+                      {/* Stimmen Input - Rechtsbündig auf Mobile */}
+                      <div className="flex flex-col items-end sm:block sm:text-right">
+                        <div className="sm:hidden text-[10px] uppercase text-gray-500 dark:text-gray-400 mb-1">
                           Stimmen
                         </div>
                         <input
@@ -229,32 +229,23 @@ export const Modal = ({ open, setOpen, electionId, refreshElections }) => {
                           aria-label={`Stimmen für ${cand.firstname} ${cand.lastname}`}
                           value={votes[cand.listnum] ?? 0}
                           className="
-                            mx-auto sm:mx-0
-                            w-20
-                            rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600
-                            text-gray-900 dark:text-gray-100 px-2 py-1 text-sm
-                            focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-500 focus:border-blue-400 dark:focus:border-blue-500 transition-colors
+                            w-16 sm:w-20
+                            rounded-lg bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600
+                            text-gray-900 dark:text-gray-100 px-2 py-1.5 text-sm text-center sm:text-left
+                            focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-500 transition-colors
                           "
                           onChange={(e) => {
-                            logger.debug(`onChange: ${e.target.value}`);
                             const newValue = Number(e.target.value);
                             const oldValue = Number(votes[cand.listnum] || 0);
                             if (newValue < 0 || newValue > election.max_cumulative_votes) {
-                              logger.debug(`invalid value: ${e.target.value}`);
                               return;
                             }
                             if (votesLeft <= 0 && newValue > oldValue) {
-                              logger.debug(`you reached your votes limit: ${e.target.value}`);
-                              e.target.value = oldValue;
                               return;
                             }
 
-                            setVotes((prevVotes) => ({
-                              ...prevVotes,
-                              [cand.listnum]: newValue,
-                            }));
-
-                            setVotesLeft((prevVotesLeft) => prevVotesLeft - (newValue - oldValue));
+                            setVotes((prev) => ({ ...prev, [cand.listnum]: newValue }));
+                            setVotesLeft((prev) => prev - (newValue - oldValue));
                           }}
                         />
                       </div>

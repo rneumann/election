@@ -56,17 +56,22 @@ const AuthCallback = () => {
         const { data } = await api.get('/auth/me', { withCredentials: true });
 
         if (data.authenticated && data.user) {
+          // Check if user is admin - cannot login to user frontend
+          if (data.user.role === 'admin') {
+            setStatus('error');
+            setErrorMessage('Admins können sich nicht im Wähler-Frontend anmelden.');
+
+            setTimeout(() => {
+              navigate('/login', { replace: true });
+            }, 2500);
+            return;
+          }
+
           setStatus('success');
 
-          // Get return URL from query params or determine based on role
+          // Get return URL from query params
           const returnUrl = searchParams.get('returnUrl');
-          let destination = '/home';
-
-          if (returnUrl && returnUrl.startsWith('/')) {
-            destination = returnUrl;
-          } else if (data.user.role === 'admin') {
-            destination = '/admin';
-          }
+          const destination = returnUrl && returnUrl.startsWith('/') ? returnUrl : '/home';
 
           // Short delay for better UX - let user see success message
           setTimeout(() => {

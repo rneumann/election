@@ -34,7 +34,7 @@ services:
 
     command: start-dev
     ports:
-      - 8080:8080 # Expose Keycloak on port 8080 for local development
+      - 8090:8090 # Expose Keycloak on port 8080 for local development
     restart: unless-stopped
     depends_on:
       keycloak_db:

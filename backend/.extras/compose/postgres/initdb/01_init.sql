@@ -127,6 +127,7 @@ CREATE TABLE
     result_data JSONB NOT NULL,
     counted_at TIMESTAMPTZ NOT NULL DEFAULT NOW (),
     counted_by TEXT,
+    test_election BOOLEAN NOT NULL DEFAULT FALSE,
     CONSTRAINT uq_election_version UNIQUE (election_id, version)
   );
 
@@ -140,6 +141,8 @@ CREATE INDEX IF NOT EXISTS idx_ballots_election ON ballots (election);
 CREATE INDEX IF NOT EXISTS idx_ballotvotes_list ON ballotvotes (election, listnum);
 
 CREATE INDEX IF NOT EXISTS idx_votingnotes_voter ON votingnotes (voterId, electionId);
+
+CREATE INDEX IF NOT EXISTS idx_elections_start_end ON elections (start, end);
 
 CREATE
 OR REPLACE VIEW ballotlist AS

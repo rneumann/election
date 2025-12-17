@@ -10,7 +10,7 @@ import { generateBallotHashes } from '../security/generate-ballot-hashes.js';
  * @param {boolean} [alreadyVoted=false] - Whether to retrieve elections which the voter has already voted in
  * @returns {Promise<Array>} - Array of elections
  */
-export const getElections = async (status, voterId, alreadyVoted = false) => {
+export const getElections = async (status, voterId, alreadyVoted) => {
   const conditions = [];
 
   /* eslint-disable*/
@@ -26,9 +26,9 @@ export const getElections = async (status, voterId, alreadyVoted = false) => {
       break;
   }
 
-  if (alreadyVoted) {
+  if (alreadyVoted === true) {
     conditions.push('vn.voted = true');
-  } else {
+  } else if (alreadyVoted === false) {
     conditions.push('vn.voted = false');
   }
 
@@ -44,14 +44,17 @@ export const getElections = async (status, voterId, alreadyVoted = false) => {
       e.max_cumulative_votes,
       e.test_election_active,
       e.start,
-      e.end
+      e.end,
+      vn.voted
     FROM elections e
     INNER JOIN votingnotes vn ON vn.electionId = e.id AND vn.voterId = $1
     ${whereClause}
   `;
 
   try {
-    logger.debug(`getElections sql: ${sql} with voterId: ${voterId} and status: ${status}`);
+    logger.debug(
+      `getElections sql: ${sql} with voterId: ${voterId} and status: ${status} and alreadyVoted: ${alreadyVoted}`,
+    );
     const res = await client.query(sql, [voterId]);
     return res.rows || [];
   } catch (err) {
@@ -81,6 +84,7 @@ export const getElectionById = async (electionId) => {
       e.description,
       e.votes_per_ballot,
       e.max_cumulative_votes,
+      e.test_election_active,
       e.start,
       e."end",
       COALESCE(json_agg(DISTINCT jsonb_build_object(
@@ -281,6 +285,7 @@ export const checkAlreadyVoted = async (voterId, electionId) => {
     logger.debug(`checkAlreadyVoted res: ${JSON.stringify(res.rows)}`);
     if (res.rows.length > 0 && res.rows[0].voted === true) {
       logger.debug('Voter has already voted');
+      logger.warn('Voter has already voted');
       return true;
     }
     return false;
