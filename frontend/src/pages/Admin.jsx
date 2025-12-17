@@ -172,10 +172,11 @@ const CountingSection = ({
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `Amtliches_Ergebnis.xlsx`);
+      link.setAttribute('download', 'Amtliches_Ergebnis.xlsx');
       document.body.appendChild(link);
       link.click();
       link.remove();
+      // eslint-disable-next-line no-unused-vars
     } catch (err) {
       alert('Fehler beim Download des amtlichen Ergebnisses');
     }
@@ -840,6 +841,7 @@ const AdminUpload = () => {
         await templateApi.downloadElectionTemplate(templateType);
       }
       setSuccess('Vorlage erfolgreich heruntergeladen');
+      // eslint-disable-next-line no-unused-vars
     } catch (err) {
       setError('Fehler beim Download der Vorlage');
     }

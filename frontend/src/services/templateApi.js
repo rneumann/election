@@ -1,8 +1,10 @@
+import { logger } from '../conf/logger/logger.js';
 import api from './api';
 
 export const templateApi = {
-  /*
-   * Lädt das Wahl-Template herunter
+  /**
+   * Lädt das Wahl-Template herunter.
+   * @param {string} preset - Welches Preset? (optional)
    */
   downloadElectionTemplate: async (preset = 'generic') => {
     try {
@@ -13,26 +15,29 @@ export const templateApi = {
 
       downloadBlob(response.data, `HKA_Vorlage_${preset}.xlsx`);
     } catch (error) {
-      console.error('Download fehlgeschlagen:', error);
+      logger.error('Download election template failed:', error);
       throw error;
     }
   },
 
+  /**
+   * Lädt das Wähler-Template herunter
+   */
   downloadVoterTemplate: async () => {
     try {
       const response = await api.get('/templates-download/template/voters', {
         responseType: 'blob',
       });
 
-      // Hilfsfunktion zum Download (Code sparen)
       downloadBlob(response.data, 'HKA_Waehler_Vorlage.xlsx');
     } catch (error) {
-      console.error('Download fehlgeschlagen:', error);
+      logger.error('Download voter template failed:', error);
       throw error;
     }
   },
 };
 
+// Hilfsfunktion intern
 const downloadBlob = (blob, filename) => {
   const url = window.URL.createObjectURL(new Blob([blob]));
   const link = document.createElement('a');
