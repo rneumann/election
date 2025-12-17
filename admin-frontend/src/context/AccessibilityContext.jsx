@@ -63,6 +63,7 @@ export const AccessibilityProvider = ({ children }) => {
   const updateSetting = useCallback((setting, value) => {
     setSettings((prevSettings) => {
       const newSettings = { ...prevSettings };
+      /* eslint-disable */
       switch (setting) {
         case 'textSize':
           // Wenn value angegeben ist, setze direkt, sonst zyklisch

@@ -3,7 +3,6 @@ import express from 'express';
 import { ensureAuthenticated, ensureHasRole, loginRoute, logoutRoute } from '../auth/auth.js';
 import passport from '../auth/passport.js';
 import { logger } from '../conf/logger/logger.js';
-import { client } from '../database/db.js';
 import { countingRouter } from './counting.route.js';
 import { exportRoute } from './export.route.js';
 

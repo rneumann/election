@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import api, { exportElectionResultExcel } from '../services/api';
 import { adminService } from '../services/adminApi';
 import CountingSection from './counting/CountingSection';
 

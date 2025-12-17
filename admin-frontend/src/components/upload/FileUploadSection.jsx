@@ -31,7 +31,6 @@ import { MAX_FILE_SIZE } from '../../utils/validators/constants.js';
 const FileUploadSection = ({
   title,
   description,
-  uploadType,
   endpoint,
   validator,
   transformer,
@@ -171,10 +170,6 @@ const FileUploadSection = ({
       setUploading(false);
     }
   };
-
-  /**
-   * Handle drag events
-   */
   const handleDragOver = (e) => {
     e.preventDefault();
     setIsDragging(true);

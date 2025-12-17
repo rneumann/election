@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useTheme } from '../hooks/useTheme.js';
 import ResponsiveButton from '../components/ResponsiveButton.jsx';
+import { logger } from '../conf/logger/logger.js';
 
 /**
  * Login page for admin authentication.
@@ -42,6 +43,7 @@ const Login = () => {
         setError(result.message || 'Login fehlgeschlagen.');
       }
     } catch (err) {
+      logger.debug(err);
       setError('Ein unerwarteter Fehler ist aufgetreten.');
     } finally {
       setLoading(false);
