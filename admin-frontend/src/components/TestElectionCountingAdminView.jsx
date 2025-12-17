@@ -1,12 +1,10 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import api, { exportElectionResultExcel } from '../services/api';
 import { adminService } from '../services/adminApi';
 import CountingSection from './counting/CountingSection';
 
 export const TestElectionCountingAdminView = ({
   theme,
-  elections,
-  setElections,
   loadingElections,
   setLoadingElections,
   countingElectionId,
@@ -17,13 +15,15 @@ export const TestElectionCountingAdminView = ({
   /**
    * Load all elections from API
    */
+  const [futureElections, setFutureElections] = useState([]);
+
   const loadElections = async () => {
     setLoadingElections(true);
     setCountingError('');
 
     try {
       const futureElections = await adminService.getElectionsForAdmin('future');
-      setElections(futureElections || []);
+      setFutureElections(futureElections || []);
     } catch (error) {
       setCountingError(`Fehler beim Laden der Wahlen: ${error.message}`);
     } finally {
@@ -41,8 +41,8 @@ export const TestElectionCountingAdminView = ({
     <div>
       <CountingSection
         theme={theme}
-        elections={elections}
-        setElections={setElections}
+        elections={futureElections}
+        setElections={setFutureElections}
         loadingElections={loadingElections}
         setLoadingElections={setLoadingElections}
         countingElectionId={countingElectionId}

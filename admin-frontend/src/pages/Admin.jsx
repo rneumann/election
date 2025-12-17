@@ -582,8 +582,8 @@ const AdminDashboard = () => {
             {activeSection === 'test-election-counting' && (
               <TestElectionCountingAdminView
                 theme={theme}
-                elections={elections}
-                setElections={setElections}
+                //elections={elections}
+                //setElections={setElections}
                 loadingElections={loadingElections}
                 setLoadingElections={setLoadingElections}
                 countingElectionId={countingElectionId}
