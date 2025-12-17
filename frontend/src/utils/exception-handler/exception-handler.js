@@ -1,6 +1,10 @@
 import { logger } from '../../conf/logger/logger';
 
-export const hnadleHttpStatus = (response) => {
+/**
+ * Handles HTTP status codes and logs appropriate messages.
+ * @param {Object} response - Response object from Axios
+ */
+export const handleHttpStatus = (response) => {
   logger.debug(`handleHttpStatus res: ${JSON.stringify(response.status)}`);
   if (response.status === 400) {
     logger.error('Bad request');

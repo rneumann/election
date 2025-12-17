@@ -1,5 +1,5 @@
 import { logger } from '../conf/logger/logger';
-import { hnadleHttpStatus } from '../utils/exception-handler/exception-handler';
+import { handleHttpStatus } from '../utils/exception-handler/exception-handler';
 import api from './api';
 
 export const voterApi = {
@@ -15,7 +15,7 @@ export const voterApi = {
       }`,
     );
     if (response.status !== 200) {
-      hnadleHttpStatus(response);
+      handleHttpStatus(response);
       return [];
     }
     const data = await response.data;
@@ -31,7 +31,7 @@ export const voterApi = {
     const response = await api.get(`voter/elections/${id}`);
 
     if (response.status !== 200) {
-      hnadleHttpStatus(response);
+      handleHttpStatus(response);
       return undefined;
     }
     const data = await response.data;
@@ -46,7 +46,7 @@ export const voterApi = {
     }
     const response = await api.post(`voter/${voterUid}/ballot`, ballotSchema);
     if (response.status !== 201) {
-      hnadleHttpStatus(response);
+      handleHttpStatus(response);
       return undefined;
     }
     logger.debug(`createBallot res: ${JSON.stringify(response.data)}`);

@@ -176,18 +176,18 @@ export const controlTestElection = async (electionId) => {
       },
     }).catch((e) => logger.error(e));
   } catch (error) {
-    logger.debug(`Failed to reset election data for ${electionId}: ${error.message}`);
-    logger.error(`Failed to reset election data for ${electionId}`);
+    logger.debug(`Failed to toogle test election for ${electionId}: ${error.message}`);
+    logger.error(`Failed to toogle test election for ${electionId}`);
     writeAuditLog({
       actionType: 'TOGGLE_TEST_ELECTION',
       level: 'ERROR',
       actorRole: 'ADMIN',
       details: {
-        info: `Failed to reset election data for ${electionId}: ${error.message}`,
+        info: `Failed to toogle test election for ${electionId}: ${error.message}`,
       },
     }).catch((e) => {
       logger.error(e);
     });
-    throw new Error(`Failed to reset election data for ${electionId}`);
+    throw new Error(`Failed to toogle test election for ${electionId}`);
   }
 };

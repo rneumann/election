@@ -70,9 +70,16 @@ adminRouter.put(
         return res.status(404).json({ message: 'Election not found' });
       }
       const currentTime = new Date();
-      if (currentTime > new Date(election.start) && currentTime < new Date(election.end)) {
-        logger.warn('Election is active, ');
-        return res.status(400).json({ message: 'Election is over' });
+      if (
+        (currentTime > new Date(election.start) && currentTime < new Date(election.end)) ||
+        currentTime > new Date(election.end)
+      ) {
+        logger.warn(
+          'Election is active or finished, you cannot control test election during an active or finished election',
+        );
+        return res
+          .status(400)
+          .json({ message: 'Election is active or finished, control is not possible!' });
       }
 
       await controlTestElection(electionId);
@@ -107,7 +114,7 @@ adminRouter.delete(
       const currentTime = new Date();
       if (currentTime > new Date(election.start) && currentTime < new Date(election.end)) {
         logger.warn('Election is active, you cannot reset data during an active election');
-        return res.status(400).json({ message: 'Election is active, reeset is not possible!' });
+        return res.status(400).json({ message: 'Election is active, reset is not possible!' });
       }
       await resetElectionData(electionId);
       logger.debug(`Election data reset for election ID: ${electionId}`);

@@ -3,8 +3,11 @@ import { adminService } from '../services/adminApi';
 import { logger } from '../conf/logger/logger';
 import { useAlert } from '../context/AlertContext';
 import ResponsiveButton from './ResponsiveButton';
+import { Alert } from './Alert';
 
 export const TestElectionAdminView = () => {
+  const [showDeleteAlert, setShowDeleteAlert] = useState(false);
+  const [selectedElectionId, setSelectedElectionId] = useState(null);
   const [futureElections, setFutureElections] = useState([]);
   const { showAlert } = useAlert();
 
@@ -173,7 +176,10 @@ export const TestElectionAdminView = () => {
                     <ResponsiveButton
                       size="small"
                       variant="primary"
-                      onClick={async () => await handleDeleteTestData(election.id)}
+                      onClick={() => {
+                        setSelectedElectionId(election.id);
+                        setShowDeleteAlert(true);
+                      }}
                     >
                       Testwahldaten löschen!
                     </ResponsiveButton>
@@ -189,6 +195,14 @@ export const TestElectionAdminView = () => {
         </div>
       </div>
       <div className="border-b border-gray-200 px-6 py-4 mt-5" />
+
+      {showDeleteAlert && (
+        <Alert
+          message="Möchten Sie die Testwahldaten wirklich löschen? Dieser Vorgang kann nicht rückgängig gemacht werden."
+          setShowAlert={setShowDeleteAlert}
+          onConfirm={() => handleDeleteTestData(selectedElectionId)}
+        />
+      )}
     </>
   );
 };
