@@ -75,7 +75,5 @@ export class AdminPage {
     ]);
 
     expect(uploadResponse.ok()).toBeTruthy();
-
-    await this.finalUploadButton.click();
   }
 }

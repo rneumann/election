@@ -3,7 +3,7 @@ import { information } from './loginInformation.js';
 
 // Constants to avoid string duplication (SonarJS fix)
 const TXT_PLACEHOLDER_USER = 'Ihr Benutzername';
-const TXT_PLACEHOLDER_PASS = 'Ihr Passwort';
+const TXT_PLACEHOLDER_PASS = '••••••••';
 const TXT_LOGIN_BTN = 'Anmelden';
 
 /**
@@ -28,45 +28,17 @@ const performLogin = async (page, username, password, targetUrl) => {
 };
 
 /**
- * Performs a standard user login and verifies redirection to home.
+ * Performs an admin login and verifies redirection to the admin dashboard.
  * @param {import('@playwright/test').Page} page
- * @param {string} [username] - Optional (Default: User from config)
+ * @param {string} [username] - Optional (Default: Admin from config)
  * @param {string} [password] - Optional (Default: Password from config)
  */
-export const userLogin = async (
+export const adminLogin = async (
   page,
-  username = information.user,
-  password = information.userPassword,
+  username = information.admin,
+  password = information.adminPassword,
 ) => {
-  await performLogin(page, username, password, '/home');
-};
-
-/**
- * Performs a login with the second user and verifies redirection to home.
- * @param {import('@playwright/test').Page} page
- * @param {string} [username] - Optional (Default: Second user from config)
- * @param {string} [password] - Optional (Default: Password from config)
- */
-export const secondUserLogin = async (
-  page,
-  username = information.secondUser,
-  password = information.secondUserPassword,
-) => {
-  await performLogin(page, username, password, '/home');
-};
-
-/**
- * Performs a login with the third user and verifies redirection to home.
- * @param {import('@playwright/test').Page} page
- * @param {string} [username] - Optional (Default: Third user from config)
- * @param {string} [password] - Optional (Default: Password from config)
- */
-export const thirdUserLogin = async (
-  page,
-  username = information.thirdUser,
-  password = information.thirdUserPassword,
-) => {
-  await performLogin(page, username, password, '/home');
+  await performLogin(page, username, password, '/admin');
 };
 
 /**

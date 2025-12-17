@@ -6,6 +6,4 @@ export const information = {
   secondUserPassword: process.env.USER2_PASSWORD,
   thirdUser: process.env.USER3_USERNAME,
   thirdUserPassword: process.env.USER3_PASSWORD,
-  admin: process.env.ADMIN_USERNAME,
-  adminPassword: process.env.ADMIN_PASSWORD,
 };
