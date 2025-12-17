@@ -1,5 +1,5 @@
 import { logger } from '../conf/logger/logger.js';
-import { hnadleHttpStatus } from '../utils/exception-handler/exception-handler.js';
+import { handleHttpStatus } from '../utils/exception-handler/exception-handler.js';
 import api from './api.js';
 export const adminService = {
   getElectionsForAdmin: async (status) => {
@@ -11,7 +11,7 @@ export const adminService = {
         data: response.data,
       });
       if (response.status !== 200) {
-        hnadleHttpStatus(response);
+        handleHttpStatus(response);
         return []; // lieber leeres Array statt undefined
       }
       return response.data || [];
@@ -31,7 +31,7 @@ export const adminService = {
       });
       // server sendet 204 -> treat 204 as success
       if (response.status !== 204 && response.status !== 200) {
-        hnadleHttpStatus(response);
+        handleHttpStatus(response);
         return undefined;
       }
       return response.data;
@@ -45,7 +45,7 @@ export const adminService = {
     try {
       const response = await api.delete(`/admin/resetElectionData/${electionId}`);
       if (response.status !== 204 && response.status !== 200) {
-        hnadleHttpStatus(response);
+        handleHttpStatus(response);
         return undefined;
       }
       return response.data;
