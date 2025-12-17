@@ -1,5 +1,9 @@
 import { expect } from '@playwright/test';
 
+/**
+ * Page Object Model for the Candidate List.
+ * Handles interactions with the candidate list modal and the candidate details view.
+ */
 export class CandidateListPage {
   /**
    * @param {import('@playwright/test').Page} page
@@ -13,7 +17,9 @@ export class CandidateListPage {
   }
 
   /**
-   * @param {string} name
+   * Selects a candidate from the list.
+   * Waits for the list to be loaded (spinner invisible) before clicking.
+   * @param {string} name - The name of the candidate to select.
    */
   async selectCandidate(name) {
     await expect(this.modalHeader).toBeVisible();
@@ -22,7 +28,8 @@ export class CandidateListPage {
   }
 
   /**
-   * @param {string} name
+   * Verifies that the details view for a specific candidate is displayed correctly.
+   * @param {string} name - The name of the candidate to verify.
    */
   async verifyCandidateDetails(name) {
     await expect(this.candidateDetailsHeader).toBeVisible();
@@ -30,6 +37,9 @@ export class CandidateListPage {
     await expect(this.page.getByText('Info', { exact: true })).toBeVisible();
   }
 
+  /**
+   * Navigates back from the details view to the candidate list.
+   */
   async goBackToList() {
     await this.backToListButton.click();
     await expect(this.modalHeader).toBeVisible();

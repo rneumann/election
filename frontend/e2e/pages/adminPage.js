@@ -1,5 +1,9 @@
 import { expect } from '@playwright/test';
 
+/**
+ * Page Object Model for Admin functionalities.
+ * Handles operations related to importing elections, voters, and candidates.
+ */
 export class AdminPage {
   /**
    * @param {import('@playwright/test').Page} page
@@ -14,12 +18,11 @@ export class AdminPage {
   }
 
   /**
-   * Startet den Upload-Prozess und prüft den Fokus (Original-Logik)
-   * @param {string} buttonName
-   * @param {number} [index=0] - Optionaler Index für Buttons mit gleichem Namen
+   * Starts the upload process and checks for focus (maintains original logic).
+   * @param {string} buttonName - The name of the button to click.
+   * @param {number} [index=0] - Optional index for buttons with the same name.
    */
   async startImportProcess(buttonName, index = 0) {
-    // Falls ein Index benötigt wird (wie bei CSV-Uploads)
     let button = this.page.getByRole('button', { name: buttonName });
     if (index > 0 || buttonName === 'CSV-Datei hochladen') {
       button = button.nth(index);
@@ -27,12 +30,12 @@ export class AdminPage {
 
     await expect(button).toBeVisible();
     await button.click();
-    await expect(button).toBeFocused(); // Original-Check beibehalten
+    await expect(button).toBeFocused();
   }
 
   /**
-   * Wählt Datei aus
-   * @param {string} filePath
+   * Selects a file in the file chooser.
+   * @param {string} filePath - Path to the file to be uploaded.
    */
   async selectFile(filePath) {
     await expect(this.fileInputButton).toBeVisible();
@@ -44,20 +47,19 @@ export class AdminPage {
   }
 
   /**
-   * Validierung abwarten
-   * @param {RegExp} [specificCheck] - Optionaler Regex-Check (z.B. /Wähler:/)
+   * Waits for the validation success message.
+   * @param {RegExp} [specificCheck] - Optional regex check (e.g., /Wähler:/) that must also be visible.
    */
   async waitForValidation(specificCheck) {
     await expect(this.validationSuccessMsg).toBeVisible({ timeout: 15000 });
     if (specificCheck) {
-      // Timeout explizit setzen, falls im Original vorhanden (z.B. bei Wählern)
       await expect(this.page.getByText(specificCheck)).toBeVisible({ timeout: 15000 });
     }
   }
 
   /**
-   * Führt den finalen Upload durch - Inklusive des doppelten Klicks
-   * @param {string} apiEndpointPart
+   * Executes the final upload including the double click logic.
+   * @param {string} apiEndpointPart - Part of the API URL to wait for (e.g., '/upload/elections').
    */
   async executeFinalUpload(apiEndpointPart) {
     await expect(this.uploadSuccessMsg).toBeVisible({ timeout: 15000 });
@@ -74,7 +76,6 @@ export class AdminPage {
 
     expect(uploadResponse.ok()).toBeTruthy();
 
-    // Funktionalität: Der zweite Klick bleibt erhalten, wie angefordert
     await this.finalUploadButton.click();
   }
 }
