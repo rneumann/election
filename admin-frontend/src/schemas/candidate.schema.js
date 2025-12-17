@@ -26,6 +26,7 @@ import { z } from 'zod';
  */
 
 export const CANDIDATE_CSV_MAPPING = {
+  uid: 'uid',
   Nachname: 'lastname',
   Vorname: 'firstname',
   MatrikelNr: 'mtknr',
@@ -36,6 +37,7 @@ export const CANDIDATE_CSV_MAPPING = {
 };
 
 export const candidateSchema = z.object({
+  uid: z.string().min(1, 'UID darf nicht leer sein'),
   Nachname: z
     .string()
     .trim()

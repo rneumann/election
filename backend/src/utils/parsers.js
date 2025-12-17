@@ -4,7 +4,15 @@ import csv from 'csv-parser';
 import ExcelJS from 'exceljs';
 import { logger } from '../conf/logger/logger.js';
 
-export const allowedColumns = ['lastname', 'firstname', 'mtknr', 'faculty', 'keyword', 'notes'];
+export const allowedColumns = [
+  'uid',
+  'lastname',
+  'firstname',
+  'mtknr',
+  'faculty',
+  'keyword',
+  'notes',
+];
 
 /**
  * Ensures all allowed columns exist with null fallback.

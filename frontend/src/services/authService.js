@@ -1,5 +1,5 @@
 import { logger } from '../conf/logger/logger.js';
-import { hnadleHttpStatus } from '../utils/exception-handler/exception-handler.js';
+import { handleHttpStatus } from '../utils/exception-handler/exception-handler.js';
 import api from './api.js';
 
 /**
@@ -52,7 +52,7 @@ const authService = {
       withCredentials: true,
     });
     if (csrf.status !== 200) {
-      hnadleHttpStatus(csrf);
+      handleHttpStatus(csrf);
       return undefined;
     }
     logger.info(`CSRF token retrieved: ${csrf.data.csrfToken}`);
@@ -69,7 +69,7 @@ const authService = {
       withCredentials: true,
     });
     if (response.status !== 200) {
-      hnadleHttpStatus(response);
+      handleHttpStatus(response);
       return undefined;
     }
     return response.data;

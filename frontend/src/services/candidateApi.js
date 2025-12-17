@@ -1,5 +1,5 @@
 import { logger } from '../conf/logger/logger';
-import { hnadleHttpStatus } from '../utils/exception-handler/exception-handler';
+import { handleHttpStatus } from '../utils/exception-handler/exception-handler';
 import api from './api';
 
 /**
@@ -27,7 +27,7 @@ export const candidateApi = {
     const response = await api.get(`/candidates/election/${electionId}`);
 
     if (response.status !== 200) {
-      hnadleHttpStatus(response);
+      handleHttpStatus(response);
       return [];
     }
 
@@ -63,7 +63,7 @@ export const candidateApi = {
     });
     logger.debug(`createCanidateInformation res: ${JSON.stringify(response)}`);
     if (response.status !== 201) {
-      hnadleHttpStatus(response);
+      handleHttpStatus(response);
       return undefined;
     }
     return response.data;
@@ -97,7 +97,7 @@ export const candidateApi = {
     });
     logger.debug(`updateCanidateInformation res: ${JSON.stringify(response.data)}`);
     if (response.status !== 204) {
-      hnadleHttpStatus(response);
+      handleHttpStatus(response);
       return false;
     }
     return true;
@@ -118,7 +118,7 @@ export const candidateApi = {
     const response = await api.delete('candidates/information');
     logger.debug(`deleteCanidateInformation res: ${JSON.stringify(response.data)}`);
     if (response.status !== 204) {
-      hnadleHttpStatus(response);
+      handleHttpStatus(response);
       return false;
     }
     return true;
@@ -139,7 +139,7 @@ export const candidateApi = {
   getCandidateInfoByUid: async (uid) => {
     const response = await api.get(`candidates/information/public/${uid}`);
     if (response.status !== 200) {
-      hnadleHttpStatus(response);
+      handleHttpStatus(response);
       return undefined;
     }
     return response.data;
@@ -159,7 +159,7 @@ export const candidateApi = {
   getCandidateInfoPersonal: async () => {
     const response = await api.get('candidates/information/personal');
     if (response.status !== 200) {
-      hnadleHttpStatus(response);
+      handleHttpStatus(response);
       return undefined;
     }
     return response.data;
