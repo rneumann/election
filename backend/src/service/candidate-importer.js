@@ -16,7 +16,7 @@ export const safeRow = (row) => {
   return cleaned;
 };
 
-const allowedColumns = ['lastname', 'firstname', 'mtknr', 'faculty', 'keyword', 'notes'];
+const allowedColumns = ['uid', 'lastname', 'firstname', 'mtknr', 'faculty', 'keyword', 'notes'];
 
 /**
  * Inserts an array of candidate objects into the database.
