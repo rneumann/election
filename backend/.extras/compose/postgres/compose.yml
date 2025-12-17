@@ -1,10 +1,3 @@
-networks:
-  db_net:
-    driver: bridge
-    internal: true
-  admin_net:
-    driver: bridge
-
 services:
   # --- PROD ---
   postgres:
@@ -32,10 +25,7 @@ services:
       retries: 5
       start_period: 30s
     networks:
-      db_net: {}
-      admin_net:
-        aliases:
-          - election
+      backend_net: {}
 
   # --- DEV ---
   postgres-dev:
@@ -60,7 +50,7 @@ services:
       timeout: 5s
       retries: 6
     networks:
-      db_net: {}
+      backend_net: {}
       admin_net:
         aliases:
           - election
