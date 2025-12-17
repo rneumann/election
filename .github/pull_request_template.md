@@ -1,5 +1,4 @@
 ## Überblick
-_Beschreibe präzise, was dieser PR macht und warum._
 - [ ] Feature
 - [ ] Bugfix
 - [ ] Refactoring
@@ -11,7 +10,6 @@ _Beschreibe präzise, was dieser PR macht und warum._
 ---
 
 ## Änderungen
-_Keine Romane. Stichpunktliste mit Klartext._
 - …
 - …
 - …
@@ -19,7 +17,6 @@ _Keine Romane. Stichpunktliste mit Klartext._
 ---
 
 ## Testplan
-_Wie wurde geprüft, dass alles funktioniert?_
 - [ ] Lokal getestet
 - [ ] Tests geschrieben / angepasst
 - [ ] Verhalten in dev-Umgebung verifiziert
@@ -32,7 +29,6 @@ _Wie wurde geprüft, dass alles funktioniert?_
 ---
 
 ## Auswirkungen
-_Das ist der Teil, den die meisten ignorieren. Hier liegt der Fehler._
 - Breaking Changes? **Ja/Nein**
 - Migrations nötig? **Ja/Nein**
 - Konfiguration/Env-Variablen geändert? **Ja/Nein**
@@ -41,9 +37,7 @@ Wenn **Ja** → kurz erklären.
 
 ---
 
-## Reviewer-Checkliste (Reviewer muss abhaken)
-_Reviewer bestätigt aktiv, nicht still nickend._  
-Wenn du hier lügst, bist du das Problem.
+## Reviewer-Checkliste
 
 - [ ] Code folgt den Projekt-Konventionen
 - [ ] Funktionalität verstanden und nachvollzogen
@@ -56,4 +50,3 @@ Wenn du hier lügst, bist du das Problem.
 ---
 
 ## Offene Punkte / Diskussionsfragen
-> Wenn es Unsicherheiten gibt → **hier**, nicht in den Kommentaren verstecken.
