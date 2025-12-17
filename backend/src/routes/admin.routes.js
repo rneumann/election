@@ -30,28 +30,23 @@ export const adminRouter = express.Router();
  *       500:
  *         description: Internal server error
  */
-adminRouter.get(
-  '/elections/future',
-  ensureAuthenticated,
-  ensureHasRole(['admin']),
-  async (req, res) => {
-    logger.debug('Election route for admin accessed');
-    try {
-      const elections = await getElectionsForAdmin();
+adminRouter.get('/elections', ensureAuthenticated, ensureHasRole(['admin']), async (req, res) => {
+  const { status } = req.query;
 
-      if (!elections || elections.length === 0) {
-        logger.warn('No elections found');
-        return res.status(404).json({ message: 'No elections found' });
-      }
+  if (status && !['active', 'finished', 'future'].includes(status)) {
+    logger.warn(`Invalid status parameter: ${status}`);
+    return res.status(400).json({ message: 'Invalid status parameter' });
+  }
 
-      logger.debug(`Elections retrieved successfully res: ${JSON.stringify(elections)}`);
-      res.status(200).json(elections);
-    } catch {
-      // eslint-disable-next-line
-      res.status(500).json({ message: 'Internal Server Error' });
-    }
-  },
-);
+  try {
+    const elections = await getElectionsForAdmin(status);
+    logger.debug(`Admin elections retrieved: ${elections.length}`);
+    res.status(200).json(elections);
+  } catch {
+    // eslint-disable-next-line
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
 
 adminRouter.put(
   '/controlTestElection/:electionId',

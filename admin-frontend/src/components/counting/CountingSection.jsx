@@ -1,5 +1,8 @@
+/* eslint-disable */
 import { useEffect } from 'react';
 import api, { exportElectionResultExcel } from '../../services/api.js';
+import { adminService } from '../../services/adminApi.js';
+import { logger } from '../../conf/logger/logger.js';
 
 /**
  * CountingSection Component - Handles election vote counting
@@ -42,8 +45,10 @@ const CountingSection = ({
     setCountingError('');
 
     try {
-      const response = await api.get('/admin/elections?startedOnly=true&endedOnly=true');
-      setElections(response.data || []);
+      const finishedElections = await adminService.getElectionsForAdmin('finished');
+
+      setElections(finishedElections || []);
+      logger.debug('Updated elections:', elections);
     } catch (error) {
       setCountingError(`Fehler beim Laden der Wahlen: ${error.message}`);
     } finally {
@@ -54,7 +59,6 @@ const CountingSection = ({
   // Load elections on mount
   useEffect(() => {
     loadElections();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /**

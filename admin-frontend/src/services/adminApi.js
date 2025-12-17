@@ -4,9 +4,9 @@ import { hnadleHttpStatus } from '../../../frontend/src/utils/exception-handler/
 import api from '../../../frontend/src/services/api';
 
 export const adminService = {
-  getElectionsForAdmin: async () => {
+  getElectionsForAdmin: async (status) => {
     try {
-      const response = await api.get('/admin/elections/future');
+      const response = await api.get(`/admin/elections${status ? `?status=${status}` : ''}`);
       logger.debug('[adminService] GET /admin/elections response', {
         status: response.status,
         url: response.config?.url,

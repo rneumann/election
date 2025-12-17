@@ -20,7 +20,7 @@ export const TestElectionAdminView = () => {
   const handleToggle = async (electionId) => {
     try {
       await adminService.handleToggleElection(electionId);
-      const elections = await adminService.getElectionsForAdmin();
+      const elections = await adminService.getElectionsForAdmin('future');
       setFutureElections(elections);
       logger.debug('Updated futureElections:', futureElections);
     } catch (error) {
@@ -31,7 +31,7 @@ export const TestElectionAdminView = () => {
   const handleDeleteTestData = async (electionId) => {
     try {
       await adminService.deleteTestElectionData(electionId);
-      setFutureElections(await adminService.getElectionsForAdmin());
+      setFutureElections(await adminService.getElectionsForAdmin('future'));
       showAlert('success', 'Testdaten wurden geloescht');
     } catch (error) {
       logger.error('Error deleting test data');
@@ -42,7 +42,7 @@ export const TestElectionAdminView = () => {
 
   useEffect(() => {
     const fetchFutureElections = async () => {
-      const elections = await adminService.getElectionsForAdmin();
+      const elections = await adminService.getElectionsForAdmin('future');
       if (elections.length === 0) {
         logger.debug('No future elections found');
       }

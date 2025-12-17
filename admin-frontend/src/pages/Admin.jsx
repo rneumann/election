@@ -13,6 +13,7 @@ import {
 } from '../utils/validators/csvValidator.js';
 import { validateElectionExcel } from '../utils/validators/excelValidator.js';
 import { TestElectionAdminView } from '../components/TestElectionAdminView.jsx';
+import { TestElectionCountingAdminView } from '../components/TestElectionCountingAdminView.jsx';
 
 /**
  * Admin Dashboard - Main admin interface
@@ -578,7 +579,7 @@ const AdminDashboard = () => {
             )}
 
             {activeSection === 'test-election' && <TestElectionAdminView />}
-            {/* {activeSection === 'test-election-counting' && (
+            {activeSection === 'test-election-counting' && (
               <TestElectionCountingAdminView
                 theme={theme}
                 elections={elections}
@@ -587,12 +588,10 @@ const AdminDashboard = () => {
                 setLoadingElections={setLoadingElections}
                 countingElectionId={countingElectionId}
                 setCountingElectionId={setCountingElectionId}
-                countingResult={countingResult}
-                setCountingResult={setCountingResult}
                 countingError={countingError}
                 setCountingError={setCountingError}
               />
-            )} */}
+            )}
 
             {/* Counting Section */}
             {activeSection === 'counting' && (

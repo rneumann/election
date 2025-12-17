@@ -4,23 +4,70 @@ import { client } from '../database/db.js';
 
 /**
  * Retrieves all elections that are active or will be active in the future.
+ * @param status
  * @returns {Promise<Array>} - An array of election objects.
  */
-export const getElectionsForAdmin = async () => {
+export const getElectionsForAdmin = async (status) => {
+  const conditions = ['1=1'];
+
+  /* eslint-disable*/
+  switch (status) {
+    case 'active':
+      conditions.push('e.start <= now() AND e."end" >= now()');
+      break;
+    case 'finished':
+      conditions.push('e."end" < now()');
+      break;
+    case 'future':
+      conditions.push('e.start > now()');
+      break;
+  }
+
   const sql = `
-    SELECT 
+    SELECT
       e.id,
       e.info,
       e.description,
-      e.listvotes,
+      e.seats_to_fill,
       e.votes_per_ballot,
-      e.max_cumulative_votes,
       e.test_election_active,
       e.start,
-      e.end
+      e."end",
+
+      COALESCE(c.candidates, 0) AS candidates,
+      COALESCE(v.voters, 0)     AS voters,
+      COALESCE(b.ballots, 0)   AS ballots
+
     FROM elections e
-    WHERE e.start > now()
-    ORDER BY e.start
+
+    LEFT JOIN (
+      SELECT
+        electionId,
+        COUNT(candidateId) AS candidates
+      FROM electioncandidates
+      GROUP BY electionId
+    ) c ON c.electionId = e.id
+
+    LEFT JOIN (
+      SELECT
+        electionId,
+        COUNT(DISTINCT voterId) AS voters
+      FROM votingnotes
+      GROUP BY electionId
+    ) v ON v.electionId = e.id
+
+    LEFT JOIN (
+      SELECT
+        election,
+        COUNT(*) AS ballots
+      FROM ballots
+      GROUP BY election
+    ) b ON b.election = e.id
+
+    WHERE
+      ${conditions.join(' AND ')}
+
+    ORDER BY e.start DESC;
   `;
 
   try {
