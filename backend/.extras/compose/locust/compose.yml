@@ -1,0 +1,11 @@
+services:
+  locust:
+    image: locustio/locust
+    profiles: ['dev']
+    volumes:
+      - ./:/mnt/locust
+    command: -f /mnt/locust/locustfile.py
+    networks:
+      - frontend_net
+    ports:
+      - '8089:8089'

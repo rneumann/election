@@ -6,6 +6,7 @@ yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
 
+__pychache__*
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
@@ -160,3 +161,4 @@ vite.config.ts.timestamp-*
 
 # uploads
 **/uploads
+backend/.extras/compose/locust/__pycache__/locustfile.cpython-313.pyc

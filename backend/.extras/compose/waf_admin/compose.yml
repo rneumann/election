@@ -1,13 +1,12 @@
 services:
-  waf:
+  waf_admin:
     image: owasp/modsecurity-crs:nginx
-    container_name: waf
+    container_name: waf_admin
     restart: unless-stopped
     networks:
-      - frontend_net
+      - admin_net
     ports:
-      - '80:8080'
-      - '443:8443'
+      - '8444:8443'
     volumes:
       - ./certs:/etc/nginx/certs:ro
       - ./tmp/host-fs-auditlog.log:/var/log/modsec_audit.log
@@ -15,7 +14,7 @@ services:
       - ./conf.d/global_tuning.conf:/etc/nginx/conf.d/global_tuning.conf:ro
       - ./conf.d/security_logic.conf:/etc/nginx/conf.d/z_rate_limit_apply.conf:ro
     depends_on:
-      - frontend
+      - admin_frontend
     environment:
       - MODSEC_AUDIT_ENGINE=on
       - MODSEC_AUDIT_LOG=/var/log/modsec_audit.log
@@ -25,7 +24,7 @@ services:
       - ALLOWED_METHODS=GET POST PUT DELETE
       # --- Webserver Basis ---
       - SERVER_NAME=example.de
-      - BACKEND=http://frontend:8080
+      - BACKEND=http://admin_frontend:8081
       - PORT=8080
       - SSL_PORT=8443
 

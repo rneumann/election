@@ -1,9 +1,11 @@
 include:
   - ./compose.base.yml
   - ./frontend/compose.yml
-  - ./admin-frontend/compose.yml
+  - ./admin_frontend/compose.yml
   - ./backend/compose.yml
   - ./postgres/compose.yml
   #- ./keycloak/compose.yml
   - ./ldap/compose.yml
   - ./waf/compose.yml
+  - ./waf_admin/compose.yml
+  - ./locust/compose.yml

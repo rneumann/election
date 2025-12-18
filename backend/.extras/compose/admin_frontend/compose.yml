@@ -1,11 +1,9 @@
 services:
-  admin-frontend:
+  admin_frontend:
     image: admin_frontend_image
-    container_name: admin-frontend
+    container_name: admin_frontend
     expose:
       - '8081'
-    ports:
-      - '8081:8081'
     networks:
       - backend_net
       - admin_net
