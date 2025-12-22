@@ -8,4 +8,5 @@ include:
   - ./ldap/compose.yml
   - ./waf/compose.yml
   - ./waf_admin/compose.yml
-  - ./locust/compose.yml
+  #- ./locust/compose.yml
+  - ./redis/compose.yml

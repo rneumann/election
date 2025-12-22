@@ -6,7 +6,6 @@ services:
       --requirepass "${REDIS_PASSWORD}"
       --maxmemory 512mb
       --maxmemory-policy allkeys-lru
-      --appendonly yes
       --save ""
     environment:
       - REDIS_PASSWORD=${REDIS_PASSWORD}

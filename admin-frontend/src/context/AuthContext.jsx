@@ -181,7 +181,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const fetchMe = async () => {
-    const { data } = await api.get('/api/auth/me', {
+    const { data } = await api.get('/auth/me', {
       withCredentials: true,
     });
     return data;

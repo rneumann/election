@@ -118,8 +118,8 @@ export const AuthProvider = ({ children }) => {
           logout();
         }
       },
-      (3 * 60 + 55) * 1000,
-    ); // 3 min 55 sec
+      (3 * 60 + 10) * 1000,
+    ); // 3 min 10 sec
 
     return () => clearInterval(interval);
   }, [isAuthenticated]);
@@ -179,7 +179,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const fetchMe = async () => {
-    const { data } = await api.get('http://localhost:3000/api/auth/me', {
+    const { data } = await api.get('/auth/me', {
       withCredentials: true,
     });
     return data;
