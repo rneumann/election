@@ -37,37 +37,56 @@ export const validateElectionExcel = async (file) => {
   const parseResult = await parseElectionExcel(file, EXPECTED_SHEET_NAMES);
 
   if (!parseResult.success) {
+    logger.error('Parse failed:', parseResult);
+    const errors = parseResult.errors || [
+      {
+        sheet: null,
+        row: null,
+        field: null,
+        message: 'Unknown parsing error',
+        code: 'PARSE_ERROR',
+      },
+    ];
     return {
       success: false,
-      errors: parseResult.errors || [{ message: 'Unknown parsing error', code: 'PARSE_ERROR' }],
+      errors,
     };
   }
 
   const { data } = parseResult;
-  const infoData = data.info || {};
+  const electionsData = data.elections || [];
+
+  logger.info(`Parsed ${electionsData.length} elections:`, electionsData);
 
   // Map the raw data from the "Info" sheet to the expected schema structure
-  const preparedElections = {
-    Kennung: infoData['Kennung'] || infoData['Wahl Kennung'] || infoData['Wahlbezeichnung'] || '',
-    Info: infoData.Info || '',
-    Listen: infoData.Listen ? String(infoData.Listen) : '0',
-    Plätze: infoData.Plätze,
-    'Stimmen pro Zettel': infoData['Stimmen pro Zettel'] || infoData['Stimmen'],
-    'max. Kum.': infoData['max. Kum.'] || infoData['Kumulieren'] || 0,
-    Wahltyp: infoData['Wahltyp'],
-    Zählverfahren: infoData['Zählverfahren'],
+  const preparedElections = electionsData.map((electionData) => ({
+    Kennung:
+      electionData['Kennung'] ||
+      electionData['Wahl Kennung'] ||
+      electionData['Wahlbezeichnung'] ||
+      '',
+    Info: electionData.Info || '',
+    Listen: electionData.Listen ? String(electionData.Listen) : '0',
+    Plätze: electionData.Plätze,
+    'Stimmen pro Zettel': electionData['Stimmen pro Zettel'] || electionData['Stimmen'],
+    'max. Kum.': electionData['max. Kum.'] || electionData['Kumulieren'] || 0,
+    Wahltyp: electionData['Wahltyp'],
+    Zählverfahren: electionData['Zählverfahren'],
     Startzeitpunkt:
-      infoData['Startzeitpunkt'] ||
-      infoData['Wahlzeitraum von'] ||
-      infoData['Start'] ||
+      electionData['Startzeitpunkt'] ||
+      electionData['Wahlzeitraum von'] ||
+      electionData['Start'] ||
       new Date().toISOString(),
     Endzeitpunkt:
-      infoData['Endzeitpunkt'] || infoData['bis'] || infoData['Ende'] || new Date().toISOString(),
-  };
+      electionData['Endzeitpunkt'] ||
+      electionData['bis'] ||
+      electionData['Ende'] ||
+      new Date().toISOString(),
+  }));
 
-  // Wrap the single election object in an array as expected by the schema
+  // Prepare data for validation
   const preparedData = {
-    elections: [preparedElections],
+    elections: preparedElections,
     candidates: data.candidates || [],
   };
 
@@ -76,14 +95,29 @@ export const validateElectionExcel = async (file) => {
 
   // Handle validation errors by mapping them to specific sheets and rows
   if (!validationResult.success) {
+    logger.error('Zod validation failed:', validationResult.error);
     const errors = [];
-    const zodErrors = validationResult.error?.errors || [];
+    const zodErrors = validationResult.error?.issues || []; // FIXED: issues not errors!
 
-    zodErrors.forEach((error) => {
+    logger.info(`zodErrors.length = ${zodErrors.length}`);
+    logger.info(`zodErrors array:`, zodErrors);
+
+    zodErrors.forEach((error, index) => {
+      logger.info(`Processing error ${index}:`, error);
       const path = error.path;
       let sheet = null;
       let row = null;
       let field = null;
+      let message = error.message;
+
+      // Generate better error messages based on Zod error codes
+      if (error.code === 'too_big' && error.type === 'string') {
+        message = `Text zu lang (max. ${error.maximum} Zeichen)`;
+      } else if (error.code === 'invalid_type') {
+        message = `Ungültiger Datentyp: Erwartet ${error.expected}, erhalten ${error.received}`;
+      } else if (error.code === 'too_small') {
+        message = `Wert zu klein (min. ${error.minimum})`;
+      }
 
       // Map errors in 'elections' array to the 'Wahlen' sheet
       if (path[0] === 'elections') {
@@ -106,10 +140,14 @@ export const validateElectionExcel = async (file) => {
         sheet,
         row,
         field,
-        message: error.message,
+        message,
         code: 'VALIDATION_ERROR',
       });
+
+      logger.info(`Pushed error ${index}, errors.length now = ${errors.length}`);
     });
+
+    logger.error('Mapped validation errors:', errors);
 
     return {
       success: false,
