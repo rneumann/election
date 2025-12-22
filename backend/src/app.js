@@ -21,6 +21,7 @@ import { writeAuditLog } from './audit/auditLogger.js';
 import { auditRouter } from './routes/audit.routes.js';
 import { adminRouter } from './routes/admin.routes.js';
 import { redisClient } from './conf/redis/redis-client.js';
+const { AUTH_PROVIDER, CORS_ORIGIN, NODE_ENV, INTERNAL_FINGERPRINT_SALT } = process.env;
 
 export const app = express();
 
@@ -71,7 +72,7 @@ app.use(
 
 app.use(
   cors({
-    origin: 'http://localhost:5173',
+    origin: CORS_ORIGIN || 'http://localhost:3000',
     methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
     credentials: true,
   }),
@@ -101,7 +102,7 @@ app.use(
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: NODE_ENV === 'production',
       sameSite: 'strict', // need to have the same origin
       maxAge: 1000 * (60 * 3 + 45), // 3.45 minutes
     },
@@ -128,7 +129,7 @@ app.use((req, res, next) => {
 
   const fingerprint = crypto
     .createHash('sha256')
-    .update(process.env.INTERNAL_FINGERPRINT_SALT + ip + ua) // Pepper aus env nutzen
+    .update(INTERNAL_FINGERPRINT_SALT + ip + ua) // Pepper aus env nutzen
     .digest('hex');
 
   if (req.session.freshUser || !req.session.fingerprint) {
@@ -195,7 +196,7 @@ app.use(async (req, res, next) => {
     req.session.destroy(() => {});
     res.clearCookie('connect.sid', { path: '/', httpOnly: true });
 
-    if (user?.authProvider === 'ldap') {
+    if (AUTH_PROVIDER === 'ldap') {
       res.clearCookie('PHPSESSID', { path: '/', httpOnly: true });
       res.clearCookie('PHPSESSIDIDP', { path: '/', httpOnly: true });
       res.clearCookie('PGADMIN_LANGUAGE', { path: '/', httpOnly: true });
@@ -215,13 +216,16 @@ app.use(async (req, res, next) => {
   next();
 });
 
-// Swagger muss VOR den Routen und VOR dem ErrorHandler kommen!
-// app.use('/api-docs', swaggerUiExpress.serve, swaggerUiExpress.setup(swaggerSpec));
-
 /**
  * Health route
  */
 app.use('/', healthRouter);
+
+app.use('/api/config/auth-provider', (req, res) => {
+  logger.debug('Returning auth provider');
+  logger.debug(`Following auth provider: ${AUTH_PROVIDER}`);
+  res.status(200).json({ authProvider: AUTH_PROVIDER });
+});
 
 /**
  * Binding API routes

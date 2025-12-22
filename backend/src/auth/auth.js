@@ -8,7 +8,7 @@ import { readSecret } from '../security/secret-reader.js';
 // NEU: Audit Import
 import { writeAuditLog } from '../audit/auditLogger.js';
 import { checkIfVoterIsCandidate } from '../service/candidate.service.js';
-const { KC_BASE_URL, KC_REALM, CLIENT_ID, CLIENT_SECRET } = process.env;
+const { KC_BASE_URL, KC_REALM, CLIENT_ID, CLIENT_SECRET, AUTH_PROVIDER } = process.env;
 
 /**
  * Returns an object with the admin user's username and password.
@@ -183,7 +183,7 @@ export const logoutRoute = async (req, res) => {
       }
       res.clearCookie('connect.sid', { path: '/', httpOnly: true });
 
-      if (user?.authProvider === 'ldap') {
+      if (AUTH_PROVIDER === 'ldap') {
         res.clearCookie('PHPSESSID', { path: '/', httpOnly: true });
         res.clearCookie('PHPSESSIDIDP', { path: '/', httpOnly: true });
         res.clearCookie('PGADMIN_LANGUAGE', { path: '/', httpOnly: true });
@@ -198,7 +198,7 @@ export const logoutRoute = async (req, res) => {
       //   return res.status(200).json({ message: 'Logout successful' });
       // }
 
-      if (user?.authProvider === 'keycloak' && user?.refreshToken) {
+      if (AUTH_PROVIDER === 'keycloak' && user?.refreshToken) {
         logger.debug(
           `Try to logout user from Keycloak with redirect_uri: ${KC_BASE_URL}/realms/${KC_REALM}/protocol/openid-connect/logout?redirect_uri=${encodeURIComponent('http://localhost:5173/login')}`,
         );
@@ -240,19 +240,19 @@ export const getUserInfo = async (username, authProvider) => {
   const adminUser = await getAdminUser();
   const committeeUser = await getCommitteeUser();
   if (username === adminUser.username) {
-    return { username: adminUser.username, role: 'admin', authProvider: authProvider };
+    return { username: adminUser.username, role: 'admin' };
   }
   if (username === committeeUser.username) {
-    return { username: committeeUser.username, role: 'committee', authProvider: authProvider };
+    return { username: committeeUser.username, role: 'committee' };
   }
 
   const isCandidate = await checkIfVoterIsCandidate(username);
   logger.debug(`User ${username} is candidate: ${isCandidate}`);
   if (isCandidate) {
-    return { username: username, role: 'voter', authProvider: authProvider, isCandidate: true };
+    return { username: username, role: 'voter', isCandidate: true };
   }
 
-  return { username: username, role: 'voter', authProvider: authProvider, isCandidate: false };
+  return { username: username, role: 'voter', isCandidate: false };
 };
 
 /**

@@ -6,6 +6,8 @@ import { logger } from '../conf/logger/logger.js';
 import { countingRouter } from './counting.route.js';
 import { exportRoute } from './export.route.js';
 
+const { AUTH_PROVIDER } = process.env;
+
 export const router = express.Router();
 
 /**
@@ -60,7 +62,7 @@ export const router = express.Router();
  *       500:
  *         description: Internal Server Error
  */
-router.post('/auth/login/ldap', loginRoute('ldap'));
+AUTH_PROVIDER === 'ldap' && router.post('/auth/login/ldap', loginRoute('ldap'));
 
 // SAML Login
 //router.get('/auth/login/saml', passport.authenticate('saml'));
@@ -93,7 +95,7 @@ router.post('/auth/login/ldap', loginRoute('ldap'));
  *       302:
  *         description: Redirect to Keycloak login page
  */
-router.get('/auth/login/kc', passport.authenticate('oidc_kc'));
+AUTH_PROVIDER === 'keycloak' && router.get('/auth/login/kc', passport.authenticate('oidc_kc'));
 
 // Keycloak Callback
 /**
@@ -110,22 +112,23 @@ router.get('/auth/login/kc', passport.authenticate('oidc_kc'));
  *       401:
  *         description: Authentication failed
  */
-router.get(
-  '/auth/callback/kc',
-  passport.authenticate('oidc_kc', {
-    failureRedirect: 'http://localhost:5173/login',
-  }),
-  (req, res) => {
-    req.session.sessionSecret = crypto.randomBytes(32).toString('hex');
-    req.session.freshUser = true;
-    req.session.lastActivity = Date.now();
-    req.session.csrfToken = crypto.randomBytes(32).toString('hex');
-    logger.debug(
-      `Keycloak set freshUser to true and CSRF token generated: ${req.session.csrfToken}`,
-    );
-    res.redirect('http://localhost:5173/home');
-  },
-);
+AUTH_PROVIDER === 'keycloak' &&
+  router.get(
+    '/auth/callback/kc',
+    passport.authenticate('oidc_kc', {
+      failureRedirect: 'http://localhost:5173/login',
+    }),
+    (req, res) => {
+      req.session.sessionSecret = crypto.randomBytes(32).toString('hex');
+      req.session.freshUser = true;
+      req.session.lastActivity = Date.now();
+      req.session.csrfToken = crypto.randomBytes(32).toString('hex');
+      logger.debug(
+        `Keycloak set freshUser to true and CSRF token generated: ${req.session.csrfToken}`,
+      );
+      res.redirect('http://localhost:5173/home');
+    },
+  );
 
 router.get('/auth/csrf-token', ensureAuthenticated, (req, res) => {
   logger.debug('CSRF token requested');
@@ -164,7 +167,6 @@ router.get('/auth/csrf-token', ensureAuthenticated, (req, res) => {
  */
 router.get('/auth/me', (req, res) => {
   logger.debug('Me route accessed');
-  //logger.debug(`Identity provider: ${JSON.stringify(req.user?.authProvider)}`);
   if (req.isAuthenticated()) {
     res.json({ authenticated: true, user: req.user });
   } else {
