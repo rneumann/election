@@ -109,7 +109,7 @@ export const AuthProvider = ({ children }) => {
     const interval = setInterval(
       async () => {
         try {
-          const { data } = await api.get('/auth/me', { withCredentials: true });
+          const { data } = await api.get('/api/auth/me', { withCredentials: true });
 
           if (!data?.authenticated) {
             logger.debug('Session heartbeat: invalid → logout');
