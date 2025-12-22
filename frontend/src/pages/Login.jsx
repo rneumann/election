@@ -270,12 +270,15 @@ const LoginContent = () => {
           </ResponsiveButton>
         </form>
 
-        <ResponsiveButton
-          onClick={() => (window.location.href = '/api/auth/login/kc')}
-          className="mt-4 w-full bg-brand-primary text-white py-3 rounded-lg font-semibold hover:opacity-90 transition duration-200 shadow-lg"
-        >
-          Anmelden mit Keycloak
-        </ResponsiveButton>
+        {/* Keycloak Login Button - only show if enabled via env var */}
+        {import.meta.env.VITE_ENABLE_KEYCLOAK_AUTH === 'true' && (
+          <ResponsiveButton
+            onClick={() => (window.location.href = '/api/auth/login/kc')}
+            className="mt-4 w-full bg-brand-primary text-white py-3 rounded-lg font-semibold hover:opacity-90 transition duration-200 shadow-lg"
+          >
+            Anmelden mit Keycloak
+          </ResponsiveButton>
+        )}
 
         {/* Footer */}
         <p className="text-center text-xs sm:text-sm text-brand-gray dark:text-gray-400 mt-4 sm:mt-6 transition-colors">

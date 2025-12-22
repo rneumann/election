@@ -83,7 +83,19 @@ export const importCandidateData = async (path, mimeType) => {
   try {
     const rawRows = await parser(path);
 
-    const rows = rawRows.map((row) => safeRow(row));
+    const rows = rawRows.map((row, index) => {
+      const cleaned = safeRow(row);
+      // Generate UID if missing (CSV files don't have UID column)
+      if (!cleaned.uid) {
+        // Use lastname_firstname or fallback to index
+        const namePart =
+          cleaned.lastname && cleaned.firstname
+            ? `${cleaned.lastname}_${cleaned.firstname}`.toLowerCase().replace(/[^a-z0-9_]/g, '')
+            : `candidate_${index}`;
+        cleaned.uid = namePart.substring(0, 30);
+      }
+      return cleaned;
+    });
 
     logger.debug(`Parsed ${rows.length} candidate rows.`);
 

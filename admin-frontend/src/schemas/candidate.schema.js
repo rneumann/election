@@ -41,9 +41,10 @@ export const candidateSchema = z.object({
   Nachname: z
     .string()
     .trim()
-    .min(1, 'Nachname darf nicht leer sein')
     .max(100, 'Nachname darf maximal 100 Zeichen lang sein')
-    .regex(/^[a-zA-ZäöüßÄÖÜ\s\-'.]+$/, 'Nachname enthält ungültige Zeichen.'),
+    .regex(/^[a-zA-ZäöüßÄÖÜ\s\-'.]*$/, 'Nachname enthält ungültige Zeichen.')
+    .optional()
+    .default(''),
 
   Vorname: z
     .string()
@@ -56,8 +57,11 @@ export const candidateSchema = z.object({
     .string()
     .trim()
     .max(20)
-    .regex(/^\d*$/, 'Matrikelnummer darf nur Ziffern enthalten')
-    .optional(),
+    .optional()
+    .default('')
+    .refine((val) => !val || /^\d*$/.test(val), {
+      message: 'Matrikelnummer darf nur Ziffern enthalten',
+    }),
 
   Fakultät: z.string().trim().max(50).optional(),
 

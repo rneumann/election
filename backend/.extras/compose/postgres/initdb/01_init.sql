@@ -60,6 +60,7 @@ CREATE TABLE
     election_type VARCHAR(50),
     counting_method VARCHAR(50),
     CONSTRAINT elections_time_range CHECK ("end" > start),
+    CONSTRAINT unique_election_period UNIQUE (description, start, "end"),
     CONSTRAINT chk_election_type CHECK (
       election_type IS NULL
       OR election_type IN (

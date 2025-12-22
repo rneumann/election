@@ -16,6 +16,8 @@ const COUNTING_METHOD_MAPPING = new Map([
   ['Ja/Nein/Enthaltung', 'yes_no_referendum'],
 ]);
 
+const UID_SUFFIX_LENGTH = 20;
+
 /**
  * Imports election data from an Excel file into the database.
  * Parses the Excel file row by row and inserts valid elections.
@@ -78,18 +80,32 @@ export const importElectionData = async (filePath) => {
       const electionType = ELECTION_TYPE_MAPPING.get(electionTypeText);
       if (!electionType) {
         throw new Error(
-          `Missing election_type (column H) in row ${rowIndex}. Expected: Mehrheitswahl, Verhältniswahl, or Urabstimmung.`,
+          `Invalid election_type '${electionTypeText}' in row ${rowIndex}. Expected: Mehrheitswahl, Verhältniswahl, or Urabstimmung.`,
         );
       }
       const countingMethod = COUNTING_METHOD_MAPPING.get(countingMethodText);
       if (!countingMethod) {
         throw new Error(
-          `Missing counting_method (column I) in row ${rowIndex}. Expected: Sainte-Laguë, Hare-Niemeyer, Einfache Mehrheit, Absolute Mehrheit, or Ja/Nein/Enthaltung.`,
+          `Invalid counting_method '${countingMethodText}' in row ${rowIndex}. Expected: Sainte-Laguë, Hare-Niemeyer, Einfache Mehrheit, Absolute Mehrheit, or Ja/Nein/Enthaltung.`,
         );
       }
       logger.info(
         `Row ${rowIndex}: ${info} → election_type=${electionType}, counting_method=${countingMethod}`,
       );
+
+      // Check for duplicates: same info and date range
+      const duplicateCheckQuery = `
+        SELECT id FROM elections 
+        WHERE info = $1 AND start = $2 AND "end" = $3
+        LIMIT 1;
+      `;
+      const duplicateCheck = await db.query(duplicateCheckQuery, [info, startDate, endDate]);
+
+      if (duplicateCheck.rows.length > 0) {
+        throw new Error(
+          `Wahl "${info}" (${startDate} - ${endDate}) existiert bereits. Import abgebrochen.`,
+        );
+      }
 
       const insertElectionQuery = `
         INSERT INTO elections (
@@ -118,71 +134,84 @@ export const importElectionData = async (filePath) => {
       importedCount++;
     }
 
-    if (workbook.worksheets.length > 1) {
+    if (workbook.worksheets.length > 2) {
       const candidateSheet = workbook.worksheets[2];
-      logger.info(`Verarbeite Kandidaten aus Blatt "${candidateSheet.name}"...`);
+      if (!candidateSheet) {
+        logger.warn(
+          'Kandidatenblatt (worksheets[2]) nicht gefunden. Überspringe Kandidatenimport.',
+        );
+      } else {
+        logger.info(`Verarbeite Kandidaten aus Blatt "${candidateSheet.name}"...`);
 
-      let candRow = 2;
-      let candCount = 0;
+        let candRow = 2;
+        let candCount = 0;
 
-      while (candidateSheet.getCell(`A${candRow}`).value) {
-        const electionRef = candidateSheet.getCell(`A${candRow}`).value?.toString();
-        const electionUUID = electionIdMap.get(electionRef);
+        while (candidateSheet.getCell(`A${candRow}`).value) {
+          const electionRef = candidateSheet.getCell(`A${candRow}`).value?.toString();
+          const electionUUID = electionIdMap.get(electionRef);
 
-        if (electionUUID) {
-          const uid = candidateSheet.getCell(`D${candRow}`).value?.toString() || ' ';
-          const lastname = candidateSheet.getCell(`F${candRow}`).value?.toString() || '';
-          const firstname = candidateSheet.getCell(`E${candRow}`).value?.toString() || '';
-          const matrNr = candidateSheet.getCell(`G${candRow}`).value?.toString() || '';
-          const faculty = candidateSheet.getCell(`H${candRow}`).value?.toString() || '';
-          const keywords = candidateSheet.getCell(`I${candRow}`).value?.toString() || '';
-          const notes = candidateSheet.getCell(`A${candRow}`).value?.toString() || '';
+          if (electionUUID) {
+            // New format: A=WahlKennung, B=Nr, C=Liste/Schlüsselwort, D=Vorname, E=Nachname, F=Mtr-Nr, G=Fakultät, H=Studiengang
+            const listnum = candidateSheet.getCell(`B${candRow}`).value
+              ? Number(candidateSheet.getCell(`B${candRow}`).value)
+              : candCount + 1;
+            const keywords = candidateSheet.getCell(`C${candRow}`).value?.toString() || '';
+            const firstname = candidateSheet.getCell(`D${candRow}`).value?.toString() || '';
+            const lastname = candidateSheet.getCell(`E${candRow}`).value?.toString() || '';
+            const matrNr = candidateSheet.getCell(`F${candRow}`).value?.toString() || '';
+            const faculty = candidateSheet.getCell(`G${candRow}`).value?.toString() || '';
 
-          const admittedRaw = candidateSheet.getCell(`C${candRow}`).value;
-          const isAdmitted =
-            admittedRaw === false ||
-            String(admittedRaw).toLowerCase() === 'false' ||
-            String(admittedRaw).toLowerCase() === 'nein'
-              ? false
-              : true;
+            // Generate unique UID: use last 20 chars of UUID + listnum (fits in varchar(30))
+            const uuidSuffix = electionUUID.slice(-UID_SUFFIX_LENGTH);
+            const uid = `${uuidSuffix}_${listnum}`;
+            const notes = '';
 
-          if (lastname) {
-            const insertCandidateQuery = `
-              INSERT INTO candidates 
-              (uid, lastname, firstname, mtknr, faculty, keyword, notes, approved)
-              VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-              RETURNING id
-            `;
+            const admittedRaw = candidateSheet.getCell(`C${candRow}`).value;
+            const isAdmitted =
+              admittedRaw === false ||
+              String(admittedRaw).toLowerCase() === 'false' ||
+              String(admittedRaw).toLowerCase() === 'nein'
+                ? false
+                : true;
 
-            const candRes = await db.query(insertCandidateQuery, [
-              uid,
-              lastname,
-              firstname,
-              matrNr,
-              faculty,
-              keywords,
-              notes,
-              isAdmitted,
-            ]);
+            if (firstname || lastname) {
+              const insertCandidateQuery = `
+                INSERT INTO candidates 
+                (uid, lastname, firstname, mtknr, faculty, keyword, notes, approved)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                RETURNING id
+              `;
 
-            const newCandidateId = candRes.rows[0].id;
+              const candRes = await db.query(insertCandidateQuery, [
+                uid,
+                lastname,
+                firstname,
+                matrNr,
+                faculty,
+                keywords,
+                notes,
+                isAdmitted,
+              ]);
 
-            const linkQuery = `
-              INSERT INTO electioncandidates (electionId, candidateId, listnum)
-              VALUES ($1, $2, $3)
-            `;
+              const newCandidateId = candRes.rows[0].id;
 
-            await db.query(linkQuery, [electionUUID, newCandidateId, candCount]);
-            candCount++;
+              const linkQuery = `
+                INSERT INTO electioncandidates (electionId, candidateId, listnum)
+                VALUES ($1, $2, $3)
+              `;
+
+              await db.query(linkQuery, [electionUUID, newCandidateId, listnum]);
+              candCount++;
+            }
+          } else {
+            if (electionRef) {
+              logger.warn(`Zeile ${candRow}: Unbekannte Wahl-Referenz "${electionRef}".`);
+            }
           }
-        } else {
-          if (electionRef) {
-            logger.warn(`Zeile ${candRow}: Unbekannte Wahl-Referenz "${electionRef}".`);
-          }
+          candRow++;
         }
-        candRow++;
+        logger.info(`${candCount} Kandidaten importiert und verknüpft.`);
       }
-      logger.info(`${candCount} Kandidaten importiert und verknüpft.`);
     }
 
     await db.query('COMMIT');

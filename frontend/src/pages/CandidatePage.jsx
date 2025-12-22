@@ -109,28 +109,30 @@ export const CandidatePageContent = () => {
       <Header setAccessibilityMenuOpen={setAccessibilityMenuOpen} />
       {/* Main Content - Flex-1 to push footer down */}
       <main className="flex-1 container mx-auto px-4 sm:px-6 py-6 sm:py-8">
-        <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6 md:p-8 border border-gray-100">
-          <h2 className="text-2xl sm:text-3xl font-bold text-brand-dark mb-3 sm:mb-4">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 sm:p-6 md:p-8 border border-gray-100 dark:border-gray-700 transition-colors">
+          <h2 className="text-2xl sm:text-3xl font-bold text-brand-dark dark:text-gray-100 mb-3 sm:mb-4 transition-colors">
             Persönliche Kandidateninformationen
           </h2>
-          <p className="text-sm text-brand-gray mb-4 sm:mb-6">
+          <p className="text-sm text-brand-gray dark:text-gray-300 mb-4 sm:mb-6 transition-colors">
             Hier können Sie Ihre persönlichen Kandidateninformationen einsehen und verwalten.
           </p>
 
           {/* Image Upload Component */}
           <div className="mb-8">
-            <h2 className="text-xl font-bold text-gray-800 mb-4">Profilbild Verwaltung</h2>
+            <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4 transition-colors">
+              Profilbild Verwaltung
+            </h2>
 
             {/* Flex Container */}
             <div className="flex flex-col sm:flex-row sm:space-x-8">
               {/* 1. BILD UPLOAD */}
-              <div className="w-full sm:w-2/3 mb-6 sm:mb-0 p-4 bg-gray-50 rounded-lg border border-gray-100 shadow-inner">
+              <div className="w-full sm:w-2/3 mb-6 sm:mb-0 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-100 dark:border-gray-600 shadow-inner transition-colors">
                 <ImageUploadCandidate setUploadData={setUploadData} />
               </div>
 
               {/* 2. Picture Preview */}
-              <div className="w-full sm:w-1/3 flex flex-col items-center sm:items-start p-4 bg-gray-50 rounded-lg border border-gray-100 shadow-inner">
-                <h3 className="text-base font-semibold text-gray-700 mb-3 w-full sm:text-left text-center">
+              <div className="w-full sm:w-1/3 flex flex-col items-center sm:items-start p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-100 dark:border-gray-600 shadow-inner transition-colors">
+                <h3 className="text-base font-semibold text-gray-700 dark:text-gray-200 mb-3 w-full sm:text-left text-center transition-colors">
                   Aktuelles Profilbild
                 </h3>
 
@@ -141,9 +143,9 @@ export const CandidatePageContent = () => {
                     overflow-hidden 
                     rounded-lg 
                     shadow-lg 
-                    ring-4 ring-white 
-                    bg-gray-200 
-                    flex items-center justify-center
+                    ring-4 ring-white dark:ring-gray-700 
+                    bg-gray-200 dark:bg-gray-600 
+                    flex items-center justify-center transition-colors
                 "
                 >
                   {currentData?.picture_data ? (
@@ -155,7 +157,7 @@ export const CandidatePageContent = () => {
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <p className="text-sm text-gray-500 text-center p-2">
+                    <p className="text-sm text-gray-500 dark:text-gray-400 text-center p-2 transition-colors">
                       noch kein Bild hochgeladen
                     </p>
                   )}
@@ -168,7 +170,7 @@ export const CandidatePageContent = () => {
                     {/* NEU: Wrapper für Zentrierung */}
                     <button
                       onClick={() => setUploadData(null)}
-                      className="mt-4 text-sm text-red-600 hover:text-red-800 font-medium transition"
+                      className="mt-4 text-sm text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 font-medium transition-colors"
                     >
                       Bild entfernen
                     </button>
@@ -179,12 +181,17 @@ export const CandidatePageContent = () => {
           </div>
 
           {/* Horizontal Line */}
-          <hr className="border-gray-200 my-8 border-t-2" />
+          <hr className="border-gray-200 dark:border-gray-700 my-8 border-t-2 transition-colors" />
 
           {/* Textarea for Personal Description */}
-          <h2 className="text-xl font-bold text-gray-800 mb-4">Persönliche Beschreibung</h2>
+          <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4 transition-colors">
+            Persönliche Beschreibung
+          </h2>
           <div className="mb-6">
-            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
+            <label
+              htmlFor="description"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2 transition-colors"
+            >
               Ihre Beschreibung (max. 200 Zeichen)
             </label>
             <textarea
@@ -198,20 +205,21 @@ export const CandidatePageContent = () => {
                 p-3 sm:p-4 
                 text-base sm:text-lg
                 rounded-lg 
-                border-2 border-gray-300 
+                border-2 border-gray-300 dark:border-gray-600 
+                bg-white dark:bg-gray-700 
+                text-gray-900 dark:text-gray-100
                 shadow-sm 
-                transition-all
-                focus:border-brand-primary 
-                focus:ring-brand-primary 
-                focus:ring-1 
+                transition-colors
+                focus:border-brand-primary dark:focus:border-blue-500 
+                focus:ring-brand-primary dark:focus:ring-blue-500 focus:ring-1 
                 resize-vertical 
-                placeholder:text-gray-400
+                placeholder:text-gray-400 dark:placeholder:text-gray-500
               "
               placeholder="Fügen Sie eine kurze Beschreibung Ihrer Kandidatur hinzu..."
             ></textarea>
 
             {/* Character Count */}
-            <p className="text-xs sm:text-sm text-gray-500 mt-1 text-right">
+            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1 text-right transition-colors">
               {description.length} / 200 Zeichen
             </p>
           </div>
