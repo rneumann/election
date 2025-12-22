@@ -100,7 +100,7 @@ export const validateElectionExcel = async (file) => {
     const zodErrors = validationResult.error?.issues || []; // FIXED: issues not errors!
 
     logger.info(`zodErrors.length = ${zodErrors.length}`);
-    logger.info(`zodErrors array:`, zodErrors);
+    logger.info('zodErrors array:', zodErrors);
 
     zodErrors.forEach((error, index) => {
       logger.info(`Processing error ${index}:`, error);

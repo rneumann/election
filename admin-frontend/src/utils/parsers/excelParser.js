@@ -106,8 +106,12 @@ export const parseElectionExcel = async (file) => {
 
       // Only add election if it has a Kennung
       if (hasData && (election['Kennung'] || election['Wahl Kennung'])) {
-        if (startDate) election['Startzeitpunkt'] = startDate;
-        if (endDate) election['Endzeitpunkt'] = endDate;
+        if (startDate) {
+          election['Startzeitpunkt'] = startDate;
+        }
+        if (endDate) {
+          election['Endzeitpunkt'] = endDate;
+        }
         elections.push(election);
         logger.info(`Found election: ${election['Kennung'] || election['Wahl Kennung']}`);
       }

@@ -16,8 +16,7 @@ const COUNTING_METHOD_MAPPING = new Map([
   ['Ja/Nein/Enthaltung', 'yes_no_referendum'],
 ]);
 
-const UUID_PREFIX_LENGTH = 8;
-const MAX_UID_LENGTH = 30;
+const UID_SUFFIX_LENGTH = 20;
 
 /**
  * Imports election data from an Excel file into the database.
@@ -102,41 +101,37 @@ export const importElectionData = async (filePath) => {
       `;
       const duplicateCheck = await db.query(duplicateCheckQuery, [info, startDate, endDate]);
 
-      let electionId;
       if (duplicateCheck.rows.length > 0) {
-        electionId = duplicateCheck.rows[0].id;
-        logger.warn(
-          `Wahl "${info}" (${startDate} - ${endDate}) existiert bereits (ID: ${electionId}). Überspringe Import.`,
+        throw new Error(
+          `Wahl "${info}" (${startDate} - ${endDate}) existiert bereits. Import abgebrochen.`,
         );
-      } else {
-        const insertElectionQuery = `
-          INSERT INTO elections (
-            info, description, listvotes, seats_to_fill, votes_per_ballot, 
-            max_cumulative_votes, start, "end", election_type, counting_method
-          )
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-          RETURNING id;
-        `;
-
-        const res = await db.query(insertElectionQuery, [
-          info,
-          identifier,
-          listvotes,
-          seatsToFill,
-          votesPerBallot,
-          maxCumulativeVotes,
-          startDate,
-          endDate,
-          electionType,
-          countingMethod,
-        ]);
-
-        electionId = res.rows[0].id;
-        importedCount++;
       }
 
-      electionIdMap.set(identifier, electionId);
+      const insertElectionQuery = `
+        INSERT INTO elections (
+          info, description, listvotes, seats_to_fill, votes_per_ballot, 
+          max_cumulative_votes, start, "end", election_type, counting_method
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        RETURNING id;
+      `;
+
+      const res = await db.query(insertElectionQuery, [
+        info,
+        identifier,
+        listvotes,
+        seatsToFill,
+        votesPerBallot,
+        maxCumulativeVotes,
+        startDate,
+        endDate,
+        electionType,
+        countingMethod,
+      ]);
+
+      electionIdMap.set(identifier, res.rows[0].id);
       rowIndex++;
+      importedCount++;
     }
 
     if (workbook.worksheets.length > 2) {
@@ -166,9 +161,9 @@ export const importElectionData = async (filePath) => {
             const matrNr = candidateSheet.getCell(`F${candRow}`).value?.toString() || '';
             const faculty = candidateSheet.getCell(`G${candRow}`).value?.toString() || '';
 
-            // Generate unique UID using election UUID and listnum
-            const uidBase = `${electionUUID.substring(0, UUID_PREFIX_LENGTH)}_${listnum}`;
-            const uid = uidBase.substring(0, MAX_UID_LENGTH);
+            // Generate unique UID: use last 20 chars of UUID + listnum (fits in varchar(30))
+            const uuidSuffix = electionUUID.slice(-UID_SUFFIX_LENGTH);
+            const uid = `${uuidSuffix}_${listnum}`;
             const notes = '';
 
             const admittedRaw = candidateSheet.getCell(`C${candRow}`).value;
