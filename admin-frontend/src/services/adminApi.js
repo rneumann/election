@@ -54,4 +54,18 @@ export const adminService = {
       throw err;
     }
   },
+
+  deleteAllData: async () => {
+    try {
+      const response = await api.delete('/admin/deleteAllData');
+      if (response.status !== 204 && response.status !== 200) {
+        handleHttpStatus(response);
+        return undefined;
+      }
+      return response.data;
+    } catch (err) {
+      logger.error('[adminService] deleteAllData failed', err);
+      throw err;
+    }
+  },
 };

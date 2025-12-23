@@ -191,3 +191,25 @@ export const controlTestElection = async (electionId) => {
     throw new Error(`Failed to toogle test election for ${electionId}`);
   }
 };
+
+export const deleteAllData = async () => {
+  try {
+    await client.query('BEGIN');
+
+    await client.query('DELETE FROM ballotvotes');
+    await client.query('DELETE FROM ballots');
+    await client.query('DELETE FROM election_results');
+    await client.query('DELETE FROM votingnotes');
+    await client.query('DELETE FROM electioncandidates');
+    await client.query('DELETE FROM candidate_information');
+    await client.query('DELETE FROM elections');
+    await client.query('DELETE FROM candidates');
+    await client.query('DELETE FROM voters');
+
+    await client.query('COMMIT');
+  } catch (error) {
+    await client.query('ROLLBACK');
+    logger.error('Failed to delete all data from the database.');
+    throw new Error(DATABASE_QUERY_ERROR);
+  }
+};

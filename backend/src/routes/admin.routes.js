@@ -4,6 +4,7 @@ import { logger } from '../conf/logger/logger.js';
 import { getElectionById } from '../service/voter.service.js';
 import {
   controlTestElection,
+  deleteAllData,
   getElectionsForAdmin,
   resetElectionData,
 } from '../service/admin.service.js';
@@ -93,6 +94,33 @@ adminRouter.put(
   },
 );
 
+/**
+ * @openapi
+ * /api/admin/resetElectionData/{electionId}:
+ *   delete:
+ *     summary: Reset election data (Admin only)
+ *     description: Resets the election data for the specified election ID
+ *     tags:
+ *       - Admin
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - name: electionId
+ *         in: path
+ *         description: The ID of the election to reset
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       204:
+ *         description: Election data reset successfully
+ *       400:
+ *         description: Bad request (election is active)
+ *       404:
+ *         description: Election not found
+ *       500:
+ *         description: Internal server error
+ */
 adminRouter.delete(
   '/resetElectionData/:electionId',
   ensureAuthenticated,
@@ -123,6 +151,24 @@ adminRouter.delete(
       logger.debug(`Failed to reset election data for ${electionId}: ${error.message}`);
       logger.error(`Failed to reset election data for ${electionId}`);
       return res.status(500).json({ message: 'Internal Server Error' });
+    }
+  },
+);
+
+adminRouter.delete(
+  '/deleteAllData',
+  ensureAuthenticated,
+  ensureHasRole(['admin']),
+  async (req, res) => {
+    logger.debug('Election route for admin accessed to delete all data');
+    try {
+      await deleteAllData();
+      logger.debug('All data deleted successfully');
+      res.sendStatus(204);
+    } catch (error) {
+      logger.debug(`Failed to delete all data: ${error.message}`);
+      logger.error('Failed to delete all data');
+      res.status(500).json({ message: 'Internal Server Error' });
     }
   },
 );

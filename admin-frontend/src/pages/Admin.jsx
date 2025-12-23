@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { set } from 'zod';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useTheme } from '../hooks/useTheme.js';
 import CountingSection from '../components/counting/CountingSection.jsx';
@@ -14,6 +15,9 @@ import {
 import { validateElectionExcel } from '../utils/validators/excelValidator.js';
 import { TestElectionAdminView } from '../components/TestElectionAdminView.jsx';
 import { TestElectionCountingAdminView } from '../components/TestElectionCountingAdminView.jsx';
+import { adminService } from '../services/adminApi.js';
+import { Alert } from '../components/Alert.jsx';
+import { logger } from '../conf/logger/logger.js';
 
 /**
  * Admin Dashboard - Main admin interface
@@ -32,6 +36,7 @@ const AdminDashboard = () => {
   const { user, logout } = useAuth();
   const theme = useTheme();
   const navigate = useNavigate();
+  const [showAlert, setShowAlert] = useState(false);
   const [activeSection, setActiveSection] = useState('counting');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -60,6 +65,16 @@ const AdminDashboard = () => {
   const handleSectionChange = (section) => {
     setActiveSection(section);
     setMobileMenuOpen(false);
+  };
+
+  const handleDeleteAllData = async () => {
+    try {
+      await adminService.deleteAllData();
+      setShowAlert(false);
+    } catch (error) {
+      logger.error('Error deleting data:', error);
+      setShowAlert(false);
+    }
   };
 
   return (
@@ -375,14 +390,23 @@ const AdminDashboard = () => {
                         />
                       </svg>
                     </div>
-                    <p className="text-gray-600 mb-6">
-                      Diese Funktion wird demnächst verfügbar sein.
-                    </p>
-                    <ResponsiveButton variant="outline" size="medium" disabled>
-                      Bald verfügbar
+                    <p className="text-gray-600 mb-6">Die Datenbank wird unwiederuflich geleert.</p>
+                    <ResponsiveButton
+                      variant="primary"
+                      size="medium"
+                      onClick={() => setShowAlert(true)}
+                    >
+                      Daten löschen
                     </ResponsiveButton>
                   </div>
                 </div>
+                {showAlert && (
+                  <Alert
+                    message={'Daten unwideruflich löschen'}
+                    setShowAlert={setShowAlert}
+                    onConfirm={handleDeleteAllData}
+                  />
+                )}
               </div>
             )}
 
