@@ -82,12 +82,15 @@ const upload = multer({
 
 /**
  * Route handler for importing voter data.
- * This route expects a POST request with multipart/form-data containing a file with the key "file".
+ * This route expects a POST request with multipart/form-data containing a file with the key "file"
+ * and an electionId parameter to assign voters to a specific election.
  *
  * Behavior:
  * - Rejects invalid HTTP methods.
  * - Validates the file type and size.
+ * - Validates the electionId parameter.
  * - Stores the file on disk.
+ * - Imports voters and creates votingnotes for the election.
  * - Responds with metadata of the uploaded file.
  *
  * @async
@@ -114,12 +117,18 @@ export const importWahlerRoute = async (req, res) => {
       return res.status(400).json({ message: 'file is required' });
     }
 
+    const electionId = req.body.electionId;
+    if (!electionId) {
+      logger.warn('electionId is missing');
+      return res.status(400).json({ message: 'electionId ist erforderlich' });
+    }
+
     const filePath = req.file.path;
     const fileMimeType = req.file.mimetype;
 
     try {
       logger.debug(`Datei gespeichert unter: ${filePath}`);
-      await importVoterData(filePath, fileMimeType);
+      const result = await importVoterData(filePath, fileMimeType, electionId);
 
       fs.promises.unlink(filePath, (unlinkErr) => {
         if (unlinkErr) {
@@ -130,7 +139,7 @@ export const importWahlerRoute = async (req, res) => {
       });
 
       return res.status(200).json({
-        message: 'Wählerdaten erfolgreich hochgeladen und in die Datenbank importiert.',
+        message: `${result.voterCount} Wähler erfolgreich importiert und ${result.votingNotesCount} der Wahl zugeordnet.`,
       });
     } catch (importError) {
       logger.error('Importfehler. Datei wird gelöscht.', importError);

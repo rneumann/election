@@ -1,6 +1,5 @@
 /* eslint-disable security/detect-object-injection */
 import Papa from 'papaparse';
-// IMPORTANT: Import VOTER_CSV_MAPPING here!
 import { voterListSchema, VOTER_CSV_MAPPING } from '../../schemas/voter.schema.js';
 import { parseVoterCSV } from '../parsers/csvParser.js';
 import { logger } from '../../conf/logger/logger.js';
@@ -59,41 +58,40 @@ export const validateVoterCSV = async (file) => {
   const validationResult = voterListSchema.safeParse(data);
 
   if (!validationResult.success) {
-    const errorCount = validationResult.error?.errors?.length || 0;
+    const zodErrors = validationResult.error?.issues || [];
+    const errorCount = zodErrors.length;
     logger.warn(`CSV validation failed: ${errorCount} error(s)`);
     const errors = [];
 
-    if (validationResult.error && validationResult.error.errors) {
-      validationResult.error.errors.forEach((error) => {
-        const path = error.path;
+    zodErrors.forEach((error) => {
+      const path = error.path;
 
-        if (path.length === 0) {
-          errors.push({
-            row: null,
-            field: null,
-            message: error.message,
-            code: 'VALIDATION_ERROR',
-          });
-        } else if (path.length === 1) {
-          errors.push({
-            row: path[0] + 2,
-            field: null,
-            message: error.message,
-            code: 'ROW_ERROR',
-          });
-        } else {
-          const rowIndex = path[0];
-          const fieldName = path[1];
+      if (path.length === 0) {
+        errors.push({
+          row: null,
+          field: null,
+          message: error.message,
+          code: 'VALIDATION_ERROR',
+        });
+      } else if (path.length === 1) {
+        errors.push({
+          row: path[0] + 2,
+          field: null,
+          message: error.message,
+          code: 'ROW_ERROR',
+        });
+      } else {
+        const rowIndex = path[0];
+        const fieldName = path[1];
 
-          errors.push({
-            row: rowIndex + 2,
-            field: fieldName,
-            message: error.message,
-            code: 'FIELD_ERROR',
-          });
-        }
-      });
-    }
+        errors.push({
+          row: rowIndex + 2,
+          field: fieldName,
+          message: error.message,
+          code: 'FIELD_ERROR',
+        });
+      }
+    });
 
     return {
       success: false,
