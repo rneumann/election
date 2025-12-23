@@ -5,6 +5,7 @@ import { getElectionById } from '../service/voter.service.js';
 import {
   controlTestElection,
   deleteAllData,
+  deleteAllElectionData,
   getElectionsForAdmin,
   resetElectionData,
 } from '../service/admin.service.js';
@@ -161,14 +162,34 @@ adminRouter.delete(
   ensureHasRole(['admin']),
   async (req, res) => {
     logger.debug('Election route for admin accessed to delete all data');
-    try {
-      await deleteAllData();
-      logger.debug('All data deleted successfully');
-      res.sendStatus(204);
-    } catch (error) {
-      logger.debug(`Failed to delete all data: ${error.message}`);
-      logger.error('Failed to delete all data');
-      res.status(500).json({ message: 'Internal Server Error' });
+    const electionId = req.query?.electionId;
+    if (!electionId) {
+      logger.info('Delete all data!');
+      try {
+        await deleteAllData();
+        logger.debug('All data deleted successfully');
+        res.sendStatus(204);
+      } catch (error) {
+        logger.debug(`Failed to delete all data: ${error.message}`);
+        logger.error('Failed to delete all data');
+        res.status(500).json({ message: 'Internal Server Error' });
+      }
+    } else {
+      logger.info(`Delete data for election ID: ${electionId}`);
+      try {
+        const election = await getElectionById(electionId);
+        if (!election) {
+          logger.warn('Election not found');
+          return res.status(404).json({ message: 'Election not found' });
+        }
+        await deleteAllElectionData(electionId);
+        logger.debug(`Election data reset for election ID: ${electionId}`);
+        res.sendStatus(204);
+      } catch (error) {
+        logger.debug(`Failed to reset election data for ${electionId}: ${error.message}`);
+        logger.error(`Failed to reset election data for ${electionId}`);
+        res.status(500).json({ message: 'Internal Server Error' });
+      }
     }
   },
 );

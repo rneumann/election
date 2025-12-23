@@ -213,3 +213,22 @@ export const deleteAllData = async () => {
     throw new Error(DATABASE_QUERY_ERROR);
   }
 };
+
+export const deleteAllElectionData = async (electionId) => {
+  try {
+    await client.query('BEGIN');
+
+    await client.query('DELETE FROM ballotvotes WHERE election = $1', [electionId]);
+    await client.query('DELETE FROM ballots WHERE election = $1', [electionId]);
+    await client.query('DELETE FROM election_results WHERE election_id = $1', [electionId]);
+    await client.query('DELETE FROM votingnotes WHERE electionId = $1', [electionId]);
+    await client.query('DELETE FROM electioncandidates WHERE electionId = $1', [electionId]);
+    await client.query('DELETE FROM elections WHERE id = $1', [electionId]);
+
+    await client.query('COMMIT');
+  } catch (error) {
+    await client.query('ROLLBACK');
+    logger.error('Failed to delete all election data from the database.');
+    throw new Error(DATABASE_QUERY_ERROR);
+  }
+};

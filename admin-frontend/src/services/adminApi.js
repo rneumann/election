@@ -55,9 +55,10 @@ export const adminService = {
     }
   },
 
-  deleteAllData: async () => {
+  deleteAllData: async (selctedElection) => {
+    const queryString = selctedElection !== 'all' ? `?electionId=${selctedElection}` : '';
     try {
-      const response = await api.delete('/admin/deleteAllData');
+      const response = await api.delete(`/admin/deleteAllData${queryString}`);
       if (response.status !== 204 && response.status !== 200) {
         handleHttpStatus(response);
         return undefined;
