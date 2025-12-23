@@ -1,7 +1,8 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import ResponsiveButton from '../ResponsiveButton.jsx';
 import ValidationErrors from '../ValidationErrors.jsx';
 import api from '../../services/api.js';
+import { adminService } from '../../services/adminApi.js';
 import { logger } from '../../conf/logger/logger.js';
 import { MAX_FILE_SIZE } from '../../utils/validators/constants.js';
 
@@ -14,6 +15,7 @@ import { MAX_FILE_SIZE } from '../../utils/validators/constants.js';
  * - Client-side validation
  * - Progress tracking
  * - Success/error messaging
+ * - Optional election selection for voter assignment
  *
  * @param {Object} props - Component props
  * @param {string} props.title - Section title
@@ -26,6 +28,8 @@ import { MAX_FILE_SIZE } from '../../utils/validators/constants.js';
  * @param {string} props.formatExample - Example format text (header row)
  * @param {string} [props.formatExampleData] - Example data row (optional)
  * @param {string} props.fileTypeLabel - Label for file type ('CSV' or 'Excel')
+ * @param {boolean} [props.requiresElection=false] - Whether election selection is required
+ * @param {string} [props.electionFilter='future'] - Filter for elections ('future', 'active', etc.)
  * @returns {JSX.Element} File upload interface
  */
 const FileUploadSection = ({
@@ -38,6 +42,8 @@ const FileUploadSection = ({
   formatExample,
   formatExampleData,
   fileTypeLabel = 'CSV',
+  requiresElection = false,
+  electionFilter = 'future',
 }) => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -49,6 +55,48 @@ const FileUploadSection = ({
   const [validationStats, setValidationStats] = useState(null);
   const [isValidating, setIsValidating] = useState(false);
   const fileInputRef = useRef(null);
+
+  // Election selection state
+  const [elections, setElections] = useState([]);
+  const [selectedElection, setSelectedElection] = useState('');
+  const [loadingElections, setLoadingElections] = useState(false);
+
+  /**
+   * Load elections from API
+   */
+  const loadElections = useCallback(async () => {
+    setLoadingElections(true);
+    try {
+      const data = await adminService.getElectionsForAdmin(electionFilter);
+      setElections(data || []);
+      logger.debug(`Loaded ${data?.length || 0} elections for filter: ${electionFilter}`);
+    } catch (err) {
+      logger.error('Error loading elections:', err);
+      setElections([]);
+    } finally {
+      setLoadingElections(false);
+    }
+  }, [electionFilter]);
+
+  // Load elections when requiresElection is true
+  useEffect(() => {
+    if (requiresElection) {
+      loadElections();
+    }
+  }, [requiresElection, loadElections]);
+
+  /**
+   * Format date for display
+   * @param {string} dateString - ISO date string
+   * @returns {string} Formatted date
+   */
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString('de-DE', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+  };
 
   /**
    * Validate file type and size
@@ -118,6 +166,11 @@ const FileUploadSection = ({
       return;
     }
 
+    if (requiresElection && !selectedElection) {
+      setError('Bitte wählen Sie eine Wahl aus.');
+      return;
+    }
+
     if (validationErrors.length > 0) {
       setError('Bitte korrigieren Sie zuerst die Validierungsfehler.');
       return;
@@ -138,6 +191,11 @@ const FileUploadSection = ({
 
       const formData = new FormData();
       formData.append('file', fileToUpload);
+
+      // Append electionId if election selection is required
+      if (requiresElection && selectedElection) {
+        formData.append('electionId', selectedElection);
+      }
 
       const csrfToken = localStorage.getItem('csrfToken') || '';
 
@@ -211,6 +269,56 @@ const FileUploadSection = ({
       </div>
 
       <div className="p-6">
+        {/* Election Selection (if required) */}
+        {requiresElection && (
+          <div className="mb-6">
+            <label
+              htmlFor="election-select"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
+              Wahl auswählen <span className="text-red-500">*</span>
+            </label>
+            {loadingElections ? (
+              <div className="flex items-center gap-2 text-sm text-gray-500 py-2">
+                <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  />
+                </svg>
+                <span>Wahlen werden geladen...</span>
+              </div>
+            ) : elections.length === 0 ? (
+              <div className="text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-lg p-3">
+                Keine zukünftigen Wahlen verfügbar. Bitte legen Sie zuerst eine Wahl an.
+              </div>
+            ) : (
+              <select
+                id="election-select"
+                value={selectedElection}
+                onChange={(e) => setSelectedElection(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent text-sm"
+              >
+                <option value="">-- Bitte Wahl auswählen --</option>
+                {elections.map((election) => (
+                  <option key={election.id} value={election.id}>
+                    {election.info} ({formatDate(election.start)} - {formatDate(election.end)})
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+        )}
+
         {/* Format Example */}
         <div className="mb-6 bg-gray-50 rounded-lg p-4 border border-gray-200">
           <p className="text-xs font-mono text-gray-700 mb-2">Format-Beispiel:</p>
@@ -419,7 +527,12 @@ const FileUploadSection = ({
                 variant="primary"
                 size="large"
                 onClick={handleUpload}
-                disabled={uploading || isValidating || validationErrors.length > 0}
+                disabled={
+                  uploading ||
+                  isValidating ||
+                  validationErrors.length > 0 ||
+                  (requiresElection && !selectedElection)
+                }
                 className="flex-1"
               >
                 {uploading ? (

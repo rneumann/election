@@ -11,8 +11,8 @@ export const importRouter = Router();
  * @openapi
  * /api/upload/voters:
  *   post:
- *     summary: Upload voter list
- *     description: Uploads a CSV or Excel file with voter data.
+ *     summary: Upload voter list and assign to election
+ *     description: Uploads a CSV or Excel file with voter data and assigns voters to a specific election.
  *     tags:
  *       - Elections
  *     security:
@@ -32,11 +32,27 @@ export const importRouter = Router();
  *               file:
  *                 type: string
  *                 format: binary
+ *                 description: CSV or Excel file with voter data
+ *               electionId:
+ *                 type: string
+ *                 format: uuid
+ *                 description: UUID of the election to assign voters to (required)
+ *             required:
+ *               - file
+ *               - electionId
  *     responses:
  *       200:
- *         description: File uploaded successfully
+ *         description: Voters imported and assigned to election successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "50 Wähler erfolgreich importiert und 50 der Wahl zugeordnet."
  *       400:
- *         description: Bad request (no file, invalid file type/size)
+ *         description: Bad request (no file, invalid file type/size, missing electionId)
  *       401:
  *         description: Unauthorized (not logged in)
  *       403:

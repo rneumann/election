@@ -493,7 +493,7 @@ const AdminDashboard = () => {
               <FileUploadSection
                 key="upload-voters"
                 title="Wählerverzeichnis hochladen"
-                description="CSV-Datei mit den Wählern hochladen. Die Datei muss aus einer Kopfzeile und den folgenden, durch Komma getrennten Spalten bestehen:"
+                description="CSV-Datei mit den Wählern hochladen und einer zukünftigen Wahl zuordnen. Die Datei muss aus einer Kopfzeile und den folgenden, durch Komma getrennten Spalten bestehen:"
                 uploadType="voters"
                 endpoint="/upload/voters"
                 validator={validateVoterCSV}
@@ -502,6 +502,8 @@ const AdminDashboard = () => {
                 formatExample="RZ-Kennung,Fakultät,Vorname,Nachname,Matk.Nr,Studienganskürzel,Studiengang"
                 formatExampleData="abcd1234,AB,Max,Mustermann,123456,ARTB,Architektur"
                 fileTypeLabel="CSV"
+                requiresElection={true}
+                electionFilter="future"
               />
             )}
 
