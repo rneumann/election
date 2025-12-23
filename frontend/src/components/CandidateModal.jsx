@@ -80,15 +80,18 @@ export const CandidateInfoModal = ({ open, onClose, electionId }) => {
   return (
     <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50 p-4 backdrop-blur-sm">
       <div
-        className="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[85vh] overflow-hidden flex flex-col"
+        className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-lg max-h-[85vh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="bg-gray-50 px-6 py-4 border-b flex justify-between items-center">
-          <h2 className="text-xl font-bold text-gray-800">
+        <div className="bg-gray-50 dark:bg-gray-900/50 px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+          <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">
             {selectedCandidate ? 'Kandidatendetails' : 'Kandidatenliste'}
           </h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 p-1">
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1"
+          >
             ✕
           </button>
         </div>
@@ -124,23 +127,23 @@ export const CandidateInfoModal = ({ open, onClose, electionId }) => {
                   </span>
                 </div>
 
-                <h3 className="text-2xl font-bold text-gray-800 mt-5">
+                <h3 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mt-5">
                   {selectedCandidate.firstname} {selectedCandidate.lastname}
                 </h3>
               </div>
 
-              <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
-                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
+              <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-lg border border-gray-100 dark:border-gray-700">
+                <h4 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">
                   Info
                 </h4>
-                <div className="text-gray-600 text-sm whitespace-pre-line min-h-[40px]">
+                <div className="text-gray-600 dark:text-gray-300 text-sm whitespace-pre-line min-h-[40px]">
                   {selectedCandidate.description}
                 </div>
               </div>
 
               <button
                 onClick={handleBack}
-                className="w-full bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition"
+                className="w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 px-4 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition"
               >
                 ← Zurück zur Liste
               </button>
@@ -154,9 +157,9 @@ export const CandidateInfoModal = ({ open, onClose, electionId }) => {
                 <li
                   key={c.uid || i}
                   onClick={() => handleCandidateClick(c)}
-                  className="flex items-center gap-4 p-3 border border-gray-100 rounded-xl hover:shadow-md cursor-pointer bg-white group hover:border-blue-300 transition-all"
+                  className="flex items-center gap-4 p-3 border border-gray-100 dark:border-gray-700 rounded-xl hover:shadow-md cursor-pointer bg-white dark:bg-gray-800 group hover:border-blue-300 dark:hover:border-blue-500 transition-all"
                 >
-                  <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden shrink-0">
+                  <div className="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden shrink-0">
                     <img
                       src={c.picture || getAvatarUrl(c)}
                       className="w-full h-full object-cover opacity-80 group-hover:opacity-100"
@@ -164,12 +167,12 @@ export const CandidateInfoModal = ({ open, onClose, electionId }) => {
                     />
                   </div>
                   <div className="flex-grow">
-                    <h3 className="font-semibold text-gray-900 group-hover:text-blue-700">
+                    <h3 className="font-semibold text-gray-900 dark:text-gray-100 group-hover:text-blue-700 dark:group-hover:text-blue-400">
                       {c.firstname} {c.lastname}
                     </h3>
-                    <p className="text-xs text-gray-500">{c.faculty || c.party}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{c.faculty || c.party}</p>
                   </div>
-                  <span className="text-gray-300 group-hover:text-blue-500">→</span>
+                  <span className="text-gray-300 dark:text-gray-600 group-hover:text-blue-500">→</span>
                 </li>
               ))}
             </ul>
