@@ -184,7 +184,9 @@ const insertVoters = async (data) => {
 
   try {
     const res = await client.query(query);
-    logger.info(`Successfully inserted ${res.rowCount} new voters into the database (existing voters were skipped).`);
+    logger.info(
+      `Successfully inserted ${res.rowCount} new voters into the database (existing voters were skipped).`,
+    );
   } catch (error) {
     logger.error('Error inserting voter data into the database:', error);
     throw new Error('Database error while inserting voter data.');
