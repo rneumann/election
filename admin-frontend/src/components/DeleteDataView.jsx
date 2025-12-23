@@ -20,7 +20,7 @@ export const DeleteDataView = ({
 
   useEffect(() => {
     fetchElections();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <div className="p-6">
       <div className="mb-6">
