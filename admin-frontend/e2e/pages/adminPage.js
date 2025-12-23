@@ -15,6 +15,7 @@ export class AdminPage {
     this.validationSuccessMsg = page.getByText('Validierung erfolgreich');
     this.uploadSuccessMsg = page.getByText('Upload erfolgreich');
     this.validationSuccessMsgFile = page.getByText(/Datei erfolgreich validiert/);
+    this.electionSelect = page.locator('#election-select');
   }
 
   /**
@@ -31,6 +32,27 @@ export class AdminPage {
     await expect(button).toBeVisible();
     await button.click();
     await expect(button).toBeFocused();
+  }
+
+  /**
+   * Selects an election from the dropdown (required for voter uploads).
+   * Waits for elections to load and selects the first available one.
+   */
+  async selectElection() {
+    // Wait for the election dropdown to be visible and enabled
+    await expect(this.electionSelect).toBeVisible({ timeout: 10000 });
+
+    // Wait for elections to load (dropdown should have options)
+    await this.page.waitForFunction(
+      () => {
+        const select = document.querySelector('#election-select');
+        return select && select.options.length > 1;
+      },
+      { timeout: 10000 },
+    );
+
+    // Select the first available election (index 1, since 0 is the placeholder)
+    await this.electionSelect.selectOption({ index: 1 });
   }
 
   /**
@@ -62,18 +84,24 @@ export class AdminPage {
    * @param {string} apiEndpointPart - Part of the API URL to wait for (e.g., '/upload/elections').
    */
   async executeFinalUpload(apiEndpointPart) {
-    await expect(this.uploadSuccessMsg).toBeVisible({ timeout: 15000 });
-    await expect(this.validationSuccessMsgFile).toBeVisible();
+    // Wait for validation to complete (file validation message)
+    await expect(this.validationSuccessMsgFile).toBeVisible({ timeout: 15000 });
 
-    await expect(this.finalUploadButton).toBeEnabled();
+    // Ensure upload button is enabled before clicking
+    await expect(this.finalUploadButton).toBeEnabled({ timeout: 10000 });
 
+    // Click upload and wait for successful API response (200 OK or 201 Created)
     const [uploadResponse] = await Promise.all([
       this.page.waitForResponse(
-        (resp) => resp.url().includes(apiEndpointPart) && resp.status() === 200,
+        (resp) =>
+          resp.url().includes(apiEndpointPart) && (resp.status() === 200 || resp.status() === 201),
       ),
       this.finalUploadButton.click(),
     ]);
 
     expect(uploadResponse.ok()).toBeTruthy();
+
+    // Verify upload success message appears after upload
+    await expect(this.uploadSuccessMsg).toBeVisible({ timeout: 15000 });
   }
 }
