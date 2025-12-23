@@ -38,6 +38,9 @@ test.describe('Admin Import tests', () => {
     // Nutzung von nth(0) ist in startImportProcess gekapselt
     await adminPage.startImportProcess('CSV-Datei hochladen', 0);
 
+    // Select an election first (required for voter uploads)
+    await adminPage.selectElection();
+
     await adminPage.selectFile('e2e/files/voters_e2e.csv');
 
     // Spezifischer Check mit Timeout wie im Original
