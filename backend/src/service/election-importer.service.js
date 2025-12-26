@@ -16,6 +16,12 @@ const COUNTING_METHOD_MAPPING = new Map([
   ['Ja/Nein/Enthaltung', 'yes_no_referendum'],
 ]);
 
+// Konstanten für Validierung (DB-Constraints)
+const MAX_OPTION_NAME_LENGTH = 50;
+const MAX_OPTION_DESCRIPTION_LENGTH = 800;
+const MAX_UID_LENGTH = 30;
+const MAX_UID_PREFIX_LENGTH = 20;
+
 /**
  * Imports election data from an Excel file into the database.
  * Parses the Excel file row by row and inserts valid elections.
@@ -150,7 +156,7 @@ export const importElectionData = async (filePath) => {
 
           if (electionData) {
             const electionUUID = electionData.id;
-            // const currentElectionType = electionData.type; // TODO: Wird für Referendum-Logik benötigt
+            const currentElectionType = electionData.type;
 
             // Spalten-Mapping: A=WahlKennung, B=Nr, C=uid, D=Liste/Schlüsselwort, E=Vorname, F=Nachname, G=Mtr-Nr, H=Fakultät, I=Studiengang
             const listnum = candidateSheet.getCell(`B${candRow}`).value
@@ -158,13 +164,36 @@ export const importElectionData = async (filePath) => {
               : candCount + 1;
 
             // UID wird aus Template gelesen (Spalte C)
-            const uid = candidateSheet.getCell(`C${candRow}`).value?.toString().trim() || '';
+            const templateUid = candidateSheet.getCell(`C${candRow}`).value?.toString().trim() || '';
 
             // Validierung: UID ist Pflichtfeld
-            if (!uid) {
+            if (!templateUid) {
               throw new Error(
-                `Zeile ${candRow}: UID (Spalte C) ist leer. UID ist ein Pflichtfeld (z.B. "grso1012").`,
+                `Zeile ${candRow}: UID (Spalte C) ist leer. UID ist ein Pflichtfeld.`,
               );
+            }
+
+            // Für Urabstimmungen: Prefix mit Wahlkennung für Eindeutigkeit
+            let uid;
+            if (currentElectionType === 'referendum') {
+              // Wahlkennung normalisieren (Kleinbuchstaben, Sonderzeichen entfernen)
+              const normalizedRef = electionRef
+                .toLowerCase()
+                .replace(/[^a-z0-9]/g, '')
+                .substring(0, MAX_UID_PREFIX_LENGTH);
+              uid = `${normalizedRef}_${templateUid}`;
+              
+              // Sicherstellen, dass UID max 30 Zeichen (DB-Constraint)
+              if (uid.length > MAX_UID_LENGTH) {
+                uid = uid.substring(0, MAX_UID_LENGTH);
+              }
+            } else {
+              uid = templateUid;
+              if (uid.length > MAX_UID_LENGTH) {
+                throw new Error(
+                  `Zeile ${candRow}: UID "${uid}" ist zu lang (max. ${MAX_UID_LENGTH} Zeichen).`,
+                );
+              }
             }
 
             const keywords = candidateSheet.getCell(`D${candRow}`).value?.toString() || '';
@@ -184,7 +213,9 @@ export const importElectionData = async (filePath) => {
             //: true;
             const isAdmitted = true;
 
-            if (firstname || lastname) {
+            // Für normale Wahlen: Vorname oder Nachname erforderlich
+            // Für Urabstimmungen: Können leer sein
+            if (firstname || lastname || currentElectionType === 'referendum') {
               const insertCandidateQuery = `
                 INSERT INTO candidates 
                 (uid, lastname, firstname, mtknr, faculty, keyword, notes, approved)
@@ -194,8 +225,8 @@ export const importElectionData = async (filePath) => {
 
               const candRes = await db.query(insertCandidateQuery, [
                 uid,
-                lastname,
-                firstname,
+                lastname || null,
+                firstname || null,
                 matrNr,
                 faculty,
                 keywords,
@@ -211,22 +242,6 @@ export const importElectionData = async (filePath) => {
               `;
 
               await db.query(linkQuery, [electionUUID, newCandidateId, listnum]);
-
-              // TODO: Referendum-Optionen werden aus separatem Sheet "OptionsUrabstimmung" gelesen
-              // if (currentElectionType === 'referendum' && info) {
-              //   logger.debug(`referendum election has option with info: ${uid}`);
-              //   const insertCandidateInfoQuery = `
-              //     INSERT INTO candidate_information (candidate_uid, info)
-              //     VALUES ($1, $2)
-              //   `;
-              //   logger.debug(
-              //     `insertCandidateInfoQuery: ${insertCandidateInfoQuery} --- params: ${uid} ${info}`,
-              //   );
-              //   await db.query(insertCandidateInfoQuery, [uid, info]);
-              // } else if (currentElectionType === 'referendum' && !info) {
-              //   logger.warn(`referendum election has option without info: ${uid}`);
-              // }
-
               candCount++;
             }
           } else {
@@ -237,6 +252,105 @@ export const importElectionData = async (filePath) => {
           candRow++;
         }
         logger.info(`${candCount} Kandidaten importiert und verknüpft.`);
+      }
+    }
+
+    // Referendum-Optionen aus Sheet "OptionsUrabstimmung" importieren
+    const referendumElections = [...electionIdMap.entries()].filter(
+      ([, data]) => data.type === 'referendum',
+    );
+
+    if (referendumElections.length > 0) {
+      const optionsSheet = workbook.worksheets.find(
+        (ws) => ws.name === 'OptionsUrabstimmung',
+      );
+
+      if (optionsSheet) {
+        logger.info(`Verarbeite Referendum-Optionen aus Blatt "${optionsSheet.name}"...`);
+
+        let optRow = 2; // Header in Zeile 1, Daten ab Zeile 2
+        let optCount = 0;
+
+        while (optionsSheet.getCell(`A${optRow}`).value) {
+          const wahlkennung = optionsSheet.getCell(`A${optRow}`).value?.toString();
+          const electionData = electionIdMap.get(wahlkennung);
+
+          if (electionData && electionData.type === 'referendum') {
+            const electionUUID = electionData.id;
+            const nr = Number(optionsSheet.getCell(`B${optRow}`).value);
+            const name = optionsSheet.getCell(`C${optRow}`).value?.toString().trim() || '';
+            const description = optionsSheet.getCell(`D${optRow}`).value?.toString() || '';
+
+            // Validierung
+            if (!name) {
+              throw new Error(
+                `OptionsUrabstimmung Zeile ${optRow}: Name (Spalte C) ist leer.`,
+              );
+            }
+
+            if (name.length > MAX_OPTION_NAME_LENGTH) {
+              throw new Error(
+                `OptionsUrabstimmung Zeile ${optRow}: Name "${name}" ist zu lang (max. ${MAX_OPTION_NAME_LENGTH} Zeichen).`,
+              );
+            }
+
+            if (description.length > MAX_OPTION_DESCRIPTION_LENGTH) {
+              throw new Error(
+                `OptionsUrabstimmung Zeile ${optRow}: Description ist zu lang (max. ${MAX_OPTION_DESCRIPTION_LENGTH} Zeichen).`,
+              );
+            }
+
+            if (!Number.isInteger(nr) || nr < 1) {
+              throw new Error(
+                `OptionsUrabstimmung Zeile ${optRow}: Nr (Spalte B) muss eine positive Ganzzahl sein.`,
+              );
+            }
+
+            // Duplikat-Check: Prüfe ob Option mit gleicher Nr für diese Wahl bereits existiert
+            const duplicateOptionCheck = await db.query(
+              `SELECT id FROM candidate_options WHERE identifier = $1 AND nr = $2 LIMIT 1`,
+              [electionUUID, nr],
+            );
+
+            if (duplicateOptionCheck.rows.length > 0) {
+              throw new Error(
+                `OptionsUrabstimmung Zeile ${optRow}: Option Nr. ${nr} für Wahl "${wahlkennung}" existiert bereits.`,
+              );
+            }
+
+            // Insert in candidate_options
+            const insertOptionQuery = `
+              INSERT INTO candidate_options (identifier, nr, name, description)
+              VALUES ($1, $2, $3, $4)
+            `;
+
+            await db.query(insertOptionQuery, [
+              electionUUID,
+              nr,
+              name,
+              description || null,
+            ]);
+
+            optCount++;
+            logger.debug(`Option importiert: ${wahlkennung} - Nr ${nr}: ${name}`);
+          } else if (wahlkennung && !electionData) {
+            logger.warn(
+              `OptionsUrabstimmung Zeile ${optRow}: Unbekannte Wahl-Referenz "${wahlkennung}".`,
+            );
+          } else if (electionData && electionData.type !== 'referendum') {
+            logger.warn(
+              `OptionsUrabstimmung Zeile ${optRow}: Wahl "${wahlkennung}" ist keine Urabstimmung - Option wird übersprungen.`,
+            );
+          }
+
+          optRow++;
+        }
+
+        logger.info(`${optCount} Referendum-Optionen importiert.`);
+      } else {
+        logger.warn(
+          'Sheet "OptionsUrabstimmung" nicht gefunden, aber Urabstimmungen definiert. Optionen wurden nicht importiert.',
+        );
       }
     }
 
