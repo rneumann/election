@@ -11,6 +11,7 @@ import { Footer } from '../layout/Footer.jsx';
 import { CandidateInfoModal } from '../components/CandidateModal.jsx';
 import { AccessibilityProvider, AccessibilityContext } from '../context/AccessibilityContext.jsx';
 import AccessibilityMenu from '../components/AccessibilityMenu.jsx';
+import { OptionModalForReferendum } from '../components/OptionModalForReferendum.jsx';
 
 /**
  * Main dashboard for authenticated users.
@@ -429,11 +430,20 @@ const HomeContent = () => {
             electionId={selectedElectionId}
             refreshElections={refreshElections}
           />
-          <CandidateInfoModal
-            open={infoOpen}
-            onClose={() => setInfoOpen(false)}
-            election={infoElection}
-          />
+
+          {infoElection.election_type === 'referendum' ? (
+            <OptionModalForReferendum
+              open={infoOpen}
+              onClose={() => setInfoOpen(false)}
+              election={infoElection}
+            />
+          ) : (
+            <CandidateInfoModal
+              open={infoOpen}
+              onClose={() => setInfoOpen(false)}
+              election={infoElection}
+            />
+          )}
         </div>
       </main>
 
