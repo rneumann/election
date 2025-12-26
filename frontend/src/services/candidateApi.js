@@ -146,6 +146,27 @@ export const candidateApi = {
   },
 
   /**
+   * Retrieves candidate option information by number.
+   *
+   * Sends a GET request to the `/candidates/information/option/public/{nr}` endpoint.
+   * If the request is successful (Status 200), it returns the candidate option information data.
+   * If the request fails (non-200 status), it logs an error and returns undefined.
+   *
+   * @param {number} nr - The number of the candidate option to fetch.
+   * @async
+   * @function getOptionInformationByNr
+   * @returns {Promise<Object|undefined>} A promise that resolves to the candidate option information data or undefined on failure.
+   */
+  getOptionInformationByNr: async (nr) => {
+    const response = await api.get(`candidates/information/option/public/${nr}`);
+    if (response.status !== 200) {
+      handleHttpStatus(response);
+      return undefined;
+    }
+    return response.data;
+  },
+
+  /**
    * Retrieves the candidate information entry for the currently logged-in user.
    *
    * Sends a GET request to the `/candidates/information/personal` endpoint.
