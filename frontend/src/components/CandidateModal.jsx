@@ -86,13 +86,7 @@ export const CandidateInfoModal = ({ open, onClose, election }) => {
         {/* Header */}
         <div className="bg-gray-50 dark:bg-gray-900/50 px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
           <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">
-            {selectedCandidate
-              ? election.election_type !== 'referendum'
-                ? 'Kandidatendetails'
-                : 'Optionen details'
-              : election.election_type !== 'referendum'
-                ? 'Kandidatenliste'
-                : 'Wahloptionen'}
+            {selectedCandidate ? 'Kandidatendetails' : 'Kandidatenliste'}
           </h2>
           <button
             onClick={onClose}
@@ -115,30 +109,26 @@ export const CandidateInfoModal = ({ open, onClose, election }) => {
               <div className="flex flex-col items-center">
                 {/* BILD BEREICH */}
                 <div className="relative">
-                  {election.election_type !== 'referendum' && (
-                    <>
-                      {/* Das Bild */}
-                      <img
-                        src={selectedCandidate.image || getAvatarUrl(selectedCandidate)}
-                        alt="Kandidat"
-                        className={`w-40 h-40 rounded-xl object-cover shadow-lg border-4 border-white bg-gray-100 transition-opacity duration-300 ${
-                          loadingDetail && !selectedCandidate.image ? 'opacity-50' : 'opacity-100'
-                        }`}
-                      />
+                  {/* Das Bild */}
+                  <img
+                    src={selectedCandidate.image || getAvatarUrl(selectedCandidate)}
+                    alt="Kandidat"
+                    className={`w-40 h-40 rounded-xl object-cover shadow-lg border-4 border-white bg-gray-100 transition-opacity duration-300 ${
+                      loadingDetail && !selectedCandidate.image ? 'opacity-50' : 'opacity-100'
+                    }`}
+                  />
 
-                      {/* Der Spinner über dem Bild */}
-                      {loadingDetail && !selectedCandidate.image && (
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                        </div>
-                      )}
-
-                      {/* Das Label unten am Bild */}
-                      <span className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm whitespace-nowrap">
-                        {selectedCandidate.party || selectedCandidate.faculty || 'Parteilos'}
-                      </span>
-                    </>
+                  {/* Der Spinner über dem Bild */}
+                  {loadingDetail && !selectedCandidate.image && (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                    </div>
                   )}
+
+                  {/* Das Label unten am Bild */}
+                  <span className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm whitespace-nowrap">
+                    {selectedCandidate.party || selectedCandidate.faculty || 'Parteilos'}
+                  </span>
                 </div>
 
                 <h3 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mt-5">
@@ -173,25 +163,17 @@ export const CandidateInfoModal = ({ open, onClose, election }) => {
                   onClick={() => handleCandidateClick(c)}
                   className="flex items-center gap-4 p-3 border border-gray-100 dark:border-gray-700 rounded-xl hover:shadow-md cursor-pointer bg-white dark:bg-gray-800 group hover:border-blue-300 dark:hover:border-blue-500 transition-all"
                 >
-                  {election?.election_type !== 'referendum' && (
-                    <div className="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden shrink-0">
-                      <img
-                        src={c.picture || getAvatarUrl(c)}
-                        className="w-full h-full object-cover opacity-80 group-hover:opacity-100"
-                        alt="Avatar"
-                      />
-                    </div>
-                  )}
+                  <div className="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden shrink-0">
+                    <img
+                      src={c.picture || getAvatarUrl(c)}
+                      className="w-full h-full object-cover opacity-80 group-hover:opacity-100"
+                      alt="Avatar"
+                    />
+                  </div>
                   <div className="flex-grow">
-                    {election?.election_type !== 'referendum' ? (
-                      <h3 className="font-semibold text-gray-900 dark:text-gray-100 group-hover:text-blue-700 dark:group-hover:text-blue-400">
-                        {c.firstname} {c.lastname}
-                      </h3>
-                    ) : (
-                      <h3 className="font-semibold text-gray-900 dark:text-gray-100 group-hover:text-blue-700 dark:group-hover:text-blue-400">
-                        {c.firstname} | {c.lastname}
-                      </h3>
-                    )}
+                    <h3 className="font-semibold text-gray-900 dark:text-gray-100 group-hover:text-blue-700 dark:group-hover:text-blue-400">
+                      {c.firstname} {c.lastname}
+                    </h3>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
                       {c.faculty || c.party}
                     </p>

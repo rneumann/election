@@ -9,6 +9,7 @@ import {
   getCandidateInformationByUid,
   getCandidatesForElection,
   getOptionInformationByNr,
+  getOptionsInformationForElection,
   updateCandidateInformation,
   uploadCandidateInformation,
 } from '../service/candidate.service.js';
@@ -541,6 +542,42 @@ candidateRouter.get(
       res.status(200).json(info);
     } catch (error) {
       logger.error(`Error fetching public info for ${req.params.nr}: ${error.message}`);
+      next(error);
+    }
+  },
+);
+
+/**
+ * @openapi
+ * /api/candidates/information/option/public/election/{electionId}:
+ *   get:
+ *     summary: Get public option information by election ID
+ *     description: Fetches picture and info for a specific election.
+ *     tags: [Candidates]
+ *     parameters:
+ *       - in: path
+ *         name: electionId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Success
+ *       404:
+ *         description: Not found
+ */
+candidateRouter.get(
+  '/information/option/public/election/:electionId',
+  ensureAuthenticated,
+  async (req, res, next) => {
+    try {
+      const { electionId } = req.params;
+      const info = await getOptionsInformationForElection(electionId);
+      res.status(200).json(info);
+    } catch (error) {
+      logger.error(
+        `Error fetching public info for election ${req.params.electionId}: ${error.message}`,
+      );
       next(error);
     }
   },
