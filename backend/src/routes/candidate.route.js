@@ -507,6 +507,25 @@ candidateRouter.get('/information/public/:uid', ensureAuthenticated, async (req,
   }
 });
 
+/**
+ * @openapi
+ * /api/candidates/information/option/public/{nr}:
+ *   get:
+ *     summary: Get public option information by number
+ *     description: Fetches picture and info for a specific option.
+ *     tags: [Candidates]
+ *     parameters:
+ *       - in: path
+ *         name: nr
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Success
+ *       404:
+ *         description: Not found
+ */
 candidateRouter.get(
   'information/option/public/:nr',
   ensureAuthenticated,
