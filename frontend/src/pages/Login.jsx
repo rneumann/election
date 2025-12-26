@@ -114,12 +114,27 @@ const LoginContent = () => {
 
   useEffect(() => {
     const fetchAuthProvider = async () => {
-      const response = await api.get('/config/auth-provider');
-      if (response.status !== 200) {
-        handleHttpStatus(response);
-        return;
+      const cachedProvider = localStorage.getItem('authProvider');
+      if (cachedProvider) {
+        setAuthProvider(cachedProvider);
       }
-      setAuthProvider(response.data.authProvider);
+
+      try {
+        const response = await api.get('/config/auth-provider');
+
+        if (response.status === 200) {
+          const newProvider = response.data.authProvider;
+
+          if (newProvider !== cachedProvider) {
+            setAuthProvider(newProvider);
+            localStorage.setItem('authProvider', newProvider);
+          }
+        }
+      } catch (error) {
+        if (!cachedProvider) {
+          handleHttpStatus(error.response);
+        }
+      }
     };
 
     fetchAuthProvider();
@@ -266,7 +281,7 @@ const LoginContent = () => {
 
         {/* Login Form */}
         {authProvider === 'ldap' && (
-          <form onSubmit={handleSubmit} className="space-y-6" autoComplete="off">
+          <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label
                 htmlFor="username"
@@ -278,6 +293,7 @@ const LoginContent = () => {
                 type="text"
                 id="username"
                 name="username"
+                autoComplete="username"
                 ref={usernameRef}
                 value={username}
                 onChange={(e) => {
@@ -303,6 +319,7 @@ const LoginContent = () => {
                 type="password"
                 id="password"
                 name="password"
+                autoComplete="current-password"
                 value={password}
                 onChange={(e) => {
                   setPassword(e.target.value);

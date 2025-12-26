@@ -129,7 +129,7 @@ export const importElectionData = async (filePath) => {
         countingMethod,
       ]);
 
-      electionIdMap.set(identifier, res.rows[0].id);
+      electionIdMap.set(identifier, { id: res.rows[0].id, type: electionType });
       rowIndex++;
       importedCount++;
     }
@@ -148,10 +148,12 @@ export const importElectionData = async (filePath) => {
 
         while (candidateSheet.getCell(`A${candRow}`).value) {
           const electionRef = candidateSheet.getCell(`A${candRow}`).value?.toString();
-          const electionUUID = electionIdMap.get(electionRef);
+          const electionData = electionIdMap.get(electionRef);
 
-          if (electionUUID) {
-            // New format: A=WahlKennung, B=Nr, C=Liste/Schlüsselwort, D=Vorname, E=Nachname, F=Mtr-Nr, G=Fakultät, H=Studiengang
+          if (electionData) {
+            const electionUUID = electionData.id;
+            const currentElectionType = electionData.type;
+
             const listnum = candidateSheet.getCell(`B${candRow}`).value
               ? Number(candidateSheet.getCell(`B${candRow}`).value)
               : candCount + 1;
@@ -160,9 +162,9 @@ export const importElectionData = async (filePath) => {
             const lastname = candidateSheet.getCell(`E${candRow}`).value?.toString() || '';
             const matrNr = candidateSheet.getCell(`F${candRow}`).value?.toString() || '';
             const faculty = candidateSheet.getCell(`G${candRow}`).value?.toString() || '';
+            const info = candidateSheet.getCell(`I${candRow}`).value?.toString() || '';
 
-            // Generate unique UID: use last 20 chars of UUID + listnum (fits in varchar(30))
-            const uuidSuffix = electionUUID.slice(-UID_SUFFIX_LENGTH);
+            const uuidSuffix = electionUUID.toString().slice(-UID_SUFFIX_LENGTH);
             const uid = `${uuidSuffix}_${listnum}`;
             const notes = '';
 
@@ -201,6 +203,20 @@ export const importElectionData = async (filePath) => {
               `;
 
               await db.query(linkQuery, [electionUUID, newCandidateId, listnum]);
+
+              if (currentElectionType === 'referendum' && info) {
+                logger.debug(`referendum election has option with info: ${uid}`);
+                const insertCandidateInfoQuery = `
+                  INSERT INTO candidate_information (candidate_uid, info)
+                  VALUES ($1, $2)
+                `;
+                logger.debug(
+                  `insertCandidateInfoQuery: ${insertCandidateInfoQuery} --- prams: ${uid} ${info}`,
+                );
+                await db.query(insertCandidateInfoQuery, [uid, info]);
+              } else if (currentElectionType === 'referendum' && !info) {
+                logger.warn(`referendum election has option without info: ${uid}`);
+              }
               candCount++;
             }
           } else {

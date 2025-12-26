@@ -205,6 +205,7 @@ export const deleteAllData = async () => {
     await client.query('DELETE FROM elections');
     await client.query('DELETE FROM candidates');
     await client.query('DELETE FROM voters');
+    await client.query('DELETE FROM candidate_options');
 
     await client.query('COMMIT');
   } catch (error) {

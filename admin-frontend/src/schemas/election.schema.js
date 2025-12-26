@@ -68,6 +68,7 @@ export const candidateSchema = z.object({
   'Mtr-Nr.': z.string().trim().optional().default(''),
   Fakultät: z.string().trim().max(10).optional().default(''),
   Studiengang: z.string().trim().max(100).optional().default(''),
+  'Info (Urabstimmung)': z.string().trim().max(800).optional().default(''),
 });
 
 /**

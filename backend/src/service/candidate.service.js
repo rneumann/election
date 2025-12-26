@@ -217,3 +217,27 @@ export const getCandidateInformationByUid = async (candidateUid) => {
     throw new Error(DATABASE_QUERY_ERROR);
   }
 };
+
+/**
+ * Retrieves a candidate option by its number.
+ * @param {number} nr - The number of the candidate option to fetch.
+ * @returns {Promise<Object|null>} A promise resolving to the candidate option data if the option exists, null otherwise.
+ */
+export const getOptionInformationByNr = async (nr) => {
+  const query = `
+    SELECT 
+      nr,
+      name,
+      description
+    FROM candidate_options
+    WHERE nr = $1
+  `;
+
+  try {
+    const result = await client.query(query, [nr]);
+    return result.rows.length > 0 ? result.rows[0] : null;
+  } catch (error) {
+    logger.error('Failed to fetch candidate information:', error);
+    throw new Error(DATABASE_QUERY_ERROR);
+  }
+};

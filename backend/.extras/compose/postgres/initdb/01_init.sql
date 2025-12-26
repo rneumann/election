@@ -17,8 +17,8 @@ CREATE TABLE
   IF NOT EXISTS candidates (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid (),
     uid VARCHAR(30) UNIQUE NOT NULL,
-    lastname TEXT NOT NULL,
-    firstname TEXT NOT NULL,
+    lastname TEXT,
+    firstname TEXT,
     mtknr TEXT,
     faculty TEXT,
     keyword TEXT,
@@ -30,7 +30,7 @@ CREATE TABLE
   IF NOT EXISTS candidate_information (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid (),
     candidate_uid VARCHAR(30) NOT NULL REFERENCES candidates (uid) ON DELETE CASCADE ON UPDATE CASCADE UNIQUE,
-    info VARCHAR(200) NOT NULL,
+    info VARCHAR(500) NOT NULL,
     picture_content_type TEXT,
     picture_data BYTEA,
     CONSTRAINT check_if_pic_values_not_null_if_exists CHECK (
@@ -79,6 +79,15 @@ CREATE TABLE
         'yes_no_referendum'
       )
     )
+  );
+
+CREATE TABLE
+  IF NOT EXISTS candidate_options (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid (),
+    identifier UUID NOT NULL REFERENCES elections (id) ON DELETE CASCADE ON UPDATE CASCADE,
+    nr SMALLINT NOT NULL,
+    name VARCHAR(50) NOT NULL,
+    description VARCHAR(800)
   );
 
 CREATE TABLE

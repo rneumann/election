@@ -89,10 +89,20 @@ export const DeleteDataView = ({
           </svg>
           <div className="text-sm text-yellow-900">
             <p className="font-semibold mb-1">Warnung:</p>
-            <p className="text-yellow-800">
-              Sie werden aufgefordert, diesen Schritt zu bestätigen, um die Daten nicht
-              versehentlich zu löschen.
-            </p>
+            <li>
+              <span className="font-semibold">Alle Daten</span> werden unwiederuflich gelöscht.
+            </li>
+            <li>
+              Bitte beachten Sie, dass durch eine Löschung einer{' '}
+              <span className="font-semibold">einzelnen Wahl</span>, alle zugehörigen Daten gelöscht
+              werden, die <span className="font-semibold">keine</span> weiteren{' '}
+              <span className="font-semibold">Abhängigkeiten</span> haben.
+            </li>
+            <li>
+              Der Löschvorgang ohne auswahl einer speziellen Wahl, wird{' '}
+              <span className="font-semibold">alle</span> in der Datenbank gespeicherten Daten{' '}
+              <span className="font-semibold">löschen</span>.
+            </li>
           </div>
         </div>
       </div>

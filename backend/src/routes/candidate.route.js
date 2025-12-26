@@ -8,6 +8,7 @@ import {
   getAllCandidates,
   getCandidateInformationByUid,
   getCandidatesForElection,
+  getOptionInformationByNr,
   updateCandidateInformation,
   uploadCandidateInformation,
 } from '../service/candidate.service.js';
@@ -505,6 +506,26 @@ candidateRouter.get('/information/public/:uid', ensureAuthenticated, async (req,
     next(error);
   }
 });
+
+candidateRouter.get(
+  'information/option/public/:nr',
+  ensureAuthenticated,
+  async (req, res, next) => {
+    try {
+      const { nr } = req.params;
+
+      const info = await getOptionInformationByNr(nr);
+
+      if (!info) {
+        return res.status(404).json({ message: 'Option not found' });
+      }
+      res.status(200).json(info);
+    } catch (error) {
+      logger.error(`Error fetching public info for ${req.params.nr}: ${error.message}`);
+      next(error);
+    }
+  },
+);
 
 // eslint-disable-next-line
 candidateRouter.get('/information/personal', ensureAuthenticated, async (req, res, next) => {

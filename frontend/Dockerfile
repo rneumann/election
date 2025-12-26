@@ -14,7 +14,8 @@ RUN npm ci
 # Copy the rest of the application
 COPY . .
 
-ENV NODE_ENV=production
+ARG NODE_ENV
+ENV NODE_ENV=$NODE_ENV
 
 # Build the application
 RUN npm run build

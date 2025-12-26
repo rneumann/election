@@ -22,7 +22,7 @@ const HomeContent = () => {
   const [electionsFuture, setElectionsFuture] = useState([]);
   const [electionsAlreadyVoted, setElectionsAlreadyVoted] = useState([]);
   const [infoOpen, setInfoOpen] = useState(false);
-  const [infoElectionId, setInfoElectionId] = useState(null);
+  const [infoElection, setInfoElection] = useState(null);
   const [isAccessibilityMenuOpen, setAccessibilityMenuOpen] = useState(false);
   const [open, setOpen] = useState(false);
   const [selectedElectionId, setSelectedElectionId] = useState(undefined);
@@ -195,7 +195,7 @@ const HomeContent = () => {
                         </div>
 
                         {/* Button to start voting */}
-                        <div>
+                        <div className="flex gap-2">
                           <ResponsiveButton
                             size="small"
                             onClick={() => {
@@ -206,6 +206,20 @@ const HomeContent = () => {
                           >
                             Wahl starten
                           </ResponsiveButton>
+
+                          {election.election_type === 'referendum' && (
+                            <ResponsiveButton
+                              size="small"
+                              toolTip={'Hier können Sie Informationen über die Kandidaten abrufen.'}
+                              onClick={() => {
+                                logger.error('current election set to:', election);
+                                setInfoElection(election);
+                                setInfoOpen(true);
+                              }}
+                            >
+                              Informationen
+                            </ResponsiveButton>
+                          )}
                         </div>
                       </li>
                     ))}
@@ -298,24 +312,12 @@ const HomeContent = () => {
                             size="small"
                             toolTip={'Hier können Sie Informationen über die Kandidaten abrufen.'}
                             onClick={() => {
-                              setInfoElectionId(election.id);
+                              logger.error('current election set to:', election);
+                              setInfoElection(election);
                               setInfoOpen(true);
                             }}
                           >
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              strokeWidth="1.5"
-                              stroke="currentColor"
-                              className="size-5"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z"
-                              />
-                            </svg>
+                            Informationen
                           </ResponsiveButton>
                         </div>
                       </li>
@@ -430,7 +432,7 @@ const HomeContent = () => {
           <CandidateInfoModal
             open={infoOpen}
             onClose={() => setInfoOpen(false)}
-            electionId={infoElectionId}
+            election={infoElection}
           />
         </div>
       </main>
