@@ -16,8 +16,6 @@ const COUNTING_METHOD_MAPPING = new Map([
   ['Ja/Nein/Enthaltung', 'yes_no_referendum'],
 ]);
 
-const UID_SUFFIX_LENGTH = 20;
-
 /**
  * Imports election data from an Excel file into the database.
  * Parses the Excel file row by row and inserts valid elections.
@@ -152,29 +150,39 @@ export const importElectionData = async (filePath) => {
 
           if (electionData) {
             const electionUUID = electionData.id;
-            const currentElectionType = electionData.type;
+            // const currentElectionType = electionData.type; // TODO: Wird für Referendum-Logik benötigt
 
+            // Spalten-Mapping: A=WahlKennung, B=Nr, C=uid, D=Liste/Schlüsselwort, E=Vorname, F=Nachname, G=Mtr-Nr, H=Fakultät, I=Studiengang
             const listnum = candidateSheet.getCell(`B${candRow}`).value
               ? Number(candidateSheet.getCell(`B${candRow}`).value)
               : candCount + 1;
-            const keywords = candidateSheet.getCell(`C${candRow}`).value?.toString() || '';
-            const firstname = candidateSheet.getCell(`D${candRow}`).value?.toString() || '';
-            const lastname = candidateSheet.getCell(`E${candRow}`).value?.toString() || '';
-            const matrNr = candidateSheet.getCell(`F${candRow}`).value?.toString() || '';
-            const faculty = candidateSheet.getCell(`G${candRow}`).value?.toString() || '';
-            const info = candidateSheet.getCell(`I${candRow}`).value?.toString() || '';
 
-            const uuidSuffix = electionUUID.toString().slice(-UID_SUFFIX_LENGTH);
-            const uid = `${uuidSuffix}_${listnum}`;
+            // UID wird aus Template gelesen (Spalte C)
+            const uid = candidateSheet.getCell(`C${candRow}`).value?.toString().trim() || '';
+
+            // Validierung: UID ist Pflichtfeld
+            if (!uid) {
+              throw new Error(
+                `Zeile ${candRow}: UID (Spalte C) ist leer. UID ist ein Pflichtfeld (z.B. "grso1012").`,
+              );
+            }
+
+            const keywords = candidateSheet.getCell(`D${candRow}`).value?.toString() || '';
+            const firstname = candidateSheet.getCell(`E${candRow}`).value?.toString() || '';
+            const lastname = candidateSheet.getCell(`F${candRow}`).value?.toString() || '';
+            const matrNr = candidateSheet.getCell(`G${candRow}`).value?.toString() || '';
+            const faculty = candidateSheet.getCell(`H${candRow}`).value?.toString() || '';
+
             const notes = '';
 
-            const admittedRaw = candidateSheet.getCell(`C${candRow}`).value;
-            const isAdmitted =
-              admittedRaw === false ||
-              String(admittedRaw).toLowerCase() === 'false' ||
-              String(admittedRaw).toLowerCase() === 'nein'
-                ? false
-                : true;
+            // const admittedRaw = candidateSheet.getCell(`D${candRow}`).value;
+            //const isAdmitted =
+            //admittedRaw === false ||
+            //String(admittedRaw).toLowerCase() === 'false' ||
+            //String(admittedRaw).toLowerCase() === 'nein'
+            //? false
+            //: true;
+            const isAdmitted = true;
 
             if (firstname || lastname) {
               const insertCandidateQuery = `
@@ -204,19 +212,21 @@ export const importElectionData = async (filePath) => {
 
               await db.query(linkQuery, [electionUUID, newCandidateId, listnum]);
 
-              if (currentElectionType === 'referendum' && info) {
-                logger.debug(`referendum election has option with info: ${uid}`);
-                const insertCandidateInfoQuery = `
-                  INSERT INTO candidate_information (candidate_uid, info)
-                  VALUES ($1, $2)
-                `;
-                logger.debug(
-                  `insertCandidateInfoQuery: ${insertCandidateInfoQuery} --- prams: ${uid} ${info}`,
-                );
-                await db.query(insertCandidateInfoQuery, [uid, info]);
-              } else if (currentElectionType === 'referendum' && !info) {
-                logger.warn(`referendum election has option without info: ${uid}`);
-              }
+              // TODO: Referendum-Optionen werden aus separatem Sheet "OptionsUrabstimmung" gelesen
+              // if (currentElectionType === 'referendum' && info) {
+              //   logger.debug(`referendum election has option with info: ${uid}`);
+              //   const insertCandidateInfoQuery = `
+              //     INSERT INTO candidate_information (candidate_uid, info)
+              //     VALUES ($1, $2)
+              //   `;
+              //   logger.debug(
+              //     `insertCandidateInfoQuery: ${insertCandidateInfoQuery} --- params: ${uid} ${info}`,
+              //   );
+              //   await db.query(insertCandidateInfoQuery, [uid, info]);
+              // } else if (currentElectionType === 'referendum' && !info) {
+              //   logger.warn(`referendum election has option without info: ${uid}`);
+              // }
+
               candCount++;
             }
           } else {
