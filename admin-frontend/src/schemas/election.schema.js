@@ -63,7 +63,7 @@ export const candidateSchema = z.object({
 
   Nr: z.coerce.number().int().positive(),
   'Liste / Schlüsselwort': z.string().trim().max(150).optional().default(''),
-  Vorname: z.string().trim().min(1).max(100),
+  Vorname: z.string().trim().min(1).max(100).optional().default(''),
   Nachname: z.string().trim().max(100).optional().default(''),
   'Mtr-Nr.': z.string().trim().optional().default(''),
   Fakultät: z.string().trim().max(10).optional().default(''),
