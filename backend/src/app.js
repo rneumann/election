@@ -211,13 +211,12 @@ app.use(async (req, res, next) => {
 });
 
 /**
- * Health route (outside /api for monitoring tools)
+ * Health route
  */
 app.use('/', healthRouter);
 
 /**
  * Main API Router (Single Entry Point)
- * All API routes are registered in ./routes/index.routes.js
  */
 app.use('/api', router);
 
