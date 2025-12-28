@@ -5,6 +5,11 @@ import passport from '../auth/passport.js';
 import { logger } from '../conf/logger/logger.js';
 import { countingRouter } from './counting.route.js';
 import { exportRoute } from './export.route.js';
+import { voterRouter } from './voter.routes.js';
+import { candidateRouter } from './candidate.route.js';
+import { importRouter } from './upload.route.js';
+import { auditRouter } from './audit.routes.js';
+import { adminRouter } from './admin.routes.js';
 
 const { AUTH_PROVIDER } = process.env;
 
@@ -191,6 +196,91 @@ router.get('/auth/me', (req, res) => {
 router.delete('/auth/logout', logoutRoute);
 
 /**
+ * @openapi
+ * /api/config/auth-provider:
+ *   get:
+ *     summary: Get authentication provider configuration
+ *     description: Returns the configured authentication provider (ldap, keycloak, saml)
+ *     tags:
+ *       - Configuration
+ *     responses:
+ *       200:
+ *         description: Auth provider configuration
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 authProvider:
+ *                   type: string
+ *                   enum: [ldap, keycloak, saml]
+ *                   example: ldap
+ */
+router.get('/config/auth-provider', (req, res) => {
+  logger.debug('Returning auth provider');
+  logger.debug(`Following auth provider: ${AUTH_PROVIDER}`);
+  res.status(200).json({ authProvider: AUTH_PROVIDER });
+});
+
+/**
+ * Voter routes - Voter management and voting operations
+ *
+ * Endpoints:
+ * - GET /api/voter/elections - Get elections for authenticated voter
+ * - POST /api/voter/ballot - Submit a ballot
+ * - GET /api/voter/ballot/:electionId - Check if voter has already voted
+ *
+ * All routes require voter authentication.
+ */
+router.use('/voter', voterRouter);
+
+/**
+ * Candidate routes - Candidate information management
+ *
+ * Endpoints:
+ * - GET /api/candidates/:electionId - Get candidates for an election
+ * - POST /api/candidates/:electionId - Upload candidate info (admin/committee)
+ * - PUT /api/candidates/:electionId/:candidateId - Update candidate info
+ * - DELETE /api/candidates/:electionId/:candidateId - Delete candidate info
+ *
+ * Read operations require voter auth, write operations require admin/committee role.
+ */
+router.use('/candidates', candidateRouter);
+
+/**
+ * Upload/Import routes - Election data import
+ *
+ * Endpoints:
+ * - POST /api/upload/voters - Import voter list from Excel
+ * - POST /api/upload/elections - Import election definitions from Excel
+ *
+ * All routes require authentication and admin role.
+ */
+router.use('/upload', importRouter);
+
+/**
+ * Audit routes - Audit log access
+ *
+ * Endpoints:
+ * - GET /api/audit/logs - Retrieve audit logs with filtering
+ *
+ * All routes require authentication and admin role.
+ */
+router.use('/audit', auditRouter);
+
+/**
+ * Admin routes - Administrative operations
+ *
+ * Endpoints:
+ * - GET /api/admin/elections - Get all elections with metadata (admin view)
+ * - PUT /api/admin/controlTestElection/:electionId - Toggle test election status
+ * - DELETE /api/admin/reset - Reset all election data (DESTRUCTIVE)
+ *
+ * All routes require authentication and admin/committee role.
+ */
+router.use('/admin', adminRouter);
+
+/**
  * Counting routes - Vote counting and results management
  *
  * Endpoints:
@@ -211,3 +301,4 @@ router.use('/counting', countingRouter);
  * All routes require authentication and admin/committee role.
  */
 router.use('/export', ensureAuthenticated, ensureHasRole(['admin', 'committee']), exportRoute);
+

@@ -12,14 +12,8 @@ import { swaggerSpec } from './conf/swagger/swagger.js';
 import { healthRouter } from './routes/health.route.js';
 import passport from './auth/passport.js';
 import { logger } from './conf/logger/logger.js';
-import { voterRouter } from './routes/voter.routes.js';
-import { candidateRouter } from './routes/candidate.route.js';
-import { importRouter } from './routes/upload.route.js';
-import { exportRoute } from './routes/export.route.js';
 import { verifyCsrfToken } from './security/csrf-logic.js';
 import { writeAuditLog } from './audit/auditLogger.js';
-import { auditRouter } from './routes/audit.routes.js';
-import { adminRouter } from './routes/admin.routes.js';
 import { redisClient } from './conf/redis/redis-client.js';
 const { AUTH_PROVIDER, CORS_ORIGIN, NODE_ENV, INTERNAL_FINGERPRINT_SALT } = process.env;
 
@@ -217,27 +211,15 @@ app.use(async (req, res, next) => {
 });
 
 /**
- * Health route
+ * Health route (outside /api for monitoring tools)
  */
 app.use('/', healthRouter);
 
-app.use('/api/config/auth-provider', (req, res) => {
-  logger.debug('Returning auth provider');
-  logger.debug(`Following auth provider: ${AUTH_PROVIDER}`);
-  res.status(200).json({ authProvider: AUTH_PROVIDER });
-});
-
 /**
- * Binding API routes
+ * Main API Router (Single Entry Point)
+ * All API routes are registered in ./routes/index.routes.js
  */
 app.use('/api', router);
-app.use('/api/voter', voterRouter);
-app.use('/api/candidates', candidateRouter);
-app.use('/api/upload/', importRouter);
-app.use('/api/export/', exportRoute);
-// NEU: Audit API Route registrieren
-app.use('/api/audit', auditRouter);
-app.use('/api/admin', adminRouter);
 
 /**
  * Error handling middleware
