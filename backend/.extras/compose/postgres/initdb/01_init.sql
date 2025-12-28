@@ -155,6 +155,30 @@ CREATE INDEX IF NOT EXISTS idx_votingnotes_voter ON votingnotes (voterId, electi
 CREATE INDEX IF NOT EXISTS idx_elections_start_end ON elections (start, "end");
 
 CREATE
+OR REPLACE VIEW counting AS
+SELECT
+  ec.listnum,
+  c.firstname,
+  c.lastname,
+  c.faculty,
+  SUM(bv.votes) AS votes,
+  e.id AS electionid,
+  e.info
+FROM
+  ballotvotes bv
+  JOIN electioncandidates ec ON bv.listnum = ec.listnum
+  AND bv.election = ec.electionId
+  JOIN candidates c ON ec.candidateId = c.id
+  JOIN elections e ON ec.electionId = e.id
+GROUP BY
+  e.id,
+  ec.listnum,
+  c.firstname,
+  c.lastname,
+  c.faculty,
+  e.info;
+
+CREATE
 OR REPLACE VIEW ballot_statistics AS
 SELECT
   b.election,

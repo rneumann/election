@@ -12,6 +12,7 @@ import { CandidateInfoModal } from '../components/CandidateModal.jsx';
 import { AccessibilityProvider, AccessibilityContext } from '../context/AccessibilityContext.jsx';
 import AccessibilityMenu from '../components/AccessibilityMenu.jsx';
 import { OptionModalForReferendum } from '../components/OptionModalForReferendum.jsx';
+import { ModalForReferendum } from '../components/ModalForReferendum.jsx';
 
 /**
  * Main dashboard for authenticated users.
@@ -26,10 +27,15 @@ const HomeContent = () => {
   const [infoElection, setInfoElection] = useState(null);
   const [isAccessibilityMenuOpen, setAccessibilityMenuOpen] = useState(false);
   const [open, setOpen] = useState(false);
-  const [selectedElectionId, setSelectedElectionId] = useState(undefined);
+  const [selectedElection, setSelectedElection] = useState(undefined);
   const { user, logout } = useAuth();
   const theme = useTheme();
   const { settings } = useContext(AccessibilityContext);
+
+  const handleCloseInfo = () => {
+    setInfoOpen(false);
+    setInfoElection(null); // Wichtig: Den Inhalt leeren
+  };
 
   useEffect(() => {
     const html = document.documentElement;
@@ -201,14 +207,14 @@ const HomeContent = () => {
                             size="small"
                             onClick={() => {
                               setOpen(true);
-                              logger.debug(`current election id settet to: ${election.id}`);
-                              setSelectedElectionId(election.id);
+                              logger.debug(`current election id settet to: ${election}`);
+                              setSelectedElection(election);
                             }}
                           >
                             Wahl starten
                           </ResponsiveButton>
 
-                          {election.election_type === 'referendum' && (
+                          {election?.election_type === 'referendum' && (
                             <ResponsiveButton
                               size="small"
                               toolTip={'Hier können Sie Informationen über die Kandidaten abrufen.'}
@@ -303,8 +309,8 @@ const HomeContent = () => {
                             disabled={!election.test_election_active || election.voted}
                             onClick={() => {
                               setOpen(true);
-                              logger.debug(`current election id settet to: ${election.id}`);
-                              setSelectedElectionId(election.id);
+                              logger.debug(`current election id settet to: ${election}`);
+                              setSelectedElection(election);
                             }}
                           >
                             Testwahl starten
@@ -424,26 +430,38 @@ const HomeContent = () => {
               </div>
             </div>
           </div>
-          <Modal
-            open={open}
-            setOpen={setOpen}
-            electionId={selectedElectionId}
-            refreshElections={refreshElections}
-          />
 
-          {infoElection.election_type === 'referendum' ? (
-            <OptionModalForReferendum
-              open={infoOpen}
-              onClose={() => setInfoOpen(false)}
-              election={infoElection}
+          {selectedElection?.election_type === 'referendum' ? (
+            <ModalForReferendum
+              open={open}
+              setOpen={setOpen}
+              electionId={selectedElection?.id}
+              refreshElections={refreshElections}
             />
           ) : (
-            <CandidateInfoModal
-              open={infoOpen}
-              onClose={() => setInfoOpen(false)}
-              election={infoElection}
+            <Modal
+              open={open}
+              setOpen={setOpen}
+              electionId={selectedElection?.id}
+              refreshElections={refreshElections}
             />
           )}
+
+          {infoOpen &&
+            infoElection &&
+            (infoElection.election_type === 'referendum' ? (
+              <OptionModalForReferendum
+                open={infoOpen}
+                onClose={handleCloseInfo}
+                election={infoElection}
+              />
+            ) : (
+              <CandidateInfoModal
+                open={infoOpen}
+                onClose={handleCloseInfo}
+                election={infoElection}
+              />
+            ))}
         </div>
       </main>
 
