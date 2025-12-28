@@ -12,6 +12,9 @@ import {
 
 export const adminRouter = express.Router();
 
+// Constants
+const ERROR_INTERNAL_SERVER = 'Internal Server Error';
+
 /**
  * @openapi
  * /api/admin/elections:
@@ -44,9 +47,9 @@ adminRouter.get('/elections', ensureAuthenticated, ensureHasRole(['admin']), asy
     const elections = await getElectionsForAdmin(status);
     logger.debug(`Admin elections retrieved: ${elections.length}`);
     res.status(200).json(elections);
-  } catch {
-    // eslint-disable-next-line
-    res.status(500).json({ message: 'Internal Server Error' });
+  } catch (error) {
+    logger.error(`Failed to retrieve admin elections: ${error.message}`);
+    res.status(500).json({ message: ERROR_INTERNAL_SERVER });
   }
 });
 
@@ -90,7 +93,7 @@ adminRouter.put(
     } catch (error) {
       logger.debug(`Failed to reset election data for ${electionId}: ${error.message}`);
       logger.error(`Failed to reset election data for ${electionId}`);
-      return res.status(500).json({ message: 'Internal Server Error' });
+      return res.status(500).json({ message: ERROR_INTERNAL_SERVER });
     }
   },
 );
@@ -151,7 +154,7 @@ adminRouter.delete(
     } catch (error) {
       logger.debug(`Failed to reset election data for ${electionId}: ${error.message}`);
       logger.error(`Failed to reset election data for ${electionId}`);
-      return res.status(500).json({ message: 'Internal Server Error' });
+      return res.status(500).json({ message: ERROR_INTERNAL_SERVER });
     }
   },
 );
@@ -166,13 +169,13 @@ adminRouter.delete(
     if (!electionId) {
       logger.info('Delete all data!');
       try {
-        await deleteAllData();
+        await deleteAllData(req.user?.username || 'system', req.user?.role || 'admin');
         logger.debug('All data deleted successfully');
         res.sendStatus(204);
       } catch (error) {
         logger.debug(`Failed to delete all data: ${error.message}`);
         logger.error('Failed to delete all data');
-        res.status(500).json({ message: 'Internal Server Error' });
+        res.status(500).json({ message: ERROR_INTERNAL_SERVER });
       }
     } else {
       logger.info(`Delete data for election ID: ${electionId}`);
@@ -182,13 +185,17 @@ adminRouter.delete(
           logger.warn('Election not found');
           return res.status(404).json({ message: 'Election not found' });
         }
-        await deleteAllElectionData(electionId);
+        await deleteAllElectionData(
+          electionId,
+          req.user?.username || 'system',
+          req.user?.role || 'admin',
+        );
         logger.debug(`Election data reset for election ID: ${electionId}`);
         res.sendStatus(204);
       } catch (error) {
         logger.debug(`Failed to reset election data for ${electionId}: ${error.message}`);
         logger.error(`Failed to reset election data for ${electionId}`);
-        res.status(500).json({ message: 'Internal Server Error' });
+        res.status(500).json({ message: ERROR_INTERNAL_SERVER });
       }
     }
   },

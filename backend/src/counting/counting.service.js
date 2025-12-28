@@ -1,10 +1,12 @@
 import { client } from '../database/db.js';
 import { logger } from '../conf/logger/logger.js';
+import { writeAuditLog } from '../audit/auditLogger.js';
 import { getAlgorithm } from './algorithms/algorithm-registry.js';
 import { validateElection } from './validators/election-validator.js';
 
 // Constants
 const ERROR_ELECTION_ID_REQUIRED = 'electionId must be a non-empty string';
+const AUDIT_LOG_ERROR_MESSAGE = 'Audit log failed:';
 
 /**
  * Counting Service - Orchestrates election vote counting process.
@@ -55,7 +57,7 @@ export const performCounting = async (electionId, userId) => {
 
     logger.info(`Starting vote counting for election ${electionId} by user ${userId}`);
 
-    // Step 1: Load election configuration
+    // Load election configuration
     const electionRes = await db.query(
       `SELECT id, info, election_type, counting_method, 
               seats_to_fill, votes_per_ballot, max_cumulative_votes, start, "end"
@@ -84,10 +86,10 @@ export const performCounting = async (electionId, userId) => {
       );
     }
 
-    // Step 2: Validate election is ready for counting
+    // Validate election is ready for counting
     await validateElection(election, db);
 
-    // Step 3: Load vote data using BSI-compliant queries
+    // Load vote data using BSI-compliant queries
     // CRITICAL FIX: Different query strategy for referendums vs candidate-based elections
     let votesRes;
 
@@ -151,10 +153,10 @@ export const performCounting = async (electionId, userId) => {
         `valid=${ballotStats.valid_ballots}, invalid=${ballotStats.invalid_ballots}`,
     );
 
-    // Step 4: Select appropriate counting algorithm
+    // Select appropriate counting algorithm
     const algorithm = getAlgorithm(election.counting_method);
 
-    // Step 5: Prepare configuration for algorithm
+    // Prepare configuration for algorithm
     const config = {
       seats_to_fill: election.seats_to_fill,
       max_cumulative_votes: election.max_cumulative_votes,
@@ -167,14 +169,14 @@ export const performCounting = async (electionId, userId) => {
       `Executing ${election.counting_method} algorithm with config: ${JSON.stringify(config)}`,
     );
 
-    // Step 6: Execute counting algorithm (BSI: only aggregated data passed)
+    // Execute counting algorithm (BSI: only aggregated data passed)
     const result = algorithm({ votes, config });
 
     logger.info(
       `Counting completed: algorithm=${result.algorithm}, ties=${result.ties_detected || false}`,
     );
 
-    // Step 7: Determine next version number for this election
+    // Determine next version number for this election
     // Use SELECT FOR UPDATE on election row to prevent race conditions
     // This ensures atomic version generation when multiple counting processes run simultaneously
     await db.query(`SELECT id FROM elections WHERE id = $1 FOR UPDATE`, [electionId]);
@@ -192,7 +194,7 @@ export const performCounting = async (electionId, userId) => {
 
     const isElectionTest = election.start > Date.now();
 
-    // Step 8: Store result in database (JSONB for flexibility)
+    // Store result in database (JSONB for flexibility)
     const insertRes = await db.query(
       `INSERT INTO election_results 
          (election_id, version, result_data, counted_by, test_election)
@@ -205,6 +207,25 @@ export const performCounting = async (electionId, userId) => {
     const countedAt = insertRes.rows[0].counted_at;
 
     await db.query('COMMIT');
+
+    // Audit Log: Successful counting performed
+    await writeAuditLog({
+      actionType: 'COUNTING_PERFORMED',
+      level: 'INFO',
+      actorId: userId,
+      actorRole: 'admin',
+      targetResource: `election:${electionId}`,
+      details: {
+        election_info: election.info,
+        election_type: election.election_type,
+        counting_method: election.counting_method,
+        algorithm_used: result.algorithm,
+        result_id: resultId,
+        version: version,
+        ties_detected: result.ties_detected || false,
+        is_test_election: isElectionTest,
+      },
+    }).catch((e) => logger.error(AUDIT_LOG_ERROR_MESSAGE, e));
 
     logger.info(
       `✅ Vote counting successful: election=${election.info}, version=${version}, ` +
@@ -225,6 +246,17 @@ export const performCounting = async (electionId, userId) => {
       error: error.stack,
       userId,
     });
+    // Audit Log: Failed counting
+    await writeAuditLog({
+      actionType: 'COUNTING_PERFORMED',
+      level: 'ERROR',
+      actorId: userId,
+      actorRole: 'admin',
+      targetResource: `election:${electionId}`,
+      details: {
+        error: error.message,
+      },
+    }).catch((e) => logger.error(AUDIT_LOG_ERROR_MESSAGE, e));
     throw error;
   } finally {
     db.release();
@@ -374,6 +406,20 @@ export const finalizeResults = async (electionId, version, userId) => {
 
     await db.query('COMMIT');
 
+    // Audit Log: Results finalized
+    await writeAuditLog({
+      actionType: 'COUNTING_FINALIZED',
+      level: 'INFO',
+      actorId: userId,
+      actorRole: 'admin',
+      targetResource: `election:${electionId}`,
+      details: {
+        version: version,
+        result_id: updateRes.rows[0].id,
+        counted_at: updateRes.rows[0].counted_at,
+      },
+    }).catch((e) => logger.error(AUDIT_LOG_ERROR_MESSAGE, e));
+
     logger.info(`✅ Results finalized: election=${electionId}, version=${version}, user=${userId}`);
 
     return { success: true };
@@ -383,6 +429,20 @@ export const finalizeResults = async (electionId, version, userId) => {
       `Result finalization failed: election=${electionId}, version=${version}: ${error.message}`,
       { error: error.stack, userId },
     );
+
+    // Audit Log: Failed finalization
+    await writeAuditLog({
+      actionType: 'COUNTING_FINALIZED',
+      level: 'ERROR',
+      actorId: userId,
+      actorRole: 'admin',
+      targetResource: `election:${electionId}`,
+      details: {
+        version: version,
+        error: error.message,
+      },
+    }).catch((e) => logger.error(AUDIT_LOG_ERROR_MESSAGE, e));
+
     throw error;
   } finally {
     db.release();

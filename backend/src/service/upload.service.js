@@ -4,12 +4,14 @@ import { logger } from '../conf/logger/logger.js';
 import { importVoterData } from '../service/voter-importer.service.js';
 import { importElectionData } from '../service/election-importer.service.js';
 import { importCandidateData } from '../service/candidate-importer.js';
+import { writeAuditLog } from '../audit/auditLogger.js';
 
 // Konstanten für wiederkehrende Strings
 const ERR_FILE_UPLOAD = 'File upload error:';
 const ERR_NO_FILE = 'No file uploaded';
 const ERR_METHOD_NOT_ALLOWED = 'Method Not Allowed';
 const UPLOAD_FIELD = 'file';
+const AUDIT_LOG_ERROR_MESSAGE = 'Audit log failed:';
 
 /**
  * Multer storage configuration for file uploads.
@@ -130,6 +132,21 @@ export const importWahlerRoute = async (req, res) => {
       logger.debug(`Datei gespeichert unter: ${filePath}`);
       const result = await importVoterData(filePath, fileMimeType, electionId);
 
+      // Audit Log: Successful voter import
+      await writeAuditLog({
+        actionType: 'IMPORT_VOTERS',
+        level: 'INFO',
+        actorId: req.user?.username || 'system',
+        actorRole: req.user?.role || 'admin',
+        targetResource: `election:${electionId}`,
+        details: {
+          voter_count: result.voterCount,
+          voting_notes_count: result.votingNotesCount,
+          file_name: req.file.originalname,
+          file_size: req.file.size,
+        },
+      }).catch((e) => logger.error(AUDIT_LOG_ERROR_MESSAGE, e));
+
       fs.promises.unlink(filePath, (unlinkErr) => {
         if (unlinkErr) {
           logger.error('Fehler beim Löschen der Datei nach erfolgreichem Import:', unlinkErr);
@@ -143,6 +160,19 @@ export const importWahlerRoute = async (req, res) => {
       });
     } catch (importError) {
       logger.error('Importfehler. Datei wird gelöscht.', importError);
+
+      // Audit Log: Failed voter import
+      await writeAuditLog({
+        actionType: 'IMPORT_VOTERS',
+        level: 'ERROR',
+        actorId: req.user?.username || 'system',
+        actorRole: req.user?.role || 'admin',
+        targetResource: `election:${electionId}`,
+        details: {
+          error: importError.message,
+          file_name: req.file.originalname,
+        },
+      }).catch((e) => logger.error(AUDIT_LOG_ERROR_MESSAGE, e));
 
       fs.promises.unlink(filePath, (unlinkErr) => {
         if (unlinkErr) {
@@ -191,6 +221,19 @@ export const importElectionRoute = async (req, res) => {
 
       const importCount = await importElectionData(filePath);
 
+      // Audit Log: Successful election import
+      await writeAuditLog({
+        actionType: 'IMPORT_ELECTIONS',
+        level: 'INFO',
+        actorId: req.user?.username || 'system',
+        actorRole: req.user?.role || 'admin',
+        details: {
+          election_count: importCount,
+          file_name: req.file.originalname,
+          file_size: req.file.size,
+        },
+      }).catch((e) => logger.error(AUDIT_LOG_ERROR_MESSAGE, e));
+
       try {
         await fs.promises.unlink(filePath);
       } catch (unlinkErr) {
@@ -212,6 +255,18 @@ export const importElectionRoute = async (req, res) => {
       });
     } catch (importError) {
       logger.error('Importfehler (Catch Block):', importError);
+
+      // Audit Log: Failed election import
+      await writeAuditLog({
+        actionType: 'IMPORT_ELECTIONS',
+        level: 'ERROR',
+        actorId: req.user?.username || 'system',
+        actorRole: req.user?.role || 'admin',
+        details: {
+          error: importError.message,
+          file_name: req.file.originalname,
+        },
+      }).catch((e) => logger.error(AUDIT_LOG_ERROR_MESSAGE, e));
 
       try {
         await fs.promises.unlink(filePath);
@@ -253,6 +308,19 @@ export const importCandidateRoute = async (req, res) => {
     try {
       logger.debug(`Datei gespeichert unter: ${filePath}`);
       await importCandidateData(filePath, fileMimeType);
+
+      // Audit Log: Successful candidate import
+      await writeAuditLog({
+        actionType: 'IMPORT_CANDIDATES',
+        level: 'INFO',
+        actorId: req.user?.username || 'system',
+        actorRole: req.user?.role || 'admin',
+        details: {
+          file_name: req.file.originalname,
+          file_size: req.file.size,
+        },
+      }).catch((e) => logger.error(AUDIT_LOG_ERROR_MESSAGE, e));
+
       fs.promises.unlink(filePath, (unlinkErr) => {
         if (unlinkErr) {
           logger.error('Fehler beim Löschen der Datei nach erfolgreichem Import:', unlinkErr);
@@ -265,6 +333,19 @@ export const importCandidateRoute = async (req, res) => {
       });
     } catch (importError) {
       logger.error('Importfehler. Datei wird gelöscht.', importError);
+
+      // Audit Log: Failed candidate import
+      await writeAuditLog({
+        actionType: 'IMPORT_CANDIDATES',
+        level: 'ERROR',
+        actorId: req.user?.username || 'system',
+        actorRole: req.user?.role || 'admin',
+        details: {
+          error: importError.message,
+          file_name: req.file.originalname,
+        },
+      }).catch((e) => logger.error(AUDIT_LOG_ERROR_MESSAGE, e));
+
       fs.promises.unlink(filePath, (unlinkErr) => {
         if (unlinkErr) {
           logger.error('Fehler beim Löschen der Datei nach Importfehler:', unlinkErr);

@@ -14,11 +14,14 @@ import {
   uploadCandidateInformation,
 } from '../service/candidate.service.js';
 import { candidateInfoSchema } from '../schemas/candidate-info.js';
+import { writeAuditLog } from '../audit/auditLogger.js';
 
 export const candidateRouter = Router();
 
+// Constants
 const mB = 5;
 const kB = 1024;
+const AUDIT_LOG_ERROR_MESSAGE = 'Audit log failed:';
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -174,6 +177,18 @@ candidateRouter.post(
     }
     try {
       await uploadCandidateInformation(candidateInfo.data);
+
+      // Audit Log: Successful candidate info upload
+      await writeAuditLog({
+        actionType: 'CANDIDATE_INFO_UPLOADED',
+        level: 'INFO',
+        actorId: req.user.username,
+        actorRole: req.user.role,
+        details: {
+          candidate_uid: req.user.username,
+          has_picture: !!req.file,
+        },
+      }).catch((e) => logger.error(AUDIT_LOG_ERROR_MESSAGE, e));
     } catch (error) {
       logger.error(`Error inserting candidate information: ${error.message}`);
       return res.status(500).json({ message: 'Database insert operation failed.' });
@@ -276,6 +291,18 @@ candidateRouter.put(
     }
     try {
       await updateCandidateInformation(candidateInfo.data);
+
+      // Audit Log: Successful candidate info update
+      await writeAuditLog({
+        actionType: 'CANDIDATE_INFO_UPDATED',
+        level: 'INFO',
+        actorId: req.user.username,
+        actorRole: req.user.role,
+        details: {
+          candidate_uid: req.user.username,
+          has_picture: !!req.file,
+        },
+      }).catch((e) => logger.error(AUDIT_LOG_ERROR_MESSAGE, e));
     } catch (error) {
       logger.error(`Error updating candidate information: ${error.message}`);
       return res.status(500).json({ message: 'Database update operation failed.' });
@@ -342,6 +369,17 @@ candidateRouter.delete(
     try {
       const result = await deleteCandidateInformation(req.user.username);
       if (result) {
+        // Audit Log: Successful candidate info deletion
+        await writeAuditLog({
+          actionType: 'CANDIDATE_INFO_DELETED',
+          level: 'INFO',
+          actorId: req.user.username,
+          actorRole: req.user.role,
+          details: {
+            candidate_uid: req.user.username,
+          },
+        }).catch((e) => logger.error(AUDIT_LOG_ERROR_MESSAGE, e));
+
         res.sendStatus(204);
       } else {
         logger.error(`Failed to delete candidate information for user ${req.user.username}.`);
