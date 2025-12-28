@@ -301,4 +301,3 @@ router.use('/counting', countingRouter);
  * All routes require authentication and admin/committee role.
  */
 router.use('/export', ensureAuthenticated, ensureHasRole(['admin', 'committee']), exportRoute);
-
