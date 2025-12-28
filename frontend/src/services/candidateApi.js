@@ -206,4 +206,26 @@ export const candidateApi = {
     }
     return response.data;
   },
+
+  /**
+   * Retrieves the list number for a specific option candidate.
+   *
+   * Sends a GET request to the `/information/option/listnum` endpoint.
+   * If the request is successful (Status 200), it returns the list number of the candidate.
+   * If the request fails (non-200 status), it logs an error and returns undefined.
+   *
+   * @param {string} uid - The user ID of the candidate to fetch the list number for.
+   * @param {string} electionId - The identifier of the election to fetch the list number for.
+   * @returns {Promise<number|undefined>} A promise that resolves to the list number of the candidate if the request is successful, or undefined on failure.
+   */
+  getOptionListNum: async (uid, electionId) => {
+    const response = await api.get('candidates/information/option/listnum', {
+      params: { uid: uid, electionId: electionId },
+    });
+    if (response.status !== 200) {
+      handleHttpStatus(response);
+      return undefined;
+    }
+    return response.data;
+  },
 };

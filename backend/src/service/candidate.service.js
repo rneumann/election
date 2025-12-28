@@ -267,3 +267,28 @@ export const getOptionsInformationForElection = async (electionId) => {
     throw new Error(DATABASE_QUERY_ERROR);
   }
 };
+
+/**
+ * Retrieves the list number for a specific option candidate.
+ * @param {string} uid - The user ID of the candidate to fetch the list number for.
+ * @param {string} electionId - The identifier of the election to fetch the list number for.
+ * @returns {Promise<number>} A promise resolving to the list number of the candidate if the election exists, an empty array otherwise.
+ */
+export const getListnumForOptionCandidate = async (uid, electionId) => {
+  const query = `
+    SELECT 
+      listnum
+    FROM electioncandidates
+    JOIN candidates c ON c.id = electioncandidates.candidateId
+    WHERE c.uid = $1 AND electioncandidates.electionId = $2
+  `;
+  const values = [uid, electionId];
+  try {
+    const result = await client.query(query, values);
+    return result.rows[0].listnum;
+  } catch (error) {
+    logger.debug('Error getting listnum for option candidate:', error);
+    logger.error('Failed to get listnum for option candidate in the database.');
+    throw new Error(DATABASE_QUERY_ERROR);
+  }
+};

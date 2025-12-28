@@ -6,26 +6,19 @@ import { useAlert } from '../context/AlertContext';
 import ResponsiveButton from './ResponsiveButton';
 import { Spinner } from './Spinner';
 
-export const Alert = ({
+export const AlertForReferendum = ({
   setShowAlert,
   cleanedVotes,
-  candidates,
   election,
+  selectedOptionValues,
   invalidHandOver,
   onCancel,
   refreshElections,
+  options,
 }) => {
   const [showSpinner, setShowSpinner] = useState(false);
   const { user } = useAuth();
   const { showAlert } = useAlert();
-  const resolveName = (listnum) => {
-    const cand = candidates?.find((c) => c.listnum === Number(listnum));
-    if (!cand) {
-      logger.error(`Candidate with listnum ${listnum} not found`);
-      return listnum;
-    }
-    return `${cand.firstname} ${cand.lastname}`;
-  };
 
   const createBallot = async (ballot) => {
     logger.debug(`createBallot: ${JSON.stringify(ballot)}, user: ${user.username}`);
@@ -39,27 +32,25 @@ export const Alert = ({
       const data = {
         electionId: String(election.id),
         valid: !invalidHandOver,
-        voteDecision: Object.entries(cleanedVotes ?? {}).map(([listnum, value]) => ({
-          listnum: Number(listnum),
-          votes: value,
-        })),
+        voteDecision: [cleanedVotes],
       };
 
+      logger.debug(`handleOnSubmit: ${JSON.stringify(data)}`);
       const res = await createBallot(data);
-
+      logger.warn(`handleOnSubmit res: ${JSON.stringify(res)}`);
       if (!res) {
         showAlert('error', 'Fehler beim Erstellen der Wahl... Bitte versuchen Sie es erneut.');
         return;
       }
 
       showAlert('success', 'Wahl erfolgreich erstellt');
-      await refreshElections();
     } catch {
       showAlert('error', 'Unerwarteter Fehler');
     } finally {
       setShowSpinner(false);
       setShowAlert(false);
       onCancel();
+      await refreshElections();
     }
   };
 
@@ -96,27 +87,27 @@ export const Alert = ({
 
       {/* Content */}
       <div className="flex-1 overflow-auto">
-        {cleanedVotes === undefined ? (
+        {invalidHandOver ? (
           <p className="text-red-500 dark:text-red-400 font-bold transition-colors">
             Ihr Stimmzettel wird ungültig abgegeben!
           </p>
-        ) : Object.keys(cleanedVotes).length === 0 ? (
-          <p className="text-gray-600 dark:text-gray-400 transition-colors">
-            Keine Stimmen vergeben.
-          </p>
         ) : (
           <ul className="space-y-3">
-            {Object.entries(cleanedVotes).map(([listnum, value]) => (
-              <li
-                key={listnum}
-                className="bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-xl p-3 flex justify-between items-center shadow hover:shadow-lg transition-all border border-gray-200 dark:border-gray-600"
-              >
-                <span className="font-semibold transition-colors">{resolveName(listnum)}</span>
-                <span className="bg-blue-600 dark:bg-blue-500 text-white rounded-full px-3 py-1 text-sm font-medium transition-colors">
-                  {value} Stimme{value > 1 ? 'n' : ''}
-                </span>
-              </li>
-            ))}
+            {selectedOptionValues.map((obj, index) => {
+              const optionName =
+                options.find((opt) => String(opt.nr) === String(obj.value))?.name || 'Unbekannt';
+              return (
+                <li
+                  key={index}
+                  className="bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-xl p-3 flex justify-between items-center shadow hover:shadow-lg transition-all border border-gray-200 dark:border-gray-600"
+                >
+                  <span className="bg-blue-600 dark:bg-blue-500 text-white rounded-full px-3 py-1 text-sm font-medium transition-colors">
+                    {obj.prio}
+                  </span>
+                  <span className="font-semibold transition-colors">{optionName}</span>
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>

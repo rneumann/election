@@ -164,7 +164,18 @@ export const importElectionData = async (filePath) => {
               : candCount + 1;
 
             // UID wird aus Template gelesen (Spalte C)
-            const templateUid = candidateSheet.getCell(`C${candRow}`).value?.toString().trim() || '';
+            const cell = candidateSheet.getCell(`C${candRow}`);
+            let templateUid = '';
+
+            if (cell.value !== null && cell.value !== undefined) {
+              if (typeof cell.value === 'number') {
+                // Falls Excel es als Zahl 1.2 erkennt, wandle es zu "1,2"
+                templateUid = cell.value.toString().replace('.', ',');
+              } else {
+                // Falls es bereits Text ist oder .text funktioniert, nimm das
+                templateUid = cell.text?.trim() || cell.value.toString().trim();
+              }
+            }
 
             // Validierung: UID ist Pflichtfeld
             if (!templateUid) {
@@ -182,7 +193,7 @@ export const importElectionData = async (filePath) => {
                 .replace(/[^a-z0-9]/g, '')
                 .substring(0, MAX_UID_PREFIX_LENGTH);
               uid = `${normalizedRef}_${templateUid}`;
-              
+
               // Sicherstellen, dass UID max 30 Zeichen (DB-Constraint)
               if (uid.length > MAX_UID_LENGTH) {
                 uid = uid.substring(0, MAX_UID_LENGTH);
@@ -261,9 +272,7 @@ export const importElectionData = async (filePath) => {
     );
 
     if (referendumElections.length > 0) {
-      const optionsSheet = workbook.worksheets.find(
-        (ws) => ws.name === 'OptionsUrabstimmung',
-      );
+      const optionsSheet = workbook.worksheets.find((ws) => ws.name === 'OptionsUrabstimmung');
 
       if (optionsSheet) {
         logger.info(`Verarbeite Referendum-Optionen aus Blatt "${optionsSheet.name}"...`);
@@ -283,9 +292,7 @@ export const importElectionData = async (filePath) => {
 
             // Validierung
             if (!name) {
-              throw new Error(
-                `OptionsUrabstimmung Zeile ${optRow}: Name (Spalte C) ist leer.`,
-              );
+              throw new Error(`OptionsUrabstimmung Zeile ${optRow}: Name (Spalte C) ist leer.`);
             }
 
             if (name.length > MAX_OPTION_NAME_LENGTH) {
@@ -324,12 +331,7 @@ export const importElectionData = async (filePath) => {
               VALUES ($1, $2, $3, $4)
             `;
 
-            await db.query(insertOptionQuery, [
-              electionUUID,
-              nr,
-              name,
-              description || null,
-            ]);
+            await db.query(insertOptionQuery, [electionUUID, nr, name, description || null]);
 
             optCount++;
             logger.debug(`Option importiert: ${wahlkennung} - Nr ${nr}: ${name}`);

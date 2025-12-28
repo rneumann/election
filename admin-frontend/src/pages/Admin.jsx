@@ -288,22 +288,22 @@ const AdminDashboard = () => {
                     Wählerverzeichnis
                   </div>
                   <button
-                    onClick={() => handleSectionChange('upload')}
-                    style={getNavButtonStyle('upload')}
-                    className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span>CSV-Datei hochladen</span>
-                      <span className="text-xs opacity-60">4.1</span>
-                    </div>
-                  </button>
-                  <button
                     onClick={() => handleSectionChange('download')}
                     style={getNavButtonStyle('download')}
                     className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
                   >
                     <div className="flex items-center justify-between">
                       <span>Wählerverzeichnis herunterladen</span>
+                      <span className="text-xs opacity-60">4.1</span>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => handleSectionChange('upload')}
+                    style={getNavButtonStyle('upload')}
+                    className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span>CSV-Datei hochladen</span>
                       <span className="text-xs opacity-60">4.2</span>
                     </div>
                   </button>

@@ -91,6 +91,7 @@ export const getElectionById = async (electionId) => {
       e."end",
       COALESCE(json_agg(DISTINCT jsonb_build_object(
         'candidateId', c.id,
+        'uid', c.uid,
         'lastname', c.lastname,
         'firstname', c.firstname,
         'mtknr', c.mtknr,

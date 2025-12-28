@@ -8,6 +8,7 @@ import {
   getAllCandidates,
   getCandidateInformationByUid,
   getCandidatesForElection,
+  getListnumForOptionCandidate,
   getOptionInformationByNr,
   getOptionsInformationForElection,
   updateCandidateInformation,
@@ -461,7 +462,7 @@ candidateRouter.get('/information', ensureAuthenticated, async (req, res, next) 
     res.json(info);
   } catch (error) {
     logger.error(`Error fetching candidate info: ${error.message}`);
-    return res.status(500).json({ message: 'Database read operation failed.' });
+    return res.status(500).json({ message: 'Failed to fetch candidate information.' });
   }
 });
 
@@ -602,6 +603,26 @@ candidateRouter.get('/information/personal', ensureAuthenticated, async (req, re
     }
     const info = await getCandidateInformationByUid(req.user.username);
     res.json(info);
+  } catch (error) {
+    logger.error(`Error fetching candidate info: ${error.message}`);
+    return res.status(500).json({ message: 'Database read operation failed.' });
+  }
+});
+
+// eslint-disable-next-line
+candidateRouter.get('/information/option/listnum', ensureAuthenticated, async (req, res, next) => {
+  logger.warn('Accessed candidate information route');
+  const { electionId, uid } = req.query;
+  if (!electionId || !uid) {
+    return res.status(400).json({ message: 'Missing required parameters.' });
+  }
+  try {
+    const info = await getListnumForOptionCandidate(uid, electionId);
+    logger.debug(`info: ${JSON.stringify(info)}`);
+    if (!info) {
+      return res.status(404).json({ message: 'Option not found' });
+    }
+    res.status(200).json(info);
   } catch (error) {
     logger.error(`Error fetching candidate info: ${error.message}`);
     return res.status(500).json({ message: 'Database read operation failed.' });
