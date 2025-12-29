@@ -94,15 +94,22 @@ export const performCounting = async (electionId, userId) => {
     let votesRes;
 
     if (election.election_type === 'referendum') {
-      // For referendums: Use counting VIEW to get uploaded candidate names
-      // Referendums have 3 candidates with listnum 1, 2, 3 (typically: Ja, Nein, Enthaltung)
-      logger.info('Loading referendum vote data from counting VIEW');
+      // For referendums: Query candidates table with keyword field
+      // The keyword field contains the full option/combination text (e.g., "Erststimme: X | Zweitstimme: Y")
+      logger.info('Loading referendum vote data from candidates with keyword field');
 
       votesRes = await db.query(
-        `SELECT listnum, firstname, lastname, votes 
-         FROM counting 
-         WHERE electionid = $1 AND listnum IN (1, 2, 3)
-         ORDER BY listnum`,
+        `SELECT 
+           ec.listnum, 
+           c.keyword AS firstname, 
+           '' AS lastname, 
+           COALESCE(SUM(bv.votes), 0) AS votes
+         FROM electioncandidates ec
+         JOIN candidates c ON c.id = ec.candidateid
+         LEFT JOIN ballotvotes bv ON bv.election = ec.electionid AND bv.listnum = ec.listnum
+         WHERE ec.electionid = $1
+         GROUP BY ec.listnum, c.keyword
+         ORDER BY ec.listnum`,
         [electionId],
       );
     } else {

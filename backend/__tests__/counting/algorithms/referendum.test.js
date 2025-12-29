@@ -7,6 +7,7 @@ describe('Referendum Algorithm', () => {
       const votes = [
         { listnum: 1, votes: 600 }, // YES
         { listnum: 2, votes: 400 }, // NO
+        { listnum: 3, votes: 0 }, // ABSTAIN
       ];
 
       const result = countReferendum({
@@ -28,6 +29,7 @@ describe('Referendum Algorithm', () => {
       const votes = [
         { listnum: 1, votes: 400 }, // YES
         { listnum: 2, votes: 600 }, // NO
+        { listnum: 3, votes: 0 }, // ABSTAIN
       ];
 
       const result = countReferendum({
@@ -44,6 +46,7 @@ describe('Referendum Algorithm', () => {
       const votes = [
         { listnum: 1, votes: 500 }, // YES
         { listnum: 2, votes: 500 }, // NO
+        { listnum: 3, votes: 0 }, // ABSTAIN
       ];
 
       const result = countReferendum({
@@ -140,6 +143,7 @@ describe('Referendum Algorithm', () => {
       const votes = [
         { listnum: 1, votes: 60 }, // YES (60% majority)
         { listnum: 2, votes: 40 }, // NO
+        { listnum: 3, votes: 0 }, // ABSTAIN
       ];
 
       const result = countReferendum({
@@ -158,6 +162,7 @@ describe('Referendum Algorithm', () => {
       const votes = [
         { listnum: 1, votes: 600 }, // YES
         { listnum: 2, votes: 400 }, // NO
+        { listnum: 3, votes: 0 }, // ABSTAIN
       ];
 
       const result = countReferendum({
@@ -174,6 +179,7 @@ describe('Referendum Algorithm', () => {
       const votes = [
         { listnum: 1, votes: 600 }, // YES
         { listnum: 2, votes: 400 }, // NO
+        { listnum: 3, votes: 0 }, // ABSTAIN
       ];
 
       const result = countReferendum({
@@ -209,6 +215,7 @@ describe('Referendum Algorithm', () => {
       const votes = [
         { listnum: 1, votes: 60 }, // YES
         { listnum: 2, votes: 40 }, // NO
+        { listnum: 3, votes: 0 }, // ABSTAIN
       ];
 
       const result = countReferendum({
@@ -227,6 +234,7 @@ describe('Referendum Algorithm', () => {
       const votes = [
         { listnum: 1, votes: 0 }, // YES
         { listnum: 2, votes: 0 }, // NO
+        { listnum: 3, votes: 0 }, // ABSTAIN
       ];
 
       const result = countReferendum({
@@ -244,6 +252,7 @@ describe('Referendum Algorithm', () => {
       const votes = [
         { listnum: 1, votes: 1000 }, // YES
         { listnum: 2, votes: 0 }, // NO
+        { listnum: 3, votes: 0 }, // ABSTAIN
       ];
 
       const result = countReferendum({
@@ -260,6 +269,7 @@ describe('Referendum Algorithm', () => {
       const votes = [
         { listnum: 1, votes: 0 }, // YES
         { listnum: 2, votes: 1000 }, // NO
+        { listnum: 3, votes: 0 }, // ABSTAIN
       ];
 
       const result = countReferendum({
@@ -295,7 +305,7 @@ describe('Referendum Algorithm', () => {
       const votes = [
         { listnum: 1, votes: 600 }, // YES
         { listnum: 2, votes: 400 }, // NO
-        // No listnum 3
+        { listnum: 3, votes: 0 }, // ABSTAIN (explicitly 0)
       ];
 
       const result = countReferendum({
@@ -353,6 +363,7 @@ describe('Referendum Algorithm', () => {
       const votes = [
         { listnum: 1, votes: 100 },
         { listnum: 2, votes: 50 },
+        { listnum: 3, votes: 0 },
       ];
 
       expect(() => countReferendum({ votes, config: null })).toThrow('config must be an object');
@@ -362,6 +373,7 @@ describe('Referendum Algorithm', () => {
       const votes = [
         { listnum: 1, votes: -100 }, // Negative votes
         { listnum: 2, votes: 50 },
+        { listnum: 3, votes: 0 },
       ];
 
       expect(() =>
@@ -373,15 +385,12 @@ describe('Referendum Algorithm', () => {
     });
 
     it('should handle empty votes array', () => {
-      const result = countReferendum({
-        votes: [],
-        config: { quorum: 0, majority_type: 'simple' },
-      });
-
-      // Empty array → all votes = 0
-      expect(result.result).toBe('REJECTED');
-      expect(result.yes_votes).toBe(0);
-      expect(result.no_votes).toBe(0);
+      expect(() =>
+        countReferendum({
+          votes: [],
+          config: { quorum: 0, majority_type: 'simple' },
+        }),
+      ).toThrow('No candidates to count. votes array is empty');
     });
   });
 
@@ -409,6 +418,7 @@ describe('Referendum Algorithm', () => {
       const votes = [
         { listnum: 1, votes: 600 },
         { listnum: 2, votes: 400 },
+        { listnum: 3, votes: 0 },
       ];
 
       const result = countReferendum({
@@ -435,6 +445,7 @@ describe('Referendum Algorithm', () => {
       const votes = [
         { listnum: 1, votes: 500 },
         { listnum: 2, votes: 500 }, // Equal votes
+        { listnum: 3, votes: 0 },
       ];
 
       const result = countReferendum({
@@ -474,6 +485,7 @@ describe('Referendum Algorithm', () => {
       const votes = [
         { listnum: 1, votes: 333 }, // YES
         { listnum: 2, votes: 667 }, // NO
+        { listnum: 3, votes: 0 }, // ABSTAIN
       ];
 
       const result = countReferendum({
@@ -489,6 +501,7 @@ describe('Referendum Algorithm', () => {
       const votes = [
         { listnum: 1, votes: 1 }, // YES
         { listnum: 2, votes: 3 }, // NO
+        { listnum: 3, votes: 0 }, // ABSTAIN
       ];
 
       const result = countReferendum({
@@ -506,6 +519,7 @@ describe('Referendum Algorithm', () => {
       const votes = [
         { listnum: 1, votes: 501 }, // YES
         { listnum: 2, votes: 498 }, // NO
+        { listnum: 3, votes: 0 }, // ABSTAIN
       ];
 
       const result = countReferendum({
@@ -522,6 +536,7 @@ describe('Referendum Algorithm', () => {
       const votes = [
         { listnum: 1, votes: 501 }, // YES
         { listnum: 2, votes: 500 }, // NO
+        { listnum: 3, votes: 0 }, // ABSTAIN
       ];
 
       const result = countReferendum({
@@ -531,6 +546,167 @@ describe('Referendum Algorithm', () => {
 
       // 501 > 500.5 (1001/2) → ACCEPTED
       expect(result.result).toBe('ACCEPTED');
+    });
+  });
+
+  describe('Plurality Mode (N options, N ≠ 3)', () => {
+    it('should select winner with most votes from 4 options', () => {
+      const votes = [
+        { listnum: 1, firstname: 'Option', lastname: 'A', votes: 150 },
+        { listnum: 2, firstname: 'Option', lastname: 'B', votes: 300 },
+        { listnum: 3, firstname: 'Option', lastname: 'C', votes: 100 },
+        { listnum: 4, firstname: 'Option', lastname: 'D', votes: 200 },
+      ];
+
+      const result = countReferendum({
+        votes,
+        config: {},
+      });
+
+      expect(result.algorithm).toBe('yes_no_referendum');
+      expect(result.mode).toBe('plurality');
+      expect(result.all_candidates).toHaveLength(4);
+      expect(result.winner_name).toBe('Option B');
+      expect(result.ties_detected).toBe(false);
+      expect(result.all_candidates[0].votes).toBe(300);
+      expect(result.all_candidates[0].percentage).toBe('40.00');
+      expect(result.total_votes).toBe(750);
+    });
+
+    it('should detect ties with 5 options', () => {
+      const votes = [
+        { listnum: 1, firstname: 'A', lastname: '', votes: 100 },
+        { listnum: 2, firstname: 'B', lastname: '', votes: 200 },
+        { listnum: 3, firstname: 'C', lastname: '', votes: 200 },
+        { listnum: 4, firstname: 'D', lastname: '', votes: 50 },
+        { listnum: 5, firstname: 'E', lastname: '', votes: 150 },
+      ];
+
+      const result = countReferendum({
+        votes,
+        config: {},
+      });
+
+      expect(result.ties_detected).toBe(true);
+      expect(result.tied_candidates).toHaveLength(2);
+      expect(result.tied_candidates[0].votes).toBe(200);
+      expect(result.tied_candidates[1].votes).toBe(200);
+      expect(result.winner).toBeNull();
+    });
+
+    it('should handle single option referendum', () => {
+      const votes = [{ listnum: 1, firstname: 'Only Option', lastname: '', votes: 500 }];
+
+      const result = countReferendum({
+        votes,
+        config: {},
+      });
+
+      expect(result.mode).toBe('plurality');
+      expect(result.winner_name).toBe('Only Option');
+      expect(result.ties_detected).toBe(false);
+    });
+
+    it('should respect quorum in plurality mode', () => {
+      const votes = [
+        { listnum: 1, firstname: 'A', lastname: '', votes: 30 },
+        { listnum: 2, firstname: 'B', lastname: '', votes: 20 },
+      ];
+
+      const result = countReferendum({
+        votes,
+        config: { quorum: 100 },
+      });
+
+      expect(result.quorum_reached).toBe(false);
+      expect(result.winner).toBeNull();
+      expect(result.all_candidates[0].name).toBe('A');
+      expect(result.all_candidates[0].votes).toBe(30);
+    });
+
+    it('should calculate percentages correctly for 10 options', () => {
+      const votes = [
+        { listnum: 1, firstname: 'Opt1', lastname: '', votes: 100 },
+        { listnum: 2, firstname: 'Opt2', lastname: '', votes: 100 },
+        { listnum: 3, firstname: 'Opt3', lastname: '', votes: 100 },
+        { listnum: 4, firstname: 'Opt4', lastname: '', votes: 100 },
+        { listnum: 5, firstname: 'Opt5', lastname: '', votes: 100 },
+        { listnum: 6, firstname: 'Opt6', lastname: '', votes: 100 },
+        { listnum: 7, firstname: 'Opt7', lastname: '', votes: 100 },
+        { listnum: 8, firstname: 'Opt8', lastname: '', votes: 100 },
+        { listnum: 9, firstname: 'Opt9', lastname: '', votes: 100 },
+        { listnum: 10, firstname: 'Opt10', lastname: '', votes: 100 },
+      ];
+
+      const result = countReferendum({
+        votes,
+        config: {},
+      });
+
+      expect(result.all_candidates).toHaveLength(10);
+      expect(result.total_votes).toBe(1000);
+      result.all_candidates.forEach((candidate) => {
+        expect(candidate.percentage).toBe('10.00');
+      });
+    });
+
+    it('should handle empty firstname/lastname gracefully', () => {
+      const votes = [
+        { listnum: 1, firstname: '', lastname: '', votes: 100 },
+        { listnum: 2, firstname: null, lastname: null, votes: 50 },
+      ];
+
+      const result = countReferendum({
+        votes,
+        config: {},
+      });
+
+      expect(result.all_candidates[0].name).toBe('Option 1');
+      expect(result.all_candidates[1].name).toBe('Option 2');
+    });
+  });
+
+  describe('Backward Compatibility (3 options still use binary logic)', () => {
+    it('should trigger binary mode for exactly 3 options', () => {
+      const votes = [
+        { listnum: 1, firstname: 'Ja', lastname: '', votes: 500 },
+        { listnum: 2, firstname: 'Nein', lastname: '', votes: 300 },
+        { listnum: 3, firstname: 'Enthaltung', lastname: '', votes: 100 },
+      ];
+
+      const result = countReferendum({
+        votes,
+        config: { majority_type: 'simple' },
+      });
+
+      // Should return legacy binary format
+      expect(result.yes_votes).toBeDefined();
+      expect(result.no_votes).toBeDefined();
+      expect(result.abstain_votes).toBeDefined();
+      expect(result.result).toMatch(/ACCEPTED|REJECTED/);
+      expect(result.mode).toBeUndefined(); // No plurality mode field
+      expect(result.yes_votes).toBe(500);
+      expect(result.no_votes).toBe(300);
+      expect(result.abstain_votes).toBe(100);
+    });
+
+    it('should NOT trigger binary mode for 4 options', () => {
+      const votes = [
+        { listnum: 1, firstname: 'A', lastname: '', votes: 100 },
+        { listnum: 2, firstname: 'B', lastname: '', votes: 200 },
+        { listnum: 3, firstname: 'C', lastname: '', votes: 150 },
+        { listnum: 4, firstname: 'D', lastname: '', votes: 50 },
+      ];
+
+      const result = countReferendum({
+        votes,
+        config: {},
+      });
+
+      // Should use plurality mode
+      expect(result.mode).toBe('plurality');
+      expect(result.all_candidates).toBeDefined();
+      expect(result.yes_votes).toBeUndefined();
     });
   });
 });
