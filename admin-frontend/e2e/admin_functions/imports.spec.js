@@ -3,6 +3,9 @@ import { adminLogin } from '../utils/authentication';
 import { AdminPage } from '../pages/adminPage';
 
 test.describe('Admin Import tests', () => {
+  // Force serial execution - tests depend on each other
+  test.describe.configure({ mode: 'serial' });
+
   test.beforeEach(async ({ page }) => {
     await adminLogin(page);
   });

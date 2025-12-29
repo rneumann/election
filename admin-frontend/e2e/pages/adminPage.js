@@ -104,4 +104,28 @@ export class AdminPage {
     // Verify upload success message appears after upload
     await expect(this.uploadSuccessMsg).toBeVisible({ timeout: 15000 });
   }
+
+  /**
+   * Deletes all data from the database via the admin UI.
+   * Navigates to "Datenbank leeren" and confirms deletion.
+   */
+  async deleteAllData() {
+    // Click on "Datenbank leeren" button in the navigation
+    const deleteButton = this.page.getByRole('button', { name: 'Datenbank leeren' });
+    await expect(deleteButton).toBeVisible({ timeout: 10000 });
+    await deleteButton.click();
+
+    // Wait for the delete view to load, then click the delete button
+    const confirmButton = this.page.getByRole('button', { name: 'Daten löschen' });
+    await expect(confirmButton).toBeVisible({ timeout: 10000 });
+    await confirmButton.click();
+
+    // Wait for confirmation alert dialog and confirm
+    const finalConfirmButton = this.page.getByRole('button', { name: 'Löschen', exact: true });
+    await expect(finalConfirmButton).toBeVisible({ timeout: 5000 });
+    await finalConfirmButton.click();
+
+    // Wait for deletion to complete
+    await this.page.waitForTimeout(2000);
+  }
 }
