@@ -6,8 +6,6 @@ const VALID_FACULTY = 'IW';
 const VALID_FIRST_NAME = 'Max';
 const VALID_LAST_NAME = 'Mustermann';
 const VALID_MATKNR = '123456';
-const VALID_PROGRAM_CODE = 'INFB';
-const VALID_PROGRAM = 'Informatik Bachelor';
 
 describe('Voter Schema Validation', () => {
   describe('voterSchema', () => {
@@ -18,8 +16,6 @@ describe('Voter Schema Validation', () => {
         Vorname: VALID_FIRST_NAME,
         Nachname: VALID_LAST_NAME,
         'Matk.Nr': VALID_MATKNR,
-        Studienganskürzel: VALID_PROGRAM_CODE,
-        Studiengang: VALID_PROGRAM,
       };
 
       const result = voterSchema.safeParse(validVoter);
@@ -33,8 +29,6 @@ describe('Voter Schema Validation', () => {
         Vorname: VALID_FIRST_NAME,
         Nachname: VALID_LAST_NAME,
         'Matk.Nr': VALID_MATKNR,
-        Studienganskürzel: VALID_PROGRAM_CODE,
-        Studiengang: VALID_PROGRAM,
       };
 
       const result = voterSchema.safeParse(invalidVoter);
@@ -51,8 +45,6 @@ describe('Voter Schema Validation', () => {
         Vorname: VALID_FIRST_NAME,
         Nachname: VALID_LAST_NAME,
         'Matk.Nr': VALID_MATKNR,
-        Studienganskürzel: VALID_PROGRAM_CODE,
-        Studiengang: VALID_PROGRAM,
       };
 
       const result = voterSchema.safeParse(invalidVoter);
@@ -69,8 +61,6 @@ describe('Voter Schema Validation', () => {
         Vorname: VALID_FIRST_NAME,
         Nachname: VALID_LAST_NAME,
         'Matk.Nr': '123abc', // contains letters
-        Studienganskürzel: VALID_PROGRAM_CODE,
-        Studiengang: VALID_PROGRAM,
       };
 
       const result = voterSchema.safeParse(invalidVoter);
@@ -84,30 +74,23 @@ describe('Voter Schema Validation', () => {
         Vorname: '', // empty
         Nachname: VALID_LAST_NAME,
         'Matk.Nr': VALID_MATKNR,
-        Studienganskürzel: VALID_PROGRAM_CODE,
-        Studiengang: VALID_PROGRAM,
       };
 
       const result = voterSchema.safeParse(invalidVoter);
       expect(result.success).toBe(false);
     });
 
-    test('should auto-uppercase Studienganskürzel', () => {
+    test('should allow optional matriculation number', () => {
       const voter = {
         'RZ-Kennung': VALID_RZ_KENNUNG,
         Fakultät: VALID_FACULTY,
         Vorname: VALID_FIRST_NAME,
         Nachname: VALID_LAST_NAME,
-        'Matk.Nr': VALID_MATKNR,
-        Studienganskürzel: 'infb', // lowercase
-        Studiengang: VALID_PROGRAM,
+        // Matk.Nr is optional
       };
 
       const result = voterSchema.safeParse(voter);
       expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data.Studienganskürzel).toBe('INFB');
-      }
     });
   });
 
@@ -120,8 +103,6 @@ describe('Voter Schema Validation', () => {
           Vorname: VALID_FIRST_NAME,
           Nachname: VALID_LAST_NAME,
           'Matk.Nr': VALID_MATKNR,
-          Studienganskürzel: VALID_PROGRAM_CODE,
-          Studiengang: VALID_PROGRAM,
         },
         {
           'RZ-Kennung': 'efgh5678',
@@ -129,8 +110,6 @@ describe('Voter Schema Validation', () => {
           Vorname: 'Anna',
           Nachname: 'Schmidt',
           'Matk.Nr': '234567',
-          Studienganskürzel: 'ARTB',
-          Studiengang: 'Architektur Bachelor',
         },
       ];
 
@@ -155,8 +134,6 @@ describe('Voter Schema Validation', () => {
         'Vorname',
         'Nachname',
         'Matk.Nr',
-        'Studienganskürzel',
-        'Studiengang',
       ]);
     });
   });
