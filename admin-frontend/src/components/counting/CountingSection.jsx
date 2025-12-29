@@ -463,7 +463,9 @@ const CountingSection = ({
                                           >
                                             <span className="font-medium text-gray-900">
                                               {candidate.candidate ||
-                                                `${candidate.firstname} ${candidate.lastname}`}
+                                                candidate.name ||
+                                                `${candidate.firstname || ''} ${candidate.lastname || ''}`.trim() ||
+                                                `Option ${candidate.listnum}`}
                                             </span>
                                             <div className="text-right">
                                               <span className="font-bold text-gray-900">
@@ -505,7 +507,9 @@ const CountingSection = ({
                                         >
                                           <span className="font-medium text-gray-900">
                                             {candidate.candidate ||
-                                              `${candidate.firstname} ${candidate.lastname}`}
+                                              candidate.name ||
+                                              `${candidate.firstname || ''} ${candidate.lastname || ''}`.trim() ||
+                                              `Option ${candidate.listnum}`}
                                           </span>
                                           <div className="text-right flex flex-col items-end">
                                             <div className="flex items-center gap-2">
@@ -540,8 +544,9 @@ const CountingSection = ({
                                 </div>
                               )}
 
-                              {/* Referendum Result */}
-                              {election.countingResult.fullResults.result_data.result && (
+                              {/* Referendum Result - Only show for Binary Format (3 options with Ja/Nein/Enthaltung) */}
+                              {election.countingResult.fullResults.result_data.yes_votes !==
+                                undefined && (
                                 <div>
                                   <p className="text-xs font-semibold text-gray-700 mb-2">
                                     Abstimmungsergebnis:
@@ -574,7 +579,10 @@ const CountingSection = ({
                                       <div>
                                         Nein:{' '}
                                         <span className="font-semibold">
-                                          {election.countingResult.fullResults.result_data.no_votes}
+                                          {
+                                            election.countingResult.fullResults.result_data
+                                              .no_votes
+                                          }
                                         </span>{' '}
                                         (
                                         {
@@ -583,28 +591,33 @@ const CountingSection = ({
                                         }
                                         %)
                                       </div>
-                                      {election.countingResult.fullResults.result_data
-                                        .abstain_votes > 0 && (
-                                        <div>
-                                          Enthaltung:{' '}
-                                          <span className="font-semibold">
-                                            {
-                                              election.countingResult.fullResults.result_data
-                                                .abstain_votes
-                                            }
-                                          </span>{' '}
-                                          (
+                                      <div>
+                                        Enthaltung:{' '}
+                                        <span className="font-semibold">
                                           {
                                             election.countingResult.fullResults.result_data
-                                              .abstain_percentage
+                                              .abstain_votes || 0
                                           }
-                                          %)
-                                        </div>
-                                      )}
+                                        </span>{' '}
+                                        (
+                                        {
+                                          election.countingResult.fullResults.result_data
+                                            .abstain_percentage || '0.00'
+                                        }
+                                        %)
+                                      </div>
                                     </div>
                                   </div>
                                 </div>
                               )}
+
+                              {/* Plurality Format Tie Warning (N options) - only show tie warning, not duplicate results */}
+                              {election.countingResult.fullResults.result_data.all_candidates &&
+                                election.countingResult.fullResults.result_data.ties_detected && (
+                                  <div className="p-2 rounded bg-yellow-100 text-xs mt-2">
+                                    ⚠️ Stimmengleichheit - Manuelle Entscheidung erforderlich
+                                  </div>
+                                )}
                             </div>
                           )}
 

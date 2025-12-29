@@ -375,18 +375,18 @@ describe('generateElectionResultExcel', () => {
       });
       expect(foundOptionHeader).toBe(true);
 
-      // Check referendum results data
+      // Check referendum results data (German labels: Ja, Nein, Enthaltung)
       let foundYesVote = false;
       let foundNoVote = false;
       worksheet.eachRow((row, rowNumber) => {
         const option = row.getCell(1).value;
-        if (option === 'Yes') {
+        if (option === 'Ja') {
           foundYesVote = true;
           expect(row.getCell(2).value).toBe(6);
           expect(row.getCell(3).value).toBe('60%');
-          expect(row.getCell(4).value).toBe('Accepted');
+          expect(row.getCell(4).value).toBe('Angenommen');
         }
-        if (option === 'No') {
+        if (option === 'Nein') {
           foundNoVote = true;
           expect(row.getCell(2).value).toBe(4);
           expect(row.getCell(3).value).toBe('40%');
@@ -443,11 +443,11 @@ describe('generateElectionResultExcel', () => {
 
       const worksheet = workbook.getWorksheet('Election Result');
 
-      // Check for abstain row
+      // Check for abstain row (German: Enthaltung)
       let foundAbstain = false;
       worksheet.eachRow((row, rowNumber) => {
         const option = row.getCell(1).value;
-        if (option === 'Abstain') {
+        if (option === 'Enthaltung') {
           foundAbstain = true;
           expect(row.getCell(2).value).toBe(10);
           expect(row.getCell(3).value).toBe('10%');

@@ -43,6 +43,7 @@ export const getElections = async (status, voterId, alreadyVoted) => {
       e.votes_per_ballot,
       e.max_cumulative_votes,
       e.test_election_active,
+      e.election_type,
       e.start,
       e.end,
       vn.voted
@@ -85,10 +86,12 @@ export const getElectionById = async (electionId) => {
       e.votes_per_ballot,
       e.max_cumulative_votes,
       e.test_election_active,
+      e.election_type,
       e.start,
       e."end",
       COALESCE(json_agg(DISTINCT jsonb_build_object(
         'candidateId', c.id,
+        'uid', c.uid,
         'lastname', c.lastname,
         'firstname', c.firstname,
         'mtknr', c.mtknr,

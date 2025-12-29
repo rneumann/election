@@ -108,6 +108,42 @@ const parseExcel = async (path) => {
 };
 
 /**
+ * Creates votingnotes entries for all imported voters for a specific election.
+ * This links voters to an election, allowing them to participate in that election.
+ * @param {string[]} uids - Array of voter UIDs (e.g., 'abcd1234').
+ * @param {string} electionId - UUID of the election to assign voters to.
+ * @returns {Promise<number>} Number of votingnotes entries created.
+ */
+const createVotingNotes = async (uids, electionId) => {
+  if (uids.length === 0) {
+    logger.info('No voters to create votingnotes for.');
+    return 0;
+  }
+
+  // Insert votingnotes for all voters in the given election
+  // Uses subquery to get voter UUIDs from their UIDs
+  const query = {
+    text: `
+      INSERT INTO votingnotes (voterId, electionId, voted)
+      SELECT v.id, $1, false
+      FROM voters v
+      WHERE v.uid = ANY($2)
+      ON CONFLICT (voterId, electionId) DO NOTHING
+    `,
+    values: [electionId, uids],
+  };
+
+  try {
+    const res = await client.query(query);
+    logger.info(`Created ${res.rowCount} votingnotes entries for election ${electionId}`);
+    return res.rowCount;
+  } catch (error) {
+    logger.error('Error creating votingnotes:', error);
+    throw new Error('Database error while creating votingnotes.');
+  }
+};
+
+/**
  * Inserts validated voter data into the PostgreSQL database.
  * Only whitelisted columns are accepted to prevent object injection.
  * @param {Object[]} data - An array of voter objects.
@@ -142,13 +178,15 @@ const insertVoters = async (data) => {
   ]);
 
   const query = {
-    text: `INSERT INTO voters (${columns}) VALUES ${valuePlaceholders}`,
+    text: `INSERT INTO voters (${columns}) VALUES ${valuePlaceholders} ON CONFLICT (uid) DO NOTHING`,
     values: allValues,
   };
 
   try {
     const res = await client.query(query);
-    logger.info(`Successfully inserted ${res.rowCount} voters into the database.`);
+    logger.info(
+      `Successfully inserted ${res.rowCount} new voters into the database (existing voters were skipped).`,
+    );
   } catch (error) {
     logger.error('Error inserting voter data into the database:', error);
     throw new Error('Database error while inserting voter data.');
@@ -157,12 +195,14 @@ const insertVoters = async (data) => {
 
 /**
  * Imports voter data from CSV or Excel files, parses it, and loads it into the database.
+ * If an electionId is provided, creates votingnotes to assign voters to that election.
  * Only safe MIME types are supported.
  * @param {string} path - The file path of the uploaded file.
  * @param {string} mimeType - The MIME type of the file.
- * @returns {Promise<void>}
+ * @param {string} electionId - UUID of the election to assign voters to.
+ * @returns {Promise<{voterCount: number, votingNotesCount: number}>} Import statistics.
  */
-export const importVoterData = async (path, mimeType) => {
+export const importVoterData = async (path, mimeType, electionId) => {
   logger.debug(`Parsing file: ${path} (${mimeType})`);
 
   const parsers = {
@@ -186,6 +226,15 @@ export const importVoterData = async (path, mimeType) => {
     }
 
     await insertVoters(rows);
+
+    // Create votingnotes to assign voters to the election
+    const uids = rows.map((row) => row.uid).filter(Boolean);
+    const votingNotesCount = await createVotingNotes(uids, electionId);
+
+    return {
+      voterCount: rows.length,
+      votingNotesCount,
+    };
   } catch (err) {
     logger.error('Import process error:', err);
     throw err;

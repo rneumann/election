@@ -43,10 +43,9 @@ export const Header = ({ setAccessibilityMenuOpen }) => {
           {user.isCandidate && window.location.pathname !== '/candidate' && (
             <div className="self-start sm:self-auto">
               <ResponsiveButton
-                className="group inline-flex items-center"
+                className="group inline-flex items-center bg-red-800 hover:bg-red-900 text-white border-none shadow-md rounded-lg px-3 py-1.5 text-sm sm:px-4 sm:py-2 font-semibold transition-all"
                 toolTip={'Wechsel zur Hauptansicht'}
                 toolTipPlacement="bottom"
-                variant="secondary"
                 size="small"
                 onClick={() => {
                   navigateToCandidatePage();
@@ -73,10 +72,9 @@ export const Header = ({ setAccessibilityMenuOpen }) => {
           {user.isCandidate && window.location.pathname === '/candidate' && (
             <div className="self-start sm:self-auto">
               <ResponsiveButton
-                className="group inline-flex items-center"
+                className="group inline-flex items-center bg-red-800 hover:bg-red-900 text-white border-none shadow-md rounded-lg px-3 py-1.5 text-sm sm:px-4 sm:py-2 font-semibold transition-all"
                 toolTip={'Wechsel zur Hauptansicht'}
                 toolTipPlacement="bottom"
-                variant="secondary"
                 size="small"
                 onClick={() => {
                   navigateToHomePage();
@@ -102,9 +100,9 @@ export const Header = ({ setAccessibilityMenuOpen }) => {
           )}
           <div className="self-start sm:self-auto">
             <ResponsiveButton
+              className="bg-red-800 hover:bg-red-900 text-white border-none shadow-md rounded-lg px-3 py-1.5 text-sm sm:px-4 sm:py-2 font-semibold transition-all"
               toolTip={'logout aus der aktuellen Sitzung'}
               toolTipPlacement="bottom"
-              variant="secondary"
               size="small"
               onClick={logout}
             >

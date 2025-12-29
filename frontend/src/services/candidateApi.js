@@ -146,6 +146,48 @@ export const candidateApi = {
   },
 
   /**
+   * Retrieves candidate option information by number.
+   *
+   * Sends a GET request to the `/candidates/information/option/public/{nr}` endpoint.
+   * If the request is successful (Status 200), it returns the candidate option information data.
+   * If the request fails (non-200 status), it logs an error and returns undefined.
+   *
+   * @param {number} nr - The number of the candidate option to fetch.
+   * @async
+   * @function getOptionInformationByNr
+   * @returns {Promise<Object|undefined>} A promise that resolves to the candidate option information data or undefined on failure.
+   */
+  getOptionInformationByNr: async (nr) => {
+    const response = await api.get(`candidates/information/option/public/${nr}`);
+    if (response.status !== 200) {
+      handleHttpStatus(response);
+      return undefined;
+    }
+    return response.data;
+  },
+
+  /**
+   * Retrieves candidate option information entries for a specific election.
+   *
+   * Sends a GET request to the `/candidates/information/option/public/election/{electionId}` endpoint.
+   * If the request is successful (Status 200), it returns the candidate option information data.
+   * If the request fails (non-200 status), it logs an error and returns undefined.
+   *
+   * @param {number} electionId - The ID of the election to fetch candidate option information for.
+   * @async
+   * @function getOptionsForElection
+   * @returns {Promise<Array<Object>|undefined>} A promise that resolves to the candidate option information data or undefined on failure.
+   */
+  getOptionsForElection: async (electionId) => {
+    const response = await api.get(`candidates/information/option/public/election/${electionId}`);
+    if (response.status !== 200) {
+      handleHttpStatus(response);
+      return undefined;
+    }
+    return response.data;
+  },
+
+  /**
    * Retrieves the candidate information entry for the currently logged-in user.
    *
    * Sends a GET request to the `/candidates/information/personal` endpoint.
@@ -158,6 +200,28 @@ export const candidateApi = {
    */
   getCandidateInfoPersonal: async () => {
     const response = await api.get('candidates/information/personal');
+    if (response.status !== 200) {
+      handleHttpStatus(response);
+      return undefined;
+    }
+    return response.data;
+  },
+
+  /**
+   * Retrieves the list number for a specific option candidate.
+   *
+   * Sends a GET request to the `/information/option/listnum` endpoint.
+   * If the request is successful (Status 200), it returns the list number of the candidate.
+   * If the request fails (non-200 status), it logs an error and returns undefined.
+   *
+   * @param {string} uid - The user ID of the candidate to fetch the list number for.
+   * @param {string} electionId - The identifier of the election to fetch the list number for.
+   * @returns {Promise<number|undefined>} A promise that resolves to the list number of the candidate if the request is successful, or undefined on failure.
+   */
+  getOptionListNum: async (uid, electionId) => {
+    const response = await api.get('candidates/information/option/listnum', {
+      params: { uid: uid, electionId: electionId },
+    });
     if (response.status !== 200) {
       handleHttpStatus(response);
       return undefined;

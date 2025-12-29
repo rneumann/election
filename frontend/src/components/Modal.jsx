@@ -170,8 +170,16 @@ export const Modal = ({ open, setOpen, electionId, refreshElections }) => {
                 "
               >
                 <div className="px-3 py-2">Nr.</div>
-                <div className="px-3 py-2">Schlagwort</div>
-                <div className="px-3 py-2">Kandidat*in</div>
+                {election?.election_type === 'referendum' ? (
+                  <>
+                    <div className="px-3 py-2">Beschreibung</div>
+                  </>
+                ) : (
+                  <>
+                    <div className="px-3 py-2">Schlagwort</div>
+                    <div className="px-3 py-2">Kandidat*in</div>
+                  </>
+                )}
                 <div className="px-3 py-2 text-right">Stimmen</div>
               </div>
 
@@ -200,21 +208,34 @@ export const Modal = ({ open, setOpen, electionId, refreshElections }) => {
                         </div>
 
                         {/* Name & Keyword kombiniert für Mobile Platzersparnis */}
-                        <div className="flex flex-col sm:contents">
-                          <div className="sm:hidden text-[10px] uppercase text-gray-500 dark:text-gray-400">
-                            Kandidat*in
-                          </div>
-                          <div className="text-gray-900 dark:text-gray-100 text-sm font-semibold sm:font-normal sm:px-3">
-                            {cand.firstname} {cand.lastname}
-                            <span className="block sm:hidden text-[11px] font-normal text-gray-500 dark:text-gray-400 italic">
+                        {election?.election_type === 'referendum' ? (
+                          <div className="flex flex-col sm:contents">
+                            <div className="sm:hidden text-[10px] uppercase text-gray-500 dark:text-gray-400">
+                              Beschreibung
+                            </div>
+                            <div className="text-gray-900 dark:text-gray-100 text-sm font-semibold sm:font-normal sm:px-3">
+                              {/* <li>{cand.firstname}</li>
+                              <li>{cand.lastname}</li> */}
                               {cand.keyword}
-                            </span>
+                            </div>
                           </div>
-                          {/* Keyword (Nur Desktop Ansicht) */}
-                          <div className="hidden sm:block text-gray-900 dark:text-gray-100 text-sm sm:px-1">
-                            {cand.keyword}
+                        ) : (
+                          <div className="flex flex-col sm:contents">
+                            <div className="sm:hidden text-[10px] uppercase text-gray-500 dark:text-gray-400">
+                              Kandidat*in
+                            </div>
+                            <div className="text-gray-900 dark:text-gray-100 text-sm font-semibold sm:font-normal sm:px-3">
+                              {cand.firstname} {cand.lastname}
+                              <span className="block sm:hidden text-[11px] font-normal text-gray-500 dark:text-gray-400 italic">
+                                {cand.keyword}
+                              </span>
+                            </div>
+                            {/* Keyword (Nur Desktop Ansicht) */}
+                            <div className="hidden sm:block text-gray-900 dark:text-gray-100 text-sm sm:px-1">
+                              {cand.keyword}
+                            </div>
                           </div>
-                        </div>
+                        )}
                       </div>
 
                       {/* Stimmen Input - Rechtsbündig auf Mobile */}

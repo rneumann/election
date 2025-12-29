@@ -4,11 +4,16 @@ import { logger } from '../conf/logger/logger.js';
 import { getElectionById } from '../service/voter.service.js';
 import {
   controlTestElection,
+  deleteAllData,
+  deleteAllElectionData,
   getElectionsForAdmin,
   resetElectionData,
 } from '../service/admin.service.js';
 
 export const adminRouter = express.Router();
+
+// Constants
+const ERROR_INTERNAL_SERVER = 'Internal Server Error';
 
 /**
  * @openapi
@@ -42,9 +47,9 @@ adminRouter.get('/elections', ensureAuthenticated, ensureHasRole(['admin']), asy
     const elections = await getElectionsForAdmin(status);
     logger.debug(`Admin elections retrieved: ${elections.length}`);
     res.status(200).json(elections);
-  } catch {
-    // eslint-disable-next-line
-    res.status(500).json({ message: 'Internal Server Error' });
+  } catch (error) {
+    logger.error(`Failed to retrieve admin elections: ${error.message}`);
+    res.status(500).json({ message: ERROR_INTERNAL_SERVER });
   }
 });
 
@@ -88,11 +93,38 @@ adminRouter.put(
     } catch (error) {
       logger.debug(`Failed to reset election data for ${electionId}: ${error.message}`);
       logger.error(`Failed to reset election data for ${electionId}`);
-      return res.status(500).json({ message: 'Internal Server Error' });
+      return res.status(500).json({ message: ERROR_INTERNAL_SERVER });
     }
   },
 );
 
+/**
+ * @openapi
+ * /api/admin/resetElectionData/{electionId}:
+ *   delete:
+ *     summary: Reset election data (Admin only)
+ *     description: Resets the election data for the specified election ID
+ *     tags:
+ *       - Admin
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - name: electionId
+ *         in: path
+ *         description: The ID of the election to reset
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       204:
+ *         description: Election data reset successfully
+ *       400:
+ *         description: Bad request (election is active)
+ *       404:
+ *         description: Election not found
+ *       500:
+ *         description: Internal server error
+ */
 adminRouter.delete(
   '/resetElectionData/:electionId',
   ensureAuthenticated,
@@ -122,7 +154,49 @@ adminRouter.delete(
     } catch (error) {
       logger.debug(`Failed to reset election data for ${electionId}: ${error.message}`);
       logger.error(`Failed to reset election data for ${electionId}`);
-      return res.status(500).json({ message: 'Internal Server Error' });
+      return res.status(500).json({ message: ERROR_INTERNAL_SERVER });
+    }
+  },
+);
+
+adminRouter.delete(
+  '/deleteAllData',
+  ensureAuthenticated,
+  ensureHasRole(['admin']),
+  async (req, res) => {
+    logger.debug('Election route for admin accessed to delete all data');
+    const electionId = req.query?.electionId;
+    if (!electionId) {
+      logger.info('Delete all data!');
+      try {
+        await deleteAllData(req.user?.username || 'system', req.user?.role || 'admin');
+        logger.debug('All data deleted successfully');
+        res.sendStatus(204);
+      } catch (error) {
+        logger.debug(`Failed to delete all data: ${error.message}`);
+        logger.error('Failed to delete all data');
+        res.status(500).json({ message: ERROR_INTERNAL_SERVER });
+      }
+    } else {
+      logger.info(`Delete data for election ID: ${electionId}`);
+      try {
+        const election = await getElectionById(electionId);
+        if (!election) {
+          logger.warn('Election not found');
+          return res.status(404).json({ message: 'Election not found' });
+        }
+        await deleteAllElectionData(
+          electionId,
+          req.user?.username || 'system',
+          req.user?.role || 'admin',
+        );
+        logger.debug(`Election data reset for election ID: ${electionId}`);
+        res.sendStatus(204);
+      } catch (error) {
+        logger.debug(`Failed to reset election data for ${electionId}: ${error.message}`);
+        logger.error(`Failed to reset election data for ${electionId}`);
+        res.status(500).json({ message: ERROR_INTERNAL_SERVER });
+      }
     }
   },
 );

@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import session from 'express-session';
 import swaggerUiExpress from 'swagger-ui-express';
 import cors from 'cors';
+import { RedisStore } from 'connect-redis';
 import { router } from './routes/index.routes.js';
 import { errorHandler } from './conf/logger/error-handler.middleware.js';
 import { readSecret } from './security/secret-reader.js';
@@ -11,14 +12,10 @@ import { swaggerSpec } from './conf/swagger/swagger.js';
 import { healthRouter } from './routes/health.route.js';
 import passport from './auth/passport.js';
 import { logger } from './conf/logger/logger.js';
-import { voterRouter } from './routes/voter.routes.js';
-import { candidateRouter } from './routes/candidate.route.js';
-import { importRouter } from './routes/upload.route.js';
-import { exportRoute } from './routes/export.route.js';
 import { verifyCsrfToken } from './security/csrf-logic.js';
 import { writeAuditLog } from './audit/auditLogger.js';
-import { auditRouter } from './routes/audit.routes.js';
-import { adminRouter } from './routes/admin.routes.js';
+import { redisClient } from './conf/redis/redis-client.js';
+const { AUTH_PROVIDER, CORS_ORIGIN, NODE_ENV, INTERNAL_FINGERPRINT_SALT } = process.env;
 
 export const app = express();
 
@@ -69,7 +66,7 @@ app.use(
 
 app.use(
   cors({
-    origin: 'http://localhost:5173',
+    origin: CORS_ORIGIN || 'http://localhost:3000',
     methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
     credentials: true,
   }),
@@ -90,15 +87,18 @@ app.use(express.urlencoded({ extended: true }));
  */
 app.use(
   session({
+    store: new RedisStore({
+      client: redisClient,
+    }),
     secret: await readSecret('SESSION_SECRET'),
     resave: false,
     rolling: true,
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: NODE_ENV === 'production',
       sameSite: 'strict', // need to have the same origin
-      maxAge: 1000 * (60 * 3 + 45), // 3.5 minutes
+      maxAge: 1000 * (60 * 3 + 45), // 3.45 minutes
     },
   }),
 );
@@ -114,59 +114,46 @@ app.use(passport.session());
  * Session fingerprint for protection against hijacking
  */
 app.use((req, res, next) => {
-  logger.debug('Checking session fingerprint');
-  //logger.debug(`req.Session: ${JSON.stringify(req.session)}`);
-  if (!req.session) {
-    logger.debug('No session found');
-    return next();
-  }
-
-  if (!req.user) {
-    logger.debug('No user found');
+  if (!req.session || !req.user) {
     return next();
   }
 
   const ip = (req.headers['x-forwarded-for'] || '').split(',')[0]?.trim() || req.ip;
-  const ua = req.headers['user-agent'];
-  logger.debug(`IP: ${ip} UA: ${ua}`);
+  const ua = req.headers['user-agent'] || 'unknown';
 
   const fingerprint = crypto
     .createHash('sha256')
-    .update(req.session.sessionSecret + ip + ua)
+    .update(INTERNAL_FINGERPRINT_SALT + ip + ua) // Pepper aus env nutzen
     .digest('hex');
 
-  if (req.session.freshUser) {
-    logger.debug('Fresh user detected');
+  if (req.session.freshUser || !req.session.fingerprint) {
+    logger.debug('Setting initial session fingerprint');
     req.session.fingerprint = fingerprint;
     delete req.session.freshUser;
     return next();
   }
 
-  const expected = crypto
-    .createHash('sha256')
-    .update(req.session.sessionSecret + ip + ua)
-    .digest('hex');
+  if (fingerprint !== req.session.fingerprint) {
+    logger.warn('Session fingerprint mismatch - Potential Hijacking');
 
-  if (expected !== req.session.fingerprint) {
-    logger.warn('Session fingerprint mismatch');
-
-    // Audit log if session hijacking is suspected
     writeAuditLog({
       actionType: 'SESSION_HIJACKING_SUSPECTED',
       level: 'CRITICAL',
-      actorId: req.user ? req.user.username : 'unknown',
-      actorRole: req.user ? req.user.role : 'unknown',
+      actorId: req.user.username,
+      actorRole: req.user.role,
       details: {
         reason: 'fingerprint_mismatch',
-        original_fingerprint: req.session.fingerprint,
         detected_ip: ip,
         detected_ua: ua,
       },
     }).catch((e) => logger.error(e));
 
-    req.session.destroy(() => {});
-    return res.status(401).json({ message: 'Unauthorized' });
+    return req.session.destroy(() => {
+      res.clearCookie('connect.sid');
+      res.status(401).json({ message: 'Unauthorized' });
+    });
   }
+
   next();
 });
 
@@ -182,8 +169,8 @@ app.use(async (req, res, next) => {
   const lastActivity = req.session.lastActivity || now;
   const diff = now - lastActivity;
 
-  logger.info(`The if condition: ${diff > 2 * 60 * 1000}, ${diff} > ${2 * 60 * 1000}`);
-  if (diff > 2 * 60 * 1000) {
+  logger.info(`The if condition: ${diff > 3 * 60 * 1000}, ${diff} > ${3 * 60 * 1000}`);
+  if (diff > 3 * 60 * 1000) {
     logger.debug('Session timeout detected logging out user');
 
     // Audit Log bei Timeout
@@ -203,7 +190,7 @@ app.use(async (req, res, next) => {
     req.session.destroy(() => {});
     res.clearCookie('connect.sid', { path: '/', httpOnly: true });
 
-    if (user?.authProvider === 'ldap') {
+    if (AUTH_PROVIDER === 'ldap') {
       res.clearCookie('PHPSESSID', { path: '/', httpOnly: true });
       res.clearCookie('PHPSESSIDIDP', { path: '/', httpOnly: true });
       res.clearCookie('PGADMIN_LANGUAGE', { path: '/', httpOnly: true });
@@ -220,12 +207,8 @@ app.use(async (req, res, next) => {
 
   logger.debug('Last activity updated');
   req.session.lastActivity = now;
-  req.session.touch();
   next();
 });
-
-// Swagger muss VOR den Routen und VOR dem ErrorHandler kommen!
-// app.use('/api-docs', swaggerUiExpress.serve, swaggerUiExpress.setup(swaggerSpec));
 
 /**
  * Health route
@@ -233,16 +216,9 @@ app.use(async (req, res, next) => {
 app.use('/', healthRouter);
 
 /**
- * Binding API routes
+ * Main API Router (Single Entry Point)
  */
 app.use('/api', router);
-app.use('/api/voter', voterRouter);
-app.use('/api/candidates', candidateRouter);
-app.use('/api/upload/', importRouter);
-app.use('/api/export/', exportRoute);
-// NEU: Audit API Route registrieren
-app.use('/api/audit', auditRouter);
-app.use('/api/admin', adminRouter);
 
 /**
  * Error handling middleware

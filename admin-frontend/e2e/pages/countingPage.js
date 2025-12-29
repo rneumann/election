@@ -34,14 +34,17 @@ export class CountingPage {
 
   /**
    * Executes the counting process for a specific election.
-   * @param {string} electionName - The name of the election to verify presence.
-   * @param {number} buttonIndex - The index of the count button (based on DOM order).
+   * @param {string} electionName - The name of the election to count.
    */
-  async performCounting(electionName, buttonIndex) {
-    await expect(this.page.getByText(electionName)).toBeVisible();
-    const countBtn = this.page
-      .getByRole('button', { name: this.txtCountBtn, exact: true })
-      .nth(buttonIndex);
+  async performCounting(electionName) {
+    // Find the heading with the election name
+    const electionHeading = this.page.getByRole('heading', { name: electionName, level: 3 });
+    await expect(electionHeading).toBeVisible();
+
+    // From h3, go up to div.flex-1, then to div.flex, then find button in sibling div.ml-4
+    // Use locator to go: h3 -> parent (div.flex-1) -> parent (div.flex) -> find button inside
+    const buttonContainer = electionHeading.locator('..').locator('..').locator('.ml-4');
+    const countBtn = buttonContainer.getByRole('button', { name: this.txtCountBtn, exact: true });
     await countBtn.click();
   }
 

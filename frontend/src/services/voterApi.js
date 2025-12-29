@@ -19,7 +19,7 @@ export const voterApi = {
       return [];
     }
     const data = await response.data;
-    //logger.debug(`getElections res: ${JSON.stringify(data)}`);
+    logger.warn('getElections res: ', data);
     return data;
   },
 

@@ -49,14 +49,7 @@ export const connectDb = async () => {
   } catch (err) {
     logger.error(`Database connection error: ${err.stack}`);
 
-    // NEU: Audit Log (DB Verbindungsfehler - Fatal!)
-    await writeAuditLog({
-      actionType: 'DB_CONNECTION_FAILURE',
-      level: 'FATAL',
-      details: { error: err.message },
-    }).catch(() => {});
-
-    process.exit(1);
+    throw err;
   }
 };
 

@@ -174,7 +174,7 @@ export const ImageUploadCandidate = ({ setUploadData }) => {
   if (image) {
     return (
       <div>
-        <h2 className="text-xl font-bold text-gray-800">Bild zuschneiden</h2>
+        <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">Bild zuschneiden</h2>
 
         {/* CROPPING AREA */}
         <div className="relative w-1/4 aspect-[3/4] max-w-sm mx-auto bg-gray-100 rounded-lg shadow-lg">
@@ -198,7 +198,7 @@ export const ImageUploadCandidate = ({ setUploadData }) => {
         {/* ZOOM SLIDER AND INFO */}
         <div className="max-w-sm mx-auto space-y-4">
           <div className="flex items-center space-x-4">
-            <span className="text-gray-600 font-medium whitespace-nowrap">
+            <span className="text-gray-600 dark:text-gray-300 font-medium whitespace-nowrap">
               Zoom ({Math.round(zoom * 100)}%)
             </span>
             <div className="flex-1">
@@ -213,7 +213,7 @@ export const ImageUploadCandidate = ({ setUploadData }) => {
             </div>
           </div>
 
-          <p className="text-sm text-gray-500 truncate text-center">
+          <p className="text-sm text-gray-500 dark:text-gray-400 truncate text-center">
             Ausgewählte Datei: **{selectedFile.name}**
           </p>
         </div>
@@ -250,7 +250,7 @@ export const ImageUploadCandidate = ({ setUploadData }) => {
 
   return (
     <>
-      <h2 className="text-xl font-bold text-gray-800 mb-4">Bild hochladen</h2>
+      <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">Bild hochladen</h2>
 
       {/* UPLOAD AREA */}
       <div
@@ -273,7 +273,7 @@ export const ImageUploadCandidate = ({ setUploadData }) => {
         >
           {/* Cloud Upload Icon */}
           <svg
-            className={`w-8 h-8 ${isDragging ? 'text-white' : 'text-gray-400'}`}
+            className={`w-8 h-8 ${isDragging ? 'text-white' : 'text-gray-400 dark:text-gray-500'}`}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -287,18 +287,18 @@ export const ImageUploadCandidate = ({ setUploadData }) => {
           </svg>
         </div>
 
-        <p className="text-lg font-semibold text-gray-900 mb-1">
+        <p className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">
           {isDragging ? 'Datei jetzt loslassen' : 'Bild hierher ziehen'}
         </p>
 
-        <p className="text-sm text-gray-500 mb-3">oder</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">oder</p>
 
         {/* UPLOAD BUTTON */}
         <div className="px-4 py-2 bg-brand-primary text-white rounded-md font-medium text-sm shadow hover:bg-brand-primary/90 transition">
           Datei auswählen
         </div>
 
-        <p className="text-xs text-gray-400 mt-3">PNG, JPG, max. 5MB. Empfohlenes Format: 3:4</p>
+        <p className="text-xs text-gray-400 dark:text-gray-500 mt-3">PNG, JPG, max. 5MB. Empfohlenes Format: 3:4</p>
       </div>
 
       {/* HIDDEN INPUT */}

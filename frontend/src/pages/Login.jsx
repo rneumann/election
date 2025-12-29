@@ -7,6 +7,8 @@ import ResponsiveButton from '../components/ResponsiveButton.jsx';
 import { logger } from '../conf/logger/logger.js';
 import { AccessibilityProvider, AccessibilityContext } from '../context/AccessibilityContext.jsx';
 import AccessibilityMenu from '../components/AccessibilityMenu.jsx';
+import api from '../services/api.js';
+import { handleHttpStatus } from '../utils/exception-handler/exception-handler.js';
 
 /**
  * Login page for user authentication.
@@ -18,6 +20,7 @@ const LoginContent = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [authProvider, setAuthProvider] = useState(undefined);
   const [loading, setLoading] = useState(false);
   const [isAccessibilityMenuOpen, setAccessibilityMenuOpen] = useState(false);
   const usernameRef = useRef(null);
@@ -108,6 +111,34 @@ const LoginContent = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    const fetchAuthProvider = async () => {
+      const cachedProvider = localStorage.getItem('authProvider');
+      if (cachedProvider) {
+        setAuthProvider(cachedProvider);
+      }
+
+      try {
+        const response = await api.get('/config/auth-provider');
+
+        if (response.status === 200) {
+          const newProvider = response.data.authProvider;
+
+          if (newProvider !== cachedProvider) {
+            setAuthProvider(newProvider);
+            localStorage.setItem('authProvider', newProvider);
+          }
+        }
+      } catch (error) {
+        if (!cachedProvider) {
+          handleHttpStatus(error.response);
+        }
+      }
+    };
+
+    fetchAuthProvider();
+  }, []);
 
   return (
     <div
@@ -208,74 +239,121 @@ const LoginContent = () => {
           </div>
         )}
 
+        {authProvider === undefined && (
+          <div role="alert" aria-live="assertive" className="mb-4 animate-slide-in">
+            <div className="bg-gradient-to-r from-yellow-50 to-yellow-100 border-l-4 border-yellow-500 rounded-lg shadow-md overflow-hidden">
+              <div className="p-4">
+                <div className="flex items-start gap-3">
+                  {/* Icon */}
+                  <div className="flex-shrink-0">
+                    <div className="w-8 h-8 rounded-full bg-yellow-500 flex items-center justify-center">
+                      <svg
+                        className="w-5 h-5 text-white"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                        />
+                      </svg>
+                    </div>
+                  </div>
+
+                  {/* Content */}
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-sm font-bold text-yellow-900 mb-1">
+                      Anmeldung fehlgeschlagen
+                    </h3>
+                    <p className="text-sm text-yellow-800">
+                      Es ist kein Authentifizierungs-Provider konfiguriert. Bitte kontaktieren Sie
+                      Ihren Administrator.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Login Form */}
-        <form onSubmit={handleSubmit} className="space-y-6" autoComplete="off">
-          <div>
-            <label
-              htmlFor="username"
-              className="block text-sm font-medium text-brand-dark dark:text-gray-200 mb-2 transition-colors"
-            >
-              Benutzername
-            </label>
-            <input
-              type="text"
-              id="username"
-              name="username"
-              ref={usernameRef}
-              value={username}
-              onChange={(e) => {
-                setUsername(e.target.value);
-                if (error) {
-                  setError('');
-                }
-              }}
-              className="w-full px-4 py-2.5 sm:py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent outline-none transition-shadow duration-200 hover:border-brand-primary"
-              placeholder="Ihr Benutzername"
-              required
-            />
-          </div>
+        {authProvider === 'ldap' && (
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <label
+                htmlFor="username"
+                className="block text-sm font-medium text-brand-dark dark:text-gray-200 mb-2 transition-colors"
+              >
+                Benutzername
+              </label>
+              <input
+                type="text"
+                id="username"
+                name="username"
+                autoComplete="username"
+                ref={usernameRef}
+                value={username}
+                onChange={(e) => {
+                  setUsername(e.target.value);
+                  if (error) {
+                    setError('');
+                  }
+                }}
+                className="w-full px-4 py-2.5 sm:py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent outline-none transition-shadow duration-200 hover:border-brand-primary"
+                placeholder="Ihr Benutzername"
+                required
+              />
+            </div>
 
-          <div>
-            <label
-              htmlFor="password"
-              className="block text-sm font-medium text-brand-dark dark:text-gray-200 mb-2 transition-colors"
-            >
-              Passwort
-            </label>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              value={password}
-              onChange={(e) => {
-                setPassword(e.target.value);
-                if (error) {
-                  setError('');
-                }
-              }}
-              className="w-full px-4 py-2.5 sm:py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent outline-none transition-shadow duration-200 hover:border-brand-primary"
-              placeholder="Ihr Passwort"
-              required
-            />
-          </div>
+            <div>
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-brand-dark dark:text-gray-200 mb-2 transition-colors"
+              >
+                Passwort
+              </label>
+              <input
+                type="password"
+                id="password"
+                name="password"
+                autoComplete="current-password"
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  if (error) {
+                    setError('');
+                  }
+                }}
+                className="w-full px-4 py-2.5 sm:py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent outline-none transition-shadow duration-200 hover:border-brand-primary"
+                placeholder="Ihr Passwort"
+                required
+              />
+            </div>
 
+            <ResponsiveButton
+              type="submit"
+              variant="primary"
+              size="large"
+              fullWidth
+              disabled={loading}
+            >
+              {loading ? 'Wird angemeldet...' : 'Anmelden'}
+            </ResponsiveButton>
+          </form>
+        )}
+
+        {/* Keycloak Login Button - only show if enabled via env var */}
+        {authProvider === 'keycloak' && (
           <ResponsiveButton
-            type="submit"
-            variant="primary"
-            size="large"
-            fullWidth
-            disabled={loading}
+            onClick={() => (window.location.href = '/api/auth/login/kc')}
+            className="mt-4 w-full bg-brand-primary text-white py-3 rounded-lg font-semibold hover:opacity-90 transition duration-200 shadow-lg"
           >
-            {loading ? 'Wird angemeldet...' : 'Anmelden'}
+            Anmelden mit Keycloak
           </ResponsiveButton>
-        </form>
-
-        <ResponsiveButton
-          onClick={() => (window.location.href = '/api/auth/login/kc')}
-          className="mt-4 w-full bg-brand-primary text-white py-3 rounded-lg font-semibold hover:opacity-90 transition duration-200 shadow-lg"
-        >
-          Anmelden mit Keycloak
-        </ResponsiveButton>
+        )}
 
         {/* Footer */}
         <p className="text-center text-xs sm:text-sm text-brand-gray dark:text-gray-400 mt-4 sm:mt-6 transition-colors">

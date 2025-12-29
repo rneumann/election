@@ -8,15 +8,21 @@ import {
   getAllCandidates,
   getCandidateInformationByUid,
   getCandidatesForElection,
+  getListnumForOptionCandidate,
+  getOptionInformationByNr,
+  getOptionsInformationForElection,
   updateCandidateInformation,
   uploadCandidateInformation,
 } from '../service/candidate.service.js';
 import { candidateInfoSchema } from '../schemas/candidate-info.js';
+import { writeAuditLog } from '../audit/auditLogger.js';
 
 export const candidateRouter = Router();
 
+// Constants
 const mB = 5;
 const kB = 1024;
+const AUDIT_LOG_ERROR_MESSAGE = 'Audit log failed:';
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -172,6 +178,18 @@ candidateRouter.post(
     }
     try {
       await uploadCandidateInformation(candidateInfo.data);
+
+      // Audit Log: Successful candidate info upload
+      await writeAuditLog({
+        actionType: 'CANDIDATE_INFO_UPLOADED',
+        level: 'INFO',
+        actorId: req.user.username,
+        actorRole: req.user.role,
+        details: {
+          candidate_uid: req.user.username,
+          has_picture: !!req.file,
+        },
+      }).catch((e) => logger.error(AUDIT_LOG_ERROR_MESSAGE, e));
     } catch (error) {
       logger.error(`Error inserting candidate information: ${error.message}`);
       return res.status(500).json({ message: 'Database insert operation failed.' });
@@ -274,6 +292,18 @@ candidateRouter.put(
     }
     try {
       await updateCandidateInformation(candidateInfo.data);
+
+      // Audit Log: Successful candidate info update
+      await writeAuditLog({
+        actionType: 'CANDIDATE_INFO_UPDATED',
+        level: 'INFO',
+        actorId: req.user.username,
+        actorRole: req.user.role,
+        details: {
+          candidate_uid: req.user.username,
+          has_picture: !!req.file,
+        },
+      }).catch((e) => logger.error(AUDIT_LOG_ERROR_MESSAGE, e));
     } catch (error) {
       logger.error(`Error updating candidate information: ${error.message}`);
       return res.status(500).json({ message: 'Database update operation failed.' });
@@ -340,6 +370,17 @@ candidateRouter.delete(
     try {
       const result = await deleteCandidateInformation(req.user.username);
       if (result) {
+        // Audit Log: Successful candidate info deletion
+        await writeAuditLog({
+          actionType: 'CANDIDATE_INFO_DELETED',
+          level: 'INFO',
+          actorId: req.user.username,
+          actorRole: req.user.role,
+          details: {
+            candidate_uid: req.user.username,
+          },
+        }).catch((e) => logger.error(AUDIT_LOG_ERROR_MESSAGE, e));
+
         res.sendStatus(204);
       } else {
         logger.error(`Failed to delete candidate information for user ${req.user.username}.`);
@@ -459,7 +500,7 @@ candidateRouter.get('/information', ensureAuthenticated, async (req, res, next) 
     res.json(info);
   } catch (error) {
     logger.error(`Error fetching candidate info: ${error.message}`);
-    return res.status(500).json({ message: 'Database read operation failed.' });
+    return res.status(500).json({ message: 'Failed to fetch candidate information.' });
   }
 });
 
@@ -506,6 +547,81 @@ candidateRouter.get('/information/public/:uid', ensureAuthenticated, async (req,
   }
 });
 
+/**
+ * @openapi
+ * /api/candidates/information/option/public/{nr}:
+ *   get:
+ *     summary: Get public option information by number
+ *     description: Fetches picture and info for a specific option.
+ *     tags: [Candidates]
+ *     parameters:
+ *       - in: path
+ *         name: nr
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Success
+ *       404:
+ *         description: Not found
+ */
+candidateRouter.get(
+  'information/option/public/:nr',
+  ensureAuthenticated,
+  async (req, res, next) => {
+    try {
+      const { nr } = req.params;
+
+      const info = await getOptionInformationByNr(nr);
+
+      if (!info) {
+        return res.status(404).json({ message: 'Option not found' });
+      }
+      res.status(200).json(info);
+    } catch (error) {
+      logger.error(`Error fetching public info for ${req.params.nr}: ${error.message}`);
+      next(error);
+    }
+  },
+);
+
+/**
+ * @openapi
+ * /api/candidates/information/option/public/election/{electionId}:
+ *   get:
+ *     summary: Get public option information by election ID
+ *     description: Fetches picture and info for a specific election.
+ *     tags: [Candidates]
+ *     parameters:
+ *       - in: path
+ *         name: electionId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Success
+ *       404:
+ *         description: Not found
+ */
+candidateRouter.get(
+  '/information/option/public/election/:electionId',
+  ensureAuthenticated,
+  async (req, res, next) => {
+    try {
+      const { electionId } = req.params;
+      const info = await getOptionsInformationForElection(electionId);
+      res.status(200).json(info);
+    } catch (error) {
+      logger.error(
+        `Error fetching public info for election ${req.params.electionId}: ${error.message}`,
+      );
+      next(error);
+    }
+  },
+);
+
 // eslint-disable-next-line
 candidateRouter.get('/information/personal', ensureAuthenticated, async (req, res, next) => {
   try {
@@ -525,6 +641,26 @@ candidateRouter.get('/information/personal', ensureAuthenticated, async (req, re
     }
     const info = await getCandidateInformationByUid(req.user.username);
     res.json(info);
+  } catch (error) {
+    logger.error(`Error fetching candidate info: ${error.message}`);
+    return res.status(500).json({ message: 'Database read operation failed.' });
+  }
+});
+
+// eslint-disable-next-line
+candidateRouter.get('/information/option/listnum', ensureAuthenticated, async (req, res, next) => {
+  logger.warn('Accessed candidate information route');
+  const { electionId, uid } = req.query;
+  if (!electionId || !uid) {
+    return res.status(400).json({ message: 'Missing required parameters.' });
+  }
+  try {
+    const info = await getListnumForOptionCandidate(uid, electionId);
+    logger.debug(`info: ${JSON.stringify(info)}`);
+    if (!info) {
+      return res.status(404).json({ message: 'Option not found' });
+    }
+    res.status(200).json(info);
   } catch (error) {
     logger.error(`Error fetching candidate info: ${error.message}`);
     return res.status(500).json({ message: 'Database read operation failed.' });

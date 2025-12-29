@@ -191,3 +191,124 @@ export const controlTestElection = async (electionId) => {
     throw new Error(`Failed to toogle test election for ${electionId}`);
   }
 };
+
+export const deleteAllData = async (actorId = 'system', actorRole = 'admin') => {
+  try {
+    await client.query('BEGIN');
+
+    await client.query('DELETE FROM ballotvotes');
+    await client.query('DELETE FROM ballots');
+    await client.query('DELETE FROM election_results');
+    await client.query('DELETE FROM votingnotes');
+    await client.query('DELETE FROM electioncandidates');
+    await client.query('DELETE FROM candidate_information');
+    await client.query('DELETE FROM elections');
+    await client.query('DELETE FROM candidates');
+    await client.query('DELETE FROM voters');
+    await client.query('DELETE FROM candidate_options');
+
+    await client.query('COMMIT');
+
+    // Audit Log: Successful deletion of ALL data
+    await writeAuditLog({
+      actionType: 'DELETE_ALL_DATA',
+      level: 'CRITICAL',
+      actorId: actorId,
+      actorRole: actorRole,
+      details: {
+        tables_cleared: [
+          'ballotvotes',
+          'ballots',
+          'election_results',
+          'votingnotes',
+          'electioncandidates',
+          'candidate_information',
+          'elections',
+          'candidates',
+          'voters',
+          'candidate_options',
+        ],
+        timestamp: new Date().toISOString(),
+      },
+    }).catch((e) => logger.error('Audit log failed:', e));
+
+    logger.info(`All data deleted successfully by ${actorId}`);
+  } catch (error) {
+    await client.query('ROLLBACK');
+    logger.error('Failed to delete all data from the database.');
+
+    // Audit Log: Failed deletion of ALL data
+    await writeAuditLog({
+      actionType: 'DELETE_ALL_DATA',
+      level: 'ERROR',
+      actorId: actorId,
+      actorRole: actorRole,
+      details: {
+        error: error.message,
+        attempted_operation: 'delete_all_database_data',
+      },
+    }).catch((e) => logger.error('Audit log failed:', e));
+
+    throw new Error(DATABASE_QUERY_ERROR);
+  }
+};
+
+export const deleteAllElectionData = async (
+  electionId,
+  actorId = 'system',
+  actorRole = 'admin',
+) => {
+  try {
+    await client.query('BEGIN');
+
+    await client.query('DELETE FROM ballotvotes WHERE election = $1', [electionId]);
+    await client.query('DELETE FROM ballots WHERE election = $1', [electionId]);
+    await client.query('DELETE FROM election_results WHERE election_id = $1', [electionId]);
+    await client.query('DELETE FROM votingnotes WHERE electionId = $1', [electionId]);
+    await client.query('DELETE FROM electioncandidates WHERE electionId = $1', [electionId]);
+    await client.query('DELETE FROM elections WHERE id = $1', [electionId]);
+
+    await client.query('COMMIT');
+
+    // Audit Log: Successful deletion of election data
+    await writeAuditLog({
+      actionType: 'DELETE_ELECTION_DATA',
+      level: 'WARN',
+      actorId: actorId,
+      actorRole: actorRole,
+      targetResource: `election:${electionId}`,
+      details: {
+        election_id: electionId,
+        tables_cleared: [
+          'ballotvotes',
+          'ballots',
+          'election_results',
+          'votingnotes',
+          'electioncandidates',
+          'elections',
+        ],
+        timestamp: new Date().toISOString(),
+      },
+    }).catch((e) => logger.error('Audit log failed:', e));
+
+    logger.info(`Election data deleted successfully for election ${electionId} by ${actorId}`);
+  } catch (error) {
+    await client.query('ROLLBACK');
+    logger.error('Failed to delete all election data from the database.');
+
+    // Audit Log: Failed deletion of election data
+    await writeAuditLog({
+      actionType: 'DELETE_ELECTION_DATA',
+      level: 'ERROR',
+      actorId: actorId,
+      actorRole: actorRole,
+      targetResource: `election:${electionId}`,
+      details: {
+        election_id: electionId,
+        error: error.message,
+      },
+    }).catch((e) => logger.error('Audit log failed:', e));
+
+    throw new Error(DATABASE_QUERY_ERROR);
+  }
+};

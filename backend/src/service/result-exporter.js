@@ -71,6 +71,24 @@ export const generateElectionResultExcel = async (resultId) => {
     const result = resultRes.rows[0];
     const resultData = result.result_data;
 
+    // For referendums: Load option names from candidates keyword field
+    // The keyword contains the full text
+    let optionNamesMap = {};
+    if (result.election_type === 'referendum') {
+      const optionsQuery = `
+        SELECT ec.listnum, c.keyword 
+        FROM electioncandidates ec
+        JOIN candidates c ON c.id = ec.candidateid
+        WHERE ec.electionid = $1 
+        ORDER BY ec.listnum
+      `;
+      const optionsRes = await db.query(optionsQuery, [result.election_id]);
+      optionsRes.rows.forEach((row) => {
+        optionNamesMap[row.listnum] = row.keyword;
+      });
+      logger.debug(`Loaded ${optionsRes.rows.length} option keywords for referendum`);
+    }
+
     // Create workbook
     const workbook = new ExcelJS.Workbook();
     workbook.creator = 'HKA Election System';
@@ -211,33 +229,43 @@ export const generateElectionResultExcel = async (resultId) => {
     // Results data rows - support both 'allocation' and 'all_candidates' fields
     let candidatesData = [];
 
-    // Special handling for referendums
-    if (result.election_type === 'referendum' && resultData.yes_votes !== undefined) {
-      // Build candidates array from referendum vote data
-      candidatesData = [
-        {
-          listnum: 1,
-          option: 'Yes',
-          votes: resultData.yes_votes,
-          percentage: resultData.yes_percentage,
-          status: resultData.result === 'ACCEPTED' ? 'Accepted' : '-',
-        },
-        {
-          listnum: 2,
-          option: 'No',
-          votes: resultData.no_votes,
-          percentage: resultData.no_percentage,
-          status: resultData.result === 'REJECTED' ? 'Rejected' : '-',
-        },
-      ];
-      if (resultData.abstain_votes > 0) {
-        candidatesData.push({
-          listnum: 3,
-          option: 'Abstain',
-          votes: resultData.abstain_votes,
-          percentage: resultData.abstain_percentage,
-          status: '-',
-        });
+    // Special handling for referendums with hybrid mode support
+    if (result.election_type === 'referendum') {
+      if (resultData.yes_votes !== undefined) {
+        // Legacy binary format (3 options) - use real option names from DB
+        candidatesData = [
+          {
+            listnum: 1,
+            option: optionNamesMap[1] || 'Ja',
+            votes: resultData.yes_votes,
+            percentage: resultData.yes_percentage,
+            status: resultData.result === 'ACCEPTED' ? 'Angenommen' : '-',
+          },
+          {
+            listnum: 2,
+            option: optionNamesMap[2] || 'Nein',
+            votes: resultData.no_votes,
+            percentage: resultData.no_percentage,
+            status: resultData.result === 'REJECTED' ? 'Abgelehnt' : '-',
+          },
+          {
+            listnum: 3,
+            option: optionNamesMap[3] || 'Enthaltung',
+            votes: resultData.abstain_votes || 0,
+            percentage: resultData.abstain_percentage || '0.00',
+            status: '-',
+          },
+        ];
+      } else if (resultData.all_candidates) {
+        // Plurality format (N options) - use real option names from DB
+        candidatesData = resultData.all_candidates.map((candidate, index) => ({
+          listnum: candidate.listnum,
+          option:
+            optionNamesMap[candidate.listnum] || candidate.name || `Option ${candidate.listnum}`,
+          votes: candidate.votes,
+          percentage: candidate.percentage,
+          status: index === 0 && !resultData.ties_detected ? 'Gewinner' : '-',
+        }));
       }
     } else {
       candidatesData =
@@ -249,10 +277,8 @@ export const generateElectionResultExcel = async (resultId) => {
         const row = worksheet.getRow(currentRow);
 
         if (result.election_type === 'referendum') {
-          // Referendum format
-          const optionName =
-            candidate.option ||
-            (candidate.listnum === 1 ? 'Yes' : candidate.listnum === 2 ? 'No' : 'Abstain');
+          // Referendum format - use option name from data
+          const optionName = candidate.option || `Option ${candidate.listnum}`;
           row.getCell(COL_A).value = optionName;
           row.getCell(COL_B).value = candidate.votes;
           row.getCell(COL_C).value = candidate.percentage ? `${candidate.percentage}%` : '-';
@@ -414,10 +440,11 @@ const formatDate = (date) => {
   if (!date) {
     return '-';
   }
-  return new Date(date).toLocaleDateString('en-GB', {
+  return new Date(date).toLocaleDateString('de-DE', {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
+    timeZone: 'Europe/Berlin',
   });
 };
 
@@ -431,11 +458,12 @@ const formatDateTime = (date) => {
   if (!date) {
     return '-';
   }
-  return new Date(date).toLocaleString('en-GB', {
+  return new Date(date).toLocaleString('de-DE', {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
     hour: '2-digit',
     minute: '2-digit',
+    timeZone: 'Europe/Berlin',
   });
 };

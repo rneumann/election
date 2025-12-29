@@ -62,12 +62,13 @@ export const candidateSchema = z.object({
   'Wahl Kennung': z.string().trim().min(1, 'Wahl-Zuordnung fehlt (Spalte A)'),
 
   Nr: z.coerce.number().int().positive(),
-  'Liste / Schlüsselwort': z.string().trim().max(100).optional().default(''),
-  Vorname: z.string().trim().min(1).max(100),
-  Nachname: z.string().trim().min(1).max(100),
+  'Liste / Schlüsselwort': z.string().trim().max(150).optional().default(''),
+  Vorname: z.string().trim().min(1).max(100).optional().default(''),
+  Nachname: z.string().trim().max(100).optional().default(''),
   'Mtr-Nr.': z.string().trim().optional().default(''),
   Fakultät: z.string().trim().max(10).optional().default(''),
   Studiengang: z.string().trim().max(100).optional().default(''),
+  'Info (Urabstimmung)': z.string().trim().max(800).optional().default(''),
 });
 
 /**

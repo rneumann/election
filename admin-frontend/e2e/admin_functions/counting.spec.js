@@ -13,7 +13,7 @@ test.describe('Counting Logic', () => {
 
     await countingPage.navigateToCounting();
 
-    await countingPage.performCounting('Urabstimmung Semesterticket', 0);
+    await countingPage.performCounting('Urabstimmung Semesterticket');
     await countingPage.verifyResult('');
   });
 
@@ -23,7 +23,7 @@ test.describe('Counting Logic', () => {
 
     await countingPage.navigateToCounting();
 
-    await countingPage.performCounting('Studierendenparlament 2025', 6);
+    await countingPage.performCounting('Studierendenparlament 2025');
     await countingPage.verifyResult('sainte_lague');
   });
 
@@ -33,7 +33,7 @@ test.describe('Counting Logic', () => {
 
     await countingPage.navigateToCounting();
 
-    await countingPage.performCounting('Prorektor:in Lehre 2025', 2);
+    await countingPage.performCounting('Prorektor:in Lehre 2025');
     await countingPage.verifyResult('yes_no_referendum');
   });
 
@@ -43,7 +43,7 @@ test.describe('Counting Logic', () => {
 
     await countingPage.navigateToCounting();
 
-    await countingPage.performCounting('Fachschaftsvorstand IWI 2025', 4);
+    await countingPage.performCounting('Fachschaftsvorstand IWI 2025');
     await countingPage.verifyResult('highest_votes_absolute');
   });
 });
