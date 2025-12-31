@@ -1,8 +1,9 @@
 /* eslint-disable */
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import api, { exportElectionResultExcel } from '../../services/api.js';
 import { adminService } from '../../services/adminApi.js';
 import { logger } from '../../conf/logger/logger.js';
+import { ConfirmationAlert } from '../ConfirmationAlert.jsx';
 
 /**
  * CountingSection Component - Handles election vote counting
@@ -37,6 +38,12 @@ const CountingSection = ({
   countingError,
   setCountingError,
 }) => {
+  // Finalization state
+  const [finalizingElectionId, setFinalizingElectionId] = useState(null);
+  const [showFinalizeAlert, setShowFinalizeAlert] = useState(false);
+  const [selectedFinalizeData, setSelectedFinalizeData] = useState(null);
+  const [finalizeSuccess, setFinalizeSuccess] = useState(null);
+
   /**
    * Load all elections from API
    */
@@ -149,6 +156,70 @@ const CountingSection = ({
       window.URL.revokeObjectURL(url);
     } catch (error) {
       setCountingError(`Failed to export election result: ${error.message}`);
+    }
+  };
+
+  /**
+   * Initiate finalization - shows confirmation dialog
+   *
+   * @param {string} electionId - UUID of the election
+   * @param {number} version - Version number to finalize
+   */
+  const handleFinalize = (electionId, version) => {
+    setSelectedFinalizeData({ electionId, version });
+    setShowFinalizeAlert(true);
+  };
+
+  /**
+   * Confirm and execute finalization
+   */
+  const handleFinalizeConfirm = async () => {
+    if (!selectedFinalizeData) return;
+
+    const { electionId, version } = selectedFinalizeData;
+    setFinalizingElectionId(electionId);
+    setFinalizeSuccess(null);
+
+    try {
+      const response = await adminService.finalizeElectionResults(electionId, version);
+
+      if (response.success) {
+        // Reload results to get updated is_final status
+        const resultsResponse = await api.get(`/counting/${electionId}/results`);
+        if (resultsResponse.data.success) {
+          setElections((prev) =>
+            prev.map((e) =>
+              e.id === electionId
+                ? {
+                    ...e,
+                    countingResult: {
+                      ...e.countingResult,
+                      fullResults: resultsResponse.data.data,
+                    },
+                  }
+                : e,
+            ),
+          );
+        }
+        setFinalizeSuccess({ electionId, message: 'Ergebnis erfolgreich abgeschlossen' });
+        logger.info(`Election ${electionId} finalized successfully`);
+      } else {
+        setElections((prev) =>
+          prev.map((e) =>
+            e.id === electionId
+              ? { ...e, countingError: response.message || 'Finalisierung fehlgeschlagen' }
+              : e,
+          ),
+        );
+      }
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || error.message || 'Unbekannter Fehler';
+      setElections((prev) =>
+        prev.map((e) => (e.id === electionId ? { ...e, countingError: errorMessage } : e)),
+      );
+    } finally {
+      setFinalizingElectionId(null);
+      setSelectedFinalizeData(null);
     }
   };
 
@@ -287,38 +358,47 @@ const CountingSection = ({
                     </div>
                   </div>
                   <div className="ml-4">
-                    <button
-                      onClick={() => handleCount(election.id)}
-                      disabled={countingElectionId === election.id}
-                      style={{
-                        backgroundColor:
-                          countingElectionId === election.id ? '#9CA3AF' : theme.colors.primary,
-                      }}
-                      className="px-4 py-2 text-white font-medium rounded hover:opacity-90 transition-opacity disabled:cursor-not-allowed"
-                    >
-                      {countingElectionId === election.id ? (
-                        <div className="flex items-center gap-2">
-                          <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-                            <circle
-                              className="opacity-25"
-                              cx="12"
-                              cy="12"
-                              r="10"
-                              stroke="currentColor"
-                              strokeWidth="4"
-                            />
-                            <path
-                              className="opacity-75"
-                              fill="currentColor"
-                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                            />
-                          </svg>
-                          <span>Zählt...</span>
-                        </div>
-                      ) : (
-                        'Auszählen'
-                      )}
-                    </button>
+                    {/* Hide count button if results are finalized */}
+                    {!election.countingResult?.fullResults?.is_final && (
+                      <button
+                        onClick={() => handleCount(election.id)}
+                        disabled={countingElectionId === election.id}
+                        style={{
+                          backgroundColor:
+                            countingElectionId === election.id ? '#9CA3AF' : theme.colors.primary,
+                        }}
+                        className="px-4 py-2 text-white font-medium rounded hover:opacity-90 transition-opacity disabled:cursor-not-allowed"
+                      >
+                        {countingElectionId === election.id ? (
+                          <div className="flex items-center gap-2">
+                            <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                              <circle
+                                className="opacity-25"
+                                cx="12"
+                                cy="12"
+                                r="10"
+                                stroke="currentColor"
+                                strokeWidth="4"
+                              />
+                              <path
+                                className="opacity-75"
+                                fill="currentColor"
+                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                              />
+                            </svg>
+                            <span>Zählt...</span>
+                          </div>
+                        ) : (
+                          'Auszählen'
+                        )}
+                      </button>
+                    )}
+                    {/* Show finalized badge instead of button */}
+                    {election.countingResult?.fullResults?.is_final && (
+                      <span className="px-3 py-2 bg-blue-100 text-blue-800 font-medium rounded text-sm">
+                        ✓ Abgeschlossen
+                      </span>
+                    )}
                   </div>
                 </div>
 
@@ -338,7 +418,18 @@ const CountingSection = ({
                         />
                       </svg>
                       <div className="flex-1">
-                        <p className="font-bold text-green-900 mb-1">✓ Auszählung erfolgreich</p>
+                        <div className="flex items-center gap-2 mb-1">
+                          <p className="font-bold text-green-900">✓ Auszählung erfolgreich</p>
+                          {election.countingResult.fullResults?.is_final ? (
+                            <span className="px-2 py-0.5 bg-blue-600 text-white rounded text-xs font-semibold">
+                              Abgeschlossen
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 bg-gray-400 text-white rounded text-xs font-semibold">
+                              Entwurf
+                            </span>
+                          )}
+                        </div>
                         <p className="text-xs text-green-800 mb-3">
                           Algorithmus:{' '}
                           <span className="font-semibold">{election.countingResult.algorithm}</span>{' '}
@@ -579,10 +670,7 @@ const CountingSection = ({
                                       <div>
                                         Nein:{' '}
                                         <span className="font-semibold">
-                                          {
-                                            election.countingResult.fullResults.result_data
-                                              .no_votes
-                                          }
+                                          {election.countingResult.fullResults.result_data.no_votes}
                                         </span>{' '}
                                         (
                                         {
@@ -594,16 +682,12 @@ const CountingSection = ({
                                       <div>
                                         Enthaltung:{' '}
                                         <span className="font-semibold">
-                                          {
-                                            election.countingResult.fullResults.result_data
-                                              .abstain_votes || 0
-                                          }
+                                          {election.countingResult.fullResults.result_data
+                                            .abstain_votes || 0}
                                         </span>{' '}
                                         (
-                                        {
-                                          election.countingResult.fullResults.result_data
-                                            .abstain_percentage || '0.00'
-                                        }
+                                        {election.countingResult.fullResults.result_data
+                                          .abstain_percentage || '0.00'}
                                         %)
                                       </div>
                                     </div>
@@ -645,6 +729,74 @@ const CountingSection = ({
                               </svg>
                               Wahlergebnis als Excel exportieren
                             </button>
+
+                            {/* Finalize Button - only show if not yet finalized */}
+                            {!election.countingResult.fullResults?.is_final && (
+                              <button
+                                onClick={() =>
+                                  handleFinalize(
+                                    election.id,
+                                    election.countingResult.fullResults.version,
+                                  )
+                                }
+                                disabled={finalizingElectionId === election.id}
+                                className="w-full px-4 py-3 bg-white border-2 border-blue-600 text-blue-700 font-semibold rounded-lg hover:bg-blue-50 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                {finalizingElectionId === election.id ? (
+                                  <>
+                                    <svg
+                                      className="animate-spin h-5 w-5"
+                                      fill="none"
+                                      viewBox="0 0 24 24"
+                                    >
+                                      <circle
+                                        className="opacity-25"
+                                        cx="12"
+                                        cy="12"
+                                        r="10"
+                                        stroke="currentColor"
+                                        strokeWidth="4"
+                                      />
+                                      <path
+                                        className="opacity-75"
+                                        fill="currentColor"
+                                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                      />
+                                    </svg>
+                                    <span>Wird finalisiert...</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <svg
+                                      className="w-5 h-5"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      viewBox="0 0 24 24"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                                      />
+                                    </svg>
+                                    Ergebnis abschließen
+                                  </>
+                                )}
+                              </button>
+                            )}
+
+                            {/* Finalized info message */}
+                            {election.countingResult.fullResults?.is_final && (
+                              <div className="w-full px-4 py-3 bg-blue-50 border border-blue-200 rounded-lg text-center">
+                                <p className="text-sm text-blue-800 font-medium">
+                                  ✓ Dieses Ergebnis wurde offiziell abgeschlossen
+                                </p>
+                                <p className="text-xs text-blue-600 mt-1">
+                                  Erneutes Auszählen ist nicht mehr möglich.
+                                </p>
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
@@ -704,11 +856,26 @@ const CountingSection = ({
                   Bei Mehrheitswahlen wird automatisch geprüft, ob eine Stichwahl erforderlich ist
                 </li>
                 <li>Jede Auszählung wird mit Versionsnummer und Zeitstempel gespeichert</li>
+                <li>
+                  Nach dem Abschließen eines Ergebnisses ist kein erneutes Auszählen mehr möglich
+                </li>
               </ul>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Finalization Confirmation Alert */}
+      {showFinalizeAlert && (
+        <ConfirmationAlert
+          title="Ergebnis abschließen"
+          message="Möchten Sie das Wahlergebnis endgültig abschließen? Nach dem Abschluss ist kein erneutes Auszählen mehr möglich. Diese Aktion kann nicht rückgängig gemacht werden."
+          confirmText="Abschließen"
+          confirmColor="red"
+          onConfirm={handleFinalizeConfirm}
+          setShowAlert={setShowFinalizeAlert}
+        />
+      )}
     </div>
   );
 };

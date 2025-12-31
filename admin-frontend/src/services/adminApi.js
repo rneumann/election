@@ -69,4 +69,31 @@ export const adminService = {
       throw err;
     }
   },
+
+  /**
+   * Finalize election results - marks a specific version as final
+   * After finalization, no further counting is allowed
+   *
+   * @param {string} electionId - UUID of the election
+   * @param {number} version - Version number to finalize
+   * @returns {Promise<Object>} Response with success status
+   */
+  finalizeElectionResults: async (electionId, version) => {
+    try {
+      const response = await api.post(`/counting/${electionId}/finalize`, { version });
+      logger.debug('[adminService] POST finalize response', {
+        status: response.status,
+        url: response.config?.url,
+        data: response.data,
+      });
+      if (response.status !== 200) {
+        handleHttpStatus(response);
+        return { success: false, message: 'Finalisierung fehlgeschlagen' };
+      }
+      return response.data;
+    } catch (err) {
+      logger.error('[adminService] finalizeElectionResults failed', err);
+      throw err;
+    }
+  },
 };
