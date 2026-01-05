@@ -7,10 +7,6 @@ The tests are located in the folder `e2e`.
 - **`admin_functions/`**
   - `counting.spec.js`: Test scenarios for the vote counting process and validation of election results.
   - `imports.spec.js `: Test scenarios for uploading directories or elections.
-- **`user_functions/`**
-  - `candidate.spec.js`: Test scenarios covering candidate-related functionality.
-  - `election_participate.spec.js`: Various test scenarios related to the election participation process.
-
 - **`utils/`**
   - `authentication.js`: Helper functions for login, logout, and session management.
 - **Konfiguration**
@@ -45,9 +41,6 @@ npx playwright install
 Create or update `e2e/.e2e-env`:
 
 ```
-USER_USERNAME=u001
-USER_PASSWORD=p
-# space for more Users.
 ADMIN_USERNAME=admin
 ADMIN_PASSWORD=p
 ```
