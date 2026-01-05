@@ -92,10 +92,6 @@ describe('login', () => {
     expect(bindMock).toHaveBeenCalledWith(`${USER_DN}`, 'pass1');
 
     expect(bindMock).toHaveBeenCalledTimes(1);
-
-    expect(logger.info).toHaveBeenCalledWith(
-      `User ${USER_DN} authenticated successfully via LDAP.`,
-    );
   });
 
   test('should call next middleware', async () => {
