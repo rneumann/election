@@ -4,7 +4,6 @@ import { PersonStanding } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useTheme } from '../hooks/useTheme.js';
 import ResponsiveButton from '../components/ResponsiveButton.jsx';
-import { logger } from '../conf/logger/logger.js';
 import { AccessibilityProvider, AccessibilityContext } from '../context/AccessibilityContext.jsx';
 import AccessibilityMenu from '../components/AccessibilityMenu.jsx';
 import api from '../services/api.js';
