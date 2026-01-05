@@ -22,7 +22,7 @@ services:
       - /tmp
     volumes:
       - postgres_data:/var/lib/postgresql
-      - ./initdb:/docker-entrypoint-initdb.d:ro
+      - ./initdb/prod:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ['CMD', 'pg_isready', '-U', 'election', '-d', 'election_db', '-h', '127.0.0.1']
       interval: 10s
@@ -41,7 +41,7 @@ services:
       - .env
     volumes:
       - postgres_data_dev:/var/lib/postgresql
-      - ./initdb:/docker-entrypoint-initdb.d:ro
+      - ./initdb/dev:/docker-entrypoint-initdb.d:ro
       - ./data/csv:/data/csv:ro
     ports:
       - '5432:5432'
