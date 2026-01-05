@@ -3,5 +3,5 @@ name: election
 networks:
   frontend_net:
   backend_net:
-    #internal: true #Auskommentieren für lokale
+    internal: true #Auskommentieren für lokale
   admin_net:

@@ -23,14 +23,19 @@ Client (Browser) -> Nginx -> WAF -> Nginx -> Frontend (React) -> Backend (Node.j
 
 Der Stack besteht aus mehreren modularen Diensten, die über dedizierte Docker-Netzwerke (`frontend_net`, `backend_net`, `admin_net`) miteinander verbunden sind.
 
-| Service        | Rolle                                                 | Netzwerk       | Detail-Anleitung                         |
-| :------------- | :---------------------------------------------------- | :------------- | :--------------------------------------- |
-| **`frontend`** | Web-Interface (React)                                 | `frontend_net` | [frontend/README.md](frontend/README.md) |
-| **`waf`**      | Web Application Firewall (ModSecurity), Reverse Proxy | `frontend_net` | [waf/compose.yml](waf/compose.yml)       |
-| **`backend`**  | API & Geschäftslogik (Node.js)                        | `backend_net`  | [backend/README.md](backend/README.md)   |
-| **`postgres`** | Datenbank (PostgreSQL) & pgAdmin                      | `backend_net`  | [postgres/README.md](postgres/README.md) |
-| **`keycloak`** | Identity Management (OIDC)                            | `backend_net`  | [keycloak/README.md](keycloak/README.md) |
-| **`ldap`**     | Test-Verzeichnisdienst (OpenLDAP)                     | `backend_net`  | [ldap/README.md](ldap/README.md)         |
+| Service              | Rolle                                                 | Netzwerk       | Detail-Anleitung                                     |
+| :------------------- | :---------------------------------------------------- | :------------- | :--------------------------------------------------- |
+| **`frontend`**       | Web-Interface (React)                                 | `frontend_net` | [frontend/README.md](frontend/README.md)             |
+| **`admin-frontend`** | Admin-Interface (React)                               | `frontend_net` | [admin_frontend/README.md](admin_frontend/README.md) |
+| **`waf`**            | Web Application Firewall (ModSecurity), Reverse Proxy | `frontend_net` | [waf/compose.yml](waf/compose.yml)                   |
+| **`admin-waf`**      | Web Application Firewall (ModSecurity), Reverse Proxy | `frontend_net` | [waf_admin/compose.yml](waf_admin/compose.yml)       |
+| **`backend`**        | API & Geschäftslogik (Node.js)                        | `backend_net`  | [backend/README.md](backend/README.md)               |
+| **`postgres`**       | Datenbank (PostgreSQL) & pgAdmin                      | `backend_net`  | [postgres/README.md](postgres/README.md)             |
+| **`Redis`**          | Redis-Storage (Session-Handling)                      | `backend_net`  | [redis/compose.yml](redis/compose.yml)               |
+| **`keycloak`**       | Identity Management (OIDC)                            | `backend_net`  | [keycloak/README.md](keycloak/README.md)             |
+| **`ldap`**           | Test-Verzeichnisdienst (OpenLDAP)                     | `backend_net`  | [ldap/README.md](ldap/README.md)                     |
+
+- Redis -> .env erstellen mit: REDIS_PASSWORD=...
 
 ---
 

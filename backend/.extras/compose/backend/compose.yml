@@ -24,7 +24,7 @@ services:
       - SESSION_SECRET
       - BALLOT_SECRET
     depends_on:
-      - postgres-dev
+      - postgres
     networks:
       - backend_net
     volumes:

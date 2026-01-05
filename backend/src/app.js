@@ -82,6 +82,7 @@ app.use(express.json());
  */
 app.use(express.urlencoded({ extended: true }));
 
+app.set('trust proxy', 2);
 /**
  * Session middleware
  */
@@ -94,6 +95,7 @@ app.use(
     resave: false,
     rolling: true,
     saveUninitialized: false,
+    proxy: NODE_ENV === 'production',
     cookie: {
       httpOnly: true,
       secure: NODE_ENV === 'production',
