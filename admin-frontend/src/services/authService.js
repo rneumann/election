@@ -55,7 +55,6 @@ const authService = {
       handleHttpStatus(csrf);
       return undefined;
     }
-    logger.info(`CSRF token retrieved: ${csrf.data.csrfToken}`);
     return localStorage.setItem('csrfToken', csrf.data.csrfToken);
   },
 

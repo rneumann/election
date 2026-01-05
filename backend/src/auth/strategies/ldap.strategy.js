@@ -45,7 +45,6 @@ export const login = async (username, password) => {
 
     logger.debug(`Attempting final user bind with DN: uid=${username},${AD_BASE_DN}`);
     await client.bind(`uid=${username},${AD_BASE_DN}`, `${password}`);
-    logger.info(`User uid=${username},${AD_BASE_DN} authenticated successfully via LDAP.`);
     const isCandidate = await checkIfVoterIsCandidate(username);
     logger.debug(`Is user: ${username} a candidate? ${isCandidate}`);
     return { username, role: 'voter', authProvider: 'ldap', isCandidate };

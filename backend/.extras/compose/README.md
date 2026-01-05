@@ -49,6 +49,6 @@ Vor dem ersten Start müssen einige Artefakte erstellt werden. Führen Sie diese
 
 ```bash
 - cd /backend/.extras/compose
-+ docker compose up   #starten des docker containers
++ docker compose --profile prod up   #starten des docker containers
 - docker compose down #stoppen des docker containers
 ```

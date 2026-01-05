@@ -83,7 +83,6 @@ const LoginContent = () => {
     setError('');
     setLoading(true);
 
-    logger.info('Login form submitted');
     try {
       const result = await login(username, password);
 

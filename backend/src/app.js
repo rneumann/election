@@ -171,7 +171,6 @@ app.use(async (req, res, next) => {
   const lastActivity = req.session.lastActivity || now;
   const diff = now - lastActivity;
 
-  logger.info(`The if condition: ${diff > 3 * 60 * 1000}, ${diff} > ${3 * 60 * 1000}`);
   if (diff > 3 * 60 * 1000) {
     logger.debug('Session timeout detected logging out user');
 

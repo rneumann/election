@@ -202,7 +202,6 @@ const CountingSection = ({
           );
         }
         setFinalizeSuccess({ electionId, message: 'Ergebnis erfolgreich abgeschlossen' });
-        logger.info(`Election ${electionId} finalized successfully`);
       } else {
         setElections((prev) =>
           prev.map((e) =>

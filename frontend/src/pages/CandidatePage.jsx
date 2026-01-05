@@ -38,15 +38,11 @@ export const CandidatePageContent = () => {
     .join(' ');
 
   const saveNewEntries = async () => {
-    logger.info(`description: ${description}, picture: ${uploadData?.name || uploadData?.type}`);
-
     const formData = new FormData();
     formData.append('info', description);
     if (uploadData) {
       formData.append('picture', uploadData);
     }
-
-    logger.info(`New entries saved: ${formData.get('description')}, ${formData.get('picture')}`);
 
     try {
       if (!currentData) {

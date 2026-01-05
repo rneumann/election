@@ -73,9 +73,7 @@ const AdminDashboard = () => {
   };
 
   const handleDeleteAllData = async () => {
-    logger.info(`Delete following: ${selectedElectionForDeletion}`);
     try {
-      logger.info(`Delete following data: ${selectedElectionForDeletion}`);
       await adminService.deleteAllData(selectedElectionForDeletion);
       setShowConfirmAlert(false);
       showAlert('success', 'Data deleted successfully');
