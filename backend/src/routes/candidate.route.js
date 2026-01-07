@@ -622,6 +622,30 @@ candidateRouter.get(
   },
 );
 
+/**
+ * @openapi
+ * /api/candidate/information/personal:
+ *   get:
+ *     summary: Retrieve personal candidate information
+ *     description: >
+ *       Returns the personal information of the currently authenticated user,
+ *       provided the user is a candidate.
+ *     tags:
+ *       - Candidate
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: Personal candidate information retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *       403:
+ *         description: Forbidden (user not authenticated or not a candidate)
+ *       500:
+ *         description: Internal server error
+ */
 // eslint-disable-next-line
 candidateRouter.get('/information/personal', ensureAuthenticated, async (req, res, next) => {
   try {
@@ -647,6 +671,45 @@ candidateRouter.get('/information/personal', ensureAuthenticated, async (req, re
   }
 });
 
+/**
+ * @openapi
+ * /api/candidate/information/option/listnum:
+ *   get:
+ *     summary: Retrieve list number for option candidate
+ *     description: >
+ *       Fetches the list number information for a specific option candidate
+ *       within a given election.
+ *     tags:
+ *       - Candidate
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - name: electionId
+ *         in: query
+ *         description: ID of the election
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - name: uid
+ *         in: query
+ *         description: User ID of the candidate
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: List number retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *       400:
+ *         description: Missing required parameters
+ *       404:
+ *         description: Option not found
+ *       500:
+ *         description: Internal server error
+ */
 // eslint-disable-next-line
 candidateRouter.get('/information/option/listnum', ensureAuthenticated, async (req, res, next) => {
   logger.warn('Accessed candidate information route');

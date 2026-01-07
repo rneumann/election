@@ -159,6 +159,28 @@ adminRouter.delete(
   },
 );
 
+/**
+ * @openapi
+ * /api/audit/logs:
+ *   get:
+ *     summary: Retrieve audit logs
+ *     description: Fetches the list of audit logs. Requires Admin role.
+ *     tags:
+ *       - Audit
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: List of audit logs
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *       403:
+ *         description: Forbidden
+ */
 adminRouter.delete(
   '/deleteAllData',
   ensureAuthenticated,

@@ -45,7 +45,6 @@ export const exportRoute = express.Router();
  *       500:
  *         description: Internal server error
  */
-
 exportRoute.get(
   '/results/:electionId',
   ensureAuthenticated,
