@@ -53,6 +53,37 @@ adminRouter.get('/elections', ensureAuthenticated, ensureHasRole(['admin']), asy
   }
 });
 
+/**
+ * @openapi
+ * /api/admin/controlTestElection/{electionId}:
+ *   put:
+ *     summary: Toggle test election status (Admin only)
+ *     description: >
+ *       Toggles the test election status for the specified election.
+ *       This operation is only allowed if the election has not started yet.
+ *       Active or finished elections cannot be controlled.
+ *     tags:
+ *       - Admin
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - name: electionId
+ *         in: path
+ *         description: ID of the election to control
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       204:
+ *         description: Test election status toggled successfully
+ *       400:
+ *         description: >
+ *           Bad request (missing election ID or election is active or finished)
+ *       404:
+ *         description: Election not found
+ *       500:
+ *         description: Internal server error
+ */
 adminRouter.put(
   '/controlTestElection/:electionId',
   ensureAuthenticated,
