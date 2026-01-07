@@ -35,6 +35,39 @@ export const templateApi = {
       throw error;
     }
   },
+
+  /**
+   * Lädt eine neue JSON-Konfigurationsdatei für Wahlen hoch.
+   * @param {File} file - Die ausgewählte JSON-Datei
+   * @returns {Promise<Object>} Response mit Bestätigung und Preset-Liste
+   */
+  uploadConfig: async (file) => {
+    try {
+      // WICHTIG: Bei Datei-Uploads müssen wir FormData nutzen!
+      const formData = new FormData();
+      // 'configFile' muss exakt so heißen wie im Backend: upload.single('configFile')
+      formData.append('configFile', file);
+
+      const response = await api.post('/admin/config/presets', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    } catch (error) {
+      logger.error('Fehler beim Upload der Konfiguration:', error);
+      throw error;
+    }
+  },
+  getAvailablePresets: async () => {
+    try {
+      const response = await api.get('/admin/config/presets');
+      return response.data; // Erwartet ein Array: ["generic", "stupa", ...]
+    } catch (error) {
+      logger.error('Fehler beim Laden der Presets:', error);
+      return ['generic']; // Fallback
+    }
+  },
 };
 
 // Hilfsfunktion intern

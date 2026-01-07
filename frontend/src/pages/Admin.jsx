@@ -1,6 +1,6 @@
 /* eslint-disable indent */
 /* eslint-disable sonarjs/no-duplicate-string */
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useTheme } from '../hooks/useTheme.js';
@@ -781,12 +781,41 @@ const AdminUpload = () => {
 
   // const [clearingDatabase, setClearingDatabase] = useState(false);
 
+  // Config upload states
+  const [selectedConfigFile, setSelectedConfigFile] = useState(null);
+  const [uploadStatus, setUploadStatus] = useState('');
+  const [presetOptions, setPresetOptions] = useState(['generic']); // Verfügbare Wahlarten
+  const [selectedPreset, setSelectedPreset] = useState('generic'); // Ausgewähltes Preset
+
   // Counting states
   const [elections, setElections] = useState([]);
   const [loadingElections, setLoadingElections] = useState(false);
   const [countingElectionId, setCountingElectionId] = useState(null);
   const [countingResult, setCountingResult] = useState(null);
   const [countingError, setCountingError] = useState('');
+
+  /**
+   * Lädt die verfügbaren Wahlarts-Presets vom Backend
+   */
+  const fetchPresets = useCallback(async () => {
+    try {
+      const presets = await templateApi.getAvailablePresets();
+      setPresetOptions(presets);
+      if (presets.length > 0 && !presets.includes(selectedPreset)) {
+        setSelectedPreset(presets[0]);
+      }
+    } catch (err) {
+      logger.error('Konnte Presets nicht laden', err);
+      // Fallback: nur generic anzeigen
+      setPresetOptions(['generic']);
+      setSelectedPreset('generic');
+    }
+  }, [selectedPreset]);
+
+  // Presets beim Seitenaufruf laden
+  useEffect(() => {
+    fetchPresets();
+  }, [fetchPresets]);
 
   // Redirect non-admins
   if (user?.role !== 'admin') {
@@ -1059,6 +1088,42 @@ const AdminUpload = () => {
     }
   };
 
+  /**
+   * Handle config file selection
+   *
+   * @param {React.ChangeEvent<HTMLInputElement>} event - Input change event
+   */
+  const handleConfigFileSelect = (event) => {
+    setSelectedConfigFile(event.target.files[0]);
+    setUploadStatus(''); // Reset status
+  };
+
+  /**
+   * Handle config file upload
+   */
+  const handleUploadConfig = async () => {
+    if (!selectedConfigFile) {
+      setUploadStatus('Fehler: Bitte erst eine Datei auswählen!');
+      return;
+    }
+
+    try {
+      await templateApi.uploadConfig(selectedConfigFile);
+      setUploadStatus('Erfolg: Konfiguration wurde aktualisiert!');
+      logger.info('Wahl-Konfiguration erfolgreich hochgeladen via UI.');
+      setSelectedConfigFile(null);
+
+      // WICHTIG: Nach dem Upload die Preset-Liste neu laden!
+      await fetchPresets();
+
+      // Clear status after 5 seconds
+      setTimeout(() => setUploadStatus(''), 5000);
+    } catch (error) {
+      setUploadStatus('Fehler: Upload fehlgeschlagen.');
+      logger.error('UI Upload Error:', error);
+    }
+  };
+
   // Helper to remove duplicated logic in sidebar buttons
   const getNavButtonStyle = (section) => ({
     backgroundColor: activeSection === section ? theme.colors.primary : 'transparent',
@@ -1228,6 +1293,20 @@ const AdminUpload = () => {
                     <div className="flex items-center justify-between">
                       <span>Wahleinstellung hochladen</span>
                       <span className="text-xs opacity-60">2.2</span>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setActiveSection('config');
+                      setMobileMenuOpen(false);
+                      handleReset();
+                    }}
+                    style={getNavButtonStyle('config')}
+                    className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span>Wahl-Parameter Konfiguration</span>
+                      <span className="text-xs opacity-60">2.3</span>
                     </div>
                   </button>
                 </div>
@@ -2225,6 +2304,95 @@ const AdminUpload = () => {
               </div>
             )}
 
+            {/* Wahl-Parameter Konfiguration Section */}
+            {activeSection === 'config' && (
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 border-l-4 border-l-yellow-500">
+                <div className="border-b border-gray-200 px-6 py-4">
+                  <h2 className="text-xl font-bold text-gray-900">
+                    ⚙️ Wahl-Parameter Konfiguration
+                  </h2>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Hier kannst du eine{' '}
+                    <code className="bg-gray-100 px-2 py-1 rounded text-sm">.json</code> Datei
+                    hochladen, um neue Wahlarten (Presets) für die Excel-Vorlagen zu definieren.
+                  </p>
+                </div>
+
+                <div className="p-6">
+                  {/* File Input */}
+                  <div className="space-y-4">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+                      <div className="flex-1">
+                        <input
+                          type="file"
+                          accept=".json"
+                          onChange={handleConfigFileSelect}
+                          className="block w-full text-sm text-gray-500
+                            file:mr-4 file:py-2 file:px-4
+                            file:rounded-full file:border-0
+                            file:text-sm file:font-semibold
+                            file:bg-yellow-50 file:text-yellow-700
+                            hover:file:bg-yellow-100"
+                        />
+                      </div>
+
+                      <button
+                        onClick={handleUploadConfig}
+                        disabled={!selectedConfigFile}
+                        className={`px-6 py-2 rounded font-bold text-white transition whitespace-nowrap
+                          ${
+                            !selectedConfigFile
+                              ? 'bg-gray-300 cursor-not-allowed'
+                              : 'bg-yellow-600 hover:bg-yellow-700'
+                          }`}
+                      >
+                        Hochladen
+                      </button>
+                    </div>
+
+                    {/* Status Message */}
+                    {uploadStatus && (
+                      <div
+                        className={`p-4 rounded-lg text-sm font-bold ${uploadStatus.startsWith('Erfolg') ? 'bg-green-50 border border-green-200 text-green-700' : 'bg-red-50 border border-red-200 text-red-700'}`}
+                      >
+                        {uploadStatus}
+                      </div>
+                    )}
+
+                    {/* Info Box */}
+                    <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                      <div className="flex gap-3">
+                        <svg
+                          className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                          />
+                        </svg>
+                        <div className="text-sm text-blue-900">
+                          <p className="font-semibold mb-2">Format-Anforderungen:</p>
+                          <ul className="list-disc list-inside space-y-1 text-blue-800">
+                            <li>JSON-Format erforderlich</li>
+                            <li>Muss gültige Wahlparameter enthalten</li>
+                            <li>Maximale Dateigröße: 10 MB</li>
+                            <li>
+                              Nach dem Upload werden neue Presets in den Excel-Vorlagen verfügbar
+                            </li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Excel-Vorlage herunterladen Section */}
             {activeSection === 'template' && (
               <div className="bg-white rounded-lg shadow-sm border border-gray-200">
@@ -2299,140 +2467,59 @@ const AdminUpload = () => {
                 </div>
 
                 <div className="p-6">
-                  <div className="bg-gray-50 border border-gray-300 rounded-lg p-8 text-center max-w-2xl mx-auto">
-                    {/* Icon */}
-                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white border border-gray-200 mb-6 shadow-sm">
+                  {/* Info Box */}
+                  <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="flex gap-3">
                       <svg
-                        className="w-8 h-8 text-brand-primary"
+                        className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5"
                         fill="none"
-                        viewBox="0 0 24 24"
                         stroke="currentColor"
+                        viewBox="0 0 24 24"
                       >
                         <path
                           strokeLinecap="round"
                           strokeLinejoin="round"
-                          strokeWidth={1.5}
-                          d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                          strokeWidth={2}
+                          d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                         />
                       </svg>
+                      <div className="text-sm text-blue-900">
+                        <p className="font-semibold">Eigene Wahlarten verfügbar!</p>
+                        <p className="mt-1">
+                          Sie können neue Wahlarten hochladen und diese hier direkt zum Download
+                          auswählen.
+                        </p>
+                      </div>
                     </div>
+                  </div>
 
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                      Welche Vorlage benötigen Sie?
-                    </h3>
+                  {/* Eigene Preset-Auswahl */}
+                  <div className="bg-white border border-gray-300 rounded-lg p-6 mb-8">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Eigene Wahlarten</h3>
+                    <p className="text-sm text-gray-600 mb-4">
+                      Wählen Sie eine Wahlart aus, um die entsprechende Excel-Vorlage
+                      herunterzuladen.
+                    </p>
 
-                    {/* Auswahl-Dropdown */}
-                    <div className="mb-6 max-w-md mx-auto">
-                      <label className="block text-sm font-medium text-gray-700 mb-2 text-left">
-                        Vorlage auswählen:
-                      </label>
-                      <select
-                        value={templateType}
-                        onChange={(e) => setTemplateType(e.target.value)}
-                        className="block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-primary focus:ring-brand-primary sm:text-sm p-2.5 border bg-white"
-                      >
-                        <optgroup label="Allgemein">
-                          <option value="generic">📝 Leere Wahl-Vorlage (Standard)</option>
-                          <option value="voters">👥 Wählerverzeichnis (Import)</option>
-                        </optgroup>
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+                      <div className="flex-1">
+                        <select
+                          value={selectedPreset}
+                          onChange={(e) => setSelectedPreset(e.target.value)}
+                          className="block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-primary focus:ring-brand-primary sm:text-sm p-2.5 border bg-white"
+                        >
+                          {presetOptions.map((preset) => (
+                            <option key={preset} value={preset}>
+                              {preset.toUpperCase()}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
 
-                        <optgroup label="Studierendenparlament (StuPa)">
-                          <option value="stupa_verhaeltnis">
-                            🗳️ StuPa - Verhältniswahl (Sainte-Laguë)
-                          </option>
-                          <option value="stupa_mehrheit">🗳️ StuPa - Mehrheitswahl</option>
-                        </optgroup>
-
-                        <optgroup label="Senat">
-                          <option value="senat_verhaeltnis">
-                            🏛️ Senat - Verhältniswahl (Listen)
-                          </option>
-                          <option value="senat_mehrheit">
-                            🏛️ Senat - Mehrheitswahl (Allgemein)
-                          </option>
-                          <option value="senat_professoren">
-                            🎓 Senat - Professorenwahl (2 Sitze, Kumulieren)
-                          </option>{' '}
-                          {/* NEU */}
-                        </optgroup>
-
-                        <optgroup label="Fakultätsrat">
-                          <option value="fakrat_verhaeltnis">
-                            🎓 Fakultätsrat - Verhältniswahl
-                          </option>
-                          <option value="fakrat_mehrheit">🎓 Fakultätsrat - Mehrheitswahl</option>
-                        </optgroup>
-
-                        <optgroup label="Einzelwahlen & Ämter">
-                          <option value="fachschaft">📢 Fachschaftsvorstand</option>
-                          <option value="prorektor">
-                            ⚖️ Prorektoren (Ja/Nein Bestätigung)
-                          </option>{' '}
-                          {/* NEU */}
-                          <option value="dekan_wahlgang1">
-                            👤 Dekan/Prodekan - 1. Wahlgang (Absolute Mehrheit)
-                          </option>{' '}
-                          {/* NEU */}
-                          <option value="dekan_wahlgang2">
-                            👤 Dekan/Prodekan - 2. Wahlgang (Einfache Mehrheit)
-                          </option>{' '}
-                          {/* NEU */}
-                        </optgroup>
-
-                        <optgroup label="Sonstige">
-                          <option value="urabstimmung">🙋 Urabstimmung (Sachfragen)</option>
-                        </optgroup>
-                      </select>
-
-                      {/* Hilfetext dynamisch anzeigen */}
-                      <p className="text-xs text-gray-500 mt-2 text-left bg-blue-50 p-2 rounded border border-blue-100">
-                        {/* Allgemein */}
-                        {templateType === 'voters' &&
-                          'Liste für Matrikelnummern/E-Mails aller Wahlberechtigten.'}
-                        {templateType === 'generic' &&
-                          'Leeres Formular für benutzerdefinierte Wahlen.'}
-
-                        {/* StuPa */}
-                        {templateType === 'stupa_verhaeltnis' &&
-                          'Vorkonfiguriert: Verhältniswahl, Sainte-Laguë, Listen zulässig.'}
-                        {templateType === 'stupa_mehrheit' &&
-                          'Vorkonfiguriert: Mehrheitswahl (Höchststimmen), keine Listen.'}
-
-                        {/* Senat */}
-                        {templateType === 'senat_verhaeltnis' &&
-                          'Vorkonfiguriert: Verhältniswahl, Hare-Niemeyer, 2 Stimmen/Kandidat.'}
-                        {templateType === 'senat_mehrheit' &&
-                          'Vorkonfiguriert: Mehrheitswahl, 2 Stimmen/Kandidat.'}
-                        {templateType === 'senat_professoren' &&
-                          'Spezialfall Professoren: Mehrheitswahl, 2 Sitze, Panaschieren/Kumulieren erlaubt.'}
-
-                        {/* Fakultätsrat */}
-                        {templateType === 'fakrat_verhaeltnis' &&
-                          'Vorkonfiguriert: Verhältniswahl (Fakultätsrat).'}
-                        {templateType === 'fakrat_mehrheit' &&
-                          'Vorkonfiguriert: Mehrheitswahl (Fakultätsrat).'}
-
-                        {/* Einzelwahlen & Ämter */}
-                        {templateType === 'fachschaft' &&
-                          'Vorkonfiguriert: Absolute Mehrheit, 1 Stimme/Person.'}
-                        {templateType === 'prorektor' && 'Bestätigungswahl (Ja/Nein/Enthaltung).'}
-                        {templateType === 'dekan_wahlgang1' &&
-                          'Erfordert Absolute Mehrheit (>50%) der Stimmen.'}
-                        {templateType === 'dekan_wahlgang2' &&
-                          'Stichwahl: Einfache Mehrheit genügt.'}
-
-                        {/* Sonstige */}
-                        {templateType === 'urabstimmung' &&
-                          'Vorkonfiguriert: Abstimmung über Sachfragen (Ja/Nein/Enthaltung).'}
-                      </p>
-                    </div>
-
-                    {/* Download Button */}
-                    <div className="flex justify-center">
                       <ResponsiveButton
-                        onClick={handleDownloadTemplate}
                         variant="primary"
                         size="large"
+                        onClick={() => templateApi.downloadElectionTemplate(selectedPreset)}
                       >
                         <div className="flex items-center gap-2">
                           <svg
@@ -2448,9 +2535,174 @@ const AdminUpload = () => {
                               d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
                             />
                           </svg>
-                          <span>Ausgewählte Vorlage laden</span>
+                          <span>Herunterladen</span>
                         </div>
                       </ResponsiveButton>
+                    </div>
+                  </div>
+
+                  {/* Klassischer Download-Bereich */}
+                  <div className="border-t border-gray-300 pt-8">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                      Vordefinierte Vorlagen
+                    </h3>
+                    <p className="text-sm text-gray-600 mb-6">
+                      Alternativ können Sie auch aus vordefinierten Vorlagen wählen.
+                    </p>
+
+                    <div className="bg-gray-50 border border-gray-300 rounded-lg p-8 text-center max-w-2xl mx-auto">
+                      {/* Icon */}
+                      <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white border border-gray-200 mb-6 shadow-sm">
+                        <svg
+                          className="w-8 h-8 text-brand-primary"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={1.5}
+                            d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                          />
+                        </svg>
+                      </div>
+
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                        Welche Vorlage benötigen Sie?
+                      </h3>
+
+                      {/* Auswahl-Dropdown */}
+                      <div className="mb-6 max-w-md mx-auto">
+                        <label className="block text-sm font-medium text-gray-700 mb-2 text-left">
+                          Vorlage auswählen:
+                        </label>
+                        <select
+                          value={templateType}
+                          onChange={(e) => setTemplateType(e.target.value)}
+                          className="block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-primary focus:ring-brand-primary sm:text-sm p-2.5 border bg-white"
+                        >
+                          <optgroup label="Allgemein">
+                            <option value="generic">📝 Leere Wahl-Vorlage (Standard)</option>
+                            <option value="voters">👥 Wählerverzeichnis (Import)</option>
+                          </optgroup>
+
+                          <optgroup label="Studierendenparlament (StuPa)">
+                            <option value="stupa_verhaeltnis">
+                              🗳️ StuPa - Verhältniswahl (Sainte-Laguë)
+                            </option>
+                            <option value="stupa_mehrheit">🗳️ StuPa - Mehrheitswahl</option>
+                          </optgroup>
+
+                          <optgroup label="Senat">
+                            <option value="senat_verhaeltnis">
+                              🏛️ Senat - Verhältniswahl (Listen)
+                            </option>
+                            <option value="senat_mehrheit">
+                              🏛️ Senat - Mehrheitswahl (Allgemein)
+                            </option>
+                            <option value="senat_professoren">
+                              🎓 Senat - Professorenwahl (2 Sitze, Kumulieren)
+                            </option>{' '}
+                            {/* NEU */}
+                          </optgroup>
+
+                          <optgroup label="Fakultätsrat">
+                            <option value="fakrat_verhaeltnis">
+                              🎓 Fakultätsrat - Verhältniswahl
+                            </option>
+                            <option value="fakrat_mehrheit">🎓 Fakultätsrat - Mehrheitswahl</option>
+                          </optgroup>
+
+                          <optgroup label="Einzelwahlen & Ämter">
+                            <option value="fachschaft">📢 Fachschaftsvorstand</option>
+                            <option value="prorektor">
+                              ⚖️ Prorektoren (Ja/Nein Bestätigung)
+                            </option>{' '}
+                            {/* NEU */}
+                            <option value="dekan_wahlgang1">
+                              👤 Dekan/Prodekan - 1. Wahlgang (Absolute Mehrheit)
+                            </option>{' '}
+                            {/* NEU */}
+                            <option value="dekan_wahlgang2">
+                              👤 Dekan/Prodekan - 2. Wahlgang (Einfache Mehrheit)
+                            </option>{' '}
+                            {/* NEU */}
+                          </optgroup>
+
+                          <optgroup label="Sonstige">
+                            <option value="urabstimmung">🙋 Urabstimmung (Sachfragen)</option>
+                          </optgroup>
+                        </select>
+
+                        {/* Hilfetext dynamisch anzeigen */}
+                        <p className="text-xs text-gray-500 mt-2 text-left bg-blue-50 p-2 rounded border border-blue-100">
+                          {/* Allgemein */}
+                          {templateType === 'voters' &&
+                            'Liste für Matrikelnummern/E-Mails aller Wahlberechtigten.'}
+                          {templateType === 'generic' &&
+                            'Leeres Formular für benutzerdefinierte Wahlen.'}
+
+                          {/* StuPa */}
+                          {templateType === 'stupa_verhaeltnis' &&
+                            'Vorkonfiguriert: Verhältniswahl, Sainte-Laguë, Listen zulässig.'}
+                          {templateType === 'stupa_mehrheit' &&
+                            'Vorkonfiguriert: Mehrheitswahl (Höchststimmen), keine Listen.'}
+
+                          {/* Senat */}
+                          {templateType === 'senat_verhaeltnis' &&
+                            'Vorkonfiguriert: Verhältniswahl, Hare-Niemeyer, 2 Stimmen/Kandidat.'}
+                          {templateType === 'senat_mehrheit' &&
+                            'Vorkonfiguriert: Mehrheitswahl, 2 Stimmen/Kandidat.'}
+                          {templateType === 'senat_professoren' &&
+                            'Spezialfall Professoren: Mehrheitswahl, 2 Sitze, Panaschieren/Kumulieren erlaubt.'}
+
+                          {/* Fakultätsrat */}
+                          {templateType === 'fakrat_verhaeltnis' &&
+                            'Vorkonfiguriert: Verhältniswahl (Fakultätsrat).'}
+                          {templateType === 'fakrat_mehrheit' &&
+                            'Vorkonfiguriert: Mehrheitswahl (Fakultätsrat).'}
+
+                          {/* Einzelwahlen & Ämter */}
+                          {templateType === 'fachschaft' &&
+                            'Vorkonfiguriert: Absolute Mehrheit, 1 Stimme/Person.'}
+                          {templateType === 'prorektor' && 'Bestätigungswahl (Ja/Nein/Enthaltung).'}
+                          {templateType === 'dekan_wahlgang1' &&
+                            'Erfordert Absolute Mehrheit (>50%) der Stimmen.'}
+                          {templateType === 'dekan_wahlgang2' &&
+                            'Stichwahl: Einfache Mehrheit genügt.'}
+
+                          {/* Sonstige */}
+                          {templateType === 'urabstimmung' &&
+                            'Vorkonfiguriert: Abstimmung über Sachfragen (Ja/Nein/Enthaltung).'}
+                        </p>
+                      </div>
+
+                      {/* Download Button */}
+                      <div className="flex justify-center">
+                        <ResponsiveButton
+                          onClick={handleDownloadTemplate}
+                          variant="primary"
+                          size="large"
+                        >
+                          <div className="flex items-center gap-2">
+                            <svg
+                              className="w-5 h-5"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                              />
+                            </svg>
+                            <span>Ausgewählte Vorlage laden</span>
+                          </div>
+                        </ResponsiveButton>
+                      </div>
                     </div>
                   </div>
                 </div>

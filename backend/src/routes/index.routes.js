@@ -6,6 +6,7 @@ import { logger } from '../conf/logger/logger.js';
 import { client } from '../database/db.js';
 import { countingRouter } from './counting.route.js';
 import { exportRoute } from './export.route.js';
+import { adminRouter } from './admin.routes.js';
 
 export const router = express.Router();
 
@@ -273,3 +274,14 @@ router.use('/counting', countingRouter);
  * All routes require authentication and admin/committee role.
  */
 router.use('/export', ensureAuthenticated, ensureHasRole(['admin', 'committee']), exportRoute);
+
+/**
+ * Admin routes - Configuration and settings
+ *
+ * Endpoints:
+ * - POST /api/admin/config/presets - Upload new election preset configuration
+ * - GET /api/admin/config/presets - Get list of available presets
+ *
+ * All routes require authentication and admin role.
+ */
+router.use('/admin', ensureAuthenticated, ensureHasRole(['admin']), adminRouter);

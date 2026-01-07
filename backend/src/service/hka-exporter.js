@@ -15,6 +15,7 @@ const COLORS = {
   WHITE: 'FFFFFFFF',
   BG_HEADER: 'FFE2001A',
   BG_METADATA: 'FFF5F5F5',
+  BG_STATS: 'FFEAF2F8', // Helles Blau für Statistik
   BG_SUCCESS: 'FFD4EDDA',
   BG_WARNING: 'FFFFF4E6',
   BORDER_GREY: 'FFCCCCCC',
@@ -34,14 +35,14 @@ const FONT_SIZE_TITLE = 16;
 const COL_START = 1;
 const COL_END = 5;
 
-// Spalten-Indizes (vermeidet Magic Numbers)
-const COL_IDX_LABEL = 1; // Spalte A
-const COL_IDX_VALUE = 2; // Spalte B
-const COL_IDX_VOTES = 3; // Spalte C
-const COL_IDX_STATUS = 4; // Spalte D
-const COL_IDX_PERCENT = 5; // Spalte E
-const COL_IDX_SIGN_LEFT = 1; // Spalte A (Unterschrift)
-const COL_IDX_SIGN_RIGHT = 4; // Spalte D (Unterschrift)
+// Spalten-Indizes
+const COL_IDX_LABEL = 1;
+const COL_IDX_VALUE = 2;
+const COL_IDX_VOTES = 3;
+const COL_IDX_STATUS = 4;
+const COL_IDX_PERCENT = 5;
+const COL_IDX_SIGN_LEFT = 1;
+const COL_IDX_SIGN_RIGHT = 4;
 
 // --- KONSTANTEN: TEXTE ---
 const TEXT_TITLE = 'AMTLICHES WAHLERGEBNIS';
@@ -62,8 +63,6 @@ const RESULT_REJECTED = 'REJECTED';
 
 /**
  * Generiert das offizielle Wahlergebnis (HKA Design).
- * Getrennt vom normalen Export, um bestehende Logik nicht zu stören.
- *
  * @param {string} resultId - Die ID des Wahlergebnisses
  * @returns {Promise<Buffer>} Der Excel-Datei-Buffer
  */
@@ -111,7 +110,7 @@ export const generateOfficialReport = async (resultId) => {
       { width: COL_WIDTH_E },
     ];
 
-    // 3. Logo einfügen (Fehlertolerant)
+    // 3. Logo einfügen
     try {
       const logoId = workbook.addImage({
         filename: path.join(__dirname, '../assets/hka_logo.png'),
@@ -122,7 +121,6 @@ export const generateOfficialReport = async (resultId) => {
         ext: { width: LOGO_WIDTH, height: LOGO_HEIGHT },
       });
     } catch (err) {
-      // Fix: 'err' statt 'e' nutzen und loggen
       logger.warn('HKA Logo nicht gefunden - Export läuft ohne Logo weiter.', err.message);
     }
 
@@ -145,7 +143,7 @@ export const generateOfficialReport = async (resultId) => {
     };
     rowNum += 2;
 
-    // 5. Metadaten Block
+    // 5. Metadaten Block (Infos zur Wahl)
     const infos = [
       ['Wahlbezeichnung:', result.election_name],
       ['Wahlart:', result.election_type],
@@ -163,7 +161,6 @@ export const generateOfficialReport = async (resultId) => {
       r.getCell(COL_IDX_LABEL).font = { bold: true };
       r.getCell(COL_IDX_VALUE).value = val;
 
-      // Grauer Hintergrund für den Block
       for (let i = COL_START; i <= COL_END; i += 1) {
         r.getCell(i).fill = {
           type: 'pattern',
@@ -173,9 +170,50 @@ export const generateOfficialReport = async (resultId) => {
       }
       rowNum += 1;
     });
-    rowNum += 2;
+    rowNum += 1; // Kleiner Abstand
 
-    // 6. Ergebnisse
+    // --- NEU: 6. Statistik / Wahlbeteiligung ---
+    // Berechnung der Quote
+    const total = parseInt(result.total_ballots, 10) || 0;
+    const valid = parseInt(result.valid_ballots, 10) || 0;
+    const invalid = parseInt(result.invalid_ballots, 10) || 0;
+    const rate = total > 0 ? ((valid / total) * 100).toFixed(2) : '0.00';
+
+    const statsHeader = sheet.getRow(rowNum);
+    statsHeader.getCell(COL_IDX_LABEL).value = 'STATISTIK';
+    statsHeader.getCell(COL_IDX_LABEL).font = { bold: true, color: { argb: COLORS.HKA_RED } };
+    rowNum += 1;
+
+    const stats = [
+      ['Abgegebene Stimmen (Gesamt):', total],
+      ['Gültige Stimmen:', valid],
+      ['Ungültige Stimmen:', invalid],
+      ['Gültigkeitsquote:', `${rate}%`],
+    ];
+
+    stats.forEach(([key, val]) => {
+      const r = sheet.getRow(rowNum);
+      r.getCell(COL_IDX_LABEL).value = key;
+      // Einrücken für Hierarchie-Effekt
+      r.getCell(COL_IDX_LABEL).alignment = { indent: 1 };
+      r.getCell(COL_IDX_VALUE).value = val;
+
+      // Leichter blauer Hintergrund für Statistik
+      for (let i = COL_START; i <= COL_END; i += 1) {
+        r.getCell(i).fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: COLORS.BG_STATS },
+        };
+        r.getCell(i).border = {
+          bottom: { style: 'dotted', color: { argb: COLORS.BORDER_GREY } },
+        };
+      }
+      rowNum += 1;
+    });
+    rowNum += 2; // Abstand vor Ergebnissen
+
+    // 7. Ergebnisse (Kandidaten / Referendum)
     const headRow = sheet.getRow(rowNum);
     const typeLower = result.election_type ? result.election_type.toLowerCase() : '';
     const isReferendum = typeLower.includes('referendum') || typeLower.includes('urabstimmung');
@@ -185,10 +223,7 @@ export const generateOfficialReport = async (resultId) => {
       : ['Platz/Liste', 'Kandidat:in', 'Stimmen', 'Status', 'Prozent'];
 
     headers.forEach((h, i) => {
-      // Fix: Curly Braces hinzugefügt
-      if (!h) {
-        return;
-      }
+      if (!h) return;
       const cell = headRow.getCell(i + 1);
       cell.value = h;
       cell.font = { bold: true, color: { argb: COLORS.WHITE } };
@@ -232,14 +267,11 @@ export const generateOfficialReport = async (resultId) => {
       const r = sheet.getRow(rowNum);
 
       if (isReferendum) {
-        // Referendum Zeile
         r.getCell(COL_IDX_LABEL).value = c.option;
         r.getCell(COL_IDX_VALUE).value = c.votes;
         r.getCell(COL_IDX_VOTES).value = c.percentage ? `${c.percentage}%` : '-';
-        // Fix: Magic Number 4 -> COL_IDX_STATUS
         r.getCell(COL_IDX_STATUS).value = c.status;
 
-        // Grün markieren wenn Angenommen
         if (c.option === TEXT_YES && data.result === RESULT_ACCEPTED) {
           for (let i = COL_START; i <= COL_END; i += 1) {
             r.getCell(i).fill = {
@@ -250,7 +282,6 @@ export const generateOfficialReport = async (resultId) => {
           }
         }
       } else {
-        // Personenwahl Zeile
         r.getCell(COL_IDX_LABEL).value = c.listnum ? `Liste ${c.listnum}` : '-';
         r.getCell(COL_IDX_VALUE).value = `${c.firstname} ${c.lastname}`;
         r.getCell(COL_IDX_VOTES).value = c.votes;
@@ -267,36 +298,26 @@ export const generateOfficialReport = async (resultId) => {
           color = COLORS.BG_WARNING;
         }
 
-        // Fix: Magic Numbers 4 & 5 ersetzt
         r.getCell(COL_IDX_STATUS).value = status;
         r.getCell(COL_IDX_PERCENT).value = c.percentage ? `${c.percentage}%` : '';
 
-        // Zeilenfarbe setzen
         if (color) {
           for (let i = COL_START; i <= COL_END; i += 1) {
-            r.getCell(i).fill = {
-              type: 'pattern',
-              pattern: 'solid',
-              fgColor: { argb: color },
-            };
+            r.getCell(i).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: color } };
           }
         }
       }
 
-      // Rahmen für alle Zellen
       for (let i = COL_START; i <= COL_END; i += 1) {
-        r.getCell(i).border = {
-          bottom: { style: 'dotted', color: { argb: COLORS.BORDER_GREY } },
-        };
+        r.getCell(i).border = { bottom: { style: 'dotted', color: { argb: COLORS.BORDER_GREY } } };
       }
       rowNum += 1;
     });
 
     rowNum += 3;
 
-    // 7. Unterschriften
+    // 8. Unterschriften
     const signRow = sheet.getRow(rowNum);
-    // Fix: Magic Numbers durch Konstanten ersetzt
     signRow.getCell(COL_IDX_SIGN_LEFT).value = 'Ort, Datum, Unterschrift Wahlleitung';
     signRow.getCell(COL_IDX_SIGN_LEFT).border = { top: { style: 'thin' } };
 
