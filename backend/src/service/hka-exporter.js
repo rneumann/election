@@ -172,7 +172,7 @@ export const generateOfficialReport = async (resultId) => {
     });
     rowNum += 1; // Kleiner Abstand
 
-    // --- NEU: 6. Statistik / Wahlbeteiligung ---
+    // --- 6. Statistik / Wahlbeteiligung ---
     // Berechnung der Quote
     const total = parseInt(result.total_ballots, 10) || 0;
     const valid = parseInt(result.valid_ballots, 10) || 0;
@@ -232,7 +232,7 @@ export const generateOfficialReport = async (resultId) => {
         pattern: 'solid',
         fgColor: { argb: COLORS.BG_HEADER },
       };
-      cell.alignment = { horizontal: 'center' };
+      cell.alignment = { horizontal: 'center', vertical: 'middle' };
     });
     rowNum += 1;
 
@@ -266,6 +266,7 @@ export const generateOfficialReport = async (resultId) => {
     candidates.forEach((c) => {
       const r = sheet.getRow(rowNum);
 
+      // --- WERTE & FARBEN SETZEN ---
       if (isReferendum) {
         r.getCell(COL_IDX_LABEL).value = c.option;
         r.getCell(COL_IDX_VALUE).value = c.votes;
@@ -308,8 +309,32 @@ export const generateOfficialReport = async (resultId) => {
         }
       }
 
+      // --- AUSRICHTUNG (ALIGNMENT) ---
+      // 1. Spalte A (Liste/Option): Links + Einzug
+      r.getCell(COL_IDX_LABEL).alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
+
+      // 2. Restliche Spalten je nach Wahltyp
+      if (isReferendum) {
+        // Bei Referendum sind Zahlen in Spalte B, C und Status in D -> alles zentrieren
+        r.getCell(COL_IDX_VALUE).alignment = { vertical: 'middle', horizontal: 'center' };
+        r.getCell(COL_IDX_VOTES).alignment = { vertical: 'middle', horizontal: 'center' };
+        r.getCell(COL_IDX_STATUS).alignment = { vertical: 'middle', horizontal: 'center' };
+      } else {
+        // Bei Personenwahl:
+        // Spalte B (Name): Links + Einzug
+        r.getCell(COL_IDX_VALUE).alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
+        // Spalte C (Stimmen), D (Status), E (Prozent): ZENTRIERT
+        r.getCell(COL_IDX_VOTES).alignment = { vertical: 'middle', horizontal: 'center' };
+        r.getCell(COL_IDX_STATUS).alignment = { vertical: 'middle', horizontal: 'center' };
+        r.getCell(COL_IDX_PERCENT).alignment = { vertical: 'middle', horizontal: 'center' };
+      }
+
+      // --- RAHMEN ---
       for (let i = COL_START; i <= COL_END; i += 1) {
-        r.getCell(i).border = { bottom: { style: 'dotted', color: { argb: COLORS.BORDER_GREY } } };
+        r.getCell(i).border = {
+          bottom: { style: 'dotted', color: { argb: COLORS.BORDER_GREY } },
+          right: { style: 'dotted', color: { argb: COLORS.BORDER_GREY } }, // Vertikale Trennlinie
+        };
       }
       rowNum += 1;
     });
