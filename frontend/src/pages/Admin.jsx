@@ -2388,6 +2388,34 @@ const AdminUpload = () => {
                         </div>
                       </div>
                     </div>
+
+                    {/* Download Template Button */}
+                    <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <p className="text-sm text-yellow-900 mb-3">
+                        <span className="font-semibold">💡 Tipp:</span> Laden Sie zuerst ein
+                        Beispiel-Template herunter, um die richtige Struktur zu sehen.
+                      </p>
+                      <a
+                        href={`${window.location.origin}/api/admin/config/template`}
+                        download="election_presets_template.json"
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-yellow-600 text-white font-medium rounded hover:bg-yellow-700 transition"
+                      >
+                        <svg
+                          className="w-5 h-5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                          />
+                        </svg>
+                        Template herunterladen
+                      </a>
+                    </div>
                   </div>
                 </div>
               </div>

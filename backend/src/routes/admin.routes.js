@@ -105,3 +105,65 @@ adminRouter.get('/config/presets', async (req, res) => {
     res.status(500).json({ error: 'Konnte Presets nicht laden' });
   }
 });
+
+/**
+ * GET /admin/config/template
+ * Download example configuration template as JSON file
+ */
+adminRouter.get('/config/template', (req, res) => {
+  try {
+    const exampleConfig = {
+      meine_wahlart: {
+        info: 'Meine Wahlart (Beispiel)',
+        description: 'Beschreibung der Wahlart - für Admin-Dokumentation',
+        counting_method: 'highest_votes',
+        votes_per_ballot: 1,
+        candidates_per_list: 5,
+        absolute_majority_required: false,
+        allow_cumulation: false,
+        allow_panachage: false,
+      },
+      verhaeltniswahl_beispiel: {
+        info: 'Verhältniswahl Beispiel',
+        description: 'Beispiel: Verhältniswahl mit Sainte-Laguë',
+        counting_method: 'sainte_laguë',
+        votes_per_ballot: 1,
+        candidates_per_list: 10,
+        absolute_majority_required: false,
+        allow_cumulation: true,
+        allow_panachage: true,
+      },
+      mehrheitswahl_beispiel: {
+        info: 'Mehrheitswahl Beispiel',
+        description: 'Beispiel: Mehrheitswahl mit einfacher Mehrheit',
+        counting_method: 'highest_votes',
+        votes_per_ballot: 2,
+        candidates_per_list: 5,
+        absolute_majority_required: false,
+        allow_cumulation: false,
+        allow_panachage: false,
+      },
+      urabstimmung_beispiel: {
+        info: 'Urabstimmung Beispiel',
+        description: 'Beispiel: Abstimmung (Ja/Nein/Enthaltung)',
+        counting_method: 'referendum',
+        votes_per_ballot: 1,
+        candidates_per_list: 0,
+        absolute_majority_required: true,
+        allow_cumulation: false,
+        allow_panachage: false,
+      },
+    };
+
+    // Set headers for file download
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="election_presets_template.json"');
+
+    logger.info('Konfiguration-Template heruntergeladen');
+    // Formatiertes JSON mit Indentation
+    res.send(JSON.stringify(exampleConfig, null, 2));
+  } catch (error) {
+    logger.error('Fehler beim Bereitstellen des Config-Templates:', error);
+    res.status(500).json({ error: 'Konnte Template nicht generieren' });
+  }
+});
