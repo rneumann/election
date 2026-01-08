@@ -477,7 +477,7 @@ const AdminDashboard = () => {
                 validator={validateVoterCSV}
                 transformer={transformVoterFile}
                 acceptedFileTypes=".csv"
-                formatExample="RZ-Kennung,Fakultät,Vorname,Nachname,Matk.Nr,Studienganskürzel,Studiengang"
+                formatExample="RZ-Kennung,Fakultät,Vorname,Nachname,Matr.Nr,Studienganskürzel,Studiengang"
                 formatExampleData="abcd1234,AB,Max,Mustermann,123456,ARTB,Architektur"
                 fileTypeLabel="CSV"
                 requiresElection={true}

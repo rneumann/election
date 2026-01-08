@@ -4,7 +4,7 @@ import { logger } from '../../conf/logger/logger';
 /**
  * Expected CSV headers in the correct order.
  */
-export const EXPECTED_CSV_HEADERS = ['RZ-Kennung', 'Fakultät', 'Vorname', 'Nachname', 'Matk.Nr'];
+export const EXPECTED_CSV_HEADERS = ['RZ-Kennung', 'Fakultät', 'Vorname', 'Nachname', 'Matr.Nr'];
 
 /**
  * Parses the voter CSV file. Tries UTF-8 first, then falls back to ISO-8859-1.

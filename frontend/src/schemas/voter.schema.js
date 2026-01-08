@@ -5,7 +5,7 @@ import { z } from 'zod';
  * Maps to the voters table in the database.
  *
  * Expected CSV format:
- * RZ-Kennung,Fakultät,Vorname,Nachname,Matk.Nr,Studienganskürzel,Studiengang
+ * RZ-Kennung,Fakultät,Vorname,Nachname,Matr.Nr,Studienganskürzel,Studiengang
  */
 
 export const VOTER_CSV_MAPPING = {
@@ -13,7 +13,7 @@ export const VOTER_CSV_MAPPING = {
   Fakultät: 'faculty',
   Vorname: 'firstname',
   Nachname: 'lastname',
-  'Matk.Nr': 'mtknr',
+  'Matr.Nr': 'mtknr',
   Notizen: 'notes',
 };
 
@@ -27,31 +27,28 @@ export const voterSchema = z.object({
       /^[a-z]{4}\d{4}$/,
       'RZ-Kennung muss dem Format abcd1234 entsprechen (4 Buchstaben + 4 Ziffern)',
     ),
-  Fakultät: z
-    .string()
-    .trim()
-    .min(1, 'Fakultät darf nicht leer sein')
-    .max(10, 'Fakultät darf maximal 10 Zeichen lang sein')
-    .regex(/^[A-Z]{2,3}$/, 'Fakultät muss aus 2-3 Großbuchstaben bestehen (z.B. AB, IW, MMT)'),
+  Fakultät: z.string().trim().min(1, 'Fakultät darf nicht leer sein'),
+  //    .max(10, 'Fakultät darf maximal 10 Zeichen lang sein')
+  //    .regex(/^[A-Z]{1,3}$/, 'Fakultät muss aus 2-3 Großbuchstaben bestehen (z.B. AB, IW, MMT)'),
   Vorname: z
     .string()
     .trim()
     .min(1, 'Vorname darf nicht leer sein')
-    .max(100, 'Vorname darf maximal 100 Zeichen lang sein')
-    .regex(
-      /^[a-zA-ZäöüßÄÖÜ\s\-'.]+$/,
-      'Vorname enthält ungültige Zeichen. Nur Buchstaben, Leerzeichen, Bindestriche, Punkte und Apostrophe sind erlaubt.',
-    ),
+    .max(100, 'Vorname darf maximal 100 Zeichen lang sein'),
+  //    .regex(
+  //      /^[a-zA-ZäöüßÄÖÜ\s\-'.]+$/,
+  //      'Vorname enthält ungültige Zeichen. Nur Buchstaben, Leerzeichen, Bindestriche, Punkte und Apostrophe sind erlaubt.',
+  //    ),
   Nachname: z
     .string()
     .trim()
     .min(1, 'Nachname darf nicht leer sein')
-    .max(100, 'Nachname darf maximal 100 Zeichen lang sein')
-    .regex(
-      /^[a-zA-ZäöüßÄÖÜ\s\-'.]+$/,
-      'Nachname enthält ungültige Zeichen. Nur Buchstaben, Leerzeichen, Bindestriche, Punkte und Apostrophe sind erlaubt.',
-    ),
-  'Matk.Nr': z
+    .max(100, 'Nachname darf maximal 100 Zeichen lang sein'),
+  //    .regex(
+  //      /^[a-zA-ZäöüßÄÖÜ\s\-'.]+$/,
+  //      'Nachname enthält ungültige Zeichen. Nur Buchstaben, Leerzeichen, Bindestriche, Punkte und Apostrophe sind erlaubt.',
+  //    ),
+  'Matr.Nr': z
     .string()
     .trim()
     .max(20, 'Matrikelnummer darf maximal 20 Zeichen lang sein')
@@ -70,7 +67,7 @@ export const voterListSchema = z
 /**
  * Expected CSV headers in correct order.
  */
-export const EXPECTED_CSV_HEADERS = ['RZ-Kennung', 'Fakultät', 'Vorname', 'Nachname', 'Matk.Nr'];
+export const EXPECTED_CSV_HEADERS = ['RZ-Kennung', 'Fakultät', 'Vorname', 'Nachname', 'Matr.Nr'];
 
 export const ballotCandidateInputSchema = z.object({
   listnum: z.number().int().min(1, 'The list number must be greater than 0'),
