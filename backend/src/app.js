@@ -15,7 +15,7 @@ import { logger } from './conf/logger/logger.js';
 import { verifyCsrfToken } from './security/csrf-logic.js';
 import { writeAuditLog } from './audit/auditLogger.js';
 import { redisClient } from './conf/redis/redis-client.js';
-const { AUTH_PROVIDER, CORS_ORIGIN, NODE_ENV, INTERNAL_FINGERPRINT_SALT } = process.env;
+const { CORS_ORIGIN, NODE_ENV, INTERNAL_FINGERPRINT_SALT } = process.env;
 
 export const app = express();
 
@@ -99,7 +99,7 @@ app.use(
     cookie: {
       httpOnly: true,
       secure: NODE_ENV === 'production',
-      sameSite: 'strict', // need to have the same origin
+      sameSite: 'strict',
       maxAge: 1000 * (60 * 3 + 45), // 3.45 minutes
     },
   }),
@@ -174,6 +174,18 @@ app.use(async (req, res, next) => {
   if (diff > 3 * 60 * 1000) {
     logger.debug('Session timeout detected logging out user');
 
+    req.session.destroy();
+    res.clearCookie('connect.sid', {
+      path: '/',
+      httpOnly: true,
+      secure: NODE_ENV === 'production',
+      sameSite: 'strict',
+    });
+    // if (user?.authProvider === 'saml') {
+    //   res.clearCookie('SimpleSAMLAuthTokenIdp', { path: '/', httpOnly: true });
+    //   res.clearCookie('PHPSESSIDIDP', { path: '/', httpOnly: true });
+    // }
+
     // Audit Log bei Timeout
     if (user) {
       writeAuditLog({
@@ -188,26 +200,17 @@ app.use(async (req, res, next) => {
       }).catch((e) => logger.error(e));
     }
 
-    req.session.destroy(() => {});
-    res.clearCookie('connect.sid', { path: '/', httpOnly: true });
-
-    if (AUTH_PROVIDER === 'ldap') {
-      res.clearCookie('PHPSESSID', { path: '/', httpOnly: true });
-      res.clearCookie('PHPSESSIDIDP', { path: '/', httpOnly: true });
-      res.clearCookie('PGADMIN_LANGUAGE', { path: '/', httpOnly: true });
-    }
-
-    // if (user?.authProvider === 'saml') {
-    //   res.clearCookie('SimpleSAMLAuthTokenIdp', { path: '/', httpOnly: true });
-    //   res.clearCookie('PHPSESSIDIDP', { path: '/', httpOnly: true });
-    // }
-
     logger.debug('User logged out successfully');
     return res.status(401).json({ message: 'Session expired' });
   }
 
-  logger.debug('Last activity updated');
-  req.session.lastActivity = now;
+  const isHeartbeat = req.path === '/api/auth/me' || req.path === '/auth/me';
+
+  if (!isHeartbeat) {
+    logger.debug('Updating last activity timestamp');
+    req.session.lastActivity = now;
+  }
+
   next();
 });
 

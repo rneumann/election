@@ -3,14 +3,11 @@ import { describe, test, expect, vi, beforeEach } from 'vitest';
 process.env.ADMIN_PASSWORD = 'admin123';
 process.env.COMMITTEE_PASSWORD = 'committee123';
 process.env.AD_URL = 'ldap://mockserver';
-process.env.AD_BASE_DN = 'ou=students,dc=example,dc=com';
+process.env.AD_USER_BIND_DN = 'uid=${username},ou=students,dc=example,dc=com';
 process.env.AD_DOMAIN = 'EXAMPLE';
-process.env.ADMIN_DN = 'cn=admin,dc=ads,dc=hs-karlsruhe,dc=de';
-process.env.ADMIN_PASSWORD_LDAP = 'p';
 
-const ADMIN_DN = process.env.ADMIN_DN;
-const ADMIN_PASSWORD_LDAP = process.env.ADMIN_PASSWORD_LDAP;
-const USER_DN = `uid=user1,${process.env.AD_BASE_DN}`;
+const EXPECTED_USER_DN = 'uid=user1,ou=students,dc=example,dc=com';
+
 vi.mock('../src/conf/logger/logger.js', () => ({
   logger: {
     debug: vi.fn(),
@@ -24,19 +21,14 @@ vi.mock('../src/service/candidate.service.js', () => ({
   checkIfVoterIsCandidate: vi.fn().mockResolvedValue(false),
 }));
 
-import { ensureHasRole } from '../src/auth/auth.js';
-import { logger } from '../src/conf/logger/logger.js';
-import { login } from '../src/auth/strategies/ldap.strategy.js';
-
+// Mocks müssen vor den Imports definiert sein
 const bindMock = vi.fn(async (dn, pw) => {
-  if (dn === USER_DN && pw === 'pass1') {
+  // Prüfung gegen den fertig aufgelösten DN
+  if (dn === EXPECTED_USER_DN && pw === 'pass1') {
     return;
   }
-  if (dn.startsWith('cn=user1') && pw === 'wrongpass') {
-    throw new Error('Invalid credentials');
-  }
 
-  if (dn.startsWith('cn=user1') && pw !== 'pass1') {
+  if (dn === EXPECTED_USER_DN && pw === 'wrongpass') {
     throw new Error('Invalid credentials');
   }
 
@@ -51,6 +43,10 @@ vi.mock('ldapts', () => ({
     unbind = unbindMock;
   },
 }));
+
+import { ensureHasRole } from '../src/auth/auth.js';
+import { logger } from '../src/conf/logger/logger.js';
+import { login } from '../src/auth/strategies/ldap.strategy.js';
 
 describe('login', () => {
   beforeEach(() => {
@@ -73,10 +69,12 @@ describe('login', () => {
     const username = 'user1';
     const password = 'wrongpass';
     const result = await login(username, password);
+
     expect(result).toBeUndefined();
-    expect(bindMock).toHaveBeenCalledWith(`uid=${username},${process.env.AD_BASE_DN}`, password);
+    // Der Bind-Aufruf muss den ersetzten Usernamen enthalten
+    expect(bindMock).toHaveBeenCalledWith(EXPECTED_USER_DN, password);
     expect(logger.error).toHaveBeenCalledWith(
-      `Error authenticating user user1 via LDAP: Unexpected bind call with DN: uid=${username},ou=students,dc=example,dc=com`,
+      expect.stringContaining('Error authenticating user user1 via LDAP: Invalid credentials'),
     );
   });
 
@@ -89,28 +87,26 @@ describe('login', () => {
       isCandidate: false,
     });
 
-    expect(bindMock).toHaveBeenCalledWith(`${USER_DN}`, 'pass1');
-
+    expect(bindMock).toHaveBeenCalledWith(EXPECTED_USER_DN, 'pass1');
     expect(bindMock).toHaveBeenCalledTimes(1);
+    expect(unbindMock).toHaveBeenCalledTimes(1);
   });
 
-  test('should call next middleware', async () => {
+  test('should call next middleware if role matches', async () => {
     const next = vi.fn();
     const res = {
       status: vi.fn().mockReturnThis(),
       json: vi.fn(),
     };
     const req = {
-      user: {
-        role: 'admin',
-      },
+      user: { role: 'admin' },
     };
 
     ensureHasRole(['admin'])(req, res, next);
     expect(next).toHaveBeenCalled();
   });
 
-  test('should call unauthorized if user is not authenticated', async () => {
+  test('should return 401 if user is not authenticated in request', async () => {
     const next = vi.fn();
     const res = {
       status: vi.fn().mockReturnThis(),
@@ -122,17 +118,16 @@ describe('login', () => {
     expect(res.status).toHaveBeenCalledWith(401);
   });
 
-  test('should call forbidden if user is not authorized', async () => {
+  test('should return 403 if user has wrong role', async () => {
     const next = vi.fn();
     const res = {
       status: vi.fn().mockReturnThis(),
       json: vi.fn(),
     };
     const req = {
-      user: {
-        role: 'committee',
-      },
+      user: { role: 'committee', username: 'commUser' },
     };
+
     ensureHasRole(['admin'])(req, res, next);
     expect(res.status).toHaveBeenCalledWith(403);
   });

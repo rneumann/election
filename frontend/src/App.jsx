@@ -1,11 +1,9 @@
-import { useEffect } from 'react';
-import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext.jsx';
 import { AlertProvider } from './context/AlertContext.jsx';
 import Login from './pages/Login';
 import Home from './pages/Home';
 import AuthCallback from './pages/AuthCallback';
-import api from './services/api.js';
 import { CandidatePage } from './pages/CandidatePage.jsx';
 
 /**
@@ -18,41 +16,14 @@ import { CandidatePage } from './pages/CandidatePage.jsx';
  * @returns Authenticated content, loading spinner, or redirect to /login
  */
 const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated, loading, logout } = useAuth();
-  const location = useLocation();
-
-  // Validate session on every route change
-  useEffect(() => {
-    const validateOnNavigation = async () => {
-      try {
-        const { data } = await api.get('/auth/me', { withCredentials: true });
-        if (!data?.authenticated) {
-          // Session is invalid, force logout
-          logout();
-        }
-      } catch {
-        // API call failed, user is not authenticated
-        logout();
-      }
-    };
-
-    if (isAuthenticated) {
-      validateOnNavigation();
-    }
-  }, [location.pathname, isAuthenticated, logout]);
+  const { isAuthenticated, loading } = useAuth();
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-brand-light">
-        <div className="text-brand-primary text-xl font-semibold">Loading...</div>
-      </div>
-    );
+    return <div>Loading...</div>;
   }
 
-  // If not authenticated, redirect to login with current location as returnUrl
   if (!isAuthenticated) {
-    const currentPath = window.location.pathname;
-    return <Navigate to={`/login?returnUrl=${encodeURIComponent(currentPath)}`} replace />;
+    return <Navigate to="/login" replace />;
   }
 
   return children;

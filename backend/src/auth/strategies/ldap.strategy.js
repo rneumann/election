@@ -41,6 +41,9 @@ export const login = async (username, password) => {
   });
 
   try {
+    logger.debug(
+      `Connecting to LDAP server at: ${AD_USER_BIND_DN.replace('${username}', username)}`,
+    );
     const bindname = AD_USER_BIND_DN.replace('${username}', username);
     logger.debug(`Authenticating user via LDAP with: ${bindname}`);
     await client.bind(bindname, password);

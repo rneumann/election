@@ -8,7 +8,7 @@ import { readSecret } from '../security/secret-reader.js';
 // NEU: Audit Import
 import { writeAuditLog } from '../audit/auditLogger.js';
 import { checkIfVoterIsCandidate } from '../service/candidate.service.js';
-const { KC_BASE_URL, KC_REALM, CLIENT_ID, CLIENT_SECRET, AUTH_PROVIDER } = process.env;
+const { KC_BASE_URL, KC_REALM, CLIENT_ID, CLIENT_SECRET, AUTH_PROVIDER, NODE_ENV } = process.env;
 
 /**
  * Returns an object with the admin user's username and password.
@@ -181,14 +181,19 @@ export const logoutRoute = async (req, res) => {
         logger.error('Session destroy error:', err);
         return res.status(500).json({ message: 'Session destroy error' });
       }
-      res.clearCookie('connect.sid', { path: '/', httpOnly: true });
+      res.clearCookie('connect.sid', {
+        path: '/',
+        httpOnly: true,
+        secure: NODE_ENV === 'production',
+        sameSite: 'strict',
+      });
 
       if (AUTH_PROVIDER === 'ldap') {
-        res.clearCookie('PHPSESSID', { path: '/', httpOnly: true });
-        res.clearCookie('PHPSESSIDIDP', { path: '/', httpOnly: true });
-        res.clearCookie('PGADMIN_LANGUAGE', { path: '/', httpOnly: true });
         logger.debug('LDAP user logged out successfully');
-        return res.status(200).json({ message: 'Logout successful' });
+        return res.status(200).json({
+          message: 'Logout successful',
+          redirectUrl: '/login',
+        });
       }
 
       // if (user?.authProvider === 'saml') {
