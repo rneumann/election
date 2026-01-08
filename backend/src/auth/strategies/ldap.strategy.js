@@ -20,7 +20,7 @@ export const ldapStrategy = new Strategy(async (username, password, done) => {
  * @returns {Promise<object>} a user object with username and role or null
  */
 export const login = async (username, password) => {
-  const { AD_URL, AD_BASE_DN, AD_DOMAIN } = process.env;
+  const { AD_URL, AD_BASE_DN, AD_DOMAIN, AD_USER_BIND_DN } = process.env;
 
   // Check for special admin or committee user
   const adminOrCommittee = await checkAdminOrCommittee(username, password);
@@ -41,8 +41,7 @@ export const login = async (username, password) => {
   });
 
   try {
-    const bindname = `ADS\\${username}`;
-    //    const bindname = `cn=${username},${AD_BASE_DN}`;
+    const bindname = AD_USER_BIND_DN.replace('${username}', username);
     logger.debug(`Authenticating user via LDAP with: ${bindname}`);
     await client.bind(bindname, password);
     const isCandidate = await checkIfVoterIsCandidate(username);

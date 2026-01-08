@@ -96,6 +96,8 @@ um die Anwendung via **Docker** zu starten sind folgende Schritte notwendig:
   - AD_URL=ldap://ldap:389       # URL zu deinem LDAP/AD Server (Hostname + Port)
   - AD_BASE_DN=DC=example,DC=com # Basis-DN für LDAP-Abfragen
   - AD_DOMAIN=example.com        # Domain deines LDAP/AD Servers
+  - AD_USER_BIND_DN=ADS\${username} # DN-Vorlage für Benutzerbindung (z.B. ADS\username)
+
 
   - ADMIN_PASSWORD_LDAP=secret   # Passwort für Admin-Benutzer im LDAP
   - ADMIN_DN=CN='admin,...'        # Distinguished Name (DN) des Admin-Benutzers
