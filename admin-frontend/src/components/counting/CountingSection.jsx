@@ -54,7 +54,30 @@ const CountingSection = ({
     try {
       const finishedElections = await adminService.getElectionsForAdmin('finished');
 
-      setElections(finishedElections || []);
+      // Populate countingResult from database for finalized elections
+      const electionsWithResults = finishedElections.map((election) => {
+        if (election.is_final && election.result_id) {
+          return {
+            ...election,
+            countingResult: {
+              algorithm: election.result_algorithm,
+              version: election.result_version,
+              counted_at: election.result_counted_at,
+              fullResults: {
+                id: election.result_id,
+                election_id: election.id,
+                version: election.result_version,
+                is_final: election.is_final,
+                counted_at: election.result_counted_at,
+                counted_by: election.counted_by,
+              },
+            },
+          };
+        }
+        return election;
+      });
+
+      setElections(electionsWithResults || []);
       logger.debug('Updated elections:', elections);
     } catch (error) {
       setCountingError(`Fehler beim Laden der Wahlen: ${error.message}`);
@@ -706,7 +729,7 @@ const CountingSection = ({
                           )}
 
                         {/* Export Button - at the end of results */}
-                        {election.countingResult.fullResults && (
+                        {election.countingResult?.fullResults && (
                           <div className="mt-4 pt-4 border-t border-green-300">
                             <button
                               onClick={() =>

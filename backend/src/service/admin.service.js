@@ -36,7 +36,14 @@ export const getElectionsForAdmin = async (status) => {
 
       COALESCE(c.candidates, 0) AS candidates,
       COALESCE(v.voters, 0)     AS voters,
-      COALESCE(b.ballots, 0)   AS ballots
+      COALESCE(b.ballots, 0)   AS ballots,
+
+      er.id AS result_id,
+      er.version AS result_version,
+      er.is_final,
+      er.counted_at AS result_counted_at,
+      er.counted_by,
+      er.result_algorithm
 
     FROM elections e
 
@@ -63,6 +70,20 @@ export const getElectionsForAdmin = async (status) => {
       FROM ballots
       GROUP BY election
     ) b ON b.election = e.id
+
+    LEFT JOIN (
+      SELECT DISTINCT ON (election_id)
+        election_id,
+        id,
+        version,
+        is_final,
+        counted_at,
+        counted_by,
+        result_data->>'algorithm' AS result_algorithm
+      FROM election_results
+      WHERE is_final = true
+      ORDER BY election_id, version DESC
+    ) er ON er.election_id = e.id
 
     WHERE
       ${conditions.join(' AND ')}
