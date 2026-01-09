@@ -2,6 +2,7 @@ services:
   # --- PROD ---
   postgres:
     image: postgres:18
+    user: '999:999'
     container_name: postgres
     profiles: ['prod']
     env_file:
@@ -12,9 +13,7 @@ services:
       - ALL
     cap_add:
       - CHOWN
-      - FOWNER
-      - SETUID
-      - SETGID
+      - DAC_OVERRIDE
     read_only: true
     shm_size: '1g'
     tmpfs:
