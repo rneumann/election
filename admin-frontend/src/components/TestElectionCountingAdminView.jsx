@@ -22,7 +22,31 @@ export const TestElectionCountingAdminView = ({
 
     try {
       const futureElections = await adminService.getElectionsForAdmin('future');
-      setFutureElections(futureElections || []);
+
+      // Populate countingResult from database for finalized test elections
+      const electionsWithResults = futureElections.map((election) => {
+        if (election.is_final && election.result_id) {
+          return {
+            ...election,
+            countingResult: {
+              algorithm: election.result_algorithm,
+              version: election.result_version,
+              counted_at: election.result_counted_at,
+              fullResults: {
+                id: election.result_id,
+                election_id: election.id,
+                version: election.result_version,
+                is_final: election.is_final,
+                counted_at: election.result_counted_at,
+                counted_by: election.counted_by,
+              },
+            },
+          };
+        }
+        return election;
+      });
+
+      setFutureElections(electionsWithResults || []);
     } catch (error) {
       setCountingError(`Fehler beim Laden der Wahlen: ${error.message}`);
     } finally {
