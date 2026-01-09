@@ -113,7 +113,6 @@ export const parseElectionExcel = async (file) => {
           election['Endzeitpunkt'] = endDate;
         }
         elections.push(election);
-        logger.info(`Found election: ${election['Kennung'] || election['Wahl Kennung']}`);
       }
     }
 

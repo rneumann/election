@@ -108,7 +108,7 @@ export const validateVoterCSV = async (file) => {
 
   validationResult.data.forEach((voter, index) => {
     const uid = voter['RZ-Kennung'];
-    const mtknr = voter['Matk.Nr'];
+    const mtknr = voter['Matr.Nr'];
 
     if (uidSet.has(uid)) {
       duplicateErrors.push({
@@ -125,7 +125,7 @@ export const validateVoterCSV = async (file) => {
       if (mtknrSet.has(mtknr)) {
         duplicateErrors.push({
           row: index + 2,
-          field: 'Matk.Nr',
+          field: 'Matr.Nr',
           message: `Doppelte Matrikelnummer: ${mtknr} wurde bereits in einer vorherigen Zeile verwendet`,
           code: 'DUPLICATE_MTKNR',
         });

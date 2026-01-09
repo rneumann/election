@@ -15,7 +15,7 @@ describe('Voter Schema Validation', () => {
         Fakultät: VALID_FACULTY,
         Vorname: VALID_FIRST_NAME,
         Nachname: VALID_LAST_NAME,
-        'Matk.Nr': VALID_MATKNR,
+        'Matr.Nr': VALID_MATKNR,
       };
 
       const result = voterSchema.safeParse(validVoter);
@@ -28,7 +28,7 @@ describe('Voter Schema Validation', () => {
         Fakultät: VALID_FACULTY,
         Vorname: VALID_FIRST_NAME,
         Nachname: VALID_LAST_NAME,
-        'Matk.Nr': VALID_MATKNR,
+        'Matr.Nr': VALID_MATKNR,
       };
 
       const result = voterSchema.safeParse(invalidVoter);
@@ -44,7 +44,7 @@ describe('Voter Schema Validation', () => {
         Fakultät: 'xyz', // lowercase instead of uppercase
         Vorname: VALID_FIRST_NAME,
         Nachname: VALID_LAST_NAME,
-        'Matk.Nr': VALID_MATKNR,
+        'Matr.Nr': VALID_MATKNR,
       };
 
       const result = voterSchema.safeParse(invalidVoter);
@@ -60,7 +60,7 @@ describe('Voter Schema Validation', () => {
         Fakultät: VALID_FACULTY,
         Vorname: VALID_FIRST_NAME,
         Nachname: VALID_LAST_NAME,
-        'Matk.Nr': '123abc', // contains letters
+        'Matr.Nr': '123abc', // contains letters
       };
 
       const result = voterSchema.safeParse(invalidVoter);
@@ -73,7 +73,7 @@ describe('Voter Schema Validation', () => {
         Fakultät: VALID_FACULTY,
         Vorname: '', // empty
         Nachname: VALID_LAST_NAME,
-        'Matk.Nr': VALID_MATKNR,
+        'Matr.Nr': VALID_MATKNR,
       };
 
       const result = voterSchema.safeParse(invalidVoter);
@@ -86,7 +86,7 @@ describe('Voter Schema Validation', () => {
         Fakultät: VALID_FACULTY,
         Vorname: VALID_FIRST_NAME,
         Nachname: VALID_LAST_NAME,
-        // Matk.Nr is optional
+        // Matr.Nr is optional
       };
 
       const result = voterSchema.safeParse(voter);
@@ -102,14 +102,14 @@ describe('Voter Schema Validation', () => {
           Fakultät: VALID_FACULTY,
           Vorname: VALID_FIRST_NAME,
           Nachname: VALID_LAST_NAME,
-          'Matk.Nr': VALID_MATKNR,
+          'Matr.Nr': VALID_MATKNR,
         },
         {
           'RZ-Kennung': 'efgh5678',
           Fakultät: 'AB',
           Vorname: 'Anna',
           Nachname: 'Schmidt',
-          'Matk.Nr': '234567',
+          'Matr.Nr': '234567',
         },
       ];
 
@@ -133,7 +133,7 @@ describe('Voter Schema Validation', () => {
         'Fakultät',
         'Vorname',
         'Nachname',
-        'Matk.Nr',
+        'Matr.Nr',
       ]);
     });
   });

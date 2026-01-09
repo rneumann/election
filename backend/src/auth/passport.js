@@ -1,14 +1,14 @@
 // auth/passport.js
 import passport from 'passport';
-import { ldapStrategy } from './strategies/ldap.strategy.js';
 import { getUserInfo } from './auth.js';
-import { keycloakStrategy } from './strategies/keycloak.strategy.js';
 const { AUTH_PROVIDER } = process.env;
 // Registrierung
 if (AUTH_PROVIDER === 'keycloak') {
+  const { keycloakStrategy } = await import('./strategies/keycloak.strategy.js');
   passport.use('keycloak', keycloakStrategy);
 }
 if (AUTH_PROVIDER === 'ldap') {
+  const { ldapStrategy } = await import('./strategies/ldap.strategy.js');
   passport.use('ldap', ldapStrategy);
 }
 if (AUTH_PROVIDER !== 'keycloak' && AUTH_PROVIDER !== 'ldap') {

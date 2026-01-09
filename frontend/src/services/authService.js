@@ -1,4 +1,3 @@
-import { logger } from '../conf/logger/logger.js';
 import { handleHttpStatus } from '../utils/exception-handler/exception-handler.js';
 import api from './api.js';
 
@@ -55,7 +54,6 @@ const authService = {
       handleHttpStatus(csrf);
       return undefined;
     }
-    logger.info(`CSRF token retrieved: ${csrf.data.csrfToken}`);
     return localStorage.setItem('csrfToken', csrf.data.csrfToken);
   },
 

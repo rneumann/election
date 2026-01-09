@@ -48,19 +48,18 @@ export const AuthProvider = ({ children }) => {
       // Clear state BEFORE making the API call to prevent any race conditions
       setUser(undefined);
       setIsAuthenticated(false);
+      sessionStorage.clear();
       localStorage.removeItem('csrfToken');
-      sessionStorage.removeItem('isAuthenticated');
 
       const response = await api.delete('/auth/logout', { withCredentials: true });
-      const redirectUrl = response.data.redirectUrl;
 
-      // Replace the current history entry so "back" button won't work
+      const destination = response.data?.redirectUrl || '/login';
+
       window.history.replaceState(null, '', '/login');
-
-      // Hard redirect to Keycloak logout
-      window.location.href = redirectUrl;
+      window.location.href = destination;
     } catch {
       // Even if logout fails, clear local state
+      logger.error('Logout failed');
       setUser(undefined);
       setIsAuthenticated(false);
       localStorage.removeItem('csrfToken');
@@ -104,22 +103,19 @@ export const AuthProvider = ({ children }) => {
       return;
     }
     logger.debug('Starting session heartbeat interval');
-    const interval = setInterval(
-      async () => {
-        try {
-          const { data } = await api.get('/auth/me', { withCredentials: true });
+    const interval = setInterval(async () => {
+      try {
+        const { data } = await api.get('/auth/me', { withCredentials: true });
 
-          if (!data?.authenticated) {
-            logger.debug('Session heartbeat: invalid → logout');
-            logout();
-          }
-        } catch {
-          logger.debug('Session heartbeat: error or 401 → logout');
+        if (!data?.authenticated) {
+          logger.debug('Session heartbeat: invalid → logout');
           logout();
         }
-      },
-      (3 * 60 + 10) * 1000,
-    ); // 3 min 10 sec
+      } catch {
+        logger.debug('Session heartbeat: error or 401 → logout');
+        logout();
+      }
+    }, 60 * 1000); // every minute
 
     return () => clearInterval(interval);
   }, [isAuthenticated]);

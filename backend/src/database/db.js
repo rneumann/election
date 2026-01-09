@@ -1,9 +1,6 @@
 import dotenv from 'dotenv';
 import pg from 'pg';
 import { logger } from '../conf/logger/logger.js';
-// NEU: Audit Import
-import { writeAuditLog } from '../audit/auditLogger.js';
-
 dotenv.config();
 
 /**

@@ -4,7 +4,7 @@
 
 ```text
 - In ./frontend das Frontend-Image basierend auf dem Dockerfile bauen:
-    - docker build -t frontend_image .
+    - docker build --build-arg NODE_ENV=production -t frontend_image .
 
 - FAKE CERTS erzeugen:
   In ./backend/.extras/compose/waf die Certs erzeugen:

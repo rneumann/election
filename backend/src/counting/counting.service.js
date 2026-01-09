@@ -55,8 +55,6 @@ export const performCounting = async (electionId, userId) => {
   try {
     await db.query('BEGIN');
 
-    logger.info(`Starting vote counting for election ${electionId} by user ${userId}`);
-
     // Load election configuration
     const electionRes = await db.query(
       `SELECT id, info, election_type, counting_method, 
@@ -71,10 +69,6 @@ export const performCounting = async (electionId, userId) => {
     }
 
     const election = electionRes.rows[0];
-
-    logger.info(
-      `Election loaded: ${election.info} (type=${election.election_type}, method=${election.counting_method})`,
-    );
 
     // Validate seats_to_fill is configured
     if (!election.seats_to_fill || election.seats_to_fill < 1) {
@@ -94,10 +88,6 @@ export const performCounting = async (electionId, userId) => {
     let votesRes;
 
     if (election.election_type === 'referendum') {
-      // For referendums: Query candidates table with keyword field
-      // The keyword field contains the full option/combination text (e.g., "Erststimme: X | Zweitstimme: Y")
-      logger.info('Loading referendum vote data from candidates with keyword field');
-
       votesRes = await db.query(
         `SELECT 
            ec.listnum, 
@@ -113,10 +103,6 @@ export const performCounting = async (electionId, userId) => {
         [electionId],
       );
     } else {
-      // For candidate-based elections: Use counting VIEW with candidate names
-      // This VIEW joins ballotvotes with electioncandidates and candidates
-      logger.info('Loading candidate vote data from counting VIEW');
-
       votesRes = await db.query(
         `SELECT listnum, firstname, lastname, votes 
          FROM counting 
@@ -154,11 +140,6 @@ export const performCounting = async (electionId, userId) => {
       valid_ballots: 0,
       invalid_ballots: 0,
     };
-
-    logger.info(
-      `Ballot statistics: total=${ballotStats.total_ballots}, ` +
-        `valid=${ballotStats.valid_ballots}, invalid=${ballotStats.invalid_ballots}`,
-    );
 
     // Select appropriate counting algorithm
     const algorithm = getAlgorithm(election.counting_method);

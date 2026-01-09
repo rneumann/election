@@ -1,7 +1,7 @@
 services:
   locust:
     image: locustio/locust
-    profiles: ['dev']
+    profiles: ['dev', 'prod']
     volumes:
       - ./:/mnt/locust
     command: -f /mnt/locust/locustfile.py

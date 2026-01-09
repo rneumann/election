@@ -13,8 +13,8 @@ services:
       - backend_net
     expose:
       - 6379
-    ports:
-      - '6379:6379' # for local development
+    #ports:
+    #  - '6379:6379' # for local development
     volumes:
       - redis_data:/data
     user: '1000:1000'

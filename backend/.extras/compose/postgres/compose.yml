@@ -2,6 +2,7 @@ services:
   # --- PROD ---
   postgres:
     image: postgres:18
+    user: '999:999'
     container_name: postgres
     profiles: ['prod']
     env_file:
@@ -10,6 +11,9 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
     read_only: true
     shm_size: '1g'
     tmpfs:
@@ -17,7 +21,7 @@ services:
       - /tmp
     volumes:
       - postgres_data:/var/lib/postgresql
-      - ./initdb:/docker-entrypoint-initdb.d:ro
+      - ./initdb/prod:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ['CMD', 'pg_isready', '-U', 'election', '-d', 'election_db', '-h', '127.0.0.1']
       interval: 10s
@@ -36,7 +40,7 @@ services:
       - .env
     volumes:
       - postgres_data_dev:/var/lib/postgresql
-      - ./initdb:/docker-entrypoint-initdb.d:ro
+      - ./initdb/dev:/docker-entrypoint-initdb.d:ro
       - ./data/csv:/data/csv:ro
     ports:
       - '5432:5432'
