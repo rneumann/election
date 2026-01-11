@@ -138,7 +138,6 @@ Diese sollten im [COMPOSE](./backend/.extras/compose) Ordner angelegt werden, na
   - AD_DOMAIN=example.com        # Domain deines LDAP/AD Servers
   - AD_USER_BIND_DN=ADS\${username} # DN-Vorlage für Benutzerbindung (z.B.ADS\username)
 
-
   - ADMIN_PASSWORD_LDAP=secret   # Passwort für Admin-Benutzer im LDAP
   - ADMIN_DN=CN='admin,...'        # Distinguished Name (DN) des Admin-Benutzers
 
@@ -154,6 +153,11 @@ Diese sollten im [COMPOSE](./backend/.extras/compose) Ordner angelegt werden, na
   - DB_PASSWORD=secret     # Passwort für den DB-Benutzer
   - DB_NAME=election_db    # Name der Datenbank
 ```
+
+Weitere notwendige .env-Dateien
+
+[LDAP](./backend/.extras/compose/ldap/README.md)
+[Postgres](./backend/.extras/compose/postgres/readme.md)
 
 Anschließend ist es notwendig im selben Verzeichnis ein Ordner mit den Secrets zu erstellen mit dem Befehl `mkdir secrets`.
 
@@ -184,6 +188,18 @@ Stoppen des Systems:
 
 ```bash
 - docker compose down #Löst das Stoppen des Containers aus.
+```
+
+**4. Frontend starten**
+
+In dem zu startenden Frontend jeweils die Docker build Befehle ausführen
+Für mehr und wichtige Infos siehe: [README-dockerized](./backend/.extras/compose/README.md)
+
+```bash
+
+docker build -t frontend_image .
+docker built -t admin_frontend_image .
+
 ```
 
 ### Nach Start des Systems

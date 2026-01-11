@@ -138,6 +138,8 @@ Der Container enthält:
 - den Vite-Build
 - eine vorkonfigurierte Nginx-Instanz zur Auslieferung der Assets
 
+Für den `dockerized` Start des Admin-Frontends siehe [README](/backend/.extras/compose/admin_frontend/README.md)
+
 ---
 
 ## Sicherheit & Zugriff

@@ -67,7 +67,7 @@ Name: ElectionDB (frei wählbar)
 
 **Reiter „Connection“**
 
-```
+```bash
 Host name/address: election
 Port: 5432
 Maintenance database: election_db
@@ -127,14 +127,3 @@ PGADMIN_CONFIG_SERVER_MODE=False
 
 TZ=Europe/Berlin
 ```
-
----
-
-## 🧠 Kurzüberblick
-
-| Umgebung | Befehl                                | Ports       | Ziel               |
-| -------- | ------------------------------------- | ----------- | ------------------ |
-| Dev      | `docker compose --profile dev up -d`  | 5432 / 8080 | Lokales Test-Setup |
-| Prod     | `docker compose --profile prod up -d` | 5432 / 8080 | Produktivsystem    |
-| Stop     | `docker compose --profile prod down`  | –           | Container stoppen  |
-| Reset    | `docker compose --profile . down -v`  | –           | Alles löschen      |

@@ -144,6 +144,8 @@ Der Container enthält:
 - den Vite-Build
 - eine vorkonfigurierte Nginx-Instanz zur Auslieferung der Assets
 
+Für den `dockerized` Start des Frontends siehe [README](/backend/.extras/compose/frontend/README.md)
+
 ---
 
 ## Umgebungsvariablen
