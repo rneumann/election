@@ -32,12 +32,10 @@ export const AlertForReferendum = ({
       const data = {
         electionId: String(election.id),
         valid: !invalidHandOver,
-        voteDecision: [cleanedVotes],
+        voteDecision: invalidHandOver ? [] : [cleanedVotes],
       };
 
-      logger.debug(`handleOnSubmit: ${JSON.stringify(data)}`);
       const res = await createBallot(data);
-      logger.warn(`handleOnSubmit res: ${JSON.stringify(res)}`);
       if (!res) {
         showAlert('error', 'Fehler beim Erstellen der Wahl... Bitte versuchen Sie es erneut.');
         return;

@@ -19,7 +19,6 @@ export const voterApi = {
       return [];
     }
     const data = await response.data;
-    logger.warn('getElections res: ', data);
     return data;
   },
 
