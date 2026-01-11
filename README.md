@@ -32,19 +32,30 @@ Diese Wahlarten unterscheiden sich in:
 - PostgreSQL
 - REST-API inkl. Swagger-UI
 
+(Für mehr wichtige Informationen und Details)
+[README](./backend/README.md)
+
 #### Frontend (Wählende)
 
 - React
 - Responsive Web-App
 
+(Für mehr wichtige Informationen und Details)
+[README](./frontend/README.md)
+
 #### Admin-Frontend
 
 - Separate Verwaltungsoberfläche für Wahlleitungen
 
+(Für mehr wichtige Informationen und Details)
+[README](./admin-frontend/README.md)
+
 #### Authentifizierung
 
 - Keycloak (OAuth2 / OpenID Connect)
-- Optional LDAP / Active Directory
+  [README](./backend/.extras/compose/keycloak/README.md)
+- LDAP / Active Directory
+  [README](./backend/.extras/compose/ldap/README.md)
 
 #### Containerisierung
 
