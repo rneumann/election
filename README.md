@@ -1,4 +1,4 @@
-# 🗳️ Online-Wahlsystem HKA
+# Online-Wahlsystem HKA
 
 ## Inhaltsverzeichnis
 
@@ -22,6 +22,9 @@
    - [WAF](#715-waf)
    - [Secrets](#72-secrets)
 8. [Lokale Entwicklung](#8-lokale-entwicklung)
+   - [Vorbereitung](#81-vorbereitung)
+   - [Start der Anwendung](#82-start-der-anwendung)
+   - [Alternativstart](#821-start-der-anwendungen-alternativ)
 9. [Produktivbetrieb (Docker)](#9-produktivbetrieb-docker)
    - [Build & Start](#91-build--start)
    - [Stoppen](#92-stoppen)
@@ -39,7 +42,7 @@ Die Plattform wird **modular**, **dockerisiert** und **open-source** bereitgeste
 
 ---
 
-## 2. 🏛️ Wahlarten an der HKA
+## 2. Wahlarten an der HKA
 
 Laut Wahlsystematik der Hochschule umfasst das System folgende Wahlarten:
 
@@ -120,7 +123,7 @@ Diese Wahlarten unterscheiden sich in:
 
 ## 7. Konfiguration (.env & Secrets)
 
-⚠️ **Wichtig:** Die Konfiguration über `.env`-Dateien ist **sowohl für die lokale Entwicklung als auch für den Produktivbetrieb erforderlich**. Ohne gültige Konfigurationsdateien lassen sich Backend und Frontends nicht starten.
+**Wichtig:** Die Konfiguration über `.env`-Dateien ist **sowohl für die lokale Entwicklung als auch für den Produktivbetrieb erforderlich**. Ohne gültige Konfigurationsdateien lassen sich Backend und Frontends nicht starten.
 
 ### 7.1 Zentrale Backend-Konfiguration
 
@@ -311,12 +314,25 @@ Diese Dateien enthalten sensible Werte (Passwörter, kryptographische Schlüssel
 
 ```bash
 cd backend/.extras/compose
-docker compose up postgres keycloak ldap
+docker compose --profile dev up
+```
+
+Je nachdem was neben dem Backend verwendet werden soll.
+
+### 8.2 Start der Anwendung
+
+```bash
+cd election/backend
+docker build -t backend_image .
+
+docker build -t frontend_image .
+
+docker build -t admin_frontend_image .
 ```
 
 ---
 
-### 8.2 Start der Anwendungen
+### 8.2.1 Start der Anwendungen (alternativ)
 
 ```bash
 cd backend && npm install && npm run dev
