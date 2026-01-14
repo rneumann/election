@@ -5,7 +5,6 @@
 - [ ] Docs / Struktur
 
 **Kurzbeschreibung:**
-> Was wurde geändert? Warum wurde es geändert? Welche Auswirkungen gibt es?
 
 ---
 
@@ -21,19 +20,10 @@
 - [ ] Tests geschrieben / angepasst
 - [ ] Verhalten in dev-Umgebung verifiziert
 
-**Reproduktionsanleitung für Reviewer (falls nötig):**
+**Reproduktionsanleitung für Reviewer:**
 1. …
 2. …
 3. …
-
----
-
-## Auswirkungen
-- Breaking Changes? **Ja/Nein**
-- Migrations nötig? **Ja/Nein**
-- Konfiguration/Env-Variablen geändert? **Ja/Nein**
-
-Wenn **Ja** → kurz erklären.
 
 ---
 
@@ -47,6 +37,3 @@ Wenn **Ja** → kurz erklären.
 - [ ] Tests decken die relevanten Fälle ab
 - [ ] Risiken sind dokumentiert (Performance, Race Conditions, Data Integrity)
 
----
-
-## Offene Punkte / Diskussionsfragen
