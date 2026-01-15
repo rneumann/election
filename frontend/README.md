@@ -14,6 +14,8 @@ cp .env.example .env
 
 - `VITE_API_BASE_URL`: Backend API URL (Standard: `/api`)
 
+- `VITE_USERNAME_PATTERN`: Username pattern for login (Standard: `^[a-z0-9]+$`)
+
 - `VITE_ENABLE_KEYCLOAK_AUTH`: Keycloak-Login aktivieren (`true`/`false`)
 
 **Keycloak-Authentifizierung:**
