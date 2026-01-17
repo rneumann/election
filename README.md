@@ -3,16 +3,16 @@
 ## Inhaltsverzeichnis
 
 1. [Überblick](#1-überblick)
-2. [Wahlarten an der HKA](#2-️-wahlarten-an-der-hka)
-3. [Systemarchitektur](#3-systemarchitektur)
+2. [Voraussetzungen](#2-voraussetzungen)
+3. [Wahlarten](#3-️-wahlarten-an-der-hka)
+4. [Systemarchitektur](#4-systemarchitektur)
    - [Backend](#backend)
    - [Frontend](#frontend-wählende)
    - [Admin-Frontend](#admin-frontend)
    - [Authentifizierung](#authentifizierung)
    - [Containerisierung](#containerisierung)
-4. [Funktionale Kernmodule](#4-funktionale-kernmodule)
-5. [Sicherheit & Compliance](#5-sicherheit--compliance)
-6. [Voraussetzungen](#6-voraussetzungen)
+5. [Funktionale Kernmodule](#5-funktionale-kernmodule)
+6. [Sicherheit & Compliance](#6-sicherheit--compliance)
 7. [Konfiguration (.env & Secrets)](#7-konfiguration-env--secrets)
    - [Umgebungskonfigurationen](#71-zentrale-backend-konfiguration)
    - [backend](#711-backend)
@@ -29,16 +29,13 @@
    - [Definition](#91-style-definitionen)
    - [Anpassung](#92-style-anpassung)
 10. [Produktivbetrieb (Docker)](#10-produktivbetrieb-docker)
-
-- [Build & Start](#101-build--start)
-- [Stoppen](#102-stoppen)
-- [Wartung & Troubleshooting](#103-wartung--troubleshooting)
-
+    - [Build & Start](#101-build--start)
+    - [Stoppen](#102-stoppen)
+    - [Wartung & Troubleshooting](#103-wartung--troubleshooting)
 11. [Zugriff nach dem Start](#11-zugriff-nach-dem-start)
 12. [Tests (Playwright)](#12-tests-playwright)
-
-- [Installation](#121-installationsschritte)
-- [Ausführung](#122-ausführung)
+    - [Installation](#121-installationsschritte)
+    - [Ausführung](#122-ausführung)
 
 ---
 
@@ -50,21 +47,32 @@ Die Plattform wird **modular**, **dockerisiert** und **open-source** bereitgeste
 
 ---
 
-## 2. Wahlarten an der HKA
+## 2. Voraussetzungen
 
-Laut Wahlsystematik der Hochschule umfasst das System folgende Wahlarten:
+Für die Installation und den Betrieb des Systems werden folgende Komponenten benötigt:
 
-...
+| Komponente       | Version    | Download                                                             |
+| ---------------- | ---------- | -------------------------------------------------------------------- |
+| Node.js          | ≥ 20       | [nodejs.org](https://nodejs.org/en/download)                                     |
+| Docker           | aktuell    | [docker.com/get-started](https://www.docker.com/products/docker-desktop/)        |
+| Docker Compose   | aktuell    | (in Docker Desktop enthalten)                                        |
+| Git              | aktuell    | [git-scm.com/downloads](https://git-scm.com/install/)               |
 
-Diese Wahlarten unterscheiden sich in:
-
-- Wählergruppen (Studierende, Mitarbeitende)
-- Wahlmodus (Direktwahl, Listenwahl)
-- Auszählungslogik (nach Satzung und Wahlordnung)
+> **Hinweis:** Docker & Docker Compose werden sowohl für die lokale Entwicklung als auch für den Produktivbetrieb empfohlen.
 
 ---
 
-## 3. Systemarchitektur
+## 3. Wahlarten
+
+Das System unterstützt folgende Wahlarten:
+
+- **Verhältniswahl** (Sainte-Laguë und Hare-Niemeyer)
+- **Mehrheitswahl** (einfach und absolut)
+- **Urabstimmungen**
+
+---
+
+## 4. Systemarchitektur
 
 ### Backend
 
@@ -103,7 +111,7 @@ Diese Wahlarten unterscheiden sich in:
 
 ---
 
-## 4. Funktionale Kernmodule
+## 5. Funktionale Kernmodule
 
 | Modul                | Beschreibung                                          |
 | -------------------- | ----------------------------------------------------- |
@@ -117,20 +125,12 @@ Diese Wahlarten unterscheiden sich in:
 
 ---
 
-## 5. Sicherheit & Compliance
+## 6. Sicherheit & Compliance
 
 - **BSI-CC-PP-0121:** Schutzprofil für nicht-politische E-Wahlen
 - **DSGVO-Konformität:** Zweckgebundene Verarbeitung personenbezogener Daten
 - **Nachvollziehbarkeit:** Protokollierung sicherheitsrelevanter Ereignisse
 - **Barrierefreiheit:** Nutzung durch alle Wählergruppen
-
----
-
-## 6. Voraussetzungen
-
-- Node.js ≥ 20
-- Docker & Docker Compose (empfohlen, auch für Dev)
-- Git
 
 ---
 
