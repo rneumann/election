@@ -91,6 +91,11 @@ Diese Wahlarten unterscheiden sich in:
 - LDAP / Active Directory  
   [README](./backend/.extras/compose/ldap/README.md)
 
+### Datenbank
+
+- PostgreSQL mit pgAdmin4
+  [README](./backend/.extras/compose/postgres/readme.md)
+
 ### Containerisierung
 
 - Docker
@@ -354,6 +359,8 @@ Alle Services greifen dabei auf die zuvor definierten `.env`-Variablen zu.
 
 ## 9. Style Konfigurationen
 
+Konfiguration der Seitendarstellung.
+
 ### 9.1 Style Definitionen
 
 Um das Styling an Ihr Schema anzupassen finden Sie eine Datei mit den öffentlichen [Stylings](./frontend/theme.config.js).
@@ -372,6 +379,8 @@ roles:{...}; #Existierende Rollen im Wahlsystem
 Hier nehmen Sie die nötigen Anpassungen vor, welche dann vom System aktualisiert werden, sodass Sie ihre Änderungen dann einsehen können.
 
 ## 10. Produktivbetrieb (Docker)
+
+Konfigurationen um den Produktivbetrieb vorzunehmen.
 
 ### 10.1 Build & Start
 
@@ -406,6 +415,8 @@ docker compose logs -f backend
 Nach dem Aufruf gelangen Sie zur Login-Seite des jeweiligen Systems.
 
 > Für die Links auf euren produktionsfähigen Auslieferungen, bitte sehen Sie in Ihren Konfigurationen nach.
+
+---
 
 ## 12. Tests (Playwright)
 
