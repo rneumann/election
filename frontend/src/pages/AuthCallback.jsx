@@ -56,7 +56,7 @@ const AuthCallback = () => {
         const { data } = await api.get('/auth/me', { withCredentials: true });
 
         if (data.authenticated && data.user) {
-          // Check if user is admin - cannot login to user frontend
+          // Check if user is admin
           if (data.user.role === 'admin') {
             setStatus('error');
             setErrorMessage('Admins können sich nicht im Wähler-Frontend anmelden.');
@@ -163,7 +163,7 @@ const AuthCallback = () => {
           </>
         )}
 
-        {/* Footer - Institution branding */}
+        {/* Footer */}
         <div className="mt-8 pt-6 border-t border-gray-200">
           <p className="text-xs text-brand-gray">{theme.text.copyright}</p>
         </div>

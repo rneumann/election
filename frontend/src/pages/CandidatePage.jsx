@@ -103,7 +103,7 @@ export const CandidatePageContent = () => {
       className={`min-h-screen flex flex-col bg-brand-light dark:bg-gray-900 transition-colors ${accessibilityClasses}`}
     >
       <Header setAccessibilityMenuOpen={setAccessibilityMenuOpen} />
-      {/* Main Content - Flex-1 to push footer down */}
+      {/* Main Content */}
       <main className="flex-1 container mx-auto px-4 sm:px-6 py-6 sm:py-8">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 sm:p-6 md:p-8 border border-gray-100 dark:border-gray-700 transition-colors">
           <h2 className="text-2xl sm:text-3xl font-bold text-brand-dark dark:text-gray-100 mb-3 sm:mb-4 transition-colors">
@@ -121,7 +121,7 @@ export const CandidatePageContent = () => {
 
             {/* Flex Container */}
             <div className="flex flex-col sm:flex-row sm:space-x-8">
-              {/* 1. BILD UPLOAD */}
+              {/* 1. Picture Upload */}
               <div className="w-full sm:w-2/3 mb-6 sm:mb-0 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-100 dark:border-gray-600 shadow-inner transition-colors">
                 <ImageUploadCandidate setUploadData={setUploadData} />
               </div>
@@ -159,11 +159,11 @@ export const CandidatePageContent = () => {
                   )}
                 </div>
 
-                {/* Button zum Entfernen des Bildes: MUSS ebenfalls zentriert werden */}
+                {/* Button to delete current picture */}
                 {currentData?.url && (
                   <div className="w-full text-center">
                     {' '}
-                    {/* NEU: Wrapper für Zentrierung */}
+                    {/* Wrapper to center the button */}
                     <button
                       onClick={() => setUploadData(null)}
                       className="mt-4 text-sm text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 font-medium transition-colors"

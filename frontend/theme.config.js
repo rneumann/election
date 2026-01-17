@@ -42,6 +42,16 @@ export const themeConfig = {
     welcomeSubtitle: 'BSI-konformes Online-Wahlsystem für hochschulinterne Wahlen',
   },
 
+  placeholders: {
+    loginUsername: 'Ihr RZ-Kürzel',
+    loginPassword: 'Ihr Passwort',
+    checkVote: 'Ihre Auswahl zur Kontrolle',
+    confirmationInvalid: 'Ihr Stimmzettel wird ungültig abgegeben!',
+    confirmVote: 'Abstimmung bestätigen',
+    checkBoxConfirm: 'Ich möchte meinen Stimmzettel ungültig abgeben!',
+    auditSearch: 'Suche (Aktion, Akteur, ID)...',
+  },
+
   // Role names (optional customization)
   roles: {
     admin: 'Administrator',
