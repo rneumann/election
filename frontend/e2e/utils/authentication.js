@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test';
+import { themeConfig } from '../../theme.config.js';
 import { information } from './loginInformation.js';
-import { useTheme } from '../../hooks/useTheme.js';
-const theme = useTheme();
+const theme = themeConfig;
 const TXT_PLACEHOLDER_USER = theme.placeholders.loginUsername;
 const TXT_PLACEHOLDER_PASS = theme.placeholders.loginPassword;
 const TXT_LOGIN_BTN = 'Anmelden';
