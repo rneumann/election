@@ -1,50 +1,42 @@
-# 🎭 E2E Testing Automation - Playwright
+# 🎭 E2E Testautomatisierung - Playwright
 
-## 📂 Project structure
+## Projekt Struktur
 
-The tests are located in the folder `e2e`.
+Die Tests befinden sich im Verzeichnis e2e und sind funktional gegliedert:
 
 - **`admin_functions/`**
-  - `counting.spec.js`: Test scenarios for the vote counting process and validation of election results.
-  - `imports.spec.js `: Test scenarios for uploading directories or elections.
+  - Tests für administrative Abläufe, z. B. Stimmenauszählung und Import von Wahlen
 - **`user_functions/`**
-  - `candidate.spec.js`: Test scenarios covering candidate-related functionality.
-  - `election_participate.spec.js`: Various test scenarios related to the election participation process.
-
+  - Tests für Nutzerfunktionen wie Kandidatenanzeige und Wahlteilnahmeparticipation
 - **`utils/`**
-  - `authentication.js`: Helper functions for login, logout, and session management.
+  - Hilfsfunktionen, insbesondere für Authentifizierung (Login/Logout)
 - **Konfiguration**
-  - `.e2e-env`: Environment variables (e.g., base URLs, test credentials).
+  - `.e2e-env` zur Definition von Test-Zugangsdaten und Basisparametern
 
 ## 🚀 Getting Started
 
-### Prerequisites
-
-Ensure the following tools are installed:
+### Voraussetzungen
 
 - [Node.js](https://nodejs.org/)
 - `npm` oder `yarn`
 
-### Installation
+### Installation & Einrichtung
 
-1.  Clone this repository.
-2.  Install dependencies:
+1.  Installieren Sie die Abhängigkeiten:
 
 ```bash
 npm install
 ```
 
-3.  Install the required Playwright browser binaries:
+2.  Installieren Sie den Playwright-Browser:
 
 ```bash
 npx playwright install
 ```
 
-### Configuration
+3. Konfigurationsdatei e2e/.e2e-env anlegen oder anpassen, z. B. mit Test-Benutzern und Admin-Zugangsdaten.
 
-Create or update `e2e/.e2e-env`:
-
-```
+```bash
 USER_USERNAME=u001
 USER_PASSWORD=p
 # space for more Users.
@@ -52,26 +44,25 @@ ADMIN_USERNAME=admin
 ADMIN_PASSWORD=p
 ```
 
-## 🏃 Running Tests
+## Testausführung
 
-The following commands are available to execute the tests:
+- npm run test:e2e -
+  Führt alle Tests im Headless-Modus aus (geeignet für CI/CD).
 
-| Befehl                | Beschreibung                                                             |
-| :-------------------- | :----------------------------------------------------------------------- |
-| `npm run test:e2e`    | Runs all tests in headless mode (no UI). Ideal for CI/CD pipelines.      |
-| `npm run test:e2e:ui` | Starts the interactive UI mode with time travel and detailed inspection. |
+- npm run test:e2e:ui - Startet den interaktiven UI-Modus zur Analyse und Fehlersuche.
 
-## 📊 Test Results & Reports
+## Testergebnisse
 
-After each run (on failures), an HTML report is generated automatically. You can open it manually at any time:
+Nach fehlgeschlagenen Testläufen wird automatisch ein HTML-Report erzeugt, der jederzeit mit folgendem Befehl geöffnet werden kann:
 
 ```bash
 npx playwright show-report
 ```
 
-## 🛠 Development Guidelines
+## Entwicklungsrichtlinien
 
-- **Authentication Helper**: Authentication Helper: Always use e2e/utils/authentication.js for login in new tests. Avoid duplicating login steps in spec files.
-- **Selektoren**: Prefer user-visible locators such as getByRole or getByText to keep tests stable and maintainable.
+Für Login und Authentifizierung ist ausschließlich der Helper e2e/utils/authentication.js zu verwenden.
+
+Selektoren sollten bevorzugt über benutzernahe Methoden wie getByRole oder getByText definiert werden, um stabile und wartbare Tests zu gewährleisten.
 
 ---

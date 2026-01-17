@@ -1,14 +1,41 @@
-# Admin Frontend - HKA Wahlsystem
+# Admin Frontend – HKA Wahlsystem
 
-Separates Admin-Frontend für d Online-Wahlsystem.
+## Beschreibung
 
-## Übersicht
+Das **Admin-Frontend** für das Online-Wahlsystem der Hochschule Karlsruhe (HKA). Das Frontend ist **strikt vom Wähler-Frontend getrennt** und stellt ausschließlich Verwaltungs-, Import- und Auswertungsfunktionen bereit.
 
-Dieses Projekt ist ein eigenständiges Frontend speziell für Admin-Funktionen. Es enthält modularisierte Komponenten für:
+Die Anwendung ist als **Single Page Application (SPA)** umgesetzt und kommuniziert über eine definierte API mit dem Backend.
 
-- **Auszählung von Wahlergebnissen** (CountingSection)
-- **Datei-Uploads** für Wähler, Kandidaten und Wahleinstellungen
-- **Excel-Export** von Wahlergebnissen
+---
+
+## Features
+
+- Authentifizierung für Admin-Benutzer
+- Zentrale Admin-Oberfläche (Dashboard)
+- Import von Wahl-relevanten Daten (CSV / Excel)
+  - Wählerlisten
+  - Kandidatenlisten
+  - Wahleinstellungen
+- Validierung der Importdateien
+- Auszählung von Wahlergebnissen
+- Export der Ergebnisse (Excel)
+- Globales Fehler- und Alert-System
+- Barrierefreiheits-Unterstützung
+- Theme-Unterstützung (z. B. Dark Mode)
+
+---
+
+## Architekturüberblick
+
+- **Framework:** React (Vite)
+- **Styling:** Tailwind CSS
+- **State Management:** React Context API
+- **HTTP-Kommunikation:** Axios
+- **Build Tool:** Vite
+
+Die Anwendung ist **komponenten- und feature-orientiert** strukturiert. Wiederverwendbare Logik (z. B. Validatoren, Services, UI-Komponenten) ist klar von Seiten- und Feature-Komponenten getrennt.
+
+---
 
 ## Projektstruktur
 
@@ -17,44 +44,112 @@ admin-frontend/
 ├── src/
 │   ├── components/
 │   │   ├── counting/
-│   │   │   └── CountingSection.jsx     # Extrahierte Auszählungs-Komponente
-│   │   ├── ResponsiveButton.jsx        # Shared: Button-Komponente
-│   │   ├── ValidationErrors.jsx        # Shared: Validierungsanzeige
-│   │   ├── GlobalAlert.jsx             # Shared: Globale Benachrichtigungen
-│   │   └── Spinner.jsx                 # Shared: Lade-Spinner
+│   │   │   └── CountingSection.jsx     # Auszählungs-Logik und UI
+│   │   ├── ResponsiveButton.jsx        # Wiederverwendbare Button-Komponente
+│   │   ├── ValidationErrors.jsx        # Anzeige von Validierungsfehlern
+│   │   ├── GlobalAlert.jsx             # Globale Benachrichtigungen
+│   │   └── Spinner.jsx                 # Ladeindikator
 │   │
 │   ├── context/
-│   │   ├── AuthContext.jsx             # Shared: Authentifizierung
-│   │   ├── AlertContext.jsx            # Shared: Alert-System
-│   │   └── AccessibilityContext.jsx    # Shared: Barrierefreiheit
+│   │   ├── AuthContext.jsx             # Authentifizierungs- und User-State
+│   │   ├── AlertContext.jsx            # Zentrales Alert-Handling
+│   │   └── AccessibilityContext.jsx    # Barrierefreiheit
 │   │
 │   ├── hooks/
-│   │   └── useTheme.js                 # Shared: Theme-Hook
+│   │   └── useTheme.js                 # Theme-Handling
 │   │
 │   ├── pages/
-│   │   ├── AdminDashboard.jsx          # Haupt-Admin-Seite
+│   │   ├── AdminDashboard.jsx          # Zentrale Admin-Seite
 │   │   └── Login.jsx                   # Login-Seite
 │   │
 │   ├── services/
-│   │   ├── api.js                      # Shared: Axios-Konfiguration
-│   │   └── authService.js              # Shared: Auth-Service
+│   │   ├── api.js                      # Axios-Instanz & Interceptor
+│   │   └── authService.js              # Authentifizierungs-API
 │   │
 │   ├── utils/
-│   │   ├── validators/                 # Shared: CSV/Excel-Validierung
-│   │   ├── parsers/                    # Shared: Datei-Parser
-│   │   └── exception-handler/          # Shared: Fehlerbehandlung
+│   │   ├── validators/                 # CSV-/Excel-Validierung
+│   │   ├── parsers/                    # Datei-Parser
+│   │   └── exception-handler/          # Fehlerbehandlung
 │   │
 │   ├── conf/
 │   │   └── logger/
-│   │       └── logger.js               # Shared: Logging-Konfiguration
+│   │       └── logger.js               # Logging-Konfiguration
 │   │
-│   ├── App.jsx                         # Haupt-App mit Routing
-│   ├── main.jsx                        # Entry Point
+│   ├── App.jsx                         # Routing & globale Layouts
+│   ├── main.jsx                        # Application Entry Point
 │   └── index.css                       # Globale Styles
 │
 ├── theme.config.js                     # Theme-Konfiguration
-├── tailwind.config.js                  # Tailwind-Konfiguration
+├── tailwind.config.js                  # Tailwind CSS Setup
 ├── vite.config.js                      # Vite-Konfiguration
-├── package.json                        # Abhängigkeiten
-└── README.md                           # Diese Datei
+├── package.json                        # Abhängigkeiten & Skripte
+└── README.md                           # Projektdokumentation
 ```
+
+---
+
+## Installation
+
+### Voraussetzungen
+
+- Node.js (>= 18 empfohlen)
+- npm oder yarn
+
+### Setup
+
+```bash
+npm install
+```
+
+### Entwicklungsmodus
+
+Hierfür muss aber der Backend-Server gestartet sein siehe Dokumentation [README](../backend/README.md)
+
+```bash
+npm run dev
+```
+
+Die Anwendung ist anschließend standardmäßig unter `http://localhost:5174` erreichbar.
+
+---
+
+## Build
+
+```bash
+npm run build
+```
+
+Das Build-Artefakt wird im `dist/`-Verzeichnis erzeugt.
+
+---
+
+## Docker & Deployment
+
+Das administrative Frontend kann als **statische Anwendung über Nginx** ausgeliefert werden.
+
+Docker-Image bauen:
+
+```bash
+docker build -t admin_frontend_image .
+```
+
+Der Container enthält:
+
+- den Vite-Build
+- eine vorkonfigurierte Nginx-Instanz zur Auslieferung der Assets
+
+Für den `dockerized` Start des Admin-Frontends siehe [README](/backend/.extras/compose/admin_frontend/README.md)
+
+---
+
+## Sicherheit & Zugriff
+
+- Alle Admin-Funktionen sind **authentifizierungspflichtig**
+- Zugriff erfolgt ausschließlich über das zugehörige Backend
+- Sensible Logik (z. B. Auszählung) wird serverseitig abgesichert
+
+---
+
+## Hinweise
+
+- Gemeinsame Module sind bewusst generisch gehalten, um Wiederverwendung zu ermöglichen
