@@ -4,6 +4,7 @@ import { voterApi } from '../services/voterApi';
 import { AccessibilityContext } from '../context/AccessibilityContext';
 import { candidateApi } from '../services/candidateApi';
 import { logger } from '../conf/logger/logger';
+import { useTheme } from '../hooks/useTheme';
 import ResponsiveButton from './ResponsiveButton';
 import { AlertForReferendum } from './AlertForReferendum';
 const MAX_UID_PREFIX_LENGTH = 20;
@@ -17,6 +18,7 @@ export const ModalForReferendum = ({ open, setOpen, electionId, refreshElections
   const [selectedOptionValues, setSelectedOptionValues] = useState([]);
   const [optionsCount, setOptionsCount] = useState(0);
   const { settings } = useContext(AccessibilityContext);
+  const theme = useTheme();
 
   const accessibilityClasses = [
     settings.lineHeight === 1 ? 'accessibility-line-height-1' : '',
@@ -306,7 +308,7 @@ export const ModalForReferendum = ({ open, setOpen, electionId, refreshElections
               </div>
               <div className="ml-3 text-sm">
                 <span className="font-medium text-gray-700 dark:text-gray-300 group-hover:text-brand-primary transition-colors">
-                  Ich möchte meinen Stimmzettel ungültig abgeben
+                  {theme.text.checkBoxConfirm}
                 </span>
               </div>
             </label>

@@ -153,14 +153,16 @@ export const ImageUploadCandidate = ({ setUploadData }) => {
     e.target.value = null;
   };
 
-  // --- Cropper Handler ---
+  /**
+   *  Cropper Handler
+   */
   // Safe the cropped area
   const onCropComplete = useCallback((croppedArea, croppedAreaPixels) => {
     setCroppedAreaPixels(croppedAreaPixels);
     logger.debug(croppedAreaPixels);
   }, []);
 
-  // --- Actions ---
+  // Actions
   const handleReset = () => {
     setImage(null);
     setSelectedFile(null);
@@ -176,7 +178,7 @@ export const ImageUploadCandidate = ({ setUploadData }) => {
       <div>
         <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">Bild zuschneiden</h2>
 
-        {/* CROPPING AREA */}
+        {/* Cropping Area */}
         <div className="relative w-1/4 aspect-[3/4] max-w-sm mx-auto bg-gray-100 rounded-lg shadow-lg">
           <Cropper
             image={image}
@@ -195,7 +197,7 @@ export const ImageUploadCandidate = ({ setUploadData }) => {
           />
         </div>
 
-        {/* ZOOM SLIDER AND INFO */}
+        {/* Zoom Slider & Info */}
         <div className="max-w-sm mx-auto space-y-4">
           <div className="flex items-center space-x-4">
             <span className="text-gray-600 dark:text-gray-300 font-medium whitespace-nowrap">
@@ -218,7 +220,7 @@ export const ImageUploadCandidate = ({ setUploadData }) => {
           </p>
         </div>
 
-        {/* BUTTONS */}
+        {/* Buttons */}
         <div className="flex justify-center space-x-4 pt-2">
           <ResponsiveButton
             size="small"
@@ -252,7 +254,7 @@ export const ImageUploadCandidate = ({ setUploadData }) => {
     <>
       <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">Bild hochladen</h2>
 
-      {/* UPLOAD AREA */}
+      {/* Upload Area */}
       <div
         /* eslint-disable */
         className={`flex flex-col items-center justify-center p-12 text-center rounded-xl transition-all duration-300 ease-in-out border-2 cursor-pointer 
@@ -293,15 +295,17 @@ export const ImageUploadCandidate = ({ setUploadData }) => {
 
         <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">oder</p>
 
-        {/* UPLOAD BUTTON */}
+        {/* File Input Button */}
         <div className="px-4 py-2 bg-brand-primary text-white rounded-md font-medium text-sm shadow hover:bg-brand-primary/90 transition">
           Datei auswählen
         </div>
 
-        <p className="text-xs text-gray-400 dark:text-gray-500 mt-3">PNG, JPG, max. 5MB. Empfohlenes Format: 3:4</p>
+        <p className="text-xs text-gray-400 dark:text-gray-500 mt-3">
+          PNG, JPG, max. 5MB. Empfohlenes Format: 3:4
+        </p>
       </div>
 
-      {/* HIDDEN INPUT */}
+      {/* Hidden Input */}
       <input
         id="fileInput"
         type="file"
