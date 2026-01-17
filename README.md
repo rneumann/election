@@ -25,12 +25,20 @@
    - [Vorbereitung](#81-vorbereitung)
    - [Start der Anwendung](#82-start-der-anwendung)
    - [Alternativstart](#821-start-der-anwendungen-alternativ)
-9. [Produktivbetrieb (Docker)](#9-produktivbetrieb-docker)
-   - [Build & Start](#91-build--start)
-   - [Stoppen](#92-stoppen)
-   - [Wartung & Troubleshooting](#93-wartung--troubleshooting)
-10. [Zugriff nach dem Start](#10-zugriff-nach-dem-start)
-11. [Tests (Playwright)](#11-tests-playwright)
+9. [Konfiguration der Styles](#9-style-konfigurationen)
+   - [Definition](#91-style-definitionen)
+   - [Anpassung](#92-style-anpassung)
+10. [Produktivbetrieb (Docker)](#10-produktivbetrieb-docker)
+
+- [Build & Start](#101-build--start)
+- [Stoppen](#102-stoppen)
+- [Wartung & Troubleshooting](#103-wartung--troubleshooting)
+
+11. [Zugriff nach dem Start](#11-zugriff-nach-dem-start)
+12. [Tests (Playwright)](#12-tests-playwright)
+
+- [Installation](#121-installationsschritte)
+- [Ausführung](#122-ausführung)
 
 ---
 
@@ -344,22 +352,41 @@ Alle Services greifen dabei auf die zuvor definierten `.env`-Variablen zu.
 
 ---
 
-## 9. Produktivbetrieb (Docker)
+## 9. Style Konfigurationen
 
-### 9.1 Build & Start
+### 9.1 Style Definitionen
+
+Um das Styling an Ihr Schema anzupassen finden Sie eine Datei mit den öffentlichen [Stylings](./frontend/theme.config.js).
+
+### 9.2 Style Anpassung
+
+In der Datei befinden sich Konfigurationen wie beispielsweise
+
+```bash
+institution: {...}; #Name der Einrichtung
+colors:{...} #Farbkonfiguration wie die Einrichtung es vorsieht
+text:{...}; #Begrüßungs-/Informationstext
+roles:{...}; #Existierende Rollen im Wahlsystem
+```
+
+Hier nehmen Sie die nötigen Anpassungen vor, welche dann vom System aktualisiert werden, sodass Sie ihre Änderungen dann einsehen können.
+
+## 10. Produktivbetrieb (Docker)
+
+### 10.1 Build & Start
 
 ```bash
 cd backend/.extras/compose
 docker compose --profile prod up
 ```
 
-### 9.2 Stoppen
+### 10.2 Stoppen
 
 ```bash
 docker compose down
 ```
 
-### 9.3 Wartung & Troubleshooting
+### 10.3 Wartung & Troubleshooting
 
 ```bash
 docker compose logs -f
@@ -368,7 +395,7 @@ docker compose logs -f backend
 
 ---
 
-## 10. Zugriff nach dem Start (Lokal für Entwicklungszwecke)
+## 11. Zugriff nach dem Start (Lokal für Entwicklungszwecke)
 
 | Service        | URL                   | Beschreibung          |
 | -------------- | --------------------- | --------------------- |
@@ -380,9 +407,48 @@ Nach dem Aufruf gelangen Sie zur Login-Seite des jeweiligen Systems.
 
 > Für die Links auf euren produktionsfähigen Auslieferungen, bitte sehen Sie in Ihren Konfigurationen nach.
 
-## 11. Tests (Playwright)
+## 12. Tests (Playwright)
 
 Nach Code-Änderungen wird die Ausführung der E2E-Tests empfohlen.
 
+### 12.1 Installationsschritte
+
+Zur Nutzung der sogenannten E2E-Tests ist das Testframework zu installieren und eine Konfiguration vorzunehmen.
+
+> In einem Terminal
+
+```bash
+npx install playwright
+```
+
+> Im Ordner [E2E](./frontend/e2e) eine .e2e-env anlegen:
+
+```env
+USER_USERNAME=u001
+USER_PASSWORD=p
+USER2_USERNAME=u002
+USER2_PASSWORD=p
+USER3_USERNAME=u003
+USER3_PASSWORD=p
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=p
+```
+
+und mit Werten wie diesen befüllen, denn durch die .env-Datei wird die Authentifizierung automatisch übernommen.
+
+Siehe [Utilities](./frontend/e2e/utils/authentication.js) für das Verständnis der genauen Funktionsweise der automatischen Authentifizierung.
+
+Nun sollte das Testsystem bereit sein.
+
+### 12.2 Ausführung
+
+In einem Terminal muss ein Befehl ausgeführt werden um die Tests auszuführen:
+
+```bash
+npm run test:e2e #Führt alle vorhandenen Tests headless aus (Ohne Benutzeroberfläche). Ist für CI/CD geeignet.
+
+npm run test:e2e:ui #Führt zum Einen alle Tests aus und öffnet eine Benutzeroberfläche um Test-Schritte nachzuvollziehen und um Zustände zu überprüfen.
+```
+
 Weitere Informationen:  
-[README](./frontend/e2e/README.md)
+[Playwright](./frontend/e2e/README.md)
