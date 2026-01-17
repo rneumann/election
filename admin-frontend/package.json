@@ -1,7 +1,15 @@
 {
-  "name": "wahlsystem-hka-admin-frontend",
+  "name": "wahlsystem-hka",
   "version": "1.0.0",
-  "description": "Admin-Frontend für das Online-Wahlsystem der HKA",
+  "description": "Admin-Frontend des Online-Wahlsytem für BSI konforme E-Wahlen",
+  "license": "MIT",
+  "author": "Hochschule Karlsruhe",
+  "contributors": [
+    "Soulaiman Grimpe",
+    "Raphael Theiss",
+    "Tobias Pfeil",
+    "Yasin Ayyildiz"
+  ],
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -26,6 +34,7 @@
     "axios": "^1.13.1",
     "dotenv": "^17.2.3",
     "exceljs": "^4.4.0",
+    "license-checker": "^25.0.1",
     "loglevel": "^1.9.2",
     "lucide-react": "^0.556.0",
     "papaparse": "^5.5.3",

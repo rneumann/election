@@ -1,8 +1,15 @@
 {
   "name": "wahlsystem-hka",
   "version": "1.0.0",
-  "description": "wahlsytem für BSI konforme E-Wahlen",
+  "description": "Backend des Online-Wahlsytem für BSI konforme E-Wahlen",
   "license": "MIT",
+  "author": "Hochschule Karlsruhe",
+  "contributors": [
+    "Soulaiman Grimpe",
+    "Raphael Theiss",
+    "Tobias Pfeil",
+    "Yasin Ayyildiz"
+  ],
   "type": "module",
   "main": "server.js",
   "scripts": {
@@ -24,6 +31,7 @@
     "express-session": "^1.18.2",
     "helmet": "^8.1.0",
     "ldapts": "^8.0.9",
+    "license-checker": "^25.0.1",
     "multer": "^2.0.2",
     "passport": "^0.7.0",
     "passport-local": "^1.0.0",
