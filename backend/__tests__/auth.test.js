@@ -1,11 +1,5 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest';
 
-process.env.ADMIN_PASSWORD = 'admin123';
-process.env.COMMITTEE_PASSWORD = 'committee123';
-process.env.AD_URL = 'ldap://mockserver';
-process.env.AD_USER_BIND_DN = 'uid=${username},ou=students,dc=example,dc=com';
-process.env.AD_DOMAIN = 'EXAMPLE';
-
 const EXPECTED_USER_DN = 'uid=user1,ou=students,dc=example,dc=com';
 
 vi.mock('../src/conf/logger/logger.js', () => ({
