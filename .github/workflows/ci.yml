@@ -11,7 +11,11 @@ jobs:
     name: Build & Test Backend
     runs-on: ubuntu-latest
     env:
+      AD_URL: ldap://mockserver
+      AD_USER_BIND_DN: "uid=${username},ou=students,dc=example,dc=com"
+      AD_DOMAIN: EXAMPLE
       ADMIN_PASSWORD: admin123
+      COMMITTEE_PASSWORD: committee123
       ADMIN_DN: cn=admin,dc=ads,dc=hs-karlsruhe,dc=de
       ADMIN_PASSWORD_LDAP: p
     steps:
