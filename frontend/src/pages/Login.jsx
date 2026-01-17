@@ -9,6 +9,8 @@ import AccessibilityMenu from '../components/AccessibilityMenu.jsx';
 import api from '../services/api.js';
 import { handleHttpStatus } from '../utils/exception-handler/exception-handler.js';
 
+const USERNAME_PATTERN = import.meta.env.VITE_USERNAME_PATTERN ?? '^[a-z0-9]+$';
+
 /**
  * Login page for user authentication.
  * Handles user login with backend API integration.
@@ -292,10 +294,12 @@ const LoginContent = () => {
                 id="username"
                 name="username"
                 autoComplete="username"
+                inputMode="latin"
+                pattern={USERNAME_PATTERN}
                 ref={usernameRef}
                 value={username}
                 onChange={(e) => {
-                  setUsername(e.target.value);
+                  setUsername(e.target.value.toLowerCase());
                   if (error) {
                     setError('');
                   }

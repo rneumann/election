@@ -130,6 +130,9 @@ npm run format
 ---
 
 ## Docker & Deployment
+- `VITE_USERNAME_PATTERN`: Username pattern for login (Standard: `^[a-z0-9]+$`)
+
+- `VITE_ENABLE_KEYCLOAK_AUTH`: Keycloak-Login aktivieren (`true`/`false`)
 
 Das Frontend kann als **statische Anwendung über Nginx** ausgeliefert werden.
 
