@@ -40,16 +40,16 @@ export const themeConfig = {
     loginSubtitle: 'Bitte melden Sie sich mit Ihren Anmeldedaten an',
     welcomeTitle: 'Willkommen im HKA Wahlsystem',
     welcomeSubtitle: 'BSI-konformes Online-Wahlsystem für hochschulinterne Wahlen',
-  },
-
-  placeholders: {
-    loginUsername: 'Ihr RZ-Kürzel',
-    loginPassword: 'Ihr Passwort',
     checkVote: 'Ihre Auswahl zur Kontrolle',
     confirmationInvalid: 'Ihr Stimmzettel wird ungültig abgegeben!',
     confirmVote: 'Abstimmung bestätigen',
     checkBoxConfirm: 'Ich möchte meinen Stimmzettel ungültig abgeben!',
     auditSearch: 'Suche (Aktion, Akteur, ID)...',
+  },
+
+  placeholders: {
+    loginUsername: 'Ihr RZ-Kürzel',
+    loginPassword: 'Ihr Passwort',
   },
 
   // Role names (optional customization)

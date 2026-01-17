@@ -59,7 +59,7 @@ export const AlertForReferendum = ({
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <span className="font-bold text-gray-900 dark:text-gray-100 text-lg transition-colors">
-          {theme.placeholders.checkVote}
+          {theme.text.checkVote}
         </span>
         <ResponsiveButton
           disabled={showSpinner}
@@ -89,7 +89,7 @@ export const AlertForReferendum = ({
       <div className="flex-1 overflow-auto">
         {invalidHandOver ? (
           <p className="text-red-500 dark:text-red-400 font-bold transition-colors">
-            {theme.placeholders.confirmationInvalid}
+            {theme.text.confirmationInvalid}
           </p>
         ) : (
           <ul className="space-y-3">
@@ -138,7 +138,7 @@ export const AlertForReferendum = ({
               {showSpinner ? (
                 <Spinner size={18} thickness={3} color="border-white" />
               ) : (
-                theme.placeholders.confirmVote
+                theme.text.confirmVote
               )}
             </ResponsiveButton>
           </div>

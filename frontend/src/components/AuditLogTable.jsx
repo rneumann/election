@@ -305,7 +305,7 @@ const AuditLogTable = () => {
           <div className="relative">
             <input
               type="text"
-              placeholder={theme.placeholders.auditSearch}
+              placeholder={theme.text.auditSearch}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-9 pr-4 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-brand-primary focus:border-transparent outline-none w-full sm:w-64"

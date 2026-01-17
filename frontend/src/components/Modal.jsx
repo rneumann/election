@@ -290,7 +290,7 @@ export const Modal = ({ open, setOpen, electionId, refreshElections }) => {
                 checked={invalidHandOver}
                 onChange={(e) => setInvalidHandOver(e.target.checked)}
               />
-              <span>{theme.placeholders.checkBoxConfirm}</span>
+              <span>{theme.text.checkBoxConfirm}</span>
             </label>
 
             <div className="modal-button-container flex items-center gap-2 sm:gap-3 justify-end">

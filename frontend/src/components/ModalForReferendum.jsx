@@ -308,7 +308,7 @@ export const ModalForReferendum = ({ open, setOpen, electionId, refreshElections
               </div>
               <div className="ml-3 text-sm">
                 <span className="font-medium text-gray-700 dark:text-gray-300 group-hover:text-brand-primary transition-colors">
-                  {theme.placeholders.checkBoxConfirm}
+                  {theme.text.checkBoxConfirm}
                 </span>
               </div>
             </label>
