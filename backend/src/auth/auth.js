@@ -129,10 +129,6 @@ export const loginRoute =
           actorRole: user.role,
           details: {
             method: strategy,
-            session_id_hash: crypto
-              .createHash('sha256')
-              .update(req.sessionID || 'unknown')
-              .digest('hex'),
           },
         }).catch((e) => logger.error(e));
         req.session.sessionSecret = crypto.randomBytes(32).toString('hex');
