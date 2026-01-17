@@ -211,7 +211,7 @@ const HomeContent = () => {
                               setSelectedElection(election);
                             }}
                           >
-                            Wahl starten
+                            Wählen
                           </ResponsiveButton>
 
                           {election?.election_type === 'referendum' && (
@@ -303,18 +303,19 @@ const HomeContent = () => {
 
                         {/* Button to start voting */}
                         <div className="flex gap-2">
-                          <ResponsiveButton
-                            toolTip={election.test_election_active ? '' : 'Testwahl nicht aktiv'}
-                            size="small"
-                            disabled={!election.test_election_active || election.voted}
-                            onClick={() => {
-                              setOpen(true);
-                              logger.debug(`current election id settet to: ${election}`);
-                              setSelectedElection(election);
-                            }}
-                          >
-                            Testwahl starten
-                          </ResponsiveButton>
+                          {!election.test_election_active || election.voted ? undefined : (
+                            <ResponsiveButton
+                              toolTip={election.test_election_active ? '' : 'Testwahl nicht aktiv'}
+                              size="small"
+                              onClick={() => {
+                                setOpen(true);
+                                logger.debug(`current election id settet to: ${election}`);
+                                setSelectedElection(election);
+                              }}
+                            >
+                              {'Wählen (Test)'}
+                            </ResponsiveButton>
+                          )}
                           <ResponsiveButton
                             size="small"
                             toolTip={'Hier können Sie Informationen über die Kandidaten abrufen.'}
