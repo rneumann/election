@@ -3,6 +3,7 @@ import { logger } from '../conf/logger/logger';
 import { voterApi } from '../services/voterApi';
 import { useAuth } from '../context/AuthContext';
 import { useAlert } from '../context/AlertContext';
+import { useTheme } from '../hooks/useTheme';
 import ResponsiveButton from './ResponsiveButton';
 import { Spinner } from './Spinner';
 
@@ -16,6 +17,7 @@ export const AlertForReferendum = ({
   refreshElections,
   options,
 }) => {
+  const theme = useTheme();
   const [showSpinner, setShowSpinner] = useState(false);
   const { user } = useAuth();
   const { showAlert } = useAlert();
@@ -57,7 +59,7 @@ export const AlertForReferendum = ({
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <span className="font-bold text-gray-900 dark:text-gray-100 text-lg transition-colors">
-          Ihre Auswahl zur Kontrolle
+          {theme.text.checkVote}
         </span>
         <ResponsiveButton
           disabled={showSpinner}
@@ -87,7 +89,7 @@ export const AlertForReferendum = ({
       <div className="flex-1 overflow-auto">
         {invalidHandOver ? (
           <p className="text-red-500 dark:text-red-400 font-bold transition-colors">
-            Ihr Stimmzettel wird ungültig abgegeben!
+            {theme.text.confirmationInvalid}
           </p>
         ) : (
           <ul className="space-y-3">
@@ -136,7 +138,7 @@ export const AlertForReferendum = ({
               {showSpinner ? (
                 <Spinner size={18} thickness={3} color="border-white" />
               ) : (
-                'Abstimmung bestätigen'
+                theme.text.confirmVote
               )}
             </ResponsiveButton>
           </div>

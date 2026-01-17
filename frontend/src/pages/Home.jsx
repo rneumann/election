@@ -118,10 +118,10 @@ const HomeContent = () => {
     <div
       className={`min-h-screen flex flex-col bg-brand-light dark:bg-gray-900 transition-colors ${accessibilityClasses}`}
     >
-      {/* Header - Sticky on scroll */}
+      {/* Header */}
       <Header setAccessibilityMenuOpen={setAccessibilityMenuOpen} />
 
-      {/* Main Content - Flex-1 to push footer down */}
+      {/* Main Content */}
       <main className="flex-1 container mx-auto px-4 sm:px-6 py-6 sm:py-8">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 sm:p-6 md:p-8 border border-gray-100 dark:border-gray-700 transition-colors">
           <h2 className="text-2xl sm:text-3xl font-bold text-brand-dark dark:text-gray-100 mb-3 sm:mb-4 transition-colors">
@@ -142,7 +142,7 @@ const HomeContent = () => {
 
           {/* Info Cards - For all users */}
           <div className="grid grid-cols-1 sm:grid-cols-1 lg:grid-cols-1 gap-4 sm:gap-6 mt-6 sm:mt-8">
-            {/* Card 1: Zukünftige Wahlen */}
+            {/* Card 1: Elections in the Future */}
             <div className="bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-900/40 dark:to-blue-800/40 p-4 sm:p-6 rounded-lg border border-blue-200 dark:border-blue-700 hover:shadow-lg transition-all duration-200">
               <div className="flex items-start gap-3 mb-3">
                 <div className="bg-green-500 dark:bg-green-600 text-white rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0 transition-colors">
@@ -235,7 +235,7 @@ const HomeContent = () => {
               </div>
             </div>
 
-            {/* zukünftige Wahlen*/}
+            {/* Elections in the Future */}
             <div className="bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-900/40 dark:to-blue-800/40 p-4 sm:p-6 rounded-lg border border-blue-200 dark:border-blue-700 hover:shadow-lg transition-all duration-200">
               <div className="flex items-start gap-3 mb-3">
                 <div className="bg-blue-600 dark:bg-blue-500 text-white rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0 transition-colors">
@@ -276,7 +276,7 @@ const HomeContent = () => {
                         key={election.id}
                         className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors flex flex-col gap-2"
                       >
-                        {/* Wahlart */}
+                        {/* Election-Type */}
                         <div className="flex flex-col sm:flex-row sm:items-center gap-1">
                           <span className="font-semibold text-sm text-blue-600 dark:text-white transition-colors">
                             Wahlart:
@@ -335,7 +335,7 @@ const HomeContent = () => {
               </div>
             </div>
 
-            {/* Card 2: Meine Stimmen */}
+            {/* Card 2: My Votes */}
             <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/30 p-4 sm:p-6 rounded-lg border border-green-200 dark:border-green-700 hover:shadow-lg transition-all duration-200">
               <div className="flex items-start gap-3 mb-3">
                 <div className="bg-green-600 dark:bg-green-500 text-white rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0 transition-colors">
@@ -434,7 +434,7 @@ const HomeContent = () => {
         </div>
       </main>
 
-      {/* Footer - Always visible at bottom */}
+      {/* Footer */}
       <Footer />
 
       {/* Accessibility Sidebar */}
