@@ -11,5 +11,5 @@ Dieses Projekt wurde von **Studierenden** der **Hochschule Karlsruhe** entwickel
 
 ## Dankeschön
 
-Ein besonderer Dank geht an **Prof. Dr.-Ing. Rainer Neumann** für die Erstellung dieses Projekts, sowie Umsetzung.
+Ein besonderer Dank geht an **Prof. Dr.-Ing. Rainer Neumann** für die Erstellung dieses Projekts, sowie Unterstützung bei der Umsetzung.
 Ein weiterer Dank geht an **Prof. Dr. rer. nat. Andreas Heberle** und **Prof. Dr. Ingo Stengel** für die Begleitung während des Projektes.
