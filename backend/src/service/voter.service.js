@@ -128,7 +128,7 @@ export const getVoterById = async (voterId) => {
   const sql = `
     SELECT *
     FROM voters
-    WHERE uid = $1
+    WHERE lower(uid) = lower($1)
   `;
 
   try {
