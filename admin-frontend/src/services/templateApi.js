@@ -57,14 +57,20 @@ export const templateApi = {
 
   /*
    * Holt die Liste aller verfügbaren Wahl-Presets (Wahlarten)
+   * Returns: { internal: [{key: string, info: string}, ...], external: [{key: string, info: string}, ...] }
    */
   getAvailablePresets: async () => {
     try {
       const response = await api.get('/admin/config/presets');
-      return response.data; // Erwartet Array: ["generic", "stupa_verhaeltnis", ...]
+      // Ensure we always return the structured format
+      if (response.data && typeof response.data === 'object' && !Array.isArray(response.data)) {
+        return response.data; // Already in {internal: [], external: []} format
+      }
+      // Fallback for old array format
+      return { internal: [], external: [] };
     } catch (error) {
       logger.error('Fehler beim Laden der Presets:', error);
-      return ['generic'];
+      return { internal: [], external: [] };
     }
   },
 };

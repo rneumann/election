@@ -22,7 +22,7 @@ const COLORS = {
 };
 
 // --- KONSTANTEN: LAYOUT & DIMENSIONEN ---
-const COL_WIDTH_A = 25;
+const COL_WIDTH_A = 35;
 const COL_WIDTH_B = 35;
 const COL_WIDTH_C = 15;
 const COL_WIDTH_D = 25;
@@ -159,8 +159,10 @@ export const generateOfficialReport = async (resultId) => {
       const r = sheet.getRow(rowNum);
       r.getCell(COL_IDX_LABEL).value = key;
       r.getCell(COL_IDX_LABEL).font = { bold: true, name: 'Arial', size: 11 };
+      r.getCell(COL_IDX_LABEL).alignment = { vertical: 'middle', horizontal: 'left' };
       r.getCell(COL_IDX_VALUE).value = val;
       r.getCell(COL_IDX_VALUE).font = { name: 'Arial', size: 11 };
+      r.getCell(COL_IDX_VALUE).alignment = { vertical: 'middle', horizontal: 'center' };
       r.height = 20;
 
       for (let i = COL_START; i <= COL_END; i += 1) {
@@ -169,7 +171,7 @@ export const generateOfficialReport = async (resultId) => {
           pattern: 'solid',
           fgColor: { argb: COLORS.BG_METADATA },
         };
-        r.getCell(i).alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
+        r.getCell(i).alignment = { vertical: 'middle', horizontal: i === COL_START ? 'left' : 'center', wrapText: true };
         r.getCell(i).border = {
           top: { style: 'thin', color: { argb: COLORS.BORDER_GREY } },
           bottom: { style: 'thin', color: { argb: COLORS.BORDER_GREY } },
@@ -223,7 +225,7 @@ export const generateOfficialReport = async (resultId) => {
           left: { style: 'thin', color: { argb: COLORS.BORDER_GREY } },
           right: { style: 'thin', color: { argb: COLORS.BORDER_GREY } },
         };
-        r.getCell(i).alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
+        r.getCell(i).alignment = { vertical: 'middle', horizontal: i === COL_START ? 'left' : 'center', wrapText: true };
       }
       rowNum += 1;
     });

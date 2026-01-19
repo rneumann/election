@@ -13,6 +13,7 @@ import {
   getElectionsForAdmin,
   resetElectionData,
 } from '../service/admin.service.js';
+import { getAvailablePresets } from '../service/template.service.js';
 
 export const adminRouter = express.Router();
 
@@ -280,26 +281,12 @@ adminRouter.post('/config/presets', upload.single('configFile'), async (req, res
 
 /**
  * GET /admin/config/presets
- * Get list of all available election preset keys
+ * Get list of all available election presets (internal + external)
  */
 adminRouter.get('/config/presets', async (req, res) => {
   try {
-    let presets = {};
-    try {
-      const rawData = await fs.readFile(MASTER_CONFIG_PATH, 'utf-8');
-      presets = JSON.parse(rawData);
-    } catch (readErr) {
-      // File doesn't exist yet, that's OK
-      logger.debug('Keine existierende Konfiguration gefunden.', readErr);
-    }
-
-    // Always include "generic" option
-    const keys = Object.keys(presets);
-    if (!keys.includes('generic')) {
-      keys.unshift('generic');
-    }
-
-    res.json(keys);
+    const presets = await getAvailablePresets();
+    res.json(presets);
   } catch (error) {
     logger.error('Fehler beim Laden der Preset-Liste:', error);
     res.status(500).json({ error: 'Konnte Presets nicht laden' });

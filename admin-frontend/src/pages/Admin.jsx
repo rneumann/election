@@ -48,7 +48,7 @@ const AdminDashboard = () => {
   const [templateType, setTemplateType] = useState('generic');
   const [selectedConfigFile, setSelectedConfigFile] = useState(null);
   const [uploadStatus, setUploadStatus] = useState('');
-  const [presetOptions, setPresetOptions] = useState(['generic']);
+  const [presetOptions, setPresetOptions] = useState({ internal: [], external: [] });
   const [selectedPreset, setSelectedPreset] = useState('generic');
   // NEU ENDE (templates)
   const [activeSection, setActiveSection] = useState('counting');
@@ -68,10 +68,21 @@ const AdminDashboard = () => {
   const fetchPresets = useCallback(async () => {
     try {
       const presets = await templateApi.getAvailablePresets();
-      setPresetOptions(Array.isArray(presets) ? presets : ['generic']);
+      // Handle both old array format and new object format
+      if (presets && typeof presets === 'object' && !Array.isArray(presets)) {
+        setPresetOptions(presets);
+      } else if (Array.isArray(presets)) {
+        // Convert array format to new object format for backward compatibility
+        setPresetOptions({
+          internal: presets.map(p => ({ key: p, info: p.toUpperCase() })),
+          external: []
+        });
+      } else {
+        setPresetOptions({ internal: [], external: [] });
+      }
     } catch (err) {
       logger.error('Fehler beim Laden der Presets:', err);
-      setPresetOptions(['generic']);
+      setPresetOptions({ internal: [], external: [] });
     }
   }, []);
 
@@ -489,6 +500,23 @@ const AdminDashboard = () => {
                       {uploadStatus}
                     </div>
                   )}
+                  
+                  <div className="border-t pt-6 mt-6">
+                    <h3 className="font-bold mb-3">💡 JSON-Template für benutzerdefinierte Presets</h3>
+                    <p className="text-sm text-gray-600 mb-4">
+                      Sie können neue Wahl-Konfigurationen als JSON-Dateien erstellen. Laden Sie diese Vorlage herunter, um zu sehen, wie das Format aussehen muss:
+                    </p>
+                    <a
+                      href="/data/election_presets_template.json"
+                      download="election_presets_template.json"
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-200 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      JSON-Template herunterladen
+                    </a>
+                  </div>
                 </div>
               </div>
             )}
@@ -497,29 +525,42 @@ const AdminDashboard = () => {
               <div className="bg-white rounded-lg shadow-sm border border-gray-200">
                 <div className="border-b px-6 py-4">
                   <h2 className="text-xl font-bold">Excel-Vorlage herunterladen</h2>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Laden Sie Vorlagen für Wahl-Konfigurationen und Wählerverzeichnisse herunter
+                  </p>
                 </div>
                 <div className="p-6 space-y-8">
-                  <div className="p-6 bg-gray-50 border rounded-lg text-center">
-                    <h3 className="font-bold mb-4">Welche Vorlage benötigen Sie?</h3>
+                  <div className="p-6 bg-gray-50 border rounded-lg">
+                    <h3 className="font-bold mb-4 text-center">Welche Vorlage benötigen Sie?</h3>
                     <select
                       value={templateType}
                       onChange={(e) => setTemplateType(e.target.value)}
-                      className="w-full max-w-md mx-auto block rounded-md border-gray-300 mb-6 p-2.5 bg-white border"
+                      className="w-full rounded-md border-gray-300 mb-6 p-2.5 bg-white border"
                     >
-                      <optgroup label="Allgemein">
+                      <optgroup label="Basis-Vorlagen">
                         <option value="generic">📝 Leere Wahl-Vorlage (Standard)</option>
                         <option value="voters">👥 Wählerverzeichnis (Import)</option>
                       </optgroup>
-                      <optgroup label="HKA Presets">
-                        {Array.isArray(presetOptions) &&
-                          presetOptions
-                            .filter((p) => p !== 'generic')
+                      {presetOptions && presetOptions.internal && (
+                        <optgroup label="HKA Standard-Presets">
+                          {presetOptions.internal
+                            .filter((p) => p.key !== 'generic')
                             .map((p) => (
-                              <option key={p} value={p}>
-                                🗳️ {p.toUpperCase()}
+                              <option key={p.key} value={p.key}>
+                                🏛️ {p.info}
                               </option>
                             ))}
-                      </optgroup>
+                        </optgroup>
+                      )}
+                      {presetOptions && presetOptions.external && presetOptions.external.length > 0 && (
+                        <optgroup label="Benutzerdefinierte Presets">
+                          {presetOptions.external.map((p) => (
+                            <option key={p.key} value={p.key}>
+                              ⚙️ {p.info}
+                            </option>
+                          ))}
+                        </optgroup>
+                      )}
                     </select>
                     <ResponsiveButton
                       onClick={handleDownloadTemplate}
