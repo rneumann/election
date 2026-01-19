@@ -50,7 +50,7 @@ export const OptionModalForReferendum = ({ open, onClose, election }) => {
             </div>
           )}
 
-          {/* === LIST VIEW === */}
+          {/* List View */}
           {!loadingList && (
             <ul className="space-y-3">
               {options?.map((c, i) => (

@@ -305,7 +305,7 @@ const LoginContent = () => {
                   }
                 }}
                 className="w-full px-4 py-2.5 sm:py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent outline-none transition-shadow duration-200 hover:border-brand-primary"
-                placeholder="Ihr Benutzername"
+                placeholder={theme.placeholders.loginUsername}
                 required
               />
             </div>
@@ -330,7 +330,7 @@ const LoginContent = () => {
                   }
                 }}
                 className="w-full px-4 py-2.5 sm:py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent outline-none transition-shadow duration-200 hover:border-brand-primary"
-                placeholder="Ihr Passwort"
+                placeholder={theme.placeholders.loginPassword}
                 required
               />
             </div>

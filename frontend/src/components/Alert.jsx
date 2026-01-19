@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTheme } from '../hooks/useTheme';
 import { logger } from '../conf/logger/logger';
 import { voterApi } from '../services/voterApi';
 import { useAuth } from '../context/AuthContext';
@@ -15,6 +16,7 @@ export const Alert = ({
   onCancel,
   refreshElections,
 }) => {
+  const theme = useTheme();
   const [showSpinner, setShowSpinner] = useState(false);
   const { user } = useAuth();
   const { showAlert } = useAlert();
@@ -68,7 +70,7 @@ export const Alert = ({
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <span className="font-bold text-gray-900 dark:text-gray-100 text-lg transition-colors">
-          Ihre Auswahl zur Kontrolle
+          {theme.text.checkVote}
         </span>
         <ResponsiveButton
           disabled={showSpinner}
@@ -98,7 +100,7 @@ export const Alert = ({
       <div className="flex-1 overflow-auto">
         {cleanedVotes === undefined ? (
           <p className="text-red-500 dark:text-red-400 font-bold transition-colors">
-            Ihr Stimmzettel wird ungültig abgegeben!
+            {theme.text.confirmationInvalid}
           </p>
         ) : Object.keys(cleanedVotes).length === 0 ? (
           <p className="text-gray-600 dark:text-gray-400 transition-colors">
@@ -147,7 +149,7 @@ export const Alert = ({
               {showSpinner ? (
                 <Spinner size={18} thickness={3} color="border-white" />
               ) : (
-                'Abstimmung bestätigen'
+                theme.text.confirmVote
               )}
             </ResponsiveButton>
           </div>

@@ -149,7 +149,7 @@ export const CandidateInfoModal = ({ open, onClose, election }) => {
                 onClick={handleBack}
                 className="w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 px-4 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition"
               >
-                ← Zurück zur Liste
+                Zurück zur Liste
               </button>
             </div>
           )}

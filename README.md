@@ -363,20 +363,60 @@ Konfiguration der Seitendarstellung.
 
 ### 9.1 Style Definitionen
 
-Um das Styling an Ihr Schema anzupassen finden Sie eine Datei mit den öffentlichen [Stylings](./frontend/theme.config.js).
+Um das UI-Design an Ihr Schema anzupassen finden Sie eine Datei mit den öffentlichen [Stylings](./frontend/theme.config.js).
 
 ### 9.2 Style Anpassung
 
 In der Datei befinden sich Konfigurationen wie beispielsweise
 
-```bash
-institution: {...}; #Name der Einrichtung
-colors:{...} #Farbkonfiguration wie die Einrichtung es vorsieht
-text:{...}; #Begrüßungs-/Informationstext
-roles:{...}; #Existierende Rollen im Wahlsystem
+| Sektion            | Beschreibung                                                                          |
+| ------------------ | ------------------------------------------------------------------------------------- |
+| **`institution`**  | Name und Kürzel der Einrichtung (wird im Header/Titel angezeigt).                     |
+| **`colors`**       | Definition der Corporate Identity Farben (Primärfarbe, Akzente, Text).                |
+| **`text`**         | sichtbare Texte der App (optional Anpassbar)                                          |
+| **`placeholders`** | Platzhalter für beispielsweise Eingabefelder (optional Anpassbar)                     |
+| **`roles`**        | Mapping der technischen Rollen zu Anzeigenamen (z.B. `committee` -> "Wahlausschuss"). |
+
+### Beispiel-Konfiguration
+
+```javascript
+// theme.config.js
+export const themeConfig = {
+  // 1. Mandanten-Daten
+  institution: {
+    name: 'HKA',
+    fullName: 'Hochschule Karlsruhe',
+  },
+
+  // 2. Corporate Design (Tailwind nutzt diese Variablen)
+  colors: {
+    primary: '#e20000ff', // Hauptfarbe (Buttons, Header)
+    dark: '#333333',      // Dunkler Text
+    lightGray: '#F5F5F5', // Hintergründe
+  },
+
+  // 3. Wording
+  text: {
+    appTitle: 'Wahlsystem',
+    loginSubtitle: 'Bitte melden Sie sich mit Ihren Anmeldedaten an',
+  },
+
+  // 4. Platzhalter für flexible Anpassungen
+  placeholder: {
+    loginUsername: 'Ihr RZ-Kürzel', // Der Platzhalter im Login-Feld
+    loginPassword: 'Ihr Passwort', // Der Platzhalter im Password-Feld
+  }
+
+  // 5. Rollen-Bezeichnungen
+  roles: {
+    admin: 'Administrator',
+    voter: 'Wähler',
+  }
+};
 ```
 
 Hier nehmen Sie die nötigen Anpassungen vor, welche dann vom System aktualisiert werden, sodass Sie ihre Änderungen dann einsehen können.
+Farbliche oder strukturelle Designs werden zur Laufzeit geladen und sollte deshalb in dieser .config-Datei erhalten bleiben.
 
 ## 10. Produktivbetrieb (Docker)
 
