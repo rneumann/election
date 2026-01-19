@@ -14,6 +14,7 @@ import {
   resetElectionData,
 } from '../service/admin.service.js';
 import { getAvailablePresets } from '../service/template.service.js';
+import { integrityService } from '../service/integrity.service.js';
 
 export const adminRouter = express.Router();
 
@@ -354,3 +355,68 @@ adminRouter.get('/config/template', (req, res) => {
     res.status(500).json({ error: 'Konnte Template nicht generieren' });
   }
 });
+
+// ============================================================
+// INTEGRITY CHECKS (Blockchain-Validierung)
+// ============================================================
+
+/**
+ * GET /admin/integrity/audit-log
+ * Prüft die Integrität der gesamten Audit Log Kette
+ */
+adminRouter.get(
+  '/integrity/audit-log',
+  ensureAuthenticated,
+  ensureHasRole('admin'),
+  async (req, res) => {
+    try {
+      logger.info('Admin startet Audit Log Chain Prüfung');
+      const result = await integrityService.verifyAuditLogChain();
+      res.json(result);
+    } catch (error) {
+      logger.error('Fehler bei Audit Log Chain Prüfung:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  },
+);
+
+/**
+ * GET /admin/integrity/ballots/:electionId
+ * Prüft die Integrität der Stimmzettel-Kette einer spezifischen Wahl
+ */
+adminRouter.get(
+  '/integrity/ballots/:electionId',
+  ensureAuthenticated,
+  ensureHasRole('admin'),
+  async (req, res) => {
+    try {
+      const { electionId } = req.params;
+      logger.info(`Admin startet Stimmzettel Chain Prüfung für Wahl ${electionId}`);
+      const result = await integrityService.verifyBallotChain(electionId);
+      res.json(result);
+    } catch (error) {
+      logger.error('Fehler bei Stimmzettel Chain Prüfung:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  },
+);
+
+/**
+ * GET /admin/integrity/all-ballots
+ * Prüft alle Wahlen und deren Stimmzettel-Ketten
+ */
+adminRouter.get(
+  '/integrity/all-ballots',
+  ensureAuthenticated,
+  ensureHasRole('admin'),
+  async (req, res) => {
+    try {
+      logger.info('Admin startet Prüfung aller Stimmzettel Chains');
+      const result = await integrityService.verifyAllBallotChains();
+      res.json(result);
+    } catch (error) {
+      logger.error('Fehler bei Prüfung aller Stimmzettel Chains:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  },
+);

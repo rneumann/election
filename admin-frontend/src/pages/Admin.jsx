@@ -24,6 +24,7 @@ import { useAlert } from '../context/AlertContext.jsx';
 import { DeleteDataView } from '../components/DeleteDataView.jsx';
 //NEU ANFANG (templates)
 import { templateApi } from '../services/templateApi.js';
+import IntegrityCheckView from '../components/IntegrityCheckView.jsx';
 //NEU ENDE (templates)
 
 /**
@@ -415,7 +416,7 @@ const AdminDashboard = () => {
                 </div>
 
                 {/* Auszählung */}
-                <div>
+                <div className="mb-6">
                   <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
                     Auszählung
                   </div>
@@ -427,6 +428,23 @@ const AdminDashboard = () => {
                     <div className="flex items-center justify-between">
                       <span>Wahlergebnisse auszählen</span>
                       <span className="text-xs opacity-60">6</span>
+                    </div>
+                  </button>
+                </div>
+
+                {/* Sicherheit */}
+                <div>
+                  <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                    Sicherheit
+                  </div>
+                  <button
+                    onClick={() => handleSectionChange('integrity')}
+                    style={getNavButtonStyle('integrity')}
+                    className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span>🔒 Integritätsprüfung</span>
+                      <span className="text-xs opacity-60">7</span>
                     </div>
                   </button>
                 </div>
@@ -797,6 +815,21 @@ const AdminDashboard = () => {
                 countingError={countingError}
                 setCountingError={setCountingError}
               />
+            )}
+
+            {/* Integrity Check Section */}
+            {activeSection === 'integrity' && (
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div className="border-b px-6 py-4">
+                  <h2 className="text-xl font-bold">🔒 Daten-Integritätsprüfung</h2>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Überprüfen Sie die Integrität der Wahldaten durch Blockchain-ähnliche Hash-Validierung
+                  </p>
+                </div>
+                <div className="p-6">
+                  <IntegrityCheckView />
+                </div>
+              </div>
             )}
           </div>
         </div>
