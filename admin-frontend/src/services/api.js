@@ -88,4 +88,18 @@ export const exportElectionResultExcel = async (resultId) => {
   }
 };
 
+// NEU: Export function for official HKA report
+export const exportOfficialReport = async (resultId) => {
+  try {
+    const response = await api.get(`/export/results/${resultId}/official`, {
+      responseType: 'blob',
+      timeout: 30000, // 30 seconds for file generation
+    });
+    return response.data;
+  } catch (error) {
+    logger.error('Error exporting official report:', error);
+    throw error;
+  }
+};
+
 export default api;

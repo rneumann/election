@@ -16,6 +16,8 @@ import { verifyCsrfToken } from './security/csrf-logic.js';
 import { writeAuditLog } from './audit/auditLogger.js';
 import { redisClient } from './conf/redis/redis-client.js';
 const { CORS_ORIGIN, NODE_ENV, INTERNAL_FINGERPRINT_SALT } = process.env;
+//NEU
+import { downloadRouter as templatesRouter } from './routes/templates-download.route.js';
 
 export const app = express();
 
@@ -233,3 +235,6 @@ app.use(errorHandler);
  * Swagger UI
  */
 app.use('/api-docs', swaggerUiExpress.serve, swaggerUiExpress.setup(swaggerSpec));
+
+//NEU
+app.use('/api/templates-download', templatesRouter);

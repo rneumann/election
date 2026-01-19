@@ -10,6 +10,8 @@ import { candidateRouter } from './candidate.route.js';
 import { importRouter } from './upload.route.js';
 import { auditRouter } from './audit.routes.js';
 import { adminRouter } from './admin.routes.js';
+// NEU: Import des Template-Download-Routers
+import { downloadRouter as templatesRouter } from './templates-download.route.js';
 
 const { AUTH_PROVIDER } = process.env;
 
@@ -301,3 +303,6 @@ router.use('/counting', countingRouter);
  * All routes require authentication and admin/committee role.
  */
 router.use('/export', ensureAuthenticated, ensureHasRole(['admin', 'committee']), exportRoute);
+
+// NEU: Template-Download Route registrieren
+router.use('/templates-download', ensureAuthenticated, ensureHasRole(['admin']), templatesRouter);

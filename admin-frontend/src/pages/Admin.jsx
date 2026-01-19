@@ -1,3 +1,6 @@
+//NEU ANFANG (templates)
+import { useEffect, useCallback } from 'react';
+//NEU ENDE (templates)
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -19,6 +22,9 @@ import { Alert } from '../components/Alert.jsx';
 import { logger } from '../conf/logger/logger.js';
 import { useAlert } from '../context/AlertContext.jsx';
 import { DeleteDataView } from '../components/DeleteDataView.jsx';
+//NEU ANFANG (templates)
+import { templateApi } from '../services/templateApi.js';
+//NEU ENDE (templates)
 
 /**
  * Admin Dashboard - Main admin interface
@@ -38,6 +44,13 @@ const AdminDashboard = () => {
   const theme = useTheme();
   const navigate = useNavigate();
   const [showConfirmAlert, setShowConfirmAlert] = useState(false);
+  // NEU ANFANG (templates)
+  const [templateType, setTemplateType] = useState('generic');
+  const [selectedConfigFile, setSelectedConfigFile] = useState(null);
+  const [uploadStatus, setUploadStatus] = useState('');
+  const [presetOptions, setPresetOptions] = useState(['generic']);
+  const [selectedPreset, setSelectedPreset] = useState('generic');
+  // NEU ENDE (templates)
   const [activeSection, setActiveSection] = useState('counting');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { showAlert } = useAlert();
@@ -50,6 +63,50 @@ const AdminDashboard = () => {
   const [loadingDeletionElections, setLoadingDeletionElections] = useState(false);
   const [selectedElectionForDeletion, setSelectedElectionForDeletion] = useState('all');
   const [electionsForDeletion, setElectionsForDeletion] = useState([]);
+
+  // NEU ANFANG (templates)
+  const fetchPresets = useCallback(async () => {
+    try {
+      const presets = await templateApi.getAvailablePresets();
+      setPresetOptions(Array.isArray(presets) ? presets : ['generic']);
+    } catch (err) {
+      logger.error('Fehler beim Laden der Presets:', err);
+      setPresetOptions(['generic']);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchPresets();
+  }, [fetchPresets]);
+
+  const handleDownloadTemplate = async () => {
+    try {
+      if (templateType === 'voters') {
+        await templateApi.downloadVoterTemplate();
+      } else {
+        await templateApi.downloadElectionTemplate(templateType);
+      }
+      showAlert('success', 'Vorlage erfolgreich heruntergeladen');
+    } catch (err) {
+      showAlert('error', 'Fehler beim Download');
+    }
+  };
+
+  const handleUploadConfig = async () => {
+    if (!selectedConfigFile) {
+      return;
+    }
+    try {
+      await templateApi.uploadConfig(selectedConfigFile);
+      setUploadStatus('Erfolg: Konfiguration wurde aktualisiert!');
+      setSelectedConfigFile(null);
+      await fetchPresets();
+      setTimeout(() => setUploadStatus(''), 5000);
+    } catch (error) {
+      setUploadStatus('Fehler: Upload fehlgeschlagen.');
+    }
+  };
+  // NEU ENDE (templates)
 
   /**
    * Get navigation button style
@@ -258,6 +315,18 @@ const AdminDashboard = () => {
                   <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
                     Wahlen definieren
                   </div>
+                  {/* NEU ANFANG (templates) */}
+                  <button
+                    onClick={() => setActiveSection('config')}
+                    style={getNavButtonStyle('config')}
+                    className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span>Wahl-Parameter Konfig</span>
+                      <span className="text-xs opacity-60">3.1</span>
+                    </div>
+                  </button>
+                  {/* NEU ENDE (templates) */}
                   <button
                     onClick={() => handleSectionChange('template')}
                     style={getNavButtonStyle('template')}
@@ -265,7 +334,7 @@ const AdminDashboard = () => {
                   >
                     <div className="flex items-center justify-between">
                       <span>Excel-Vorlage herunterladen</span>
-                      <span className="text-xs opacity-60">3.1</span>
+                      <span className="text-xs opacity-60">3.2</span>
                     </div>
                   </button>
                   <button
@@ -275,7 +344,7 @@ const AdminDashboard = () => {
                   >
                     <div className="flex items-center justify-between">
                       <span>Wahleinstellung hochladen</span>
-                      <span className="text-xs opacity-60">3.2</span>
+                      <span className="text-xs opacity-60">3.3</span>
                     </div>
                   </button>
                 </div>
@@ -387,6 +456,83 @@ const AdminDashboard = () => {
                 )}
               </div>
             )}
+
+            {/* NEU ANFANG (templates) */}
+            {activeSection === 'config' && (
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 border-l-4 border-l-yellow-500">
+                <div className="border-b px-6 py-4">
+                  <h2 className="text-xl font-bold">⚙️ Wahl-Parameter Konfiguration</h2>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Lade neue JSON-Presets hoch, um die Vorlagen zu erweitern.
+                  </p>
+                </div>
+                <div className="p-6 space-y-4">
+                  <div className="flex gap-4">
+                    <input
+                      type="file"
+                      accept=".json"
+                      onChange={(e) => setSelectedConfigFile(e.target.files[0])}
+                      className="flex-1 text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-yellow-50 file:text-yellow-700"
+                    />
+                    <button
+                      onClick={handleUploadConfig}
+                      disabled={!selectedConfigFile}
+                      className={`px-6 py-2 rounded font-bold text-white ${!selectedConfigFile ? 'bg-gray-300' : 'bg-yellow-600 hover:bg-yellow-700'}`}
+                    >
+                      Hochladen
+                    </button>
+                  </div>
+                  {uploadStatus && (
+                    <div
+                      className={`p-4 rounded-lg text-sm font-bold ${uploadStatus.includes('Erfolg') ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}
+                    >
+                      {uploadStatus}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {activeSection === 'template' && (
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div className="border-b px-6 py-4">
+                  <h2 className="text-xl font-bold">Excel-Vorlage herunterladen</h2>
+                </div>
+                <div className="p-6 space-y-8">
+                  <div className="p-6 bg-gray-50 border rounded-lg text-center">
+                    <h3 className="font-bold mb-4">Welche Vorlage benötigen Sie?</h3>
+                    <select
+                      value={templateType}
+                      onChange={(e) => setTemplateType(e.target.value)}
+                      className="w-full max-w-md mx-auto block rounded-md border-gray-300 mb-6 p-2.5 bg-white border"
+                    >
+                      <optgroup label="Allgemein">
+                        <option value="generic">📝 Leere Wahl-Vorlage (Standard)</option>
+                        <option value="voters">👥 Wählerverzeichnis (Import)</option>
+                      </optgroup>
+                      <optgroup label="HKA Presets">
+                        {Array.isArray(presetOptions) &&
+                          presetOptions
+                            .filter((p) => p !== 'generic')
+                            .map((p) => (
+                              <option key={p} value={p}>
+                                🗳️ {p.toUpperCase()}
+                              </option>
+                            ))}
+                      </optgroup>
+                    </select>
+                    <ResponsiveButton
+                      onClick={handleDownloadTemplate}
+                      variant="primary"
+                      size="large"
+                    >
+                      Ausgewählte Vorlage laden
+                    </ResponsiveButton>
+                  </div>
+                </div>
+              </div>
+            )}
+            {/* NEU ENDE (templates) */}
 
             {/* Excel-Vorlage herunterladen Section */}
             {activeSection === 'template' && (
