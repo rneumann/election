@@ -30,7 +30,8 @@ export const auditRouter = express.Router();
 
 auditRouter.get('/logs', ensureAuthenticated, ensureHasRole(['admin']), async (req, res) => {
   try {
-    const result = await client.query('SELECT * FROM audit_log ORDER BY id DESC LIMIT 1000');
+    const limit = req.query.limit ? parseInt(req.query.limit, 10) : 1000000;
+    const result = await client.query('SELECT * FROM audit_log ORDER BY id DESC LIMIT $1', [limit]);
     res.json(result.rows);
   } catch (err) {
     logger.error('Error fetching audit logs:', err);

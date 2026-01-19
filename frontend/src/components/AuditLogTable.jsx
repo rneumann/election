@@ -63,7 +63,7 @@ const getSafeValue = (row, key) => {
   /* eslint-disable */
   switch (key) {
     case 'id':
-      return row.id;
+      return typeof row.id === 'string' ? parseInt(row.id, 10) : row.id;
     case 'timestamp':
       return row.timestamp;
     case 'action_type':

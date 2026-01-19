@@ -2,6 +2,30 @@ import crypto from 'crypto';
 import { readSecret } from '../security/secret-reader.js';
 import { logger } from '../conf/logger/logger.js';
 
+const getCredentialsOrFallback = async (username, primarySecret, fallbackSecret = null) => {
+  let password;
+  try {
+    password = await readSecret(primarySecret);
+  } catch (e) {
+    if (fallbackSecret) {
+      try {
+        password = await readSecret(fallbackSecret);
+      } catch (e2) {
+        // Fallthrough to random
+      }
+    }
+
+    if (!password) {
+      logger.warn(
+        `${primarySecret} ${fallbackSecret ? `und ${fallbackSecret} ` : ''}nicht gefunden, nutze zufälliges Passwort für ${username}`,
+      );
+      password = crypto.randomUUID();
+    }
+  }
+
+  return { username, password };
+};
+
 /**
  * Returns an object with the admin user's username and password.
  * The password is set to the value of the TEST_ADMIN_PASSWORD environment variable,
@@ -9,24 +33,7 @@ import { logger } from '../conf/logger/logger.js';
  * @returns {Promise<object>} an object with the admin user's username and password
  */
 const getAdminUser = async () => {
-  let password;
-  try {
-    password = await readSecret('TEST_ADMIN_PASSWORD');
-  } catch (e) {
-    // Falls TEST_ADMIN_PASSWORD nicht gesetzt ist, versuchen wir ADMIN_PASSWORD (für Produktion)
-    try {
-      password = await readSecret('ADMIN_PASSWORD');
-    } catch (e2) {
-      logger.warn(
-        'Weder TEST_ADMIN_PASSWORD noch ADMIN_PASSWORD gefunden, nutze zufälliges Passwort',
-      );
-      password = crypto.randomUUID();
-    }
-  }
-  return {
-    username: 'admin',
-    password,
-  };
+  return getCredentialsOrFallback('admin', 'TEST_ADMIN_PASSWORD', 'ADMIN_PASSWORD');
 };
 
 /**
@@ -36,17 +43,7 @@ const getAdminUser = async () => {
  * @returns {Promise<object>} an object with the committee user's username and password
  */
 const getCommitteeUser = async () => {
-  let password;
-  try {
-    password = await readSecret('COMMITTEE_PASSWORD');
-  } catch (e) {
-    logger.warn('COMMITTEE_PASSWORD nicht gefunden, nutze zufälliges Passwort');
-    password = crypto.randomUUID();
-  }
-  return {
-    username: 'committee',
-    password,
-  };
+  return getCredentialsOrFallback('committee', 'COMMITTEE_PASSWORD');
 };
 
 /**
