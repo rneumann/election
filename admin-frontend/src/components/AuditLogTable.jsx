@@ -110,7 +110,7 @@ const stableSort = (array, comparator) => {
 
 // --- SUB-KOMPONENTEN ---
 
-const AuditRow = ({ row }) => {
+const AuditRow = ({ row, isGlitched }) => {
   const [open, setOpen] = useState(false);
 
   const getStatusStyles = (level) => {
@@ -127,23 +127,46 @@ const AuditRow = ({ row }) => {
     }
   };
 
+  const getDisplayValue = (val) => {
+    // Wenn glitchMode aktiv ist, machen wir eine "technische" Darstellung
+    if (isGlitched) {
+      // Beispiel: ID als HEX darstellen oder Prefix
+      return val;
+    }
+    return val;
+  };
+
   return (
     <>
       <tr
         onClick={() => setOpen(!open)}
-        className="hover:bg-gray-50 cursor-pointer transition-colors border-b border-gray-200"
+        className={`cursor-pointer transition-colors border-b border-gray-200 ${
+          isGlitched ? 'glitch-row font-mono text-xs' : 'hover:bg-gray-50'
+        }`}
       >
         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 w-10">
           <button className="focus:outline-none p-1 rounded hover:bg-gray-200">
             {open ? <ChevronUpIcon /> : <ChevronDownIcon />}
           </button>
         </td>
-        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{row.id}</td>
-        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-          {new Date(row.timestamp).toLocaleString('de-DE')}
+        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+          {isGlitched ? <span className="opacity-75">ID::{row.id}</span> : row.id}
         </td>
-        <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-700">
-          {row.action_type}
+        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+          {isGlitched ? (
+            <span className="text-purple-600 font-bold">
+              {new Date(row.timestamp).toISOString().split('T').join(' ')}
+            </span>
+          ) : (
+            new Date(row.timestamp).toLocaleString('de-DE')
+          )}
+        </td>
+        <td
+          className={`px-6 py-4 whitespace-nowrap text-sm font-bold ${
+            isGlitched ? 'text-blue-900 uppercase tracking-widest' : 'text-gray-700'
+          }`}
+        >
+          {isGlitched ? `[${row.action_type}]` : row.action_type}
         </td>
         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{row.actor_id || '-'}</td>
         <td className="px-6 py-4 whitespace-nowrap text-sm">
@@ -158,32 +181,72 @@ const AuditRow = ({ row }) => {
       </tr>
 
       {open && (
-        <tr className="bg-gray-50 border-b border-gray-200">
+        <tr className={`border-b border-gray-200 ${isGlitched ? 'bg-slate-50' : 'bg-gray-50'}`}>
           <td colSpan="6" className="px-6 py-4">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-fadeIn">
-              <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
-                <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
-                  Event Details (JSON)
+            <div
+              className={`grid grid-cols-1 lg:grid-cols-2 gap-6 animate-fadeIn ${isGlitched ? 'font-mono' : ''}`}
+            >
+              <div
+                className={`p-4 rounded-lg border shadow-sm ${
+                  isGlitched ? 'bg-white border-slate-300' : 'bg-white border-gray-200'
+                }`}
+              >
+                <h4
+                  className={`text-xs font-bold uppercase tracking-wider mb-2 ${
+                    isGlitched ? 'text-slate-700' : 'text-gray-500'
+                  }`}
+                >
+                  {isGlitched ? 'System Event Payload' : 'Event Details (JSON)'}
                 </h4>
-                <pre className="text-xs text-gray-700 overflow-x-auto whitespace-pre-wrap font-mono bg-gray-50 p-2 rounded">
+                <pre
+                  className={`text-xs overflow-x-auto whitespace-pre-wrap font-mono p-2 rounded ${
+                    isGlitched ? 'bg-slate-100 text-slate-800' : 'text-gray-700 bg-gray-50'
+                  }`}
+                >
                   {JSON.stringify(row.details, null, 2)}
                 </pre>
               </div>
 
-              <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
-                <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
-                  Blockchain Integrität
+              <div
+                className={`p-4 rounded-lg border shadow-sm ${
+                  isGlitched ? 'bg-white border-slate-300' : 'bg-white border-gray-200'
+                }`}
+              >
+                <h4
+                  className={`text-xs font-bold uppercase tracking-wider mb-2 ${
+                    isGlitched ? 'text-slate-700' : 'text-gray-500'
+                  }`}
+                >
+                  {isGlitched ? 'Cryptographic Verification' : 'Blockchain Integrität'}
                 </h4>
                 <div className="space-y-3">
                   <div>
-                    <span className="block text-xs font-semibold text-gray-400">ENTRY HASH</span>
-                    <code className="block mt-1 text-xs bg-blue-50 text-blue-800 p-2 rounded border border-blue-100 break-all font-mono">
+                    <span
+                      className={`block text-xs font-semibold ${isGlitched ? 'text-slate-500' : 'text-gray-400'}`}
+                    >
+                      {isGlitched ? 'ENTRY_HASH_SHA256' : 'ENTRY HASH'}
+                    </span>
+                    <code
+                      className={`block mt-1 text-xs p-2 rounded border break-all font-mono ${
+                        isGlitched
+                          ? 'bg-slate-100 text-slate-900 border-slate-200'
+                          : 'bg-blue-50 text-blue-800 border-blue-100'
+                      }`}
+                    >
                       {row.entry_hash}
                     </code>
                   </div>
                   <div>
-                    <span className="block text-xs font-semibold text-gray-400">PREV HASH</span>
-                    <code className="block mt-1 text-xs text-gray-500 p-2 break-all font-mono">
+                    <span
+                      className={`block text-xs font-semibold ${isGlitched ? 'text-slate-500' : 'text-gray-400'}`}
+                    >
+                      {isGlitched ? 'PREV_HASH_CHAIN_POINTER' : 'PREV HASH'}
+                    </span>
+                    <code
+                      className={`block mt-1 text-xs p-2 break-all font-mono ${
+                        isGlitched ? 'text-slate-600' : 'text-gray-500'
+                      }`}
+                    >
                       {row.prev_hash}
                     </code>
                   </div>
@@ -326,54 +389,6 @@ const AuditLogTable = () => {
     { id: 'level', label: 'Level' },
   ];
 
-  if (glitchMode) {
-    return (
-      <div className="w-full h-[600px] bg-black text-green-500 font-mono p-8 overflow-hidden relative rounded-lg border-2 border-red-800 shadow-2xl">
-        <style>{`
-          @keyframes glitch {
-            0% { transform: translate(0) }
-            20% { transform: translate(-2px, 2px) }
-            40% { transform: translate(-2px, -2px) }
-            60% { transform: translate(2px, 2px) }
-            80% { transform: translate(2px, -2px) }
-            100% { transform: translate(0) }
-          }
-          .glitch-text { animation: glitch 0.3s infinite; }
-        `}</style>
-        <div className="text-center mt-20">
-          <h1 className="text-6xl font-black mb-4 glitch-text text-red-600">FATAL ERROR -1</h1>
-          <p className="text-xl mb-8 animate-pulse text-green-400">SYSTEM INTEHRITY COMPROMISED</p>
-          <div className="text-left max-w-lg mx-auto bg-gray-900 p-4 border border-green-800 font-xs opacity-80">
-            <p>&gt; Accessing forbidden stack frame...</p>
-            <p>&gt; Buffer underflow at 0xFFFFFFFE...</p>
-            <p>&gt; Reality distortion field detected...</p>
-            <p>&gt; Audit Logs collapsed into singularity...</p>
-            <p className="mt-4 text-red-500 font-bold">&gt; CRITICAL FAILURE IMMINENT</p>
-          </div>
-          <button
-            onClick={() => {
-              setGlitchMode(false);
-              setRowsPerPage(10);
-            }}
-            className="mt-12 px-8 py-3 border-2 border-green-500 text-green-500 hover:bg-green-500 hover:text-black font-bold tracking-widest uppercase transition-all"
-          >
-            System Reboot
-          </button>
-        </div>
-        {/* Matrix Rain Effect Simulation */}
-        <div className="absolute top-0 left-0 w-full h-full pointer-events-none opacity-10 flex justify-between px-4 text-xs select-none">
-          {Array.from({ length: 20 }).map((_, i) => (
-            <div key={i} className="w-4 break-all text-center pt-2">
-              {Array.from({ length: 30 })
-                .map(() => String.fromCharCode(0x30a0 + Math.random() * 96))
-                .join('')}
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
   // Helper für Pagination-Ranges, damit wir nicht über 100k Pages iterieren müssen
   const getPaginationItems = () => {
     const items = [];
@@ -406,6 +421,22 @@ const AuditLogTable = () => {
 
   return (
     <div className="w-full">
+      {glitchMode && (
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `
+          .glitch-row {
+            background-color: #f0fdf4; /* faint green bg */
+            border-left: 4px solid #16a34a; /* green marker */
+          }
+          .glitch-row:hover {
+            background-color: #dcfce7 !important;
+          }
+        `,
+          }}
+        />
+      )}
+
       {/* --- FILTER BAR --- */}
       <div className="mb-6 flex flex-col sm:flex-row gap-4 justify-between items-end sm:items-center">
         <div>
@@ -520,7 +551,9 @@ const AuditLogTable = () => {
                   </td>
                 </tr>
               ) : currentLogs.length > 0 ? (
-                currentLogs.map((row) => <AuditRow key={row.id} row={row} />)
+                currentLogs.map((row) => (
+                  <AuditRow key={row.id} row={row} isGlitched={glitchMode} />
+                ))
               ) : (
                 <tr>
                   <td colSpan="6" className="px-6 py-12 text-center text-gray-500">
