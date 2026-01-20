@@ -312,36 +312,62 @@ const AuditLogTable = () => {
 
   const filteredLogs = useMemo(() => {
     return logs.filter((log) => {
-      // 2. Wildcard-Logik (* für beliebige Zeichenkette)
-      const matchesWildcard = (text, pattern) => {
-        if (!text) return false;
-        const str = text.toString();
-        // Wenn kein * enthalten ist -> normale Suche (includes)
-        if (!pattern.includes('*')) {
-          return str.toLowerCase().includes(pattern.toLowerCase());
-        }
-        // Wenn * enthalten ist -> Regex bauen
-        // Escape spezial characters except *
-        const escaped = pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&');
-        // Ersetze * durch .*
-        const regexStr = escaped.replace(/\*/g, '.*');
-        try {
-          return new RegExp(regexStr, 'i').test(str);
-        } catch (e) {
-          return false;
-        }
+      // Prüft ob der Suchbegriff ein Regex ist (Format: /pattern/ oder /pattern/i)
+      const isRegexPattern = (pattern) => {
+        return /^\/(.+)\/([gimsuy]*)$/.test(pattern);
       };
 
-      // 1. Suche erweitert um Timestamp und Level
+      // Extrahiert Regex und Flags aus dem Pattern
+      const parseRegex = (pattern) => {
+        const match = pattern.match(/^\/(.+)\/([gimsuy]*)$/);
+        if (match) {
+          return { regex: match[1], flags: match[2] || 'i' };
+        }
+        return null;
+      };
+
+      // Hauptlogik für Pattern-Matching
+      const matchesPattern = (text, pattern) => {
+        if (!text) return false;
+        const str = text.toString();
+
+        // 1. Regex-Modus: /pattern/ oder /pattern/flags
+        if (isRegexPattern(pattern)) {
+          const parsed = parseRegex(pattern);
+          if (parsed) {
+            try {
+              return new RegExp(parsed.regex, parsed.flags).test(str);
+            } catch (e) {
+              return false; // Ungültiger Regex
+            }
+          }
+        }
+
+        // 2. Wildcard-Modus: * für beliebige Zeichenkette
+        if (pattern.includes('*')) {
+          const escaped = pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&');
+          const regexStr = escaped.replace(/\*/g, '.*');
+          try {
+            return new RegExp(regexStr, 'i').test(str);
+          } catch (e) {
+            return false;
+          }
+        }
+
+        // 3. Standard: Case-insensitive substring Suche
+        return str.toLowerCase().includes(pattern.toLowerCase());
+      };
+
+      // Suche erweitert um Timestamp und Level
       const formattedDate = new Date(log.timestamp).toLocaleString('de-DE');
 
       const matchesSearch =
         searchTerm === '' ||
-        matchesWildcard(log.action_type, searchTerm) ||
-        matchesWildcard(log.actor_id, searchTerm) ||
-        matchesWildcard(log.id, searchTerm) ||
-        matchesWildcard(log.level, searchTerm) || // Suche im Level
-        matchesWildcard(formattedDate, searchTerm); // Suche im formatierten Datum
+        matchesPattern(log.action_type, searchTerm) ||
+        matchesPattern(log.actor_id, searchTerm) ||
+        matchesPattern(log.id, searchTerm) ||
+        matchesPattern(log.level, searchTerm) ||
+        matchesPattern(formattedDate, searchTerm);
 
       const matchesLevel = levelFilter === 'ALL' || log.level === levelFilter;
 
@@ -449,7 +475,7 @@ const AuditLogTable = () => {
           <div className="relative">
             <input
               type="text"
-              placeholder="Suche (Aktion, Akteur, ID)..."
+              placeholder="Suche... "
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-9 pr-4 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-brand-primary focus:border-transparent outline-none w-full sm:w-64"
