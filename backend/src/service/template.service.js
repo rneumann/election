@@ -217,11 +217,11 @@ export const generateElectionTemplate = async (presetKey = 'generic') => {
   const sheet = workbook.addWorksheet('Wahlen', { views: [{ showGridLines: false }] });
   sheet.columns = [
     { width: 20 }, // A: Kennung
-    { width: 45 }, // B: Info
-    { width: 15 }, // C: Listen
-    { width: 15 }, // D: Plätze
+    { width: 35 }, // B: Info
+    { width: 20 }, // C: Listen
+    { width: 17 }, // D: Plätze
     { width: 20 }, // E: Stimmen pro Zettel
-    { width: 15 }, // F: max. Kum.
+    { width: 17 }, // F: max. Kum.
     { width: 25 }, // G: Wahltyp
     { width: 25 }, // H: Zählverfahren
   ];
