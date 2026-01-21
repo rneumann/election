@@ -1,7 +1,7 @@
-import ExcelJS from 'exceljs';
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import ExcelJS from 'exceljs';
 import { logger } from '../conf/logger/logger.js';
 
 // Setup für Dateipfade
@@ -33,7 +33,6 @@ const DEFAULT_DURATION_DAYS = 14;
 
 /**
  * INTERNE HKA STANDARDS
- * Diese Liste entspricht exakt deinem Wunsch-Format (Wahlarten_Ueberblick_2.docx).
  */
 const INTERNAL_PRESETS = {
   generic: {
@@ -155,9 +154,6 @@ const INTERNAL_PRESETS = {
   },
 };
 
-/**
- * Mapper: Konvertiert das neue JSON-Format in das Excel-Format.
- */
 const mapNewFormatToOld = (preset) => {
   const countingMethod = preset.counting_method || 'highest_votes';
   const votesPerBallot = preset.votes_per_ballot || 1;
@@ -187,27 +183,14 @@ const mapNewFormatToOld = (preset) => {
     method = METHOD_ABSOLUTE_MAJORITY;
   }
 
-  return {
-    info: preset.info || 'Wahl',
-    type,
-    method,
-    listen,
-    seats,
-    votes,
-    kum,
-  };
+  return { info: preset.info || 'Wahl', type, method, listen, seats, votes, kum };
 };
 
-/**
- * Lädt alle verfügbaren Presets (Intern + Extern).
- */
 const loadAllPresets = async () => {
   let customPresets = {};
   try {
     const data = await fs.readFile(CONFIG_PATH, 'utf-8');
     const rawCustom = JSON.parse(data);
-
-    // Konvertierung falls neues Format erkannt wird
     Object.entries(rawCustom).forEach(([key, preset]) => {
       if (preset.counting_method) {
         customPresets[key] = mapNewFormatToOld(preset);
@@ -215,7 +198,6 @@ const loadAllPresets = async () => {
         customPresets[key] = preset;
       }
     });
-    logger.info('Externe Wahl-Presets erfolgreich geladen.');
   } catch (e) {
     logger.debug('Keine externe Konfiguration gefunden.');
   }
@@ -223,26 +205,28 @@ const loadAllPresets = async () => {
 };
 
 /**
- * Generiert das Wahl-Template.
+ * Generiert das Wahl-Template im HKA-Design.
+ * Die Struktur entspricht exakt dem vom Importer erwarteten Schema.
  */
 export const generateElectionTemplate = async (presetKey = 'generic') => {
   const workbook = new ExcelJS.Workbook();
   const allPresets = await loadAllPresets();
   const config = allPresets[presetKey] || allPresets.generic;
 
+  // --- BLATT 1: WAHLEN ---
   const sheet = workbook.addWorksheet('Wahlen', { views: [{ showGridLines: false }] });
   sheet.columns = [
-    { width: 20 },
-    { width: 45 },
-    { width: 15 },
-    { width: 15 },
-    { width: 15 },
-    { width: 15 },
-    { width: 25 },
-    { width: 25 },
+    { width: 20 }, // A: Kennung
+    { width: 45 }, // B: Info
+    { width: 15 }, // C: Listen
+    { width: 15 }, // D: Plätze
+    { width: 20 }, // E: Stimmen pro Zettel
+    { width: 15 }, // F: max. Kum.
+    { width: 25 }, // G: Wahltyp
+    { width: 25 }, // H: Zählverfahren
   ];
 
-  // Titel Styling
+  // Header Styling
   sheet.mergeCells('A1:H2');
   const title = sheet.getCell('A1');
   title.value = 'HKA E-Voting - Wahlkonfiguration';
@@ -253,42 +237,34 @@ export const generateElectionTemplate = async (presetKey = 'generic') => {
   });
 
   // Zeit-Meta
-  sheet.getCell('D3').value = 'Wahlzeitraum von:';
-  sheet.getCell('E3').value = new Date().toLocaleDateString('de-DE');
-  sheet.getCell('D4').value = 'bis:';
+  sheet.getCell('B3').value = 'Wahlzeitraum von';
+  sheet.getCell('D3').value = new Date().toLocaleDateString('de-DE');
+  sheet.getCell('B4').value = 'bis';
   const future = new Date();
   future.setDate(future.getDate() + DEFAULT_DURATION_DAYS);
-  sheet.getCell('E4').value = future.toLocaleDateString('de-DE');
+  sheet.getCell('D4').value = future.toLocaleDateString('de-DE');
 
-  // Header (Zeile 7)
+  // Spalten-Header (Zeile 7) - EXAKTE NAMEN FÜR IMPORTER
   const headerTitles = [
     'Kennung',
-    'Info (Name)',
-    'Listen (1=Ja)',
+    'Info',
+    'Listen',
     'Plätze',
-    'Stimmen/Zettel',
+    'Stimmen pro Zettel',
     'max. Kum.',
     'Wahltyp',
     'Zählverfahren',
   ];
   const hRow = sheet.getRow(7);
   hRow.values = headerTitles;
-  hRow.height = 25;
   hRow.eachCell((c) => {
     c.font = { bold: true, color: { argb: FONT_WHITE } };
     c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: HKA_BLACK } };
-    c.border = {
-      top: { style: 'thin', color: { argb: HKA_BLACK } },
-      bottom: { style: 'medium', color: { argb: HKA_BLACK } },
-      left: { style: 'thin', color: { argb: HKA_BLACK } },
-      right: { style: 'thin', color: { argb: HKA_BLACK } },
-    };
-    c.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+    c.alignment = { horizontal: 'center', vertical: 'middle' };
   });
 
-  // --- DATENZEILE (Vorausfüllen) ---
-  const dataRow = sheet.getRow(ROW_START_DATA);
-  dataRow.values = [
+  // Datenzeile (Zeile 8)
+  sheet.getRow(ROW_START_DATA).values = [
     presetKey === 'generic' ? 'meine_wahl_01' : presetKey,
     config.info,
     config.listen ?? 1,
@@ -299,56 +275,54 @@ export const generateElectionTemplate = async (presetKey = 'generic') => {
     config.method ?? '',
   ];
 
-  // Formatierung der Datenzeile (LINKS ausgerichtet, nicht zentriert!)
-  dataRow.eachCell((c) => {
-    c.alignment = { horizontal: 'left', vertical: 'middle', wrapText: false };
-    c.font = { name: 'Arial', size: 11 };
-    c.border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
-  });
-
-  // Datenvalidierung (Dropdowns)
+  // Dropdown Validierung
   const typeList = `"${TYPE_VERHAELTNIS},${TYPE_MEHRHEIT},${TYPE_URABSTIMMUNG}"`;
   const methodList = `"${METHOD_SAINTE_LAGUE},${METHOD_HARE_NIEMEYER},${METHOD_SIMPLE_MAJORITY},${METHOD_ABSOLUTE_MAJORITY},${METHOD_YES_NO}"`;
-
   for (let i = ROW_START_DATA; i <= VALIDATION_MAX_ROW; i++) {
     sheet.getCell(`G${i}`).dataValidation = { type: 'list', formulae: [typeList] };
     sheet.getCell(`H${i}`).dataValidation = { type: 'list', formulae: [methodList] };
   }
 
-  // Listenvorlage
+  // --- BLATT 2: LISTENVORLAGE (9 SPALTEN) ---
   const candSheet = workbook.addWorksheet('Listenvorlage');
-  candSheet.getRow(1).values = [
+  const candHeaders = [
     'Wahl Kennung',
+    'Nr',
+    'UID',
+    'Liste / Schlüsselwort',
+    'Vorname',
+    'Nachname',
     'Mtr-Nr.',
     'Fakultät',
-    'Nachname',
-    'Vorname',
-    'Liste/Keyword',
-    'Notizen',
-    'Zugelassen?',
+    'Studiengang',
   ];
+  candSheet.getRow(1).values = candHeaders;
   candSheet.getRow(1).eachCell((c) => {
     c.font = { bold: true, color: { argb: FONT_WHITE } };
     c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: HKA_BLACK } };
   });
 
+  // Beispiel-Kandidat
   candSheet.getRow(2).values = [
     presetKey === 'generic' ? 'meine_wahl_01' : presetKey,
+    1,
+    'kand-001',
+    config.listen === 1 ? 'Liste A' : 'Einzelkandidat',
+    'Max',
+    'Mustermann',
     '123456',
     'IWI',
-    'Mustermann',
-    'Max',
-    config.listen === 1 ? 'Liste A' : 'Einzelkandidat',
-    '',
-    'ja',
+    'Informatik',
   ];
+
+  // --- BLATT 3: OPTIONSURABSTIMMUNG (WICHTIG FÜR SCHEMA) ---
+  const optSheet = workbook.addWorksheet('OptionsUrabstimmung');
+  optSheet.getRow(1).values = ['Wahlkennung', 'Nr', 'Name', 'Description'];
+  optSheet.getRow(1).font = { bold: true };
 
   return workbook;
 };
 
-/*
- * Wähler-Template.
- */
 export const generateVoterTemplate = async () => {
   const workbook = new ExcelJS.Workbook();
   const sheet = workbook.addWorksheet('Wählerverzeichnis');
@@ -362,30 +336,14 @@ export const generateVoterTemplate = async () => {
   return workbook;
 };
 
-/**
- * Get list of all available presets (internal + external)
- * Separates them by type for better organization
- */
 export const getAvailablePresets = async () => {
   const allPresets = await loadAllPresets();
   const internalKeys = Object.keys(INTERNAL_PRESETS);
-  const result = {
-    internal: [],
-    external: [],
-  };
-
+  const result = { internal: [], external: [] };
   Object.keys(allPresets).forEach((key) => {
-    const preset = {
-      key,
-      info: allPresets[key].info,
-    };
-
-    if (internalKeys.includes(key)) {
-      result.internal.push(preset);
-    } else {
-      result.external.push(preset);
-    }
+    const preset = { key, info: allPresets[key].info };
+    if (internalKeys.includes(key)) result.internal.push(preset);
+    else result.external.push(preset);
   });
-
   return result;
 };
