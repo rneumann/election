@@ -186,14 +186,14 @@ export const createBallot = async (ballot, voter) => {
     });
     logger.debug(`Generated ballot hash: ${ballotHash}`);
 
-    // Test Audit Log
+    // Audit Log
     await writeAuditLog({
       actorRole: 'VOTER',
       actionType: 'CREATE_BALLOT',
       level: 'INFO',
       details: {
-        previousBallotHash: prevHash,
-        ballotHash: ballotHash,
+        ballot_created: true,
+        is_valid: ballot.valid,
       },
     }).catch(() => {});
 
