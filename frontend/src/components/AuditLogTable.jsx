@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import PropTypes from 'prop-types';
 import { Spinner } from './Spinner';
 
-// --- ICONS ---
+// Icons
 const ChevronDownIcon = () => (
   <svg className="w-5 h-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -57,7 +57,7 @@ const SearchIcon = () => (
   </svg>
 );
 
-// --- SORTIERUNG ---
+// Sorting Helpers
 
 const getSafeValue = (row, key) => {
   /* eslint-disable */
@@ -108,7 +108,7 @@ const stableSort = (array, comparator) => {
   return stabilizedThis.map((el) => el[0]);
 };
 
-// --- SUB-KOMPONENTEN ---
+// Sub-Component
 
 const AuditRow = ({ row }) => {
   const [open, setOpen] = useState(false);
@@ -210,7 +210,7 @@ AuditRow.propTypes = {
   }).isRequired,
 };
 
-// --- HAUPTKOMPONENTE ---
+// Main Component
 
 const AuditLogTable = () => {
   const [order, setOrder] = useState('desc');
@@ -225,7 +225,7 @@ const AuditLogTable = () => {
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(10); // NEU: State für RowsPerPage
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
   useEffect(() => {
     const fetchLogs = async () => {
@@ -293,7 +293,7 @@ const AuditLogTable = () => {
 
   return (
     <div className="w-full">
-      {/* --- FILTER BAR --- */}
+      {/* Filter Bar */}
       <div className="mb-6 flex flex-col sm:flex-row gap-4 justify-between items-end sm:items-center">
         <div>
           <h2 className="text-lg font-bold text-gray-800">Audit Logs</h2>
@@ -301,11 +301,11 @@ const AuditLogTable = () => {
         </div>
 
         <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-          {/* Suche */}
+          {/* Search */}
           <div className="relative">
             <input
               type="text"
-              placeholder="Suche (Aktion, Akteur, ID)..."
+              placeholder={theme.text.auditSearch}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-9 pr-4 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-brand-primary focus:border-transparent outline-none w-full sm:w-64"
@@ -350,7 +350,7 @@ const AuditLogTable = () => {
         </div>
       </div>
 
-      {/* --- TABELLE --- */}
+      {/* Table */}
       <div className="bg-white shadow-sm border border-gray-200 rounded-lg overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
@@ -419,10 +419,10 @@ const AuditLogTable = () => {
           </table>
         </div>
 
-        {/* --- PAGINATION & ROWS PER PAGE --- */}
+        {/* Pagination & Rows per Page */}
         {totalPages >= 1 && !error && (
           <div className="bg-white px-4 py-3 flex flex-col sm:flex-row items-center justify-between border-t border-gray-200 sm:px-6 gap-4">
-            {/* NEU: Rows per Page Dropdown */}
+            {/* Rows per Page Dropdown */}
             <div className="flex items-center gap-2 text-sm text-gray-700">
               <span>Zeilen pro Seite:</span>
               <select
@@ -464,7 +464,7 @@ const AuditLogTable = () => {
                     </svg>
                   </button>
 
-                  {/* Seitenzahlen */}
+                  {/* Pagination */}
                   <div className="hidden sm:flex">
                     {[...Array(totalPages)].map((_, i) => {
                       if (
