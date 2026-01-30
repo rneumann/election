@@ -49,8 +49,6 @@ const AdminDashboard = () => {
   const [templateType, setTemplateType] = useState('generic');
   const [selectedConfigFile, setSelectedConfigFile] = useState(null);
   const [uploadStatus, setUploadStatus] = useState('');
-  const [presetOptions, setPresetOptions] = useState({ internal: [], external: [] });
-  const [selectedPreset, setSelectedPreset] = useState('generic');
   // NEU ENDE (templates)
   const [activeSection, setActiveSection] = useState('counting');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -66,6 +64,9 @@ const AdminDashboard = () => {
   const [electionsForDeletion, setElectionsForDeletion] = useState([]);
 
   // NEU ANFANG (templates)
+  const [presetOptions, setPresetOptions] = useState({ internal: [], external: [] });
+
+  // Funktion zum Laden der Presets
   const fetchPresets = useCallback(async () => {
     try {
       const presets = await templateApi.getAvailablePresets();
@@ -81,15 +82,18 @@ const AdminDashboard = () => {
       } else {
         setPresetOptions({ internal: [], external: [] });
       }
-    } catch (err) {
-      logger.error('Fehler beim Laden der Presets:', err);
+    } catch {
+      logger.error('Fehler beim Laden der Presets');
       setPresetOptions({ internal: [], external: [] });
     }
   }, []);
 
+  // Lade Presets beim Mount
   useEffect(() => {
     fetchPresets();
-  }, [fetchPresets]);
+    // fetchPresets ist stabil (useCallback ohne deps), daher kein Re-render-Loop
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleDownloadTemplate = async () => {
     try {
@@ -99,7 +103,7 @@ const AdminDashboard = () => {
         await templateApi.downloadElectionTemplate(templateType);
       }
       showAlert('success', 'Vorlage erfolgreich heruntergeladen');
-    } catch (err) {
+    } catch {
       showAlert('error', 'Fehler beim Download');
     }
   };
@@ -114,7 +118,7 @@ const AdminDashboard = () => {
       setSelectedConfigFile(null);
       await fetchPresets();
       setTimeout(() => setUploadStatus(''), 5000);
-    } catch (error) {
+    } catch {
       setUploadStatus('Fehler: Upload fehlgeschlagen.');
     }
   };

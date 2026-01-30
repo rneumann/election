@@ -29,9 +29,11 @@ export const auditRouter = express.Router();
  * description: Forbidden
  */
 
+const DEFAULT_LOG_LIMIT = 1000000;
+
 auditRouter.get('/logs', ensureAuthenticated, ensureHasRole(['admin']), async (req, res) => {
   try {
-    const limit = req.query.limit ? parseInt(req.query.limit, 10) : 1000000;
+    const limit = req.query.limit ? parseInt(req.query.limit, 10) : DEFAULT_LOG_LIMIT;
     const result = await client.query('SELECT * FROM audit_log ORDER BY id DESC LIMIT $1', [limit]);
     res.json(result.rows);
   } catch (err) {

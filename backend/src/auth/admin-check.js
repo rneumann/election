@@ -2,15 +2,22 @@ import crypto from 'crypto';
 import { readSecret } from '../security/secret-reader.js';
 import { logger } from '../conf/logger/logger.js';
 
+/**
+ * Tries to read credentials from secrets, falls back to random password.
+ * @param {string} username - The username to use
+ * @param {string} primarySecret - Primary secret name to read
+ * @param {string|null} fallbackSecret - Fallback secret name if primary fails
+ * @returns {Promise<{username: string, password: string}>} Credentials object
+ */
 const getCredentialsOrFallback = async (username, primarySecret, fallbackSecret = null) => {
   let password;
   try {
     password = await readSecret(primarySecret);
-  } catch (e) {
+  } catch {
     if (fallbackSecret) {
       try {
         password = await readSecret(fallbackSecret);
-      } catch (e2) {
+      } catch {
         // Fallthrough to random
       }
     }

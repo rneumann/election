@@ -12,7 +12,6 @@ const CONFIG_PATH = path.join(__dirname, '../../data/election_presets.json');
 // --- KONSTANTEN FÜR DESIGN ---
 const HKA_RED = 'FFE30613';
 const HKA_BLACK = 'FF000000';
-const HKA_GREY = 'FFEEEEEE';
 const FONT_WHITE = 'FFFFFFFF';
 
 // --- KONSTANTEN FÜR WAHL-BEGRIFFE ---
@@ -27,9 +26,13 @@ const METHOD_ABSOLUTE_MAJORITY = 'Absolute Mehrheit';
 const METHOD_YES_NO = 'Ja/Nein/Enthaltung';
 
 // --- LAYOUT PARAMETER ---
+const ROW_HEADER = 7;
 const ROW_START_DATA = 8;
 const VALIDATION_MAX_ROW = 100;
 const DEFAULT_DURATION_DAYS = 14;
+const WAHLEN_COL_COUNT = 8;
+const LISTEN_COL_COUNT = 9;
+const URABSTIMMUNG_COL_COUNT = 4;
 
 /**
  * INTERNE HKA STANDARDS
@@ -154,6 +157,11 @@ const INTERNAL_PRESETS = {
   },
 };
 
+/**
+ * Maps new preset format to internal format.
+ * @param {object} preset - The preset in new format
+ * @returns {object} Preset in old internal format
+ */
 const mapNewFormatToOld = (preset) => {
   const countingMethod = preset.counting_method || 'highest_votes';
   const votesPerBallot = preset.votes_per_ballot || 1;
@@ -186,19 +194,26 @@ const mapNewFormatToOld = (preset) => {
   return { info: preset.info || 'Wahl', type, method, listen, seats, votes, kum };
 };
 
+/**
+ * Loads all presets from internal and external sources.
+ * @returns {Promise<object>} Combined presets object
+ */
 const loadAllPresets = async () => {
   let customPresets = {};
   try {
     const data = await fs.readFile(CONFIG_PATH, 'utf-8');
     const rawCustom = JSON.parse(data);
     Object.entries(rawCustom).forEach(([key, preset]) => {
+      // Objekt-Zugriff mit dynamischem key ist hier sicher, da key aus Object.entries stammt
+      /* eslint-disable security/detect-object-injection */
       if (preset.counting_method) {
         customPresets[key] = mapNewFormatToOld(preset);
       } else {
         customPresets[key] = preset;
       }
+      /* eslint-enable security/detect-object-injection */
     });
-  } catch (e) {
+  } catch {
     logger.debug('Keine externe Konfiguration gefunden.');
   }
   return { ...INTERNAL_PRESETS, ...customPresets };
@@ -207,11 +222,15 @@ const loadAllPresets = async () => {
 /**
  * Generiert das Wahl-Template im HKA-Design.
  * Die Struktur entspricht exakt dem vom Importer erwarteten Schema.
+ * @param {string} presetKey - The preset key to use for template generation
+ * @returns {Promise<ExcelJS.Workbook>} The generated Excel workbook
  */
 export const generateElectionTemplate = async (presetKey = 'generic') => {
   const workbook = new ExcelJS.Workbook();
   const allPresets = await loadAllPresets();
-  const config = allPresets[presetKey] || allPresets.generic;
+  // Zugriff ist sicher: Object.hasOwn prüft Existenz, presetKey kommt vom Controller
+  // eslint-disable-next-line security/detect-object-injection
+  const config = Object.hasOwn(allPresets, presetKey) ? allPresets[presetKey] : allPresets.generic;
 
   // --- BLATT 1: WAHLEN ---
   const sheet = workbook.addWorksheet('Wahlen', { views: [{ showGridLines: false }] });
@@ -267,7 +286,7 @@ export const generateElectionTemplate = async (presetKey = 'generic') => {
     'Wahltyp',
     'Zählverfahren',
   ];
-  const hRow = sheet.getRow(7);
+  const hRow = sheet.getRow(ROW_HEADER);
   hRow.values = headerTitles;
   hRow.eachCell((c) => {
     c.font = { bold: true, color: { argb: FONT_WHITE } };
@@ -300,7 +319,7 @@ export const generateElectionTemplate = async (presetKey = 'generic') => {
     sheet.getCell(`H${i}`).dataValidation = { type: 'list', formulae: [methodList] };
     // Zentriere alle Zellen in jeder Zeile
     const row = sheet.getRow(i);
-    for (let col = 1; col <= 8; col++) {
+    for (let col = 1; col <= WAHLEN_COL_COUNT; col++) {
       const cell = row.getCell(col);
       cell.style = {
         alignment: defaultAlignment,
@@ -360,7 +379,7 @@ export const generateElectionTemplate = async (presetKey = 'generic') => {
   // Zentriere alle Zellen für zukünftige Einträge (Zeilen 2-100)
   for (let i = 2; i <= VALIDATION_MAX_ROW; i++) {
     const row = candSheet.getRow(i);
-    for (let col = 1; col <= 9; col++) {
+    for (let col = 1; col <= LISTEN_COL_COUNT; col++) {
       const cell = row.getCell(col);
       cell.style = {
         alignment: defaultAlignment,
@@ -386,7 +405,7 @@ export const generateElectionTemplate = async (presetKey = 'generic') => {
   // Zentriere alle Zellen für zukünftige Einträge (Zeilen 2-100)
   for (let i = 2; i <= VALIDATION_MAX_ROW; i++) {
     const row = optSheet.getRow(i);
-    for (let col = 1; col <= 4; col++) {
+    for (let col = 1; col <= URABSTIMMUNG_COL_COUNT; col++) {
       const cell = row.getCell(col);
       cell.style = {
         alignment: defaultAlignment,
@@ -398,6 +417,10 @@ export const generateElectionTemplate = async (presetKey = 'generic') => {
   return workbook;
 };
 
+/**
+ * Generates a voter template Excel workbook.
+ * @returns {Promise<ExcelJS.Workbook>} The generated Excel workbook
+ */
 export const generateVoterTemplate = async () => {
   const workbook = new ExcelJS.Workbook();
   const sheet = workbook.addWorksheet('Wählerverzeichnis');
@@ -411,14 +434,23 @@ export const generateVoterTemplate = async () => {
   return workbook;
 };
 
+/**
+ * Returns all available presets categorized as internal or external.
+ * @returns {Promise<{internal: Array, external: Array}>} Categorized presets
+ */
 export const getAvailablePresets = async () => {
   const allPresets = await loadAllPresets();
   const internalKeys = Object.keys(INTERNAL_PRESETS);
   const result = { internal: [], external: [] };
   Object.keys(allPresets).forEach((key) => {
-    const preset = { key, info: allPresets[key].info };
-    if (internalKeys.includes(key)) result.internal.push(preset);
-    else result.external.push(preset);
+    // eslint-disable-next-line security/detect-object-injection
+    const presetInfo = allPresets[key];
+    const preset = { key, info: presetInfo.info };
+    if (internalKeys.includes(key)) {
+      result.internal.push(preset);
+    } else {
+      result.external.push(preset);
+    }
   });
   return result;
 };

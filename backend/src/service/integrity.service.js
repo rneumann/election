@@ -46,9 +46,9 @@ export const integrityService = {
 
       // Überprüfe die gesamte Kette
       for (let i = 1; i < rows.length; i++) {
+        // Array-Zugriff mit Index ist hier sicher, da i innerhalb der Arraygrenzen liegt
         // eslint-disable-next-line security/detect-object-injection
         const current = rows[i];
-        // eslint-disable-next-line security/detect-object-injection
         const previous = rows[i - 1];
 
         // Der prev_hash des aktuellen Eintrags MUSS der entry_hash des vorherigen sein
@@ -147,9 +147,9 @@ export const integrityService = {
 
       // Prüfe jeden Stimmzettel durch Re-Hashing
       for (let i = 0; i < ballots.length; i++) {
+        // Array-Zugriff mit Index ist hier sicher, da i innerhalb der Arraygrenzen liegt
         // eslint-disable-next-line security/detect-object-injection
         const current = ballots[i];
-        // eslint-disable-next-line security/detect-object-injection
         const previousBallot = i > 0 ? ballots[i - 1] : null;
         const expectedPrevHash = previousBallot?.ballot_hash || null;
 
