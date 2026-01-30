@@ -1,3 +1,7 @@
+import fs from 'fs/promises';
+import path from 'path';
+import multer from 'multer';
+
 import express from 'express';
 import { ensureAuthenticated, ensureHasRole } from '../auth/auth.js';
 import { logger } from '../conf/logger/logger.js';
@@ -9,11 +13,20 @@ import {
   getElectionsForAdmin,
   resetElectionData,
 } from '../service/admin.service.js';
+import { getAvailablePresets } from '../service/template.service.js';
+import { integrityService } from '../service/integrity.service.js';
 
 export const adminRouter = express.Router();
 
 // Constants
 const ERROR_INTERNAL_SERVER = 'Internal Server Error';
+
+// Multer setup - store files temporarily
+const uploadDir = path.join(process.cwd(), 'uploads', 'temp');
+const upload = multer({ dest: uploadDir });
+
+// Path to master configuration file
+const MASTER_CONFIG_PATH = path.join(process.cwd(), 'data', 'election_presets.json');
 
 /**
  * @openapi
@@ -197,6 +210,213 @@ adminRouter.delete(
         logger.error(`Failed to reset election data for ${electionId}`);
         res.status(500).json({ message: ERROR_INTERNAL_SERVER });
       }
+    }
+  },
+);
+
+// NEU ab hier
+/**
+ * POST /admin/config/presets
+ * Upload and merge new election preset configuration
+ */
+adminRouter.post('/config/presets', upload.single('configFile'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'Keine Datei hochgeladen' });
+    }
+
+    // 1. Read newly uploaded data
+    const newDataRaw = await fs.readFile(req.file.path, 'utf-8');
+    let newData;
+    try {
+      newData = JSON.parse(newDataRaw);
+    } catch (parseErr) {
+      logger.error('Fehler beim Parsen der JSON-Datei:', parseErr);
+      await fs.unlink(req.file.path); // Clean up
+      return res.status(400).json({ error: 'Ungültiges JSON-Format' });
+    }
+
+    // 2. Read existing data (if available)
+    let currentData = {};
+    try {
+      const oldDataRaw = await fs.readFile(MASTER_CONFIG_PATH, 'utf-8');
+      currentData = JSON.parse(oldDataRaw);
+    } catch (readErr) {
+      // File doesn't exist yet, start fresh
+      logger.debug('Keine existierende Konfiguration gefunden, erstelle neu.', readErr);
+    }
+
+    // 3. MERGE: Old data + New data (New overrides Old if same key)
+    const mergedData = {
+      ...currentData, // Keep what was there
+      ...newData, // Add/override with new
+    };
+
+    // 4. Save merged result
+    await fs.writeFile(MASTER_CONFIG_PATH, JSON.stringify(mergedData, null, 2));
+
+    // 5. Clean up temporary file
+    await fs.unlink(req.file.path);
+
+    logger.info(
+      `Wahl-Konfiguration aktualisiert. Jetzt ${Object.keys(mergedData).length} Wahlarten verfügbar.`,
+    );
+
+    res.json({
+      message: 'Konfiguration erfolgreich erweitert/aktualisiert.',
+      availablePresets: Object.keys(mergedData),
+    });
+  } catch (error) {
+    logger.error('Fehler beim Update der Wahl-Konfiguration:', error);
+    // Try to clean up if file exists
+    if (req.file) {
+      try {
+        await fs.unlink(req.file.path);
+      } catch (cleanupErr) {
+        logger.debug('Fehler beim Löschen der temporären Datei:', cleanupErr);
+      }
+    }
+    res.status(500).json({ error: 'Fehler beim Verarbeiten der Datei.' });
+  }
+});
+
+/**
+ * GET /admin/config/presets
+ * Get list of all available election presets (internal + external)
+ */
+adminRouter.get('/config/presets', async (req, res) => {
+  try {
+    const presets = await getAvailablePresets();
+    res.json(presets);
+  } catch (error) {
+    logger.error('Fehler beim Laden der Preset-Liste:', error);
+    res.status(500).json({ error: 'Konnte Presets nicht laden' });
+  }
+});
+
+/**
+ * GET /admin/config/template
+ * Download example configuration template as JSON file
+ */
+adminRouter.get('/config/template', (req, res) => {
+  try {
+    const exampleConfig = {
+      meine_wahlart: {
+        info: 'Meine Wahlart (Beispiel)',
+        description: 'Beschreibung der Wahlart - für Admin-Dokumentation',
+        counting_method: 'highest_votes',
+        votes_per_ballot: 1,
+        candidates_per_list: 5,
+        absolute_majority_required: false,
+        allow_cumulation: false,
+        allow_panachage: false,
+      },
+      verhaeltniswahl_beispiel: {
+        info: 'Verhältniswahl Beispiel',
+        description: 'Beispiel: Verhältniswahl mit Sainte-Laguë',
+        counting_method: 'sainte_laguë',
+        votes_per_ballot: 1,
+        candidates_per_list: 10,
+        absolute_majority_required: false,
+        allow_cumulation: true,
+        allow_panachage: true,
+      },
+      mehrheitswahl_beispiel: {
+        info: 'Mehrheitswahl Beispiel',
+        description: 'Beispiel: Mehrheitswahl mit einfacher Mehrheit',
+        counting_method: 'highest_votes',
+        votes_per_ballot: 2,
+        candidates_per_list: 5,
+        absolute_majority_required: false,
+        allow_cumulation: false,
+        allow_panachage: false,
+      },
+      urabstimmung_beispiel: {
+        info: 'Urabstimmung Beispiel',
+        description: 'Beispiel: Abstimmung (Ja/Nein/Enthaltung)',
+        counting_method: 'referendum',
+        votes_per_ballot: 1,
+        candidates_per_list: 0,
+        absolute_majority_required: true,
+        allow_cumulation: false,
+        allow_panachage: false,
+      },
+    };
+
+    // Set headers for file download
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="election_presets_template.json"');
+
+    logger.info('Konfiguration-Template heruntergeladen');
+    // Formatiertes JSON mit Indentation
+    res.send(JSON.stringify(exampleConfig, null, 2));
+  } catch (error) {
+    logger.error('Fehler beim Bereitstellen des Config-Templates:', error);
+    res.status(500).json({ error: 'Konnte Template nicht generieren' });
+  }
+});
+
+// ============================================================
+// INTEGRITY CHECKS (Blockchain-Validierung)
+// ============================================================
+
+/**
+ * GET /admin/integrity/audit-log
+ * Prüft die Integrität der gesamten Audit Log Kette
+ */
+adminRouter.get(
+  '/integrity/audit-log',
+  ensureAuthenticated,
+  ensureHasRole('admin'),
+  async (req, res) => {
+    try {
+      logger.info('Admin startet Audit Log Chain Prüfung');
+      const result = await integrityService.verifyAuditLogChain();
+      res.json(result);
+    } catch (error) {
+      logger.error('Fehler bei Audit Log Chain Prüfung:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  },
+);
+
+/**
+ * GET /admin/integrity/ballots/:electionId
+ * Prüft die Integrität der Stimmzettel-Kette einer spezifischen Wahl
+ */
+adminRouter.get(
+  '/integrity/ballots/:electionId',
+  ensureAuthenticated,
+  ensureHasRole('admin'),
+  async (req, res) => {
+    try {
+      const { electionId } = req.params;
+      logger.info(`Admin startet Stimmzettel Chain Prüfung für Wahl ${electionId}`);
+      const result = await integrityService.verifyBallotChain(electionId);
+      res.json(result);
+    } catch (error) {
+      logger.error('Fehler bei Stimmzettel Chain Prüfung:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  },
+);
+
+/**
+ * GET /admin/integrity/all-ballots
+ * Prüft alle Wahlen und deren Stimmzettel-Ketten
+ */
+adminRouter.get(
+  '/integrity/all-ballots',
+  ensureAuthenticated,
+  ensureHasRole('admin'),
+  async (req, res) => {
+    try {
+      logger.info('Admin startet Prüfung aller Stimmzettel Chains');
+      const result = await integrityService.verifyAllBallotChains();
+      res.json(result);
+    } catch (error) {
+      logger.error('Fehler bei Prüfung aller Stimmzettel Chains:', error);
+      res.status(500).json({ success: false, error: error.message });
     }
   },
 );

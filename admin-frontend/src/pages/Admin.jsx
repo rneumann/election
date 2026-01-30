@@ -1,3 +1,6 @@
+//NEU ANFANG (templates)
+import { useEffect, useCallback } from 'react';
+//NEU ENDE (templates)
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -19,6 +22,10 @@ import { Alert } from '../components/Alert.jsx';
 import { logger } from '../conf/logger/logger.js';
 import { useAlert } from '../context/AlertContext.jsx';
 import { DeleteDataView } from '../components/DeleteDataView.jsx';
+//NEU ANFANG (templates)
+import { templateApi } from '../services/templateApi.js';
+import IntegrityCheckView from '../components/IntegrityCheckView.jsx';
+//NEU ENDE (templates)
 
 /**
  * Admin Dashboard - Main admin interface
@@ -38,6 +45,11 @@ const AdminDashboard = () => {
   const theme = useTheme();
   const navigate = useNavigate();
   const [showConfirmAlert, setShowConfirmAlert] = useState(false);
+  // NEU ANFANG (templates)
+  const [templateType, setTemplateType] = useState('generic');
+  const [selectedConfigFile, setSelectedConfigFile] = useState(null);
+  const [uploadStatus, setUploadStatus] = useState('');
+  // NEU ENDE (templates)
   const [activeSection, setActiveSection] = useState('counting');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { showAlert } = useAlert();
@@ -50,6 +62,67 @@ const AdminDashboard = () => {
   const [loadingDeletionElections, setLoadingDeletionElections] = useState(false);
   const [selectedElectionForDeletion, setSelectedElectionForDeletion] = useState('all');
   const [electionsForDeletion, setElectionsForDeletion] = useState([]);
+
+  // NEU ANFANG (templates)
+  const [presetOptions, setPresetOptions] = useState({ internal: [], external: [] });
+
+  // Funktion zum Laden der Presets
+  const fetchPresets = useCallback(async () => {
+    try {
+      const presets = await templateApi.getAvailablePresets();
+      // Handle both old array format and new object format
+      if (presets && typeof presets === 'object' && !Array.isArray(presets)) {
+        setPresetOptions(presets);
+      } else if (Array.isArray(presets)) {
+        // Convert array format to new object format for backward compatibility
+        setPresetOptions({
+          internal: presets.map((p) => ({ key: p, info: p.toUpperCase() })),
+          external: [],
+        });
+      } else {
+        setPresetOptions({ internal: [], external: [] });
+      }
+    } catch {
+      logger.error('Fehler beim Laden der Presets');
+      setPresetOptions({ internal: [], external: [] });
+    }
+  }, []);
+
+  // Lade Presets beim Mount
+  useEffect(() => {
+    fetchPresets();
+    // fetchPresets ist stabil (useCallback ohne deps), daher kein Re-render-Loop
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleDownloadTemplate = async () => {
+    try {
+      if (templateType === 'voters') {
+        await templateApi.downloadVoterTemplate();
+      } else {
+        await templateApi.downloadElectionTemplate(templateType);
+      }
+      showAlert('success', 'Vorlage erfolgreich heruntergeladen');
+    } catch {
+      showAlert('error', 'Fehler beim Download');
+    }
+  };
+
+  const handleUploadConfig = async () => {
+    if (!selectedConfigFile) {
+      return;
+    }
+    try {
+      await templateApi.uploadConfig(selectedConfigFile);
+      setUploadStatus('Erfolg: Konfiguration wurde aktualisiert!');
+      setSelectedConfigFile(null);
+      await fetchPresets();
+      setTimeout(() => setUploadStatus(''), 5000);
+    } catch {
+      setUploadStatus('Fehler: Upload fehlgeschlagen.');
+    }
+  };
+  // NEU ENDE (templates)
 
   /**
    * Get navigation button style
@@ -172,41 +245,6 @@ const AdminDashboard = () => {
               </div>
 
               <nav className="p-2">
-                {/* Sicherheit */}
-                <div className="mt-8 border-t pt-4">
-                  <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                    Sicherheit
-                  </div>
-                  <button
-                    onClick={() => navigate('/admin/audit')}
-                    className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50 text-gray-700"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="bg-red-50 p-1.5 rounded-md text-brand-primary">
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-                          />
-                        </svg>
-                      </div>
-                      <div>
-                        <span className="block text-gray-900">Audit Logs</span>
-                        <span className="text-xs text-gray-500 font-normal">
-                          Sicherheitsprotokolle einsehen
-                        </span>
-                      </div>
-                    </div>
-                  </button>
-                </div>
-
                 {/* Verwaltung */}
                 <div className="mb-6">
                   <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
@@ -218,7 +256,7 @@ const AdminDashboard = () => {
                     className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
                   >
                     <div className="flex items-center justify-between">
-                      <span>Datenbank leeren</span>
+                      <span>Datenbankbereinigung</span>
                       <span className="text-xs opacity-60">1</span>
                     </div>
                   </button>
@@ -258,6 +296,18 @@ const AdminDashboard = () => {
                   <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
                     Wahlen definieren
                   </div>
+                  {/* NEU ANFANG (templates) */}
+                  <button
+                    onClick={() => setActiveSection('config')}
+                    style={getNavButtonStyle('config')}
+                    className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span>Wahl-Parameter Konfig</span>
+                      <span className="text-xs opacity-60">3.1</span>
+                    </div>
+                  </button>
+                  {/* NEU ENDE (templates) */}
                   <button
                     onClick={() => handleSectionChange('template')}
                     style={getNavButtonStyle('template')}
@@ -265,7 +315,7 @@ const AdminDashboard = () => {
                   >
                     <div className="flex items-center justify-between">
                       <span>Excel-Vorlage herunterladen</span>
-                      <span className="text-xs opacity-60">3.1</span>
+                      <span className="text-xs opacity-60">3.2</span>
                     </div>
                   </button>
                   <button
@@ -275,7 +325,7 @@ const AdminDashboard = () => {
                   >
                     <div className="flex items-center justify-between">
                       <span>Wahleinstellung hochladen</span>
-                      <span className="text-xs opacity-60">3.2</span>
+                      <span className="text-xs opacity-60">3.3</span>
                     </div>
                   </button>
                 </div>
@@ -335,7 +385,7 @@ const AdminDashboard = () => {
                 </div>
 
                 {/* Auszählung */}
-                <div>
+                <div className="mb-6">
                   <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
                     Auszählung
                   </div>
@@ -350,17 +400,43 @@ const AdminDashboard = () => {
                     </div>
                   </button>
                 </div>
+
+                {/* Sicherheit */}
+                <div>
+                  <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                    Sicherheit
+                  </div>
+                  <button
+                    onClick={() => handleSectionChange('integrity')}
+                    style={getNavButtonStyle('integrity')}
+                    className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span>🔒 Integritätsprüfung</span>
+                      <span className="text-xs opacity-60">7</span>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => navigate('/admin/audit')}
+                    className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50 text-gray-700"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span>📋 Audit Logs</span>
+                      <span className="text-xs opacity-60">8</span>
+                    </div>
+                  </button>
+                </div>
               </nav>
             </div>
           </aside>
 
           {/* Right Content Area */}
           <div className="flex-1 w-full lg:w-auto">
-            {/* Datenbank leeren Section */}
+            {/* Datenbereinigung Section */}
             {activeSection === 'clear' && (
               <div className="bg-white rounded-lg shadow-sm border border-gray-200">
                 <div className="border-b border-gray-200 px-6 py-4">
-                  <h2 className="text-xl font-bold text-gray-900">Datenbank leeren</h2>
+                  <h2 className="text-xl font-bold text-gray-900">Datenbankbereinigung</h2>
                   <p className="text-sm text-gray-600 mt-1">
                     Alle Daten aus der Datenbank entfernen, einschließlich Wahleinstellungen,
                     Stimmzettel, Wähler, Kandidaten usw.
@@ -388,22 +464,54 @@ const AdminDashboard = () => {
               </div>
             )}
 
-            {/* Excel-Vorlage herunterladen Section */}
-            {activeSection === 'template' && (
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-                <div className="border-b border-gray-200 px-6 py-4">
-                  <h2 className="text-xl font-bold text-gray-900">Excel-Vorlage herunterladen</h2>
+            {/* NEU ANFANG (templates) */}
+            {activeSection === 'config' && (
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 border-l-4 border-l-yellow-500">
+                <div className="border-b px-6 py-4">
+                  <h2 className="text-xl font-bold">⚙️ Wahl-Parameter Konfiguration</h2>
                   <p className="text-sm text-gray-600 mt-1">
-                    Excel-Vorlage für eine Wahleinstellung herunterladen
+                    Lade neue JSON-Presets hoch, um die Vorlagen zu erweitern.
                   </p>
                 </div>
+                <div className="p-6 space-y-4">
+                  <div className="flex gap-4">
+                    <input
+                      type="file"
+                      accept=".json"
+                      onChange={(e) => setSelectedConfigFile(e.target.files[0])}
+                      className="flex-1 text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-yellow-50 file:text-yellow-700"
+                    />
+                    <button
+                      onClick={handleUploadConfig}
+                      disabled={!selectedConfigFile}
+                      className={`px-6 py-2 rounded font-bold text-white ${!selectedConfigFile ? 'bg-gray-300' : 'bg-yellow-600 hover:bg-yellow-700'}`}
+                    >
+                      Hochladen
+                    </button>
+                  </div>
+                  {uploadStatus && (
+                    <div
+                      className={`p-4 rounded-lg text-sm font-bold ${uploadStatus.includes('Erfolg') ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}
+                    >
+                      {uploadStatus}
+                    </div>
+                  )}
 
-                <div className="p-6">
-                  {/* Download Card */}
-                  <div className="bg-gray-50 border border-gray-300 rounded-lg p-8 text-center">
-                    <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gray-200 mb-4">
+                  <div className="border-t pt-6 mt-6">
+                    <h3 className="font-bold mb-3">
+                      💡 JSON-Template für benutzerdefinierte Presets
+                    </h3>
+                    <p className="text-sm text-gray-600 mb-4">
+                      Sie können neue Wahl-Konfigurationen als JSON-Dateien erstellen. Laden Sie
+                      diese Vorlage herunter, um zu sehen, wie das Format aussehen muss:
+                    </p>
+                    <a
+                      href="/data/election_presets_template.json"
+                      download="election_presets_template.json"
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-200 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors"
+                    >
                       <svg
-                        className="w-10 h-10 text-gray-600"
+                        className="w-5 h-5"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -415,22 +523,56 @@ const AdminDashboard = () => {
                           d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                         />
                       </svg>
-                    </div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-6">
-                      Excel-Vorlage für Wahleinstellungen
-                    </h3>
-                    <a
-                      href="/templates/ElectionInfoTemplate.xlsx"
-                      download="ElectionInfoTemplate.xlsx"
-                      className="inline-block"
-                    >
-                      <button
-                        style={{ backgroundColor: theme.colors.primary }}
-                        className="px-6 py-3 text-white font-medium rounded hover:opacity-90 transition-opacity"
+                      JSON-Template herunterladen
+                    </a>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeSection === 'template' && (
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div className="border-b border-gray-200 px-6 py-4">
+                  <h2 className="text-xl font-bold text-gray-900">Excel-Vorlage herunterladen</h2>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Laden Sie Vorlagen für Wahl-Konfigurationen und Wählerverzeichnisse herunter
+                  </p>
+                </div>
+
+                <div className="p-6">
+                  <div className="flex flex-col md:flex-row gap-6">
+                    {/* Blanko-Vorlage Card */}
+                    <div className="flex-1 bg-gray-50 border border-gray-200 rounded-lg p-6 text-center hover:shadow-md transition-shadow">
+                      <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white border-2 border-gray-200 mb-4">
+                        <svg
+                          className="w-8 h-8 text-gray-500"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                          />
+                        </svg>
+                      </div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">Blanko-Vorlage</h3>
+                      <p className="text-sm text-gray-500 mb-4">
+                        Leere Vorlage zum manuellen Ausfüllen
+                      </p>
+                      <a
+                        href="/templates/ElectionInfoTemplate.xlsx"
+                        download="ElectionInfoTemplate.xlsx"
+                        className="inline-block"
                       >
-                        <div className="flex items-center gap-2">
+                        <button
+                          style={{ backgroundColor: theme.colors.primary }}
+                          className="px-5 py-2.5 text-white text-sm font-medium rounded-md hover:opacity-90 transition-opacity flex items-center gap-2 mx-auto"
+                        >
                           <svg
-                            className="w-5 h-5"
+                            className="w-4 h-4"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -442,10 +584,75 @@ const AdminDashboard = () => {
                               d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
                             />
                           </svg>
-                          <span>Vorlage herunterladen (.xlsx)</span>
+                          Download (.xlsx)
+                        </button>
+                      </a>
+                    </div>
+
+                    {/* Vorgefertigte Vorlagen Card */}
+                    <div className="flex-1 bg-gray-50 border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
+                      <div className="text-center mb-4">
+                        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white border-2 border-gray-200 mb-4">
+                          <svg
+                            className="w-8 h-8 text-gray-500"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+                            />
+                          </svg>
                         </div>
-                      </button>
-                    </a>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                          Vorgefertigte Vorlagen
+                        </h3>
+                        <p className="text-sm text-gray-500 mb-4">
+                          Vorkonfigurierte Vorlagen für verschiedene Wahltypen
+                        </p>
+                      </div>
+                      <select
+                        value={templateType}
+                        onChange={(e) => setTemplateType(e.target.value)}
+                        className="w-full rounded-md border-gray-300 mb-4 p-2.5 bg-white border text-sm"
+                      >
+                        <option value="generic">📝 Leere Wahl-Vorlage (Standard)</option>
+                        {presetOptions && presetOptions.internal && (
+                          <optgroup label="HKA Standard-Presets">
+                            {presetOptions.internal
+                              .filter((p) => p.key !== 'generic')
+                              .map((p) => (
+                                <option key={p.key} value={p.key}>
+                                  🏛️ {p.info}
+                                </option>
+                              ))}
+                          </optgroup>
+                        )}
+                        {presetOptions &&
+                          presetOptions.external &&
+                          presetOptions.external.length > 0 && (
+                            <optgroup label="Benutzerdefinierte Presets">
+                              {presetOptions.external.map((p) => (
+                                <option key={p.key} value={p.key}>
+                                  ⚙️ {p.info}
+                                </option>
+                              ))}
+                            </optgroup>
+                          )}
+                      </select>
+                      <div className="text-center">
+                        <ResponsiveButton
+                          onClick={handleDownloadTemplate}
+                          variant="primary"
+                          size="medium"
+                        >
+                          Vorlage laden
+                        </ResponsiveButton>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -610,6 +817,22 @@ const AdminDashboard = () => {
                 countingError={countingError}
                 setCountingError={setCountingError}
               />
+            )}
+
+            {/* Integrity Check Section */}
+            {activeSection === 'integrity' && (
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div className="border-b px-6 py-4">
+                  <h2 className="text-xl font-bold">🔒 Daten-Integritätsprüfung</h2>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Überprüfen Sie die Integrität der Wahldaten durch Blockchain-ähnliche
+                    Hash-Validierung
+                  </p>
+                </div>
+                <div className="p-6">
+                  <IntegrityCheckView />
+                </div>
+              </div>
             )}
           </div>
         </div>

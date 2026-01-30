@@ -208,7 +208,6 @@ export const performCounting = async (electionId, userId) => {
         election_type: election.election_type,
         counting_method: election.counting_method,
         algorithm_used: result.algorithm,
-        result_id: resultId,
         version: version,
         ties_detected: result.ties_detected || false,
         is_test_election: isElectionTest,
@@ -216,8 +215,8 @@ export const performCounting = async (electionId, userId) => {
     }).catch((e) => logger.error(AUDIT_LOG_ERROR_MESSAGE, e));
 
     logger.info(
-      `✅ Vote counting successful: election=${election.info}, version=${version}, ` +
-        `result_id=${resultId}, ties=${result.ties_detected || false}`,
+      `Vote counting successful: election=${election.info}, version=${version}, ` +
+        `ties=${result.ties_detected || false}`,
     );
 
     return {
@@ -403,8 +402,7 @@ export const finalizeResults = async (electionId, version, userId) => {
       targetResource: `election:${electionId}`,
       details: {
         version: version,
-        result_id: updateRes.rows[0].id,
-        counted_at: updateRes.rows[0].counted_at,
+        finalized: true,
       },
     }).catch((e) => logger.error(AUDIT_LOG_ERROR_MESSAGE, e));
 

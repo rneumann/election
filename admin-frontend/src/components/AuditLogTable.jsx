@@ -63,7 +63,7 @@ const getSafeValue = (row, key) => {
   /* eslint-disable */
   switch (key) {
     case 'id':
-      return row.id;
+      return typeof row.id === 'string' ? parseInt(row.id, 10) : row.id;
     case 'timestamp':
       return row.timestamp;
     case 'action_type':
@@ -110,7 +110,7 @@ const stableSort = (array, comparator) => {
 
 // --- SUB-KOMPONENTEN ---
 
-const AuditRow = ({ row }) => {
+const AuditRow = ({ row, isGlitched }) => {
   const [open, setOpen] = useState(false);
 
   const getStatusStyles = (level) => {
@@ -127,23 +127,46 @@ const AuditRow = ({ row }) => {
     }
   };
 
+  const getDisplayValue = (val) => {
+    // Wenn glitchMode aktiv ist, machen wir eine "technische" Darstellung
+    if (isGlitched) {
+      // Beispiel: ID als HEX darstellen oder Prefix
+      return val;
+    }
+    return val;
+  };
+
   return (
     <>
       <tr
         onClick={() => setOpen(!open)}
-        className="hover:bg-gray-50 cursor-pointer transition-colors border-b border-gray-200"
+        className={`cursor-pointer transition-colors border-b border-gray-200 ${
+          isGlitched ? 'glitch-row font-mono text-xs' : 'hover:bg-gray-50'
+        }`}
       >
         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 w-10">
           <button className="focus:outline-none p-1 rounded hover:bg-gray-200">
             {open ? <ChevronUpIcon /> : <ChevronDownIcon />}
           </button>
         </td>
-        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{row.id}</td>
-        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-          {new Date(row.timestamp).toLocaleString('de-DE')}
+        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+          {isGlitched ? <span className="opacity-75">ID::{row.id}</span> : row.id}
         </td>
-        <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-700">
-          {row.action_type}
+        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+          {isGlitched ? (
+            <span className="text-purple-600 font-bold">
+              {new Date(row.timestamp).toISOString().split('T').join(' ')}
+            </span>
+          ) : (
+            new Date(row.timestamp).toLocaleString('de-DE')
+          )}
+        </td>
+        <td
+          className={`px-6 py-4 whitespace-nowrap text-sm font-bold ${
+            isGlitched ? 'text-blue-900 uppercase tracking-widest' : 'text-gray-700'
+          }`}
+        >
+          {isGlitched ? `[${row.action_type}]` : row.action_type}
         </td>
         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{row.actor_id || '-'}</td>
         <td className="px-6 py-4 whitespace-nowrap text-sm">
@@ -158,32 +181,72 @@ const AuditRow = ({ row }) => {
       </tr>
 
       {open && (
-        <tr className="bg-gray-50 border-b border-gray-200">
+        <tr className={`border-b border-gray-200 ${isGlitched ? 'bg-slate-50' : 'bg-gray-50'}`}>
           <td colSpan="6" className="px-6 py-4">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-fadeIn">
-              <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
-                <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
-                  Event Details (JSON)
+            <div
+              className={`grid grid-cols-1 lg:grid-cols-2 gap-6 animate-fadeIn ${isGlitched ? 'font-mono' : ''}`}
+            >
+              <div
+                className={`p-4 rounded-lg border shadow-sm ${
+                  isGlitched ? 'bg-white border-slate-300' : 'bg-white border-gray-200'
+                }`}
+              >
+                <h4
+                  className={`text-xs font-bold uppercase tracking-wider mb-2 ${
+                    isGlitched ? 'text-slate-700' : 'text-gray-500'
+                  }`}
+                >
+                  {isGlitched ? 'System Event Payload' : 'Event Details (JSON)'}
                 </h4>
-                <pre className="text-xs text-gray-700 overflow-x-auto whitespace-pre-wrap font-mono bg-gray-50 p-2 rounded">
+                <pre
+                  className={`text-xs overflow-x-auto whitespace-pre-wrap font-mono p-2 rounded ${
+                    isGlitched ? 'bg-slate-100 text-slate-800' : 'text-gray-700 bg-gray-50'
+                  }`}
+                >
                   {JSON.stringify(row.details, null, 2)}
                 </pre>
               </div>
 
-              <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
-                <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
-                  Blockchain Integrität
+              <div
+                className={`p-4 rounded-lg border shadow-sm ${
+                  isGlitched ? 'bg-white border-slate-300' : 'bg-white border-gray-200'
+                }`}
+              >
+                <h4
+                  className={`text-xs font-bold uppercase tracking-wider mb-2 ${
+                    isGlitched ? 'text-slate-700' : 'text-gray-500'
+                  }`}
+                >
+                  {isGlitched ? 'Cryptographic Verification' : 'Blockchain Integrität'}
                 </h4>
                 <div className="space-y-3">
                   <div>
-                    <span className="block text-xs font-semibold text-gray-400">ENTRY HASH</span>
-                    <code className="block mt-1 text-xs bg-blue-50 text-blue-800 p-2 rounded border border-blue-100 break-all font-mono">
+                    <span
+                      className={`block text-xs font-semibold ${isGlitched ? 'text-slate-500' : 'text-gray-400'}`}
+                    >
+                      {isGlitched ? 'ENTRY_HASH_SHA256' : 'ENTRY HASH'}
+                    </span>
+                    <code
+                      className={`block mt-1 text-xs p-2 rounded border break-all font-mono ${
+                        isGlitched
+                          ? 'bg-slate-100 text-slate-900 border-slate-200'
+                          : 'bg-blue-50 text-blue-800 border-blue-100'
+                      }`}
+                    >
                       {row.entry_hash}
                     </code>
                   </div>
                   <div>
-                    <span className="block text-xs font-semibold text-gray-400">PREV HASH</span>
-                    <code className="block mt-1 text-xs text-gray-500 p-2 break-all font-mono">
+                    <span
+                      className={`block text-xs font-semibold ${isGlitched ? 'text-slate-500' : 'text-gray-400'}`}
+                    >
+                      {isGlitched ? 'PREV_HASH_CHAIN_POINTER' : 'PREV HASH'}
+                    </span>
+                    <code
+                      className={`block mt-1 text-xs p-2 break-all font-mono ${
+                        isGlitched ? 'text-slate-600' : 'text-gray-500'
+                      }`}
+                    >
                       {row.prev_hash}
                     </code>
                   </div>
@@ -218,6 +281,7 @@ const AuditLogTable = () => {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [glitchMode, setGlitchMode] = useState(false);
 
   // Filter State
   const [searchTerm, setSearchTerm] = useState('');
@@ -248,11 +312,62 @@ const AuditLogTable = () => {
 
   const filteredLogs = useMemo(() => {
     return logs.filter((log) => {
+      // Prüft ob der Suchbegriff ein Regex ist (Format: /pattern/ oder /pattern/i)
+      const isRegexPattern = (pattern) => {
+        return /^\/(.+)\/([gimsuy]*)$/.test(pattern);
+      };
+
+      // Extrahiert Regex und Flags aus dem Pattern
+      const parseRegex = (pattern) => {
+        const match = pattern.match(/^\/(.+)\/([gimsuy]*)$/);
+        if (match) {
+          return { regex: match[1], flags: match[2] || 'i' };
+        }
+        return null;
+      };
+
+      // Hauptlogik für Pattern-Matching
+      const matchesPattern = (text, pattern) => {
+        if (!text) return false;
+        const str = text.toString();
+
+        // 1. Regex-Modus: /pattern/ oder /pattern/flags
+        if (isRegexPattern(pattern)) {
+          const parsed = parseRegex(pattern);
+          if (parsed) {
+            try {
+              return new RegExp(parsed.regex, parsed.flags).test(str);
+            } catch (e) {
+              return false; // Ungültiger Regex
+            }
+          }
+        }
+
+        // 2. Wildcard-Modus: * für beliebige Zeichenkette
+        if (pattern.includes('*')) {
+          const escaped = pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&');
+          const regexStr = escaped.replace(/\*/g, '.*');
+          try {
+            return new RegExp(regexStr, 'i').test(str);
+          } catch (e) {
+            return false;
+          }
+        }
+
+        // 3. Standard: Case-insensitive substring Suche
+        return str.toLowerCase().includes(pattern.toLowerCase());
+      };
+
+      // Suche erweitert um Timestamp und Level
+      const formattedDate = new Date(log.timestamp).toLocaleString('de-DE');
+
       const matchesSearch =
         searchTerm === '' ||
-        log.action_type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (log.actor_id && log.actor_id.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        log.id.toString().includes(searchTerm);
+        matchesPattern(log.action_type, searchTerm) ||
+        matchesPattern(log.actor_id, searchTerm) ||
+        matchesPattern(log.id, searchTerm) ||
+        matchesPattern(log.level, searchTerm) ||
+        matchesPattern(formattedDate, searchTerm);
 
       const matchesLevel = levelFilter === 'ALL' || log.level === levelFilter;
 
@@ -271,8 +386,14 @@ const AuditLogTable = () => {
   };
 
   const handleChangeRowsPerPage = (event) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setCurrentPage(1);
+    const val = parseInt(event.target.value, 10);
+    if (val === -1) {
+      setGlitchMode(true);
+    } else {
+      setGlitchMode(false);
+      setRowsPerPage(val);
+      setCurrentPage(1);
+    }
   };
 
   const sortedLogs = useMemo(
@@ -280,8 +401,11 @@ const AuditLogTable = () => {
     [filteredLogs, order, orderBy],
   );
 
-  const totalPages = Math.ceil(sortedLogs.length / rowsPerPage);
-  const currentLogs = sortedLogs.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
+  const totalPages = rowsPerPage > 0 ? Math.ceil(sortedLogs.length / rowsPerPage) : 1;
+  const currentLogs =
+    rowsPerPage > 0
+      ? sortedLogs.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage)
+      : sortedLogs;
 
   const headCells = [
     { id: 'id', label: 'ID' },
@@ -291,8 +415,54 @@ const AuditLogTable = () => {
     { id: 'level', label: 'Level' },
   ];
 
+  // Helper für Pagination-Ranges, damit wir nicht über 100k Pages iterieren müssen
+  const getPaginationItems = () => {
+    const items = [];
+    const rangeStart = Math.max(2, currentPage - 1);
+    const rangeEnd = Math.min(totalPages - 1, currentPage + 1);
+
+    if (totalPages <= 1) return [];
+
+    // Immer Seite 1
+    items.push(1);
+
+    if (rangeStart > 2) {
+      items.push('...');
+    }
+
+    for (let i = rangeStart; i <= rangeEnd; i++) {
+      items.push(i);
+    }
+
+    if (rangeEnd < totalPages - 1) {
+      items.push('...');
+    }
+
+    // Immer letzte Seite
+    items.push(totalPages);
+    return items;
+  };
+
+  const paginationItems = getPaginationItems();
+
   return (
     <div className="w-full">
+      {glitchMode && (
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `
+          .glitch-row {
+            background-color: #f0fdf4; /* faint green bg */
+            border-left: 4px solid #16a34a; /* green marker */
+          }
+          .glitch-row:hover {
+            background-color: #dcfce7 !important;
+          }
+        `,
+          }}
+        />
+      )}
+
       {/* --- FILTER BAR --- */}
       <div className="mb-6 flex flex-col sm:flex-row gap-4 justify-between items-end sm:items-center">
         <div>
@@ -305,7 +475,7 @@ const AuditLogTable = () => {
           <div className="relative">
             <input
               type="text"
-              placeholder="Suche (Aktion, Akteur, ID)..."
+              placeholder="Suche... "
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-9 pr-4 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-brand-primary focus:border-transparent outline-none w-full sm:w-64"
@@ -407,7 +577,9 @@ const AuditLogTable = () => {
                   </td>
                 </tr>
               ) : currentLogs.length > 0 ? (
-                currentLogs.map((row) => <AuditRow key={row.id} row={row} />)
+                currentLogs.map((row) => (
+                  <AuditRow key={row.id} row={row} isGlitched={glitchMode} />
+                ))
               ) : (
                 <tr>
                   <td colSpan="6" className="px-6 py-12 text-center text-gray-500">
@@ -426,7 +598,7 @@ const AuditLogTable = () => {
             <div className="flex items-center gap-2 text-sm text-gray-700">
               <span>Zeilen pro Seite:</span>
               <select
-                value={rowsPerPage}
+                value={glitchMode ? -1 : rowsPerPage}
                 onChange={handleChangeRowsPerPage}
                 className="border border-gray-300 rounded px-2 py-1 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent cursor-pointer"
               >
@@ -466,36 +638,31 @@ const AuditLogTable = () => {
 
                   {/* Seitenzahlen */}
                   <div className="hidden sm:flex">
-                    {[...Array(totalPages)].map((_, i) => {
-                      if (
-                        i + 1 === 1 ||
-                        i + 1 === totalPages ||
-                        (i + 1 >= currentPage - 1 && i + 1 <= currentPage + 1)
-                      ) {
-                        return (
-                          <button
-                            key={i}
-                            onClick={() => setCurrentPage(i + 1)}
-                            className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-                              currentPage === i + 1
-                                ? 'z-10 bg-brand-primary border-brand-primary text-white'
-                                : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
-                            }`}
-                          >
-                            {i + 1}
-                          </button>
-                        );
-                      } else if (i + 1 === currentPage - 2 || i + 1 === currentPage + 2) {
+                    {paginationItems.map((page, index) => {
+                      if (page === '...') {
                         return (
                           <span
-                            key={i}
+                            key={`dots-${index}`}
                             className="px-2 py-2 border border-gray-300 bg-white text-gray-700"
                           >
                             ...
                           </span>
                         );
                       }
-                      return null;
+
+                      return (
+                        <button
+                          key={page}
+                          onClick={() => setCurrentPage(page)}
+                          className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                            currentPage === page
+                              ? 'z-10 bg-brand-primary border-brand-primary text-white'
+                              : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      );
                     })}
                   </div>
 

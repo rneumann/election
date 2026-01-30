@@ -1,6 +1,6 @@
 /* eslint-disable */
 import { useEffect, useState } from 'react';
-import api, { exportElectionResultExcel } from '../../services/api.js';
+import api, { exportElectionResultExcel, exportOfficialReport } from '../../services/api.js';
 import { adminService } from '../../services/adminApi.js';
 import { logger } from '../../conf/logger/logger.js';
 import { ConfirmationAlert } from '../ConfirmationAlert.jsx';
@@ -151,6 +151,37 @@ const CountingSection = ({
       setCountingElectionId(null);
     }
   };
+
+  // NEU ANFANG (templates)
+  /**
+   * Handler für den offiziellen HKA-Export (Excel mit speziellem Design)
+   */
+  const handleExportOfficial = async (resultId, electionName) => {
+    try {
+      const blob = await exportOfficialReport(resultId);
+
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+
+      // Generate filename with election name
+      const timestamp = new Date().toISOString().split('T')[0];
+      link.download = `Amtliches_Ergebnis_${electionName || resultId.substring(0, 8)}_${timestamp}.xlsx`;
+
+      // Trigger download
+      document.body.appendChild(link);
+      link.click();
+
+      // Cleanup
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      setCountingError(`Fehler beim HKA-Export: ${err.message}`);
+      logger.error('Official export failed:', err);
+    }
+  };
+  // NEU ENDE (templates)
 
   /**
    * Export election result as Excel file
@@ -751,6 +782,33 @@ const CountingSection = ({
                               </svg>
                               Wahlergebnis als Excel exportieren
                             </button>
+
+                            {/* NEU ANFANG (templates) */}
+                            <button
+                              onClick={() =>
+                                handleExportOfficial(
+                                  election.countingResult.fullResults.id,
+                                  election.info,
+                                )
+                              }
+                              className="w-full px-4 py-3 bg-white border-2 border-green-600 text-green-700 font-semibold rounded-lg hover:bg-green-50 transition-colors flex items-center justify-center gap-2 mt-3"
+                            >
+                              <svg
+                                className="w-5 h-5"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                                />
+                              </svg>
+                              Amtliches Wahlergebnis (HKA) herunterladen
+                            </button>
+                            {/* NEU ENDE (templates) */}
 
                             {/* Finalize Button - only show if not yet finalized */}
                             {!election.countingResult.fullResults?.is_final && (
