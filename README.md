@@ -20,6 +20,9 @@
    - [Postgres](#713-postgres)
    - [LDAP](#714-ldap)
    - [WAF](#715-waf)
+   - [KeyCloak](#716-keycloak)
+   - [SAML](#717-saml)
+   - [Frontend](#718-frontend)
    - [Secrets](#72-secrets)
 8. [Lokale Entwicklung](#8-lokale-entwicklung)
    - [Vorbereitung](#81-vorbereitung)
@@ -51,12 +54,12 @@ Die Plattform wird **modular**, **dockerisiert** und **open-source** bereitgeste
 
 Für die Installation und den Betrieb des Systems werden folgende Komponenten benötigt:
 
-| Komponente       | Version    | Download                                                             |
-| ---------------- | ---------- | -------------------------------------------------------------------- |
-| Node.js          | ≥ 20       | [nodejs.org](https://nodejs.org/en/download)                                     |
-| Docker           | aktuell    | [docker.com/get-started](https://www.docker.com/products/docker-desktop/)        |
-| Docker Compose   | aktuell    | (in Docker Desktop enthalten)                                        |
-| Git              | aktuell    | [git-scm.com/downloads](https://git-scm.com/install/)               |
+| Komponente     | Version | Download                                                                  |
+| -------------- | ------- | ------------------------------------------------------------------------- |
+| Node.js        | ≥ 20    | [nodejs.org](https://nodejs.org/en/download)                              |
+| Docker         | aktuell | [docker.com/get-started](https://www.docker.com/products/docker-desktop/) |
+| Docker Compose | aktuell | (in Docker Desktop enthalten)                                             |
+| Git            | aktuell | [git-scm.com/downloads](https://git-scm.com/install/)                     |
 
 > **Hinweis:** Docker & Docker Compose werden sowohl für die lokale Entwicklung als auch für den Produktivbetrieb empfohlen.
 
@@ -290,6 +293,60 @@ openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout dev.key -out dev.crt
 ```
 
 > Für den Produktivbetrieb wird dieselbe Struktur verwendet, jedoch mit `NODE_ENV=production` und angepassten Hostnamen (z. B. Docker-Services).
+
+#### 7.1.6 KeyCloak
+
+Pfad:
+
+```text
+backend/.extras/keycloak
+```
+
+**Beispiel:**
+
+```bash
+KEYCLOAK_ADMIN=admin
+KEYCLOAK_ADMIN_PASSWORD=admin
+KC_DB=postgres
+KC_DB_URL=jdbc:postgresql://postgres:5432/keycloak
+KC_DB_USERNAME=keycloak
+KC_DB_PASSWORD=keycloak
+KC_HEALTH_ENABLED=true
+KC_METRICS_ENABLED=true
+```
+
+#### 7.1.7 SAML
+
+Pfad:
+
+```text
+backend/.extras/saml
+```
+
+**Beispiel:**
+
+```bash
+SIMPLESAMLPHP_SP_ENTITY_ID=example
+SIMPLESAMLPHP_SP_ASSERTION_CONSUMER_SERVICE=http://localhost:3000/auth/saml/callback
+SIMPLESAMLPHP_ADMIN_PASSWORD=admin
+SIMPLESAMLPHP_SECRET_SALT=
+```
+
+#### 7.1.8 Frontend
+
+Pfad:
+
+```text
+frontend/.env
+```
+
+**Beispiel:**
+
+```bash
+VITE_API_BASE_URL=/api
+VITE_USERNAME_PATTERN=^[a-z0-9]+$
+VITE_LOG_LEVEL=debug
+```
 
 ---
 
