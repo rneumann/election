@@ -215,15 +215,16 @@ export const generateElectionTemplate = async (presetKey = 'generic') => {
 
   // --- BLATT 1: WAHLEN ---
   const sheet = workbook.addWorksheet('Wahlen', { views: [{ showGridLines: false }] });
+  const defaultAlignment = { horizontal: 'center', vertical: 'middle' };
   sheet.columns = [
-    { width: 20 }, // A: Kennung
-    { width: 35 }, // B: Info
-    { width: 20 }, // C: Listen
-    { width: 17 }, // D: Plätze
-    { width: 20 }, // E: Stimmen pro Zettel
-    { width: 17 }, // F: max. Kum.
-    { width: 25 }, // G: Wahltyp
-    { width: 25 }, // H: Zählverfahren
+    { width: 20, style: { alignment: defaultAlignment } }, // A: Kennung
+    { width: 35, style: { alignment: defaultAlignment } }, // B: Info
+    { width: 20, style: { alignment: defaultAlignment } }, // C: Listen
+    { width: 17, style: { alignment: defaultAlignment } }, // D: Plätze
+    { width: 20, style: { alignment: defaultAlignment } }, // E: Stimmen pro Zettel
+    { width: 17, style: { alignment: defaultAlignment } }, // F: max. Kum.
+    { width: 25, style: { alignment: defaultAlignment } }, // G: Wahltyp
+    { width: 25, style: { alignment: defaultAlignment } }, // H: Zählverfahren
   ];
 
   // Header Styling
@@ -237,12 +238,23 @@ export const generateElectionTemplate = async (presetKey = 'generic') => {
   });
 
   // Zeit-Meta
-  sheet.getCell('B3').value = 'Wahlzeitraum von';
-  sheet.getCell('D3').value = new Date().toLocaleDateString('de-DE');
-  sheet.getCell('B4').value = 'bis';
+  const cellB3 = sheet.getCell('B3');
+  cellB3.value = 'Wahlzeitraum von';
+  cellB3.alignment = { horizontal: 'right', vertical: 'middle' };
+
+  const cellD3 = sheet.getCell('D3');
+  cellD3.value = new Date().toLocaleDateString('de-DE');
+  cellD3.alignment = { horizontal: 'left', vertical: 'middle' };
+
+  const cellB4 = sheet.getCell('B4');
+  cellB4.value = 'bis';
+  cellB4.alignment = { horizontal: 'right', vertical: 'middle' };
+
   const future = new Date();
   future.setDate(future.getDate() + DEFAULT_DURATION_DAYS);
-  sheet.getCell('D4').value = future.toLocaleDateString('de-DE');
+  const cellD4 = sheet.getCell('D4');
+  cellD4.value = future.toLocaleDateString('de-DE');
+  cellD4.alignment = { horizontal: 'left', vertical: 'middle' };
 
   // Spalten-Header (Zeile 7) - EXAKTE NAMEN FÜR IMPORTER
   const headerTitles = [
@@ -264,7 +276,8 @@ export const generateElectionTemplate = async (presetKey = 'generic') => {
   });
 
   // Datenzeile (Zeile 8)
-  sheet.getRow(ROW_START_DATA).values = [
+  const dataRow = sheet.getRow(ROW_START_DATA);
+  dataRow.values = [
     presetKey === 'generic' ? 'meine_wahl_01' : presetKey,
     config.info,
     config.listen ?? 1,
@@ -274,17 +287,41 @@ export const generateElectionTemplate = async (presetKey = 'generic') => {
     config.type ?? '',
     config.method ?? '',
   ];
+  // Zentriere alle Zellen in der Datenzeile
+  dataRow.eachCell((cell) => {
+    cell.alignment = { horizontal: 'center', vertical: 'middle' };
+  });
 
-  // Dropdown Validierung
+  // Dropdown Validierung und Zentrierung für alle Datenzeilen
   const typeList = `"${TYPE_VERHAELTNIS},${TYPE_MEHRHEIT},${TYPE_URABSTIMMUNG}"`;
   const methodList = `"${METHOD_SAINTE_LAGUE},${METHOD_HARE_NIEMEYER},${METHOD_SIMPLE_MAJORITY},${METHOD_ABSOLUTE_MAJORITY},${METHOD_YES_NO}"`;
   for (let i = ROW_START_DATA; i <= VALIDATION_MAX_ROW; i++) {
     sheet.getCell(`G${i}`).dataValidation = { type: 'list', formulae: [typeList] };
     sheet.getCell(`H${i}`).dataValidation = { type: 'list', formulae: [methodList] };
+    // Zentriere alle Zellen in jeder Zeile
+    const row = sheet.getRow(i);
+    for (let col = 1; col <= 8; col++) {
+      const cell = row.getCell(col);
+      cell.style = {
+        alignment: defaultAlignment,
+        numFmt: '@', // Als Text formatieren
+      };
+    }
   }
 
   // --- BLATT 2: LISTENVORLAGE (9 SPALTEN) ---
   const candSheet = workbook.addWorksheet('Listenvorlage');
+  candSheet.columns = [
+    { width: 18, style: { alignment: defaultAlignment } }, // Wahl Kennung
+    { width: 8, style: { alignment: defaultAlignment } }, // Nr
+    { width: 15, style: { alignment: defaultAlignment } }, // UID
+    { width: 25, style: { alignment: defaultAlignment } }, // Liste / Schlüsselwort
+    { width: 15, style: { alignment: defaultAlignment } }, // Vorname
+    { width: 15, style: { alignment: defaultAlignment } }, // Nachname
+    { width: 12, style: { alignment: defaultAlignment } }, // Mtr-Nr.
+    { width: 12, style: { alignment: defaultAlignment } }, // Fakultät
+    { width: 18, style: { alignment: defaultAlignment } }, // Studiengang
+  ];
   const candHeaders = [
     'Wahl Kennung',
     'Nr',
@@ -300,10 +337,12 @@ export const generateElectionTemplate = async (presetKey = 'generic') => {
   candSheet.getRow(1).eachCell((c) => {
     c.font = { bold: true, color: { argb: FONT_WHITE } };
     c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: HKA_BLACK } };
+    c.alignment = { horizontal: 'center', vertical: 'middle' };
   });
 
   // Beispiel-Kandidat
-  candSheet.getRow(2).values = [
+  const candDataRow = candSheet.getRow(2);
+  candDataRow.values = [
     presetKey === 'generic' ? 'meine_wahl_01' : presetKey,
     1,
     'kand-001',
@@ -314,11 +353,47 @@ export const generateElectionTemplate = async (presetKey = 'generic') => {
     'IWI',
     'Informatik',
   ];
+  // Zentriere alle Zellen in der Beispiel-Kandidatenzeile
+  candDataRow.eachCell((cell) => {
+    cell.alignment = { horizontal: 'center', vertical: 'middle' };
+  });
+  // Zentriere alle Zellen für zukünftige Einträge (Zeilen 2-100)
+  for (let i = 2; i <= VALIDATION_MAX_ROW; i++) {
+    const row = candSheet.getRow(i);
+    for (let col = 1; col <= 9; col++) {
+      const cell = row.getCell(col);
+      cell.style = {
+        alignment: defaultAlignment,
+        numFmt: '@',
+      };
+    }
+  }
 
   // --- BLATT 3: OPTIONSURABSTIMMUNG (WICHTIG FÜR SCHEMA) ---
   const optSheet = workbook.addWorksheet('OptionsUrabstimmung');
-  optSheet.getRow(1).values = ['Wahlkennung', 'Nr', 'Name', 'Description'];
-  optSheet.getRow(1).font = { bold: true };
+  optSheet.columns = [
+    { width: 18, style: { alignment: defaultAlignment } }, // Wahlkennung
+    { width: 8, style: { alignment: defaultAlignment } }, // Nr
+    { width: 20, style: { alignment: defaultAlignment } }, // Name
+    { width: 35, style: { alignment: defaultAlignment } }, // Description
+  ];
+  const optHeaderRow = optSheet.getRow(1);
+  optHeaderRow.values = ['Wahlkennung', 'Nr', 'Name', 'Description'];
+  optHeaderRow.eachCell((cell) => {
+    cell.font = { bold: true };
+    cell.alignment = { horizontal: 'center', vertical: 'middle' };
+  });
+  // Zentriere alle Zellen für zukünftige Einträge (Zeilen 2-100)
+  for (let i = 2; i <= VALIDATION_MAX_ROW; i++) {
+    const row = optSheet.getRow(i);
+    for (let col = 1; col <= 4; col++) {
+      const cell = row.getCell(col);
+      cell.style = {
+        alignment: defaultAlignment,
+        numFmt: '@',
+      };
+    }
+  }
 
   return workbook;
 };

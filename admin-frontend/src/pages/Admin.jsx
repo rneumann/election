@@ -252,7 +252,7 @@ const AdminDashboard = () => {
                     className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
                   >
                     <div className="flex items-center justify-between">
-                      <span>Datenbank leeren</span>
+                      <span>Datenbankbereinigung</span>
                       <span className="text-xs opacity-60">1</span>
                     </div>
                   </button>
@@ -428,11 +428,11 @@ const AdminDashboard = () => {
 
           {/* Right Content Area */}
           <div className="flex-1 w-full lg:w-auto">
-            {/* Datenbank leeren Section */}
+            {/* Datenbereinigung Section */}
             {activeSection === 'clear' && (
               <div className="bg-white rounded-lg shadow-sm border border-gray-200">
                 <div className="border-b border-gray-200 px-6 py-4">
-                  <h2 className="text-xl font-bold text-gray-900">Datenbank leeren</h2>
+                  <h2 className="text-xl font-bold text-gray-900">Datenbankbereinigung</h2>
                   <p className="text-sm text-gray-600 mt-1">
                     Alle Daten aus der Datenbank entfernen, einschließlich Wahleinstellungen,
                     Stimmzettel, Wähler, Kandidaten usw.
@@ -528,103 +528,47 @@ const AdminDashboard = () => {
 
             {activeSection === 'template' && (
               <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-                <div className="border-b px-6 py-4">
-                  <h2 className="text-xl font-bold">Excel-Vorlage herunterladen</h2>
+                <div className="border-b border-gray-200 px-6 py-4">
+                  <h2 className="text-xl font-bold text-gray-900">Excel-Vorlage herunterladen</h2>
                   <p className="text-sm text-gray-600 mt-1">
                     Laden Sie Vorlagen für Wahl-Konfigurationen und Wählerverzeichnisse herunter
                   </p>
                 </div>
-                <div className="p-6 space-y-8">
-                  <div className="p-6 bg-gray-50 border rounded-lg">
-                    <h3 className="font-bold mb-4 text-center">Welche Vorlage benötigen Sie?</h3>
-                    <select
-                      value={templateType}
-                      onChange={(e) => setTemplateType(e.target.value)}
-                      className="w-full rounded-md border-gray-300 mb-6 p-2.5 bg-white border"
-                    >
-                      <optgroup label="Basis-Vorlagen">
-                        <option value="generic">📝 Leere Wahl-Vorlage (Standard)</option>
-                        <option value="voters">👥 Wählerverzeichnis (Import)</option>
-                      </optgroup>
-                      {presetOptions && presetOptions.internal && (
-                        <optgroup label="HKA Standard-Presets">
-                          {presetOptions.internal
-                            .filter((p) => p.key !== 'generic')
-                            .map((p) => (
-                              <option key={p.key} value={p.key}>
-                                🏛️ {p.info}
-                              </option>
-                            ))}
-                        </optgroup>
-                      )}
-                      {presetOptions &&
-                        presetOptions.external &&
-                        presetOptions.external.length > 0 && (
-                          <optgroup label="Benutzerdefinierte Presets">
-                            {presetOptions.external.map((p) => (
-                              <option key={p.key} value={p.key}>
-                                ⚙️ {p.info}
-                              </option>
-                            ))}
-                          </optgroup>
-                        )}
-                    </select>
-                    <ResponsiveButton
-                      onClick={handleDownloadTemplate}
-                      variant="primary"
-                      size="large"
-                    >
-                      Ausgewählte Vorlage laden
-                    </ResponsiveButton>
-                  </div>
-                </div>
-              </div>
-            )}
-            {/* NEU ENDE (templates) */}
-
-            {/* Excel-Vorlage herunterladen Section */}
-            {activeSection === 'template' && (
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-                <div className="border-b border-gray-200 px-6 py-4">
-                  <h2 className="text-xl font-bold text-gray-900">Excel-Vorlage herunterladen</h2>
-                  <p className="text-sm text-gray-600 mt-1">
-                    Excel-Vorlage für eine Wahleinstellung herunterladen
-                  </p>
-                </div>
 
                 <div className="p-6">
-                  {/* Download Card */}
-                  <div className="bg-gray-50 border border-gray-300 rounded-lg p-8 text-center">
-                    <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gray-200 mb-4">
-                      <svg
-                        className="w-10 h-10 text-gray-600"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
+                  <div className="flex flex-col md:flex-row gap-6">
+                    {/* Blanko-Vorlage Card */}
+                    <div className="flex-1 bg-gray-50 border border-gray-200 rounded-lg p-6 text-center hover:shadow-md transition-shadow">
+                      <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white border-2 border-gray-200 mb-4">
+                        <svg
+                          className="w-8 h-8 text-gray-500"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                          />
+                        </svg>
+                      </div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">Blanko-Vorlage</h3>
+                      <p className="text-sm text-gray-500 mb-4">
+                        Leere Vorlage zum manuellen Ausfüllen
+                      </p>
+                      <a
+                        href="/templates/ElectionInfoTemplate.xlsx"
+                        download="ElectionInfoTemplate.xlsx"
+                        className="inline-block"
                       >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                        />
-                      </svg>
-                    </div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-6">
-                      Excel-Vorlage für Wahleinstellungen
-                    </h3>
-                    <a
-                      href="/templates/ElectionInfoTemplate.xlsx"
-                      download="ElectionInfoTemplate.xlsx"
-                      className="inline-block"
-                    >
-                      <button
-                        style={{ backgroundColor: theme.colors.primary }}
-                        className="px-6 py-3 text-white font-medium rounded hover:opacity-90 transition-opacity"
-                      >
-                        <div className="flex items-center gap-2">
+                        <button
+                          style={{ backgroundColor: theme.colors.primary }}
+                          className="px-5 py-2.5 text-white text-sm font-medium rounded-md hover:opacity-90 transition-opacity flex items-center gap-2 mx-auto"
+                        >
                           <svg
-                            className="w-5 h-5"
+                            className="w-4 h-4"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -636,10 +580,75 @@ const AdminDashboard = () => {
                               d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
                             />
                           </svg>
-                          <span>Vorlage herunterladen (.xlsx)</span>
+                          Download (.xlsx)
+                        </button>
+                      </a>
+                    </div>
+
+                    {/* Vorgefertigte Vorlagen Card */}
+                    <div className="flex-1 bg-gray-50 border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
+                      <div className="text-center mb-4">
+                        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white border-2 border-gray-200 mb-4">
+                          <svg
+                            className="w-8 h-8 text-gray-500"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+                            />
+                          </svg>
                         </div>
-                      </button>
-                    </a>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                          Vorgefertigte Vorlagen
+                        </h3>
+                        <p className="text-sm text-gray-500 mb-4">
+                          Vorkonfigurierte Vorlagen für verschiedene Wahltypen
+                        </p>
+                      </div>
+                      <select
+                        value={templateType}
+                        onChange={(e) => setTemplateType(e.target.value)}
+                        className="w-full rounded-md border-gray-300 mb-4 p-2.5 bg-white border text-sm"
+                      >
+                        <option value="generic">📝 Leere Wahl-Vorlage (Standard)</option>
+                        {presetOptions && presetOptions.internal && (
+                          <optgroup label="HKA Standard-Presets">
+                            {presetOptions.internal
+                              .filter((p) => p.key !== 'generic')
+                              .map((p) => (
+                                <option key={p.key} value={p.key}>
+                                  🏛️ {p.info}
+                                </option>
+                              ))}
+                          </optgroup>
+                        )}
+                        {presetOptions &&
+                          presetOptions.external &&
+                          presetOptions.external.length > 0 && (
+                            <optgroup label="Benutzerdefinierte Presets">
+                              {presetOptions.external.map((p) => (
+                                <option key={p.key} value={p.key}>
+                                  ⚙️ {p.info}
+                                </option>
+                              ))}
+                            </optgroup>
+                          )}
+                      </select>
+                      <div className="text-center">
+                        <ResponsiveButton
+                          onClick={handleDownloadTemplate}
+                          variant="primary"
+                          size="medium"
+                        >
+                          Vorlage laden
+                        </ResponsiveButton>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>

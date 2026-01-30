@@ -179,6 +179,15 @@ const IntegrityCheckView = () => {
             </div>
           )}
 
+          {result.totalBallots !== undefined && (
+            <div className={`text-sm ${textColor}`}>
+              ✓ Geprüfte Stimmzettel: <span className="font-bold">{result.totalBallots}</span>
+              {result.verifiedBallots !== undefined && (
+                <span className="ml-2">({result.verifiedBallots} verifiziert)</span>
+              )}
+            </div>
+          )}
+
           {result.totalElections !== undefined && (
             <div className={`text-sm ${textColor}`}>
               ✓ Geprüfte Wahlen: <span className="font-bold">{result.totalElections}</span>
@@ -197,6 +206,9 @@ const IntegrityCheckView = () => {
               <div className="space-y-2 max-h-48 overflow-y-auto">
                 {result.errors.map((error, idx) => (
                   <div key={idx} className="text-xs bg-red-100 p-2 rounded border border-red-300">
+                    {error.type && (
+                      <span className="font-mono font-bold text-red-600">[{error.type}] </span>
+                    )}
                     {typeof error === 'string' ? error : error.message || JSON.stringify(error)}
                   </div>
                 ))}
