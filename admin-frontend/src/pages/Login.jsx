@@ -79,7 +79,7 @@ const Login = () => {
               required
               disabled={loading}
               className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-brand-primary dark:focus:ring-red-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 disabled:opacity-50"
-              placeholder="Ihr Benutzername"
+              placeholder={theme.placeholders.loginUsername}
             />
           </div>
 
@@ -98,7 +98,7 @@ const Login = () => {
               required
               disabled={loading}
               className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-brand-primary dark:focus:ring-red-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 disabled:opacity-50"
-              placeholder="••••••••"
+              placeholder={theme.placeholders.loginPassword}
             />
           </div>
 

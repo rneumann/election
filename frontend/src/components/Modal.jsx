@@ -2,6 +2,7 @@ import { Dialog, DialogBackdrop, DialogPanel, DialogTitle } from '@headlessui/re
 import { useEffect, useState, useContext } from 'react';
 import log from 'loglevel';
 import { voterApi } from '../services/voterApi';
+import { useTheme } from '../hooks/useTheme';
 import { logger } from '../conf/logger/logger';
 import { AccessibilityContext } from '../context/AccessibilityContext';
 import ResponsiveButton from './ResponsiveButton';
@@ -16,6 +17,7 @@ export const Modal = ({ open, setOpen, electionId, refreshElections }) => {
   const [saveButtonDisabled, setSaveButtonDisabled] = useState(true);
   const [invalidHandOver, setInvalidHandOver] = useState(false);
   const { settings } = useContext(AccessibilityContext);
+  const theme = useTheme();
 
   // Build accessibility classes for modal content
   const accessibilityClasses = [
@@ -288,7 +290,7 @@ export const Modal = ({ open, setOpen, electionId, refreshElections }) => {
                 checked={invalidHandOver}
                 onChange={(e) => setInvalidHandOver(e.target.checked)}
               />
-              <span>Ich möchte meinen Stimmzettel ungültig abgeben!</span>
+              <span>{theme.text.checkBoxConfirm}</span>
             </label>
 
             <div className="modal-button-container flex items-center gap-2 sm:gap-3 justify-end">

@@ -1,9 +1,9 @@
 import { expect } from '@playwright/test';
+import { themeConfig } from '../../theme.config.js';
 import { information } from './loginInformation.js';
-
-// Constants to avoid string duplication (SonarJS fix)
-const TXT_PLACEHOLDER_USER = 'Ihr Benutzername';
-const TXT_PLACEHOLDER_PASS = 'Ihr Passwort';
+const theme = themeConfig;
+const TXT_PLACEHOLDER_USER = theme.placeholders.loginUsername;
+const TXT_PLACEHOLDER_PASS = theme.placeholders.loginPassword;
 const TXT_LOGIN_BTN = 'Anmelden';
 
 /**

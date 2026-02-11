@@ -20,6 +20,9 @@
    - [Postgres](#713-postgres)
    - [LDAP](#714-ldap)
    - [WAF](#715-waf)
+   - [KeyCloak](#716-keycloak)
+   - [SAML](#717-saml)
+   - [Frontend](#718-frontend)
    - [Secrets](#72-secrets)
 8. [Lokale Entwicklung](#8-lokale-entwicklung)
    - [Vorbereitung](#81-vorbereitung)
@@ -51,12 +54,12 @@ Die Plattform wird **modular**, **dockerisiert** und **open-source** bereitgeste
 
 Für die Installation und den Betrieb des Systems werden folgende Komponenten benötigt:
 
-| Komponente       | Version    | Download                                                             |
-| ---------------- | ---------- | -------------------------------------------------------------------- |
-| Node.js          | ≥ 20       | [nodejs.org](https://nodejs.org/en/download)                                     |
-| Docker           | aktuell    | [docker.com/get-started](https://www.docker.com/products/docker-desktop/)        |
-| Docker Compose   | aktuell    | (in Docker Desktop enthalten)                                        |
-| Git              | aktuell    | [git-scm.com/downloads](https://git-scm.com/install/)               |
+| Komponente     | Version | Download                                                                  |
+| -------------- | ------- | ------------------------------------------------------------------------- |
+| Node.js        | ≥ 20    | [nodejs.org](https://nodejs.org/en/download)                              |
+| Docker         | aktuell | [docker.com/get-started](https://www.docker.com/products/docker-desktop/) |
+| Docker Compose | aktuell | (in Docker Desktop enthalten)                                             |
+| Git            | aktuell | [git-scm.com/downloads](https://git-scm.com/install/)                     |
 
 > **Hinweis:** Docker & Docker Compose werden sowohl für die lokale Entwicklung als auch für den Produktivbetrieb empfohlen.
 
@@ -291,6 +294,60 @@ openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout dev.key -out dev.crt
 
 > Für den Produktivbetrieb wird dieselbe Struktur verwendet, jedoch mit `NODE_ENV=production` und angepassten Hostnamen (z. B. Docker-Services).
 
+#### 7.1.6 KeyCloak
+
+Pfad:
+
+```text
+backend/.extras/keycloak
+```
+
+**Beispiel:**
+
+```bash
+KEYCLOAK_ADMIN=admin
+KEYCLOAK_ADMIN_PASSWORD=admin
+KC_DB=postgres
+KC_DB_URL=jdbc:postgresql://postgres:5432/keycloak
+KC_DB_USERNAME=keycloak
+KC_DB_PASSWORD=keycloak
+KC_HEALTH_ENABLED=true
+KC_METRICS_ENABLED=true
+```
+
+#### 7.1.7 SAML
+
+Pfad:
+
+```text
+backend/.extras/saml
+```
+
+**Beispiel:**
+
+```bash
+SIMPLESAMLPHP_SP_ENTITY_ID=example
+SIMPLESAMLPHP_SP_ASSERTION_CONSUMER_SERVICE=http://localhost:3000/auth/saml/callback
+SIMPLESAMLPHP_ADMIN_PASSWORD=admin
+SIMPLESAMLPHP_SECRET_SALT=
+```
+
+#### 7.1.8 Frontend
+
+Pfad:
+
+```text
+frontend/.env
+```
+
+**Beispiel:**
+
+```bash
+VITE_API_BASE_URL=/api
+VITE_USERNAME_PATTERN=^[a-z0-9]+$
+VITE_LOG_LEVEL=debug
+```
+
 ---
 
 ### 7.2 Secrets
@@ -363,20 +420,60 @@ Konfiguration der Seitendarstellung.
 
 ### 9.1 Style Definitionen
 
-Um das Styling an Ihr Schema anzupassen finden Sie eine Datei mit den öffentlichen [Stylings](./frontend/theme.config.js).
+Um das UI-Design an Ihr Schema anzupassen finden Sie eine Datei mit den öffentlichen [Stylings](./frontend/theme.config.js).
 
 ### 9.2 Style Anpassung
 
 In der Datei befinden sich Konfigurationen wie beispielsweise
 
-```bash
-institution: {...}; #Name der Einrichtung
-colors:{...} #Farbkonfiguration wie die Einrichtung es vorsieht
-text:{...}; #Begrüßungs-/Informationstext
-roles:{...}; #Existierende Rollen im Wahlsystem
+| Sektion            | Beschreibung                                                                          |
+| ------------------ | ------------------------------------------------------------------------------------- |
+| **`institution`**  | Name und Kürzel der Einrichtung (wird im Header/Titel angezeigt).                     |
+| **`colors`**       | Definition der Corporate Identity Farben (Primärfarbe, Akzente, Text).                |
+| **`text`**         | sichtbare Texte der App (optional Anpassbar)                                          |
+| **`placeholders`** | Platzhalter für beispielsweise Eingabefelder (optional Anpassbar)                     |
+| **`roles`**        | Mapping der technischen Rollen zu Anzeigenamen (z.B. `committee` -> "Wahlausschuss"). |
+
+### Beispiel-Konfiguration
+
+```javascript
+// theme.config.js
+export const themeConfig = {
+  // 1. Mandanten-Daten
+  institution: {
+    name: 'HKA',
+    fullName: 'Hochschule Karlsruhe',
+  },
+
+  // 2. Corporate Design (Tailwind nutzt diese Variablen)
+  colors: {
+    primary: '#e20000ff', // Hauptfarbe (Buttons, Header)
+    dark: '#333333',      // Dunkler Text
+    lightGray: '#F5F5F5', // Hintergründe
+  },
+
+  // 3. Wording
+  text: {
+    appTitle: 'Wahlsystem',
+    loginSubtitle: 'Bitte melden Sie sich mit Ihren Anmeldedaten an',
+  },
+
+  // 4. Platzhalter für flexible Anpassungen
+  placeholder: {
+    loginUsername: 'Ihr RZ-Kürzel', // Der Platzhalter im Login-Feld
+    loginPassword: 'Ihr Passwort', // Der Platzhalter im Password-Feld
+  }
+
+  // 5. Rollen-Bezeichnungen
+  roles: {
+    admin: 'Administrator',
+    voter: 'Wähler',
+  }
+};
 ```
 
 Hier nehmen Sie die nötigen Anpassungen vor, welche dann vom System aktualisiert werden, sodass Sie ihre Änderungen dann einsehen können.
+Farbliche oder strukturelle Designs werden zur Laufzeit geladen und sollte deshalb in dieser .config-Datei erhalten bleiben.
 
 ## 10. Produktivbetrieb (Docker)
 
