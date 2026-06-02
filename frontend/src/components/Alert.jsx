@@ -10,6 +10,7 @@ import { Spinner } from './Spinner';
 export const Alert = ({
   setShowAlert,
   cleanedVotes,
+  freeSlots,
   candidates,
   election,
   invalidHandOver,
@@ -45,6 +46,7 @@ export const Alert = ({
           listnum: Number(listnum),
           votes: value,
         })),
+        freeSlots: (freeSlots ?? []).map(({ voterUid, votes }) => ({ voterUid, votes })),
       };
 
       const res = await createBallot(data);
@@ -102,7 +104,7 @@ export const Alert = ({
           <p className="text-red-500 dark:text-red-400 font-bold transition-colors">
             {theme.text.confirmationInvalid}
           </p>
-        ) : Object.keys(cleanedVotes).length === 0 ? (
+        ) : Object.keys(cleanedVotes).length === 0 && (freeSlots ?? []).length === 0 ? (
           <p className="text-gray-600 dark:text-gray-400 transition-colors">
             Keine Stimmen vergeben.
           </p>
@@ -116,6 +118,20 @@ export const Alert = ({
                 <span className="font-semibold transition-colors">{resolveName(listnum)}</span>
                 <span className="bg-blue-600 dark:bg-blue-500 text-white rounded-full px-3 py-1 text-sm font-medium transition-colors">
                   {value} Stimme{value > 1 ? 'n' : ''}
+                </span>
+              </li>
+            ))}
+            {(freeSlots ?? []).map((slot) => (
+              <li
+                key={slot.voterUid}
+                className="bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-xl p-3 flex justify-between items-center shadow hover:shadow-lg transition-all border border-gray-200 dark:border-gray-600"
+              >
+                <span className="font-semibold transition-colors">
+                  {slot.firstname} {slot.lastname}
+                  <span className="block text-xs font-normal text-gray-500 dark:text-gray-400">{slot.voterUid}</span>
+                </span>
+                <span className="bg-blue-600 dark:bg-blue-500 text-white rounded-full px-3 py-1 text-sm font-medium transition-colors">
+                  {slot.votes} Stimme{slot.votes > 1 ? 'n' : ''}
                 </span>
               </li>
             ))}

@@ -5,17 +5,26 @@ export const ballotCandidateInputSchema = z.object({
   votes: z.number().int().min(0, 'The number of votes must be greater than or equal to 0'),
 });
 
+export const freeSlotInputSchema = z.object({
+  voterUid: z.string().trim().min(1, 'voterUid darf nicht leer sein'),
+  votes: z.number().int().min(1, 'The number of votes must be greater than 0'),
+});
+
 export const ballotInputSchema = z
   .object({
     electionId: z.uuid({ message: 'The election ID must be a valid UUID' }),
     valid: z.boolean({ message: 'The valid field must be a boolean' }),
     voteDecision: z.array(ballotCandidateInputSchema).optional(),
+    freeSlots: z.array(freeSlotInputSchema).optional(),
   })
   .superRefine((data, ctx) => {
-    if (data.valid === true && (!data.voteDecision || data.voteDecision.length === 0)) {
+    const hasVotes =
+      (data.voteDecision && data.voteDecision.length > 0) ||
+      (data.freeSlots && data.freeSlots.length > 0);
+    if (data.valid === true && !hasVotes) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: 'voteDecision is required when valid = true and must contain at least one entry',
+        message: 'voteDecision or freeSlots is required when valid = true',
         path: ['voteDecision'],
       });
     }

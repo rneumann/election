@@ -16,6 +16,12 @@ export const Modal = ({ open, setOpen, electionId, refreshElections }) => {
   const [votesLeft, setVotesLeft] = useState(0);
   const [saveButtonDisabled, setSaveButtonDisabled] = useState(true);
   const [invalidHandOver, setInvalidHandOver] = useState(false);
+  const [freeSlots, setFreeSlots] = useState([]);
+  const [freeSlotsPreview, setFreeSlotsPreview] = useState([]);
+  const [lookupUid, setLookupUid] = useState('');
+  const [lookupResult, setLookupResult] = useState(null);
+  const [lookupError, setLookupError] = useState('');
+  const [lookupLoading, setLookupLoading] = useState(false);
   const { settings } = useContext(AccessibilityContext);
   const theme = useTheme();
 
@@ -45,13 +51,60 @@ export const Modal = ({ open, setOpen, electionId, refreshElections }) => {
       : Object.fromEntries(Object.entries(votes).filter(([key, value]) => value > 0)); // eslint-disable-line
 
     setCleanedVotesPreview(cleanedVotes);
+    setFreeSlotsPreview(invalidHandOver ? [] : freeSlots.filter((s) => s.votes > 0));
     setShowAlert(true);
 
     log.debug(`cleanedVotes: ${JSON.stringify(cleanedVotes)}`);
   };
 
+  const handleLookup = async () => {
+    if (!lookupUid.trim()) return;
+    setLookupError('');
+    setLookupResult(null);
+    setLookupLoading(true);
+    try {
+      const res = await voterApi.lookupVoter(lookupUid.trim(), electionId);
+      if (res.status === 200) {
+        const alreadyAdded = freeSlots.some((s) => s.voterUid === res.data.uid);
+        if (alreadyAdded) {
+          setLookupError('Diese Person wurde bereits hinzugefügt.');
+        } else {
+          setLookupResult(res.data);
+        }
+      }
+    } catch (err) {
+      if (err.response?.status === 404) {
+        setLookupError('Person nicht im Wählerverzeichnis gefunden.');
+      } else if (err.response?.status === 409) {
+        setLookupError('Person ist bereits fester Kandidat – bitte über die Liste oben wählen.');
+      } else {
+        setLookupError('Fehler bei der Suche.');
+      }
+    } finally {
+      setLookupLoading(false);
+    }
+  };
+
+  const confirmFreeSlot = () => {
+    if (!lookupResult) return;
+    setFreeSlots((prev) => [...prev, { ...lookupResult, votes: 1 }]);
+    setVotesLeft((prev) => prev - 1);
+    setLookupUid('');
+    setLookupResult(null);
+  };
+
+  const removeFreeSlot = (uid) => {
+    const slot = freeSlots.find((s) => s.voterUid === uid);
+    if (slot) setVotesLeft((prev) => prev + slot.votes);
+    setFreeSlots((prev) => prev.filter((s) => s.voterUid !== uid));
+  };
+
   const onCancel = () => {
     setVotes({});
+    setFreeSlots([]);
+    setLookupUid('');
+    setLookupResult(null);
+    setLookupError('');
     setVotesLeft(election?.votes_per_ballot);
     setInvalidHandOver(false);
     setOpen(false);
@@ -83,20 +136,22 @@ export const Modal = ({ open, setOpen, electionId, refreshElections }) => {
         return;
       }
 
-      const hasTooManyForOneCandidate = Object.values(votes).some(
+      const fixedVoteCounts = Object.values(votes);
+      const freeVoteCounts = freeSlots.map((s) => s.votes);
+      const allVoteCounts = [...fixedVoteCounts, ...freeVoteCounts];
+
+      const hasTooManyForOneCandidate = allVoteCounts.some(
         (v) => v > election.max_cumulative_votes,
       );
 
       const noVotesLeft = votesLeft === 0;
 
       const valid = (noVotesLeft && !hasTooManyForOneCandidate) || invalidHandOver;
-
-      valid;
       setSaveButtonDisabled(!valid);
     };
 
     validCheck();
-  }, [votes, votesLeft, election, invalidHandOver]);
+  }, [votes, freeSlots, votesLeft, election, invalidHandOver]);
 
   return (
     <Dialog open={open} onClose={() => {}} className="relative z-50">
@@ -129,6 +184,7 @@ export const Modal = ({ open, setOpen, electionId, refreshElections }) => {
               <Alert
                 setShowAlert={setShowAlert}
                 cleanedVotes={cleanedVotesPreview}
+                freeSlots={freeSlotsPreview}
                 candidates={election.candidates}
                 election={election}
                 invalidHandOver={invalidHandOver}
@@ -279,6 +335,104 @@ export const Modal = ({ open, setOpen, electionId, refreshElections }) => {
                 )}
               </div>
             </div>
+
+            {/* Freie Kandidatenauswahl */}
+            <div className="rounded-xl border border-gray-200 dark:border-gray-700 mt-4 mx-2 bg-white dark:bg-gray-800 transition-colors overflow-hidden">
+              <div className="bg-gray-100 dark:bg-gray-700 px-3 py-2 text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-200">
+                Freie Kandidatur (aus Wählerverzeichnis)
+              </div>
+
+              {/* Bereits hinzugefügte freie Slots */}
+              {freeSlots.length > 0 && (
+                <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                  {freeSlots.map((slot) => (
+                    <div
+                      key={slot.voterUid}
+                      className="flex items-center justify-between sm:grid sm:grid-cols-4 gap-3 sm:gap-0 px-4 py-3"
+                    >
+                      <div className="flex items-center gap-3 sm:contents">
+                        <div className="text-gray-400 dark:text-gray-500 text-sm min-w-[2rem]">–</div>
+                        <div className="text-gray-900 dark:text-gray-100 text-sm sm:px-3 sm:col-span-2">
+                          {slot.firstname} {slot.lastname}
+                          <span className="block text-[11px] text-gray-500 dark:text-gray-400">{slot.voterUid}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 justify-end">
+                        <input
+                          type="number"
+                          min={1}
+                          max={election.max_cumulative_votes}
+                          value={slot.votes}
+                          aria-label={`Stimmen für ${slot.firstname} ${slot.lastname}`}
+                          className="w-16 sm:w-20 rounded-lg bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 px-2 py-1.5 text-sm text-center focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-500 transition-colors"
+                          onChange={(e) => {
+                            const newVal = Number(e.target.value);
+                            const oldVal = slot.votes;
+                            if (newVal < 1 || newVal > election.max_cumulative_votes) return;
+                            if (votesLeft <= 0 && newVal > oldVal) return;
+                            setFreeSlots((prev) =>
+                              prev.map((s) => s.voterUid === slot.voterUid ? { ...s, votes: newVal } : s)
+                            );
+                            setVotesLeft((prev) => prev - (newVal - oldVal));
+                          }}
+                        />
+                        <button
+                          onClick={() => removeFreeSlot(slot.voterUid)}
+                          aria-label={`${slot.firstname} ${slot.lastname} entfernen`}
+                          className="text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-5 h-5">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Eingabe neue freie Stimme */}
+              <div className="px-4 py-3 flex flex-col gap-2">
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="RZ-Kennung (z.B. abcd1234)"
+                    value={lookupUid}
+                    onChange={(e) => { setLookupUid(e.target.value); setLookupResult(null); setLookupError(''); }}
+                    onKeyDown={(e) => { if (e.key === 'Enter') handleLookup(); }}
+                    className="flex-1 rounded-lg bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-500 transition-colors"
+                  />
+                  <button
+                    onClick={handleLookup}
+                    disabled={lookupLoading || !lookupUid.trim()}
+                    aria-label="Person im Wählerverzeichnis suchen"
+                    className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm font-medium transition-colors"
+                  >
+                    {lookupLoading ? '…' : '✓ Prüfen'}
+                  </button>
+                </div>
+
+                {lookupError && (
+                  <p className="text-sm text-red-500 dark:text-red-400">{lookupError}</p>
+                )}
+
+                {lookupResult && (
+                  <div className="flex items-center justify-between rounded-lg bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700 px-3 py-2">
+                    <span className="text-sm text-gray-900 dark:text-gray-100">
+                      <span className="font-semibold">{lookupResult.firstname} {lookupResult.lastname}</span>
+                      <span className="ml-2 text-gray-500 dark:text-gray-400 text-xs">{lookupResult.faculty}</span>
+                    </span>
+                    <button
+                      onClick={confirmFreeSlot}
+                      disabled={votesLeft <= 0}
+                      className="ml-3 px-3 py-1 rounded-lg bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white text-sm font-medium transition-colors"
+                    >
+                      Hinzufügen
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
 
           {/* Footer */}
@@ -310,6 +464,10 @@ export const Modal = ({ open, setOpen, electionId, refreshElections }) => {
                 disabled={showAlert}
                 onClick={() => {
                   setVotes({});
+                  setFreeSlots([]);
+                  setLookupUid('');
+                  setLookupResult(null);
+                  setLookupError('');
                   log.warn(
                     `Votes reset: ${JSON.stringify(votes)}, votesperballot: ${election?.votes_per_ballot}`,
                   );

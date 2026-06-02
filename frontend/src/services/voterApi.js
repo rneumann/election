@@ -38,6 +38,11 @@ export const voterApi = {
     return data;
   },
 
+  lookupVoter: async (voterUid, electionId) => {
+    const response = await api.get(`voter/lookup/${voterUid}?electionId=${electionId}`);
+    return response;
+  },
+
   createBallot: async (ballotSchema, voterUid) => {
     if (!ballotSchema || !voterUid) {
       logger.error('No ballot schema provided');

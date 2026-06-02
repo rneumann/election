@@ -95,6 +95,7 @@ CREATE TABLE
     electionId UUID NOT NULL REFERENCES elections (id) ON DELETE CASCADE ON UPDATE CASCADE,
     candidateId UUID NOT NULL REFERENCES candidates (id) ON DELETE CASCADE ON UPDATE CASCADE,
     listnum INT NOT NULL,
+    is_adhoc BOOLEAN NOT NULL DEFAULT false,
     PRIMARY KEY (electionId, candidateId),
     CONSTRAINT uq_election_listnum UNIQUE (electionId, listnum)
   );
@@ -103,8 +104,6 @@ CREATE TABLE
   IF NOT EXISTS ballots (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid (),
     serial_id INT NOT NULL,
-    ballot_hash TEXT NOT NULL UNIQUE,
-    previous_ballot_hash TEXT,
     election UUID NOT NULL REFERENCES elections (id) ON DELETE CASCADE ON UPDATE CASCADE,
     valid BOOLEAN NOT NULL DEFAULT TRUE,
     CONSTRAINT uq_election_serial UNIQUE (election, serial_id)
