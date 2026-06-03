@@ -182,3 +182,4 @@ deploy-images/backend.tar.gz
 deploy-images/frontend.tar.gz
 scp-wahl-hka.sh
 .gitignore
+ssh-wahl-hka.sh
