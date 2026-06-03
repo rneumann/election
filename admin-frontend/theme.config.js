@@ -48,4 +48,10 @@ export const themeConfig = {
     committee: "Wahlausschuss",
     voter: "Wähler",
   },
+
+  // Input placeholders
+  placeholders: {
+    loginUsername: "Benutzername",
+    loginPassword: "Passwort",
+  },
 };
