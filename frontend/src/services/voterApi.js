@@ -43,6 +43,13 @@ export const voterApi = {
     return response;
   },
 
+  searchVotersByName: async (query, electionId) => {
+    const response = await api.get(
+      `voter/search?q=${encodeURIComponent(query)}&electionId=${electionId}`,
+    );
+    return response;
+  },
+
   createBallot: async (ballotSchema, voterUid) => {
     if (!ballotSchema || !voterUid) {
       logger.error('No ballot schema provided');
