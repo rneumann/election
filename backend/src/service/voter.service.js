@@ -1,7 +1,6 @@
 import { writeAuditLog } from '../audit/auditLogger.js';
 import { logger } from '../conf/logger/logger.js';
 import { client } from '../database/db.js';
-import { generateBallotHashes } from '../security/generate-ballot-hashes.js';
 
 /**
  * Retrieves elections for a given voter based on the given status.
@@ -85,6 +84,7 @@ export const getElectionById = async (electionId) => {
       e.description,
       e.votes_per_ballot,
       e.max_cumulative_votes,
+      e.free_slots,
       e.test_election_active,
       e.election_type,
       e.start,
@@ -151,10 +151,10 @@ export const getVoterById = async (voterId) => {
  */
 export const createBallot = async (ballot, voter) => {
   const sqlCreateBallot = `
-    INSERT INTO ballots (serial_id, ballot_hash, previous_ballot_hash, election, valid)
+    INSERT INTO ballots (serial_id, election, valid)
     VALUES (
       COALESCE((SELECT MAX(serial_id) FROM ballots WHERE election = $1), 0) + 1,
-      $2, $3, $1, $4
+      $1, $2
     )
     RETURNING *
   `;
@@ -175,16 +175,12 @@ export const createBallot = async (ballot, voter) => {
     await client.query('BEGIN');
     await client.query('SELECT id FROM elections WHERE id = $1 FOR UPDATE', [ballot.electionId]);
 
-    const prevHash = await getPreviousBallotHash(ballot.electionId);
-    logger.debug(`Previous ballot hash: ${prevHash}`);
-
-    const ballotHash = await generateBallotHashes({
-      electionId: ballot.electionId,
-      voteDecision: ballot.voteDecision,
-      valid: ballot.valid,
-      previousHash: prevHash,
-    });
-    logger.debug(`Generated ballot hash: ${ballotHash}`);
+    // Ad-hoc-Kandidaten aus freeSlots in die Wahl aufnehmen und listnums auflösen
+    const adhocVotes = [];
+    for (const slot of ballot.freeSlots ?? []) {
+      const listnum = await resolveAdhocCandidate(ballot.electionId, slot.voterUid);
+      adhocVotes.push({ listnum, votes: slot.votes });
+    }
 
     // Audit Log
     await writeAuditLog({
@@ -199,8 +195,6 @@ export const createBallot = async (ballot, voter) => {
 
     const resCreateBallot = await client.query(sqlCreateBallot, [
       ballot.electionId,
-      ballotHash,
-      prevHash || undefined,
       ballot.valid,
     ]);
 
@@ -217,6 +211,8 @@ export const createBallot = async (ballot, voter) => {
 
       return undefined;
     }
+    const allVotes = [...(ballot.voteDecision ?? []), ...adhocVotes];
+
     if (ballot.valid === false) {
       const resCreateVotingNote = await client.query(sqlCreateVotingNote, [
         true,
@@ -232,7 +228,7 @@ export const createBallot = async (ballot, voter) => {
       await client.query('COMMIT');
       return resCreateBallot.rows[0];
     }
-    for (const candidate of ballot.voteDecision) {
+    for (const candidate of allVotes) {
       const resCreateBallotV = await client.query(sqlCreateBallotVotes, [
         ballot.electionId,
         ballotId,
@@ -336,11 +332,76 @@ export const checkIfCandidateIsValid = async (listnumn, eleId) => {
  * @param {number} votesperballot - Maximum votes allowed per ballot.
  * @returns {boolean} True if the number of votes is valid, false otherwise.
  */
+export const checkIfVoterIsFixedCandidate = async (voterUid, electionId) => {
+  try {
+    const res = await client.query(
+      `SELECT ec.listnum
+       FROM electioncandidates ec
+       JOIN candidates c ON c.id = ec.candidateId
+       WHERE ec.electionId = $1 AND c.uid = $2 AND ec.is_adhoc = false`,
+      [electionId, voterUid],
+    );
+    return res.rows.length > 0;
+  } catch (err) {
+    logger.error(`Error while checking if voter ${voterUid} is fixed candidate`);
+    logger.debug(err.stack);
+    return false;
+  }
+};
+
+const resolveAdhocCandidate = async (electionId, voterUid) => {
+  // Wähler aus voters-Tabelle laden
+  const voterRes = await client.query(
+    'SELECT id, uid, lastname, firstname, mtknr, faculty FROM voters WHERE uid = $1',
+    [voterUid],
+  );
+  if (voterRes.rows.length === 0) {
+    throw new Error(`Wähler mit uid ${voterUid} nicht gefunden`);
+  }
+  const voter = voterRes.rows[0];
+
+  // Kandidat anlegen falls noch nicht vorhanden (uid als eindeutiger Schlüssel)
+  await client.query(
+    `INSERT INTO candidates (uid, lastname, firstname, mtknr, faculty, approved)
+     VALUES ($1, $2, $3, $4, $5, false)
+     ON CONFLICT (uid) DO NOTHING`,
+    [voter.uid, voter.lastname, voter.firstname, voter.mtknr, voter.faculty],
+  );
+
+  const candidateRes = await client.query('SELECT id FROM candidates WHERE uid = $1', [voter.uid]);
+  const candidateId = candidateRes.rows[0].id;
+
+  // Prüfen ob bereits in dieser Wahl (regulär oder ad-hoc)
+  const existingRes = await client.query(
+    'SELECT listnum FROM electioncandidates WHERE electionId = $1 AND candidateId = $2',
+    [electionId, candidateId],
+  );
+  if (existingRes.rows.length > 0) {
+    return existingRes.rows[0].listnum;
+  }
+
+  // Nächste freie listnum ermitteln und ad-hoc-Eintrag anlegen
+  const maxRes = await client.query(
+    'SELECT COALESCE(MAX(listnum), 0) AS max FROM electioncandidates WHERE electionId = $1',
+    [electionId],
+  );
+  const nextListnum = maxRes.rows[0].max + 1;
+
+  await client.query(
+    `INSERT INTO electioncandidates (electionId, candidateId, listnum, is_adhoc)
+     VALUES ($1, $2, $3, true)`,
+    [electionId, candidateId, nextListnum],
+  );
+
+  return nextListnum;
+};
+
 export const checkIfNumberOfVotesIsValid = (ballotSchema, maxCumulativeVotes, votesperballot) => {
   let totalVotes = 0;
   let maxVotesPerCandidate = 0;
 
-  for (const candidate of ballotSchema.voteDecision) {
+  const allEntries = [...(ballotSchema.voteDecision ?? []), ...(ballotSchema.freeSlots ?? [])];
+  for (const candidate of allEntries) {
     totalVotes += candidate.votes;
     if (candidate.votes > maxVotesPerCandidate) {
       maxVotesPerCandidate = candidate.votes;
@@ -359,24 +420,3 @@ export const checkIfNumberOfVotesIsValid = (ballotSchema, maxCumulativeVotes, vo
   return true;
 };
 
-const getPreviousBallotHash = async (electionId) => {
-  const sql = `
-    SELECT ballot_hash
-    FROM ballots
-    WHERE election = $1
-    ORDER BY serial_id DESC
-    LIMIT 1
-  `;
-
-  try {
-    const res = await client.query(sql, [electionId]);
-    if (res.rows.length === 0) {
-      return undefined;
-    }
-    return res.rows[0].ballot_hash || undefined;
-  } catch (err) {
-    logger.error(`Error while retrieving previous ballot hash: ${electionId}`);
-    logger.debug(err.stack);
-    throw new Error('Database query failed');
-  }
-};

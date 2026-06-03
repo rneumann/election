@@ -5,8 +5,6 @@ secrets:
     file: ./secrets/committee_pw.txt
   SESSION_SECRET:
     file: ./secrets/session_secret.txt
-  BALLOT_SECRET:
-    file: ./secrets/ballot_secret.txt
 
 services:
   backend:
@@ -22,7 +20,6 @@ services:
       - ADMIN_PASSWORD
       - COMMITTEE_PASSWORD
       - SESSION_SECRET
-      - BALLOT_SECRET
     depends_on:
       - postgres
     networks:

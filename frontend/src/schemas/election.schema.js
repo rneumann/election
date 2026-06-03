@@ -39,6 +39,7 @@ export const electionInfoSchema = z.object({
   Plätze: z.coerce.number().int().positive().max(100),
   'Stimmen pro Zettel': z.coerce.number().int().positive(),
   'max. Kum.': z.coerce.number().int().nonnegative().max(100).optional().default(0),
+  'Freie Plätze': z.coerce.number().int().nonnegative().optional().default(0),
 
   Wahltyp: z
     .string()

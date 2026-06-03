@@ -4,6 +4,7 @@ import {
   checkAlreadyVoted,
   checkIfCandidateIsValid,
   checkIfNumberOfVotesIsValid,
+  checkIfVoterIsFixedCandidate,
   createBallot,
   getElectionById,
   getElections,
@@ -325,12 +326,39 @@ voterRouter.post(
       return res.status(400).json({ message: 'Invalid request body' });
     }
 
-    // check if candidate is valid
-    for (const cand of req.body.voteDecision) {
+    // check if fixed candidates are valid (freeSlots werden erst beim Erstellen aufgelöst)
+    for (const cand of req.body.voteDecision ?? []) {
       const candidateIsValid = await checkIfCandidateIsValid(cand.listnum, req.body.electionId);
       if (!candidateIsValid) {
         logger.warn('Candidate is not justified for this election');
         return res.status(400).json({ message: 'Candidate is not justified for this election' });
+      }
+    }
+
+    // sicherstellen, dass nicht mehr freie Slots übergeben werden als die Wahl erlaubt
+    const freeSlotCount = (req.body.freeSlots ?? []).length;
+    if (freeSlotCount > 0) {
+      const electionForFreeSlots = await getElectionById(req.body.electionId);
+      if (!electionForFreeSlots || electionForFreeSlots.free_slots === 0) {
+        logger.warn('Free slots not allowed for this election');
+        return res.status(400).json({ message: 'Freie Kandidatur ist für diese Wahl nicht aktiviert' });
+      }
+      if (freeSlotCount > electionForFreeSlots.free_slots) {
+        logger.warn(`Too many free slots: ${freeSlotCount} > ${electionForFreeSlots.free_slots}`);
+        return res.status(400).json({
+          message: `Maximal ${electionForFreeSlots.free_slots} freie Kandidatur(en) erlaubt`,
+        });
+      }
+    }
+
+    // sicherstellen, dass freeSlots keine festen Kandidaten dieser Wahl enthalten
+    for (const slot of req.body.freeSlots ?? []) {
+      const isFixedCandidate = await checkIfVoterIsFixedCandidate(slot.voterUid, req.body.electionId);
+      if (isFixedCandidate) {
+        logger.warn(`Voter ${slot.voterUid} is already a fixed candidate in this election`);
+        return res.status(400).json({
+          message: `${slot.voterUid} ist bereits fester Kandidat und muss über voteDecision gewählt werden`,
+        });
       }
     }
 
@@ -392,6 +420,44 @@ voterRouter.post(
     } catch (err) {
       logger.error('Internal Server Error');
       logger.debug(err.stack);
+      res.status(500).json({ message: 'Internal Server Error' });
+    }
+  },
+);
+
+voterRouter.get(
+  '/lookup/:voterUid',
+  ensureAuthenticated,
+  ensureHasRole(['voter']),
+  async (req, res) => {
+    const { voterUid } = req.params;
+    const { electionId } = req.query;
+
+    if (!electionId) {
+      return res.status(400).json({ message: 'electionId ist erforderlich' });
+    }
+
+    try {
+      const voter = await getVoterById(voterUid);
+      if (!voter) {
+        return res.status(404).json({ message: 'Person nicht im Wählerverzeichnis gefunden' });
+      }
+
+      const isFixed = await checkIfVoterIsFixedCandidate(voterUid, electionId);
+      if (isFixed) {
+        return res.status(409).json({
+          message: `${voterUid} ist bereits fester Kandidat und muss über die Kandidatenliste gewählt werden`,
+        });
+      }
+
+      res.status(200).json({
+        uid: voter.uid,
+        firstname: voter.firstname,
+        lastname: voter.lastname,
+        faculty: voter.faculty,
+      });
+    } catch (err) {
+      logger.error(`Fehler beim Voter-Lookup: ${err.message}`);
       res.status(500).json({ message: 'Internal Server Error' });
     }
   },
