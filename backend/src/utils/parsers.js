@@ -34,9 +34,13 @@ export const safeRow = (row) => {
  */
 export const parseCsv = (path) => {
   return new Promise((resolve, reject) => {
+    // Trennzeichen automatisch erkennen: erste Zeile auf ';' prüfen
+    const firstLine = fs.readFileSync(path, 'utf8').split('\n')[0];
+    const separator = firstLine.includes(';') ? ';' : ',';
+
     const results = [];
     fs.createReadStream(path)
-      .pipe(csv())
+      .pipe(csv({ separator }))
       .on('data', (data) => results.push(safeRow(data)))
       .on('end', () => resolve(results))
       .on('error', reject);
