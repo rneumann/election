@@ -307,7 +307,13 @@ export const importCandidateRoute = async (req, res) => {
     const fileMimeType = req.file.mimetype;
     try {
       logger.debug(`Datei gespeichert unter: ${filePath}`);
-      await importCandidateData(filePath, fileMimeType);
+      const electionId = req.body?.electionId || null;
+      if (electionId) {
+        logger.info(`Kandidaten werden mit Wahl ${electionId} verknüpft.`);
+      } else {
+        logger.warn('Kein electionId übergeben — Kandidaten werden nur global importiert.');
+      }
+      await importCandidateData(filePath, fileMimeType, electionId);
 
       // Audit Log: Successful candidate import
       await writeAuditLog({
