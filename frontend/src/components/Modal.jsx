@@ -18,7 +18,8 @@ export const Modal = ({ open, setOpen, electionId, refreshElections }) => {
   const [invalidHandOver, setInvalidHandOver] = useState(false);
   const [freeSlots, setFreeSlots] = useState([]);
   const [freeSlotsPreview, setFreeSlotsPreview] = useState([]);
-  const [lookupUid, setLookupUid] = useState('');
+  const [lookupQuery, setLookupQuery] = useState('');
+  const [lookupResults, setLookupResults] = useState([]);
   const [lookupResult, setLookupResult] = useState(null);
   const [lookupError, setLookupError] = useState('');
   const [lookupLoading, setLookupLoading] = useState(false);
@@ -58,31 +59,42 @@ export const Modal = ({ open, setOpen, electionId, refreshElections }) => {
   };
 
   const handleLookup = async () => {
-    if (!lookupUid.trim()) return;
+    if (lookupQuery.trim().length < 2) return;
     setLookupError('');
     setLookupResult(null);
+    setLookupResults([]);
     setLookupLoading(true);
     try {
-      const res = await voterApi.lookupVoter(lookupUid.trim(), electionId);
+      const res = await voterApi.searchVotersByName(lookupQuery.trim(), electionId);
       if (res.status === 200) {
-        const alreadyAdded = freeSlots.some((s) => s.voterUid === res.data.uid);
-        if (alreadyAdded) {
-          setLookupError('Diese Person wurde bereits hinzugefügt.');
+        if (res.data.length === 0) {
+          setLookupError('Keine Person gefunden.');
         } else {
-          setLookupResult(res.data);
+          setLookupResults(res.data);
         }
       }
     } catch (err) {
-      if (err.response?.status === 404) {
-        setLookupError('Person nicht im Wählerverzeichnis gefunden.');
-      } else if (err.response?.status === 409) {
-        setLookupError('Person ist bereits fester Kandidat – bitte über die Liste oben wählen.');
-      } else {
-        setLookupError('Fehler bei der Suche.');
-      }
+      setLookupError('Fehler bei der Suche.');
     } finally {
       setLookupLoading(false);
     }
+  };
+
+  const handleSelectSearchResult = (voter) => {
+    if (voter.isFixedCandidate) {
+      setLookupError('Person ist bereits fester Kandidat – bitte über die Liste oben wählen.');
+      return;
+    }
+    const alreadyAdded = freeSlots.some((s) => s.voterUid === voter.uid);
+    if (alreadyAdded) {
+      setLookupError('Diese Person wurde bereits hinzugefügt.');
+      return;
+    }
+    // uid → voterUid normalisieren damit Alert.jsx und removeFreeSlot korrekt arbeiten
+    setLookupResult({ ...voter, voterUid: voter.uid });
+    setLookupResults([]);
+    setLookupQuery('');
+    setLookupError('');
   };
 
   const confirmFreeSlot = () => {
@@ -103,7 +115,8 @@ export const Modal = ({ open, setOpen, electionId, refreshElections }) => {
   const onCancel = () => {
     setVotes({});
     setFreeSlots([]);
-    setLookupUid('');
+    setLookupQuery('');
+    setLookupResults([]);
     setLookupResult(null);
     setLookupError('');
     setVotesLeft(election?.votes_per_ballot);
@@ -124,7 +137,7 @@ export const Modal = ({ open, setOpen, electionId, refreshElections }) => {
 
       const initialVotes = {};
       response.candidates.forEach((candidate) => {
-        initialVotes[candidate.id] = 0;
+        initialVotes[candidate.listnum] = 0;
       });
       setVotes(initialVotes);
     };
@@ -133,21 +146,26 @@ export const Modal = ({ open, setOpen, electionId, refreshElections }) => {
 
   useEffect(() => {
     const validCheck = () => {
-      if (!election?.max_cumulative_votes) {
-        return;
-      }
+      if (!election) return;
 
       const fixedVoteCounts = Object.values(votes);
       const freeVoteCounts = freeSlots.map((s) => s.votes);
       const allVoteCounts = [...fixedVoteCounts, ...freeVoteCounts];
+      const totalCast = allVoteCounts.reduce((sum, v) => sum + v, 0);
+      const atLeastOneVote = totalCast > 0;
 
-      const hasTooManyForOneCandidate = allVoteCounts.some(
-        (v) => v > election.max_cumulative_votes,
-      );
+      let valid;
+      if (election.max_cumulative_votes > 1) {
+        // Kumulierung: kein Kandidat darf mehr als max_cumulative_votes erhalten
+        const hasTooManyForOneCandidate = allVoteCounts.some(
+          (v) => v > election.max_cumulative_votes,
+        );
+        valid = (atLeastOneVote && !hasTooManyForOneCandidate) || invalidHandOver;
+      } else {
+        // Kein Kumulieren (Checkbox, max 1 pro Person): mindestens 1 Stimme reicht
+        valid = atLeastOneVote || invalidHandOver;
+      }
 
-      const noVotesLeft = votesLeft === 0;
-
-      const valid = (noVotesLeft && !hasTooManyForOneCandidate) || invalidHandOver;
       setSaveButtonDisabled(!valid);
     };
 
@@ -205,8 +223,9 @@ export const Modal = ({ open, setOpen, electionId, refreshElections }) => {
           {/* Number of votes */}
           <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 flex flex-col gap-2 transition-colors">
             <span className="text-sm sm:text-md font-bold text-gray-900 dark:text-gray-100 transition-colors">
-              Sie haben {election?.votes_per_ballot} Stimme/n und können maximal{' '}
-              {election?.max_cumulative_votes} auf eine Person kumulieren.
+              {election?.max_cumulative_votes > 1
+                ? `Sie haben ${election?.votes_per_ballot} Stimme/n und können maximal ${election?.max_cumulative_votes} auf eine Person kumulieren.`
+                : `Sie können bis zu ${election?.votes_per_ballot} Kandidat/in(en) ankreuzen.`}
             </span>
             <span
               className={`
@@ -214,7 +233,9 @@ export const Modal = ({ open, setOpen, electionId, refreshElections }) => {
                 ${votesLeft > 0 ? 'text-green-400 dark:text-green-500' : 'text-red-400 dark:text-red-500'}
               `}
             >
-              Stimmen übrig: {votesLeft}
+              {election?.max_cumulative_votes > 1
+                ? `Stimmen übrig: ${votesLeft}`
+                : `Noch wählbar: ${votesLeft}`}
             </span>
           </div>
 
@@ -245,7 +266,7 @@ export const Modal = ({ open, setOpen, electionId, refreshElections }) => {
               {/* Rows */}
               <div className="divide-y divide-gray-200 dark:divide-gray-700 transition-colors">
                 {election?.candidates?.length > 0 ? (
-                  election.candidates.map((cand) => (
+                  [...election.candidates].sort((a, b) => a.listnum - b.listnum).map((cand) => (
                     <div
                       key={cand.candidateId}
                       className="
@@ -297,37 +318,50 @@ export const Modal = ({ open, setOpen, electionId, refreshElections }) => {
                         )}
                       </div>
 
-                      {/* Stimmen Input - Rechtsbündig auf Mobile */}
+                      {/* Stimmen Input - Checkbox wenn kein Kumulieren, sonst Spinner */}
                       <div className="flex flex-col items-end sm:block sm:text-right">
-                        <div className="sm:hidden text-[10px] uppercase text-gray-500 dark:text-gray-400 mb-1">
-                          Stimmen
-                        </div>
-                        <input
-                          type="number"
-                          min={0}
-                          max={election.max_cumulative_votes}
-                          aria-label={`Stimmen für ${cand.firstname} ${cand.lastname}`}
-                          value={votes[cand.listnum] ?? 0}
-                          className="
-                            w-16 sm:w-20
-                            rounded-lg bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600
-                            text-gray-900 dark:text-gray-100 px-2 py-1.5 text-sm text-center sm:text-left
-                            focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-500 transition-colors
-                          "
-                          onChange={(e) => {
-                            const newValue = Number(e.target.value);
-                            const oldValue = Number(votes[cand.listnum] || 0);
-                            if (newValue < 0 || newValue > election.max_cumulative_votes) {
-                              return;
-                            }
-                            if (votesLeft <= 0 && newValue > oldValue) {
-                              return;
-                            }
-
-                            setVotes((prev) => ({ ...prev, [cand.listnum]: newValue }));
-                            setVotesLeft((prev) => prev - (newValue - oldValue));
-                          }}
-                        />
+                        {election.max_cumulative_votes > 1 ? (
+                          <>
+                            <div className="sm:hidden text-[10px] uppercase text-gray-500 dark:text-gray-400 mb-1">
+                              Stimmen
+                            </div>
+                            <input
+                              type="number"
+                              min={0}
+                              max={election.max_cumulative_votes}
+                              aria-label={`Stimmen für ${cand.firstname} ${cand.lastname}`}
+                              value={votes[cand.listnum] ?? 0}
+                              className="
+                                w-16 sm:w-20
+                                rounded-lg bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600
+                                text-gray-900 dark:text-gray-100 px-2 py-1.5 text-sm text-center sm:text-left
+                                focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-500 transition-colors
+                              "
+                              onChange={(e) => {
+                                const newValue = Number(e.target.value);
+                                const oldValue = Number(votes[cand.listnum] || 0);
+                                if (newValue < 0 || newValue > election.max_cumulative_votes) return;
+                                if (votesLeft <= 0 && newValue > oldValue) return;
+                                setVotes((prev) => ({ ...prev, [cand.listnum]: newValue }));
+                                setVotesLeft((prev) => prev - (newValue - oldValue));
+                              }}
+                            />
+                          </>
+                        ) : (
+                          <input
+                            type="checkbox"
+                            aria-label={`${cand.firstname} ${cand.lastname} wählen`}
+                            checked={(votes[cand.listnum] ?? 0) === 1}
+                            disabled={votesLeft <= 0 && (votes[cand.listnum] ?? 0) === 0}
+                            className="w-5 h-5 rounded accent-blue-600 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                            onChange={(e) => {
+                              const newValue = e.target.checked ? 1 : 0;
+                              const oldValue = votes[cand.listnum] ?? 0;
+                              setVotes((prev) => ({ ...prev, [cand.listnum]: newValue }));
+                              setVotesLeft((prev) => prev - (newValue - oldValue));
+                            }}
+                          />
+                        )}
                       </div>
                     </div>
                   ))
@@ -360,24 +394,41 @@ export const Modal = ({ open, setOpen, electionId, refreshElections }) => {
                         </div>
                       </div>
                       <div className="flex items-center gap-2 justify-end">
-                        <input
-                          type="number"
-                          min={1}
-                          max={election.max_cumulative_votes}
-                          value={slot.votes}
-                          aria-label={`Stimmen für ${slot.firstname} ${slot.lastname}`}
-                          className="w-16 sm:w-20 rounded-lg bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 px-2 py-1.5 text-sm text-center focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-500 transition-colors"
-                          onChange={(e) => {
-                            const newVal = Number(e.target.value);
-                            const oldVal = slot.votes;
-                            if (newVal < 1 || newVal > election.max_cumulative_votes) return;
-                            if (votesLeft <= 0 && newVal > oldVal) return;
-                            setFreeSlots((prev) =>
-                              prev.map((s) => s.voterUid === slot.voterUid ? { ...s, votes: newVal } : s)
-                            );
-                            setVotesLeft((prev) => prev - (newVal - oldVal));
-                          }}
-                        />
+                        {election.max_cumulative_votes > 1 ? (
+                          <input
+                            type="number"
+                            min={1}
+                            max={election.max_cumulative_votes}
+                            value={slot.votes}
+                            aria-label={`Stimmen für ${slot.firstname} ${slot.lastname}`}
+                            className="w-16 sm:w-20 rounded-lg bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 px-2 py-1.5 text-sm text-center focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-500 transition-colors"
+                            onChange={(e) => {
+                              const newVal = Number(e.target.value);
+                              const oldVal = slot.votes;
+                              if (newVal < 1 || newVal > election.max_cumulative_votes) return;
+                              if (votesLeft <= 0 && newVal > oldVal) return;
+                              setFreeSlots((prev) =>
+                                prev.map((s) => s.voterUid === slot.voterUid ? { ...s, votes: newVal } : s)
+                              );
+                              setVotesLeft((prev) => prev - (newVal - oldVal));
+                            }}
+                          />
+                        ) : (
+                          <input
+                            type="checkbox"
+                            checked={slot.votes === 1}
+                            aria-label={`${slot.firstname} ${slot.lastname} wählen`}
+                            className="w-5 h-5 rounded accent-blue-600 cursor-pointer"
+                            onChange={(e) => {
+                              const newVal = e.target.checked ? 1 : 0;
+                              const oldVal = slot.votes;
+                              setFreeSlots((prev) =>
+                                prev.map((s) => s.voterUid === slot.voterUid ? { ...s, votes: newVal } : s)
+                              );
+                              setVotesLeft((prev) => prev - (newVal - oldVal));
+                            }}
+                          />
+                        )}
                         <button
                           onClick={() => removeFreeSlot(slot.voterUid)}
                           aria-label={`${slot.firstname} ${slot.lastname} entfernen`}
@@ -398,21 +449,44 @@ export const Modal = ({ open, setOpen, electionId, refreshElections }) => {
                 <div className="flex gap-2">
                   <input
                     type="text"
-                    placeholder="RZ-Kennung (z.B. abcd1234)"
-                    value={lookupUid}
-                    onChange={(e) => { setLookupUid(e.target.value); setLookupResult(null); setLookupError(''); }}
+                    placeholder="Name suchen (mind. 2 Zeichen)"
+                    value={lookupQuery}
+                    onChange={(e) => { setLookupQuery(e.target.value); setLookupResults([]); setLookupResult(null); setLookupError(''); }}
                     onKeyDown={(e) => { if (e.key === 'Enter') handleLookup(); }}
                     className="flex-1 rounded-lg bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-500 transition-colors"
                   />
                   <button
                     onClick={handleLookup}
-                    disabled={lookupLoading || !lookupUid.trim()}
+                    disabled={lookupLoading || lookupQuery.trim().length < 2}
                     aria-label="Person im Wählerverzeichnis suchen"
                     className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm font-medium transition-colors"
                   >
-                    {lookupLoading ? '…' : '✓ Prüfen'}
+                    {lookupLoading ? '…' : 'Suchen'}
                   </button>
                 </div>
+
+                {/* Suchergebnisse als Auswahlliste */}
+                {lookupResults.length > 0 && (
+                  <ul className="rounded-lg border border-gray-200 dark:border-gray-600 divide-y divide-gray-100 dark:divide-gray-700 bg-white dark:bg-gray-800 shadow text-sm">
+                    {lookupResults.map((v) => (
+                      <li key={v.uid}>
+                        <button
+                          onClick={() => handleSelectSearchResult(v)}
+                          disabled={v.isFixedCandidate}
+                          className="w-full text-left px-3 py-2 hover:bg-blue-50 dark:hover:bg-blue-900/30 disabled:opacity-40 disabled:cursor-not-allowed flex justify-between items-center"
+                        >
+                          <span>
+                            <span className="font-medium">{v.lastname}, {v.firstname}</span>
+                            <span className="ml-2 text-gray-400 text-xs">{v.faculty}</span>
+                          </span>
+                          {v.isFixedCandidate && (
+                            <span className="text-xs text-gray-400">fester Kandidat</span>
+                          )}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
 
                 {lookupError && (
                   <p className="text-sm text-red-500 dark:text-red-400">{lookupError}</p>
