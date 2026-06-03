@@ -124,6 +124,32 @@ export const getElectionById = async (electionId) => {
  * ok is true if the voter was found, false otherwise.
  * data is the voter object if found, or undefined if no voter was found.
  */
+/**
+ * Searches voters by name (lastname and/or firstname, case-insensitive, partial match).
+ * @param {string} query - Search term
+ * @param {number} limit - Max results
+ * @returns {Promise<Array>} Matching voters
+ */
+export const searchVotersByName = async (query, limit = 10) => {
+  const sql = `
+    SELECT uid, lastname, firstname, faculty
+    FROM voters
+    WHERE lastname ILIKE $1 OR firstname ILIKE $1
+       OR (lastname || ' ' || firstname) ILIKE $1
+       OR (firstname || ' ' || lastname) ILIKE $1
+    ORDER BY lastname, firstname
+    LIMIT $2
+  `;
+  try {
+    const res = await client.query(sql, [`%${query}%`, limit]);
+    return res.rows;
+  } catch (err) {
+    logger.error(`Error while searching voters by name: ${query}`);
+    logger.debug(err.stack);
+    throw new Error('Database query failed');
+  }
+};
+
 export const getVoterById = async (voterId) => {
   const sql = `
     SELECT *
