@@ -184,13 +184,22 @@ export const validateCandidateCSV = async (file) => {
         });
       }
 
-      const headers = lines[0].split(',').map((h) => h.trim().replace(/"/g, ''));
+      const delimiter = lines[0].includes(';') ? ';' : ',';
+      const headers = lines[0].split(delimiter).map((h) => h.trim().replace(/"/g, ''));
 
-      // The columns expected for candidates
+      // Normalisierung: Umlaute für den Vergleich ersetzen
+      const normalizeHeader = (h) =>
+        h
+          .toLowerCase()
+          .replace(/ä/g, 'ae')
+          .replace(/ö/g, 'oe')
+          .replace(/ü/g, 'ue')
+          .replace(/ß/g, 'ss');
+
       const requiredHeaders = ['Nachname', 'Vorname', 'MatrikelNr', 'Fakultaet'];
 
       const missingHeaders = requiredHeaders.filter(
-        (req) => !headers.some((h) => h.toLowerCase() === req.toLowerCase()),
+        (req) => !headers.some((h) => normalizeHeader(h) === normalizeHeader(req)),
       );
 
       if (missingHeaders.length > 0) {
@@ -198,7 +207,7 @@ export const validateCandidateCSV = async (file) => {
           success: false,
           errors: [
             {
-              message: `Falsches Format! Es fehlen Spalten für Kandidaten: ${missingHeaders.join(', ')}.`,
+              message: `Falsches CSV Format! Es fehlen Spalten für Kandidaten: ${missingHeaders.join(', ')}.`,
               code: 'MISSING_HEADERS',
             },
           ],
@@ -209,7 +218,7 @@ export const validateCandidateCSV = async (file) => {
       const data = [];
 
       for (let i = 1; i < lines.length; i++) {
-        const values = lines[i].split(',').map((v) => v.trim().replace(/"/g, ''));
+        const values = lines[i].split(delimiter).map((v) => v.trim().replace(/"/g, ''));
         const rowData = {};
         headers.forEach((h, idx) => (rowData[h] = values[idx]));
 

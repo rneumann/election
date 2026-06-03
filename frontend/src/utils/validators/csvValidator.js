@@ -200,7 +200,7 @@ export const validateCandidateCSV = async (file) => {
           success: false,
           errors: [
             {
-              message: `Falsches Format! Es fehlen Spalten für Kandidaten: ${missingHeaders.join(', ')}.`,
+              message: `Falsches csv-Format! Es fehlen Spalten für Kandidaten: ${missingHeaders.join(', ')}.`,
               code: 'MISSING_HEADERS',
             },
           ],
