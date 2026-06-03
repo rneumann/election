@@ -8,22 +8,22 @@ services:
     ports:
       - '8444:8443'
     volumes:
-      - ./certs:/etc/nginx/certs:ro
-      - ./tmp/host-fs-auditlog.log:/var/log/modsec_audit.log
-      - ./tmp/host-fs-errorlog.log:/var/log/modsec_error.log
+      - ../waf/certs:/etc/nginx/certs:ro
+      - ./tmp:/var/log/modsecurity/host:rw
       - ./conf.d/global_tuning.conf:/etc/nginx/conf.d/global_tuning.conf:ro
       - ./conf.d/security_logic.conf:/etc/nginx/conf.d/z_rate_limit_apply.conf:ro
     depends_on:
       - admin_frontend
     environment:
       - MODSEC_AUDIT_ENGINE=on
-      - MODSEC_AUDIT_LOG=/var/log/modsec_audit.log
-      - LOGLEVEL=debug
-      - ERRORLOG=/var/log/modsec_error.log
+      - MODSEC_AUDIT_LOG=/var/log/modsecurity/host/audit.log
+      - LOGLEVEL=warn
+      - ERRORLOG=/var/log/modsecurity/host/error.log
+      - SSL_OCSP_STAPLING=off
       - MAX_FILE_SIZE=5000000
       - ALLOWED_METHODS=GET POST PUT DELETE
       # --- Webserver Basis ---
-      - SERVER_NAME=example.de
+      - SERVER_NAME=${SERVER_NAME:-localhost}
       - BACKEND=http://admin_frontend:8081
       - PORT=8080
       - SSL_PORT=8443

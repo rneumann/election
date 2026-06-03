@@ -1,6 +1,7 @@
 services:
   frontend:
-    image: frontend_image
+    image: frontend:latest
+    pull_policy: never
     container_name: frontend
     expose:
       - '8080'

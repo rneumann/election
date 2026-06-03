@@ -1,11 +1,14 @@
 services:
   admin_frontend:
-    image: admin_frontend_image
+    image: admin-frontend:latest
+    pull_policy: never
     container_name: admin_frontend
     expose:
       - '8081'
     networks:
       - backend_net
       - admin_net
+    environment:
+      - NGINX_ENTRYPOINT_QUIET_LOGS=1
     depends_on:
       - backend

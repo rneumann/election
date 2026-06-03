@@ -20,6 +20,7 @@ COPY --from=builder /app/node_modules/ /app/node_modules/
 COPY package*.json ./
 COPY server.js ./
 COPY src/ ./src/
+COPY data/ ./data/
 
 RUN mkdir -p /app/uploads \
  && chown node:node /app/uploads \

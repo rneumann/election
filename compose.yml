@@ -1,0 +1,215 @@
+# Produktions-Compose für Linux-VM (amd64)
+# Images werden lokal auf dem Mac gebaut und per `docker save/load` übertragen.
+# Vor dem ersten Start: siehe README-deploy.md
+
+name: election
+
+networks:
+  frontend_net:
+  backend_net:
+    internal: true
+  admin_net:
+
+volumes:
+  postgres_data:
+  redis_data:
+
+secrets:
+  ADMIN_PASSWORD:
+    file: ./secrets/admin_pw.txt
+  COMMITTEE_PASSWORD:
+    file: ./secrets/committee_pw.txt
+  SESSION_SECRET:
+    file: ./secrets/session_secret.txt
+
+services:
+
+  # ── Datenbank ────────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:18
+    user: '999:999'
+    container_name: postgres
+    env_file: ./env/postgres.env
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+    read_only: true
+    shm_size: '1g'
+    tmpfs:
+      - /var/run/postgresql
+      - /tmp
+    volumes:
+      - postgres_data:/var/lib/postgresql
+      - ./initdb:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ['CMD', 'pg_isready', '-U', 'election', '-d', 'election_db', '-h', '127.0.0.1']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - backend_net
+    restart: unless-stopped
+
+  # ── Redis ────────────────────────────────────────────────────────────────────
+  redis:
+    image: redis:8.4.0-alpine
+    container_name: redis
+    command: >
+      redis-server
+      --requirepass "${REDIS_PASSWORD}"
+      --maxmemory 512mb
+      --maxmemory-policy allkeys-lru
+      --save ""
+    env_file: ./env/redis.env
+    networks:
+      - backend_net
+    expose:
+      - 6379
+    volumes:
+      - redis_data:/data
+    user: '1000:1000'
+    cap_drop:
+      - ALL
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 600M
+    restart: unless-stopped
+
+  # ── Backend ──────────────────────────────────────────────────────────────────
+  backend:
+    image: backend:latest
+    container_name: backend
+    env_file: ./env/backend.env
+    expose:
+      - 3000
+    secrets:
+      - ADMIN_PASSWORD
+      - COMMITTEE_PASSWORD
+      - SESSION_SECRET
+    volumes:
+      - ./secrets/keys:/run/secrets/keys:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - backend_net
+    restart: unless-stopped
+
+  # ── Frontend (Wähler) ────────────────────────────────────────────────────────
+  frontend:
+    image: frontend:latest
+    container_name: frontend
+    expose:
+      - 8080
+    networks:
+      - backend_net
+      - frontend_net
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  # ── Admin-Frontend ───────────────────────────────────────────────────────────
+  admin_frontend:
+    image: admin-frontend:latest
+    container_name: admin_frontend
+    expose:
+      - 8081
+    networks:
+      - backend_net
+      - admin_net
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  # ── WAF (Wähler-Zugang, Port 80/443) ────────────────────────────────────────
+  # Zertifikate werden per build-deploy.sh auf dem Mac generiert und per scp
+  # in ./certs/ auf die VM übertragen (server.crt / server.key).
+  waf:
+    image: owasp/modsecurity-crs:nginx
+    container_name: waf
+    restart: unless-stopped
+    networks:
+      - frontend_net
+    ports:
+      - '80:8080'
+      - '443:8443'
+    volumes:
+      - ./certs:/etc/nginx/certs:ro
+      - ./waf/logs/audit.log:/var/log/modsec_audit.log
+      - ./waf/logs/error.log:/var/log/modsec_error.log
+      - ./waf/conf.d/global_tuning.conf:/etc/nginx/conf.d/global_tuning.conf:ro
+      - ./waf/conf.d/security_logic.conf:/etc/nginx/conf.d/z_rate_limit_apply.conf:ro
+    depends_on:
+      - frontend
+    environment:
+      - MODSEC_AUDIT_ENGINE=on
+      - MODSEC_AUDIT_LOG=/var/log/modsec_audit.log
+      - LOGLEVEL=warn
+      - ERRORLOG=/var/log/modsec_error.log
+      - MAX_FILE_SIZE=5000000
+      - ALLOWED_METHODS=GET POST PUT DELETE
+      - SERVER_NAME=${SERVER_NAME:-example.de}
+      - BACKEND=http://frontend:8080
+      - PORT=8080
+      - SSL_PORT=8443
+      - SSL_CERT_FILE=/etc/nginx/certs/server.crt
+      - SSL_CERT_KEY_FILE=/etc/nginx/certs/server.key
+      - SSL_PROTOCOLS=TLSv1.2 TLSv1.3
+      - SECURITY_ENGINE=On
+      - PARANOIA=2
+      - ANOMALY_INBOUND_THRESHOLD=5
+      - ANOMALY_OUTBOUND_THRESHOLD=4
+      - WORKER_CONNECTIONS=1024
+      - CLIENT_MAX_BODY_SIZE=10M
+
+  # ── WAF Admin (Port 8444) ────────────────────────────────────────────────────
+  # Beide WAF-Instanzen teilen sich dasselbe Zertifikat aus ./certs/
+  waf_admin:
+    image: owasp/modsecurity-crs:nginx
+    container_name: waf_admin
+    restart: unless-stopped
+    networks:
+      - admin_net
+    ports:
+      - '8444:8443'
+    volumes:
+      - ./certs:/etc/nginx/certs:ro
+      - ./waf/logs/audit-admin.log:/var/log/modsec_audit.log
+      - ./waf/logs/error-admin.log:/var/log/modsec_error.log
+      - ./waf/conf.d/global_tuning.conf:/etc/nginx/conf.d/global_tuning.conf:ro
+      - ./waf/conf.d/security_logic.conf:/etc/nginx/conf.d/z_rate_limit_apply.conf:ro
+    depends_on:
+      - admin_frontend
+    environment:
+      - MODSEC_AUDIT_ENGINE=on
+      - MODSEC_AUDIT_LOG=/var/log/modsec_audit.log
+      - LOGLEVEL=warn
+      - ERRORLOG=/var/log/modsec_error.log
+      - MAX_FILE_SIZE=5000000
+      - ALLOWED_METHODS=GET POST PUT DELETE
+      - SERVER_NAME=${SERVER_NAME:-example.de}
+      - BACKEND=http://admin_frontend:8081
+      - PORT=8080
+      - SSL_PORT=8443
+      - SSL_CERT_FILE=/etc/nginx/certs/server.crt
+      - SSL_CERT_KEY_FILE=/etc/nginx/certs/server.key
+      - SSL_PROTOCOLS=TLSv1.2 TLSv1.3
+      - SECURITY_ENGINE=On
+      - PARANOIA=2
+      - ANOMALY_INBOUND_THRESHOLD=5
+      - ANOMALY_OUTBOUND_THRESHOLD=4
+      - WORKER_CONNECTIONS=1024
+      - CLIENT_MAX_BODY_SIZE=10M

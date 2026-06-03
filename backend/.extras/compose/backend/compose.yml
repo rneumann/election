@@ -9,7 +9,8 @@ secrets:
 services:
   backend:
     container_name: backend
-    image: backend_image
+    image: backend:latest
+    pull_policy: never
     env_file:
       - .env
     expose:
@@ -26,3 +27,4 @@ services:
       - backend_net
     volumes:
       - ./secrets/keys:/run/secrets/keys:ro
+      - ./data/election_presets.json:/app/data/election_presets.json:ro
