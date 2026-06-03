@@ -141,12 +141,13 @@ export const importElectionData = async (filePath) => {
       importedCount++;
     }
 
-    if (workbook.worksheets.length > 2) {
-      const candidateSheet = workbook.worksheets[2];
+    // Listenvorlage per Name suchen (robuster als Index) — Fallback auf Index 1
+    const candidateSheet =
+      workbook.worksheets.find((s) => s.name === 'Listenvorlage') ?? workbook.worksheets[1];
+
+    if (workbook.worksheets.length > 1) {
       if (!candidateSheet) {
-        logger.warn(
-          'Kandidatenblatt (worksheets[2]) nicht gefunden. Überspringe Kandidatenimport.',
-        );
+        logger.warn('Kandidatenblatt "Listenvorlage" nicht gefunden. Überspringe Kandidatenimport.');
       } else {
         logger.info(`Verarbeite Kandidaten aus Blatt "${candidateSheet.name}"...`);
 
@@ -230,10 +231,20 @@ export const importElectionData = async (filePath) => {
             // Für normale Wahlen: Vorname oder Nachname erforderlich
             // Für Urabstimmungen: Können leer sein
             if (firstname || lastname || currentElectionType === 'referendum') {
+              // ON CONFLICT: gleiche UID = gleiche Person → Stammdaten aktualisieren,
+              // keinen zweiten Eintrag anlegen (wahlübergreifende Deduplizierung)
               const insertCandidateQuery = `
-                INSERT INTO candidates 
+                INSERT INTO candidates
                 (uid, lastname, firstname, mtknr, faculty, keyword, notes, approved)
                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                ON CONFLICT (uid) DO UPDATE SET
+                  lastname  = EXCLUDED.lastname,
+                  firstname = EXCLUDED.firstname,
+                  mtknr     = EXCLUDED.mtknr,
+                  faculty   = EXCLUDED.faculty,
+                  keyword   = EXCLUDED.keyword,
+                  notes     = EXCLUDED.notes,
+                  approved  = EXCLUDED.approved
                 RETURNING id
               `;
 
@@ -253,6 +264,7 @@ export const importElectionData = async (filePath) => {
               const linkQuery = `
                 INSERT INTO electioncandidates (electionId, candidateId, listnum)
                 VALUES ($1, $2, $3)
+                ON CONFLICT (electionId, candidateId) DO NOTHING
               `;
 
               await db.query(linkQuery, [electionUUID, newCandidateId, listnum]);

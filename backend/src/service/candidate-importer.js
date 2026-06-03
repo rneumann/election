@@ -19,11 +19,12 @@ export const safeRow = (row) => {
 const allowedColumns = ['uid', 'lastname', 'firstname', 'mtknr', 'faculty', 'keyword', 'notes'];
 
 /**
- * Inserts an array of candidate objects into the database.
+ * Inserts candidates and links them to an election within a single transaction.
  * @param {Array<Object>} data - Array of candidate objects
+ * @param {string|null} electionId - UUID of the election to link candidates to (optional)
  * @returns {Promise<void>}
  */
-const insertCandidates = async (data) => {
+const insertCandidates = async (data, electionId = null) => {
   if (!data.length) {
     logger.info('No candidate data found to insert.');
     return;
@@ -39,16 +40,49 @@ const insertCandidates = async (data) => {
 
   const flatValues = data.flatMap((row) => allowedColumns.map((col) => row[col]));
 
-  const query = {
-    text: `INSERT INTO candidates (${cols}) VALUES ${placeholders}`,
-    values: flatValues,
-  };
-
+  // Alles in einer Transaktion — entweder alles oder nichts
+  await client.query('BEGIN');
   try {
-    const res = await client.query(query);
-    logger.info(`Inserted ${res.rowCount} candidates.`);
+    // 1. Kandidaten einfügen / aktualisieren (gleiche uid = dieselbe Person)
+    const insertResult = await client.query({
+      text: `INSERT INTO candidates (${cols}) VALUES ${placeholders}
+             ON CONFLICT (uid) DO UPDATE SET
+               lastname  = EXCLUDED.lastname,
+               firstname = EXCLUDED.firstname,
+               mtknr     = EXCLUDED.mtknr,
+               faculty   = EXCLUDED.faculty,
+               keyword   = EXCLUDED.keyword,
+               notes     = EXCLUDED.notes
+             RETURNING id, uid`,
+      values: flatValues,
+    });
+    logger.info(`Upserted ${insertResult.rowCount} candidates.`);
+
+    // 2. Falls eine Wahl angegeben → Kandidaten in electioncandidates verknüpfen
+    if (electionId) {
+      // Höchste bestehende listnum für diese Wahl ermitteln
+      const maxRes = await client.query(
+        'SELECT COALESCE(MAX(listnum), 0) AS max FROM electioncandidates WHERE electionId = $1',
+        [electionId],
+      );
+      let nextListnum = maxRes.rows[0].max + 1;
+
+      for (const row of insertResult.rows) {
+        await client.query({
+          text: `INSERT INTO electioncandidates (electionId, candidateId, listnum, is_adhoc)
+                 VALUES ($1, $2, $3, false)
+                 ON CONFLICT (electionId, candidateId) DO NOTHING`,
+          values: [electionId, row.id, nextListnum],
+        });
+        nextListnum++;
+      }
+      logger.info(`Linked ${insertResult.rowCount} candidates to election ${electionId}.`);
+    }
+
+    await client.query('COMMIT');
   } catch (err) {
-    logger.error('DB insert error:', err);
+    await client.query('ROLLBACK');
+    logger.error('DB insert error — transaction rolled back:', err);
     throw new Error('Database error while inserting candidates.');
   }
 };
@@ -57,10 +91,11 @@ const insertCandidates = async (data) => {
  * Main entry for candidate import.
  * @param {string} path - Path to the input file
  * @param {string} mimeType - MIME type of the input file
+ * @param {string|null} electionId - UUID of the election to link candidates to (optional)
  * @returns {Promise<void>}
  */
-export const importCandidateData = async (path, mimeType) => {
-  logger.debug(`Parsing candidate file: ${path} (${mimeType})`);
+export const importCandidateData = async (path, mimeType, electionId = null) => {
+  logger.debug(`Parsing candidate file: ${path} (${mimeType}), electionId: ${electionId}`);
 
   // Parser mapping
   const parsers = {
@@ -87,7 +122,6 @@ export const importCandidateData = async (path, mimeType) => {
       const cleaned = safeRow(row);
       // Generate UID if missing (CSV files don't have UID column)
       if (!cleaned.uid) {
-        // Use lastname_firstname or fallback to index
         const namePart =
           cleaned.lastname && cleaned.firstname
             ? `${cleaned.lastname}_${cleaned.firstname}`.toLowerCase().replace(/[^a-z0-9_]/g, '')
@@ -99,7 +133,7 @@ export const importCandidateData = async (path, mimeType) => {
 
     logger.debug(`Parsed ${rows.length} candidate rows.`);
 
-    await insertCandidates(rows);
+    await insertCandidates(rows, electionId);
   } catch (err) {
     logger.error('Candidate import process error:', err);
     throw err;
