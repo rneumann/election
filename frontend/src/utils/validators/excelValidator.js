@@ -54,6 +54,7 @@ export const validateElectionExcel = async (file) => {
     Plätze: infoData.Plätze,
     'Stimmen pro Zettel': infoData['Stimmen pro Zettel'] || infoData['Stimmen'],
     'max. Kum.': infoData['max. Kum.'] || infoData['Kumulieren'] || 0,
+    'Freie Plätze': infoData['Freie Plätze'] || 0,
     Wahltyp: infoData['Wahltyp'],
     Zählverfahren: infoData['Zählverfahren'],
     Startzeitpunkt:

@@ -87,6 +87,7 @@ export const Modal = ({ open, setOpen, electionId, refreshElections }) => {
 
   const confirmFreeSlot = () => {
     if (!lookupResult) return;
+    if (freeSlots.length >= (election?.free_slots ?? 0)) return;
     setFreeSlots((prev) => [...prev, { ...lookupResult, votes: 1 }]);
     setVotesLeft((prev) => prev - 1);
     setLookupUid('');
@@ -336,10 +337,11 @@ export const Modal = ({ open, setOpen, electionId, refreshElections }) => {
               </div>
             </div>
 
-            {/* Freie Kandidatenauswahl */}
-            <div className="rounded-xl border border-gray-200 dark:border-gray-700 mt-4 mx-2 bg-white dark:bg-gray-800 transition-colors overflow-hidden">
-              <div className="bg-gray-100 dark:bg-gray-700 px-3 py-2 text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-200">
-                Freie Kandidatur (aus Wählerverzeichnis)
+            {/* Freie Kandidatenauswahl — nur wenn election.free_slots > 0 */}
+            {election?.free_slots > 0 && <div className="rounded-xl border border-gray-200 dark:border-gray-700 mt-4 mx-2 bg-white dark:bg-gray-800 transition-colors overflow-hidden">
+              <div className="bg-gray-100 dark:bg-gray-700 px-3 py-2 text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-200 flex justify-between">
+                <span>Freie Kandidatur (aus Wählerverzeichnis)</span>
+                <span className="font-normal normal-case">{freeSlots.length} / {election.free_slots} belegt</span>
               </div>
 
               {/* Bereits hinzugefügte freie Slots */}
@@ -432,7 +434,7 @@ export const Modal = ({ open, setOpen, electionId, refreshElections }) => {
                   </div>
                 )}
               </div>
-            </div>
+            </div>}
           </div>
 
           {/* Footer */}

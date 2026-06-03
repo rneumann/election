@@ -84,6 +84,7 @@ export const getElectionById = async (electionId) => {
       e.description,
       e.votes_per_ballot,
       e.max_cumulative_votes,
+      e.free_slots,
       e.test_election_active,
       e.election_type,
       e.start,

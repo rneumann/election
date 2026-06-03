@@ -54,6 +54,7 @@ CREATE TABLE
     seats_to_fill INT NOT NULL CHECK (seats_to_fill >= 1),
     votes_per_ballot SMALLINT NOT NULL CHECK (votes_per_ballot > 0),
     max_cumulative_votes int NOT NULL DEFAULT '0' CHECK (max_cumulative_votes >= 0),
+    free_slots SMALLINT NOT NULL DEFAULT 0 CHECK (free_slots >= 0),
     test_election_active BOOLEAN NOT NULL DEFAULT FALSE,
     start TIMESTAMPTZ NOT NULL,
     "end" TIMESTAMPTZ NOT NULL,

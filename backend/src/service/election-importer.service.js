@@ -71,10 +71,12 @@ export const importElectionData = async (filePath) => {
       const maxKumValue = electionSheet.getCell(`F${rowIndex}`).value;
       const electionTypeText = electionSheet.getCell(`G${rowIndex}`).value?.toString().trim();
       const countingMethodText = electionSheet.getCell(`H${rowIndex}`).value?.toString().trim();
+      const freeSlotsValue = electionSheet.getCell(`I${rowIndex}`).value;
 
       const seatsToFill = Number(seatsValue);
       const votesPerBallot = votesPerBallotValue ? Number(votesPerBallotValue) : seatsToFill;
       const maxCumulativeVotes = Number(maxKumValue) || 0;
+      const freeSlots = Number.isInteger(Number(freeSlotsValue)) ? Math.max(0, Number(freeSlotsValue)) : 0;
 
       if (!Number.isInteger(seatsToFill) || seatsToFill < 1) {
         throw new Error(
@@ -113,10 +115,10 @@ export const importElectionData = async (filePath) => {
 
       const insertElectionQuery = `
         INSERT INTO elections (
-          info, description, listvotes, seats_to_fill, votes_per_ballot, 
-          max_cumulative_votes, start, "end", election_type, counting_method
+          info, description, listvotes, seats_to_fill, votes_per_ballot,
+          max_cumulative_votes, free_slots, start, "end", election_type, counting_method
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
         RETURNING id;
       `;
 
@@ -127,6 +129,7 @@ export const importElectionData = async (filePath) => {
         seatsToFill,
         votesPerBallot,
         maxCumulativeVotes,
+        freeSlots,
         startDate,
         endDate,
         electionType,

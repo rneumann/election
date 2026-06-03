@@ -335,6 +335,22 @@ voterRouter.post(
       }
     }
 
+    // sicherstellen, dass nicht mehr freie Slots übergeben werden als die Wahl erlaubt
+    const freeSlotCount = (req.body.freeSlots ?? []).length;
+    if (freeSlotCount > 0) {
+      const electionForFreeSlots = await getElectionById(req.body.electionId);
+      if (!electionForFreeSlots || electionForFreeSlots.free_slots === 0) {
+        logger.warn('Free slots not allowed for this election');
+        return res.status(400).json({ message: 'Freie Kandidatur ist für diese Wahl nicht aktiviert' });
+      }
+      if (freeSlotCount > electionForFreeSlots.free_slots) {
+        logger.warn(`Too many free slots: ${freeSlotCount} > ${electionForFreeSlots.free_slots}`);
+        return res.status(400).json({
+          message: `Maximal ${electionForFreeSlots.free_slots} freie Kandidatur(en) erlaubt`,
+        });
+      }
+    }
+
     // sicherstellen, dass freeSlots keine festen Kandidaten dieser Wahl enthalten
     for (const slot of req.body.freeSlots ?? []) {
       const isFixedCandidate = await checkIfVoterIsFixedCandidate(slot.voterUid, req.body.electionId);
