@@ -9,6 +9,7 @@ import {
   getElectionById,
   getElections,
   getVoterById,
+  searchVotersByName,
 } from '../service/voter.service.js';
 import { ensureAuthenticated, ensureHasRole } from '../auth/auth.js';
 import { ballotInputSchema } from '../schemas/ballot.js';
@@ -420,6 +421,35 @@ voterRouter.post(
     } catch (err) {
       logger.error('Internal Server Error');
       logger.debug(err.stack);
+      res.status(500).json({ message: 'Internal Server Error' });
+    }
+  },
+);
+
+voterRouter.get(
+  '/search',
+  ensureAuthenticated,
+  ensureHasRole(['voter']),
+  async (req, res) => {
+    const { q, electionId } = req.query;
+    if (!q || q.trim().length < 2) {
+      return res.status(400).json({ message: 'Suchbegriff muss mindestens 2 Zeichen haben' });
+    }
+    if (!electionId) {
+      return res.status(400).json({ message: 'electionId ist erforderlich' });
+    }
+    try {
+      const voters = await searchVotersByName(q.trim());
+      // Für jeden Treffer prüfen ob bereits fester Kandidat
+      const results = await Promise.all(
+        voters.map(async (v) => {
+          const isFixed = await checkIfVoterIsFixedCandidate(v.uid, electionId);
+          return { ...v, isFixedCandidate: isFixed };
+        }),
+      );
+      res.status(200).json(results);
+    } catch (err) {
+      logger.error(`Fehler bei Wählersuche: ${err.message}`);
       res.status(500).json({ message: 'Internal Server Error' });
     }
   },
