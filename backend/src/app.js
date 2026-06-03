@@ -16,6 +16,10 @@ import { verifyCsrfToken } from './security/csrf-logic.js';
 import { writeAuditLog } from './audit/auditLogger.js';
 import { redisClient } from './conf/redis/redis-client.js';
 const { CORS_ORIGIN, NODE_ENV, INTERNAL_FINGERPRINT_SALT } = process.env;
+// CORS_ORIGIN kann eine kommagetrennte Liste sein (z.B. "https://a.de,https://b.de")
+const corsOrigin = CORS_ORIGIN
+  ? CORS_ORIGIN.split(',').map((o) => o.trim())
+  : 'http://localhost:3000';
 //NEU
 import { downloadRouter as templatesRouter } from './routes/templates-download.route.js';
 
@@ -68,7 +72,7 @@ app.use(
 
 app.use(
   cors({
-    origin: CORS_ORIGIN || 'http://localhost:3000',
+    origin: corsOrigin,
     methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
     credentials: true,
   }),
