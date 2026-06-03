@@ -162,3 +162,17 @@ vite.config.ts.timestamp-*
 # uploads
 **/uploads
 backend/.extras/compose/locust/__pycache__/locustfile.cpython-313.pyc
+
+00-tmp-*
+00-config-local/backend/.extras/compose/compose.base.yml
+00-config-local/backend/.extras/compose/compose.yml
+00-config-local/backend/.extras/compose/admin_frontend/compose.yml
+00-config-local/backend/.extras/compose/frontend/compose.yml
+00-config-local/backend/.extras/compose/postgres/compose.yml
+00-config-local/backend/.extras/compose/postgres/initdb/prod/00_create_schema.sql
+deploy-images/election-admin.tar.gz
+deploy-images/election-backend.tar.gz
+deploy-images/election-frontend.tar.gz
+.ssh/wahl-hka.priv
+.ssh/wahl-hka.sh
+wahl-hka.sh
