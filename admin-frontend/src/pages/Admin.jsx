@@ -47,6 +47,7 @@ const AdminDashboard = () => {
   const [showConfirmAlert, setShowConfirmAlert] = useState(false);
   // NEU ANFANG (templates)
   const [templateType, setTemplateType] = useState('generic');
+  const [templateFormat, setTemplateFormat] = useState('ods');
   const [selectedConfigFile, setSelectedConfigFile] = useState(null);
   const [uploadStatus, setUploadStatus] = useState('');
   // NEU ENDE (templates)
@@ -98,9 +99,9 @@ const AdminDashboard = () => {
   const handleDownloadTemplate = async () => {
     try {
       if (templateType === 'voters') {
-        await templateApi.downloadVoterTemplate();
+        await templateApi.downloadVoterTemplate(templateFormat);
       } else {
-        await templateApi.downloadElectionTemplate(templateType);
+        await templateApi.downloadElectionTemplate(templateType, templateFormat);
       }
       showAlert('success', 'Vorlage erfolgreich heruntergeladen');
     } catch {
@@ -643,6 +644,30 @@ const AdminDashboard = () => {
                             </optgroup>
                           )}
                       </select>
+                      {/* Format-Auswahl */}
+                      <div className="flex items-center justify-center gap-3 mb-4">
+                        <span className="text-sm text-gray-600">Format:</span>
+                        <label className="flex items-center gap-1 text-sm cursor-pointer">
+                          <input
+                            type="radio"
+                            name="templateFormat"
+                            value="ods"
+                            checked={templateFormat === 'ods'}
+                            onChange={() => setTemplateFormat('ods')}
+                          />
+                          ODS (OpenDocument)
+                        </label>
+                        <label className="flex items-center gap-1 text-sm cursor-pointer">
+                          <input
+                            type="radio"
+                            name="templateFormat"
+                            value="xlsx"
+                            checked={templateFormat === 'xlsx'}
+                            onChange={() => setTemplateFormat('xlsx')}
+                          />
+                          XLSX (Excel)
+                        </label>
+                      </div>
                       <div className="text-center">
                         <ResponsiveButton
                           onClick={handleDownloadTemplate}
@@ -663,11 +688,11 @@ const AdminDashboard = () => {
               <FileUploadSection
                 key="upload-elections"
                 title="Wahleinstellung hochladen"
-                description="Laden Sie eine Excel-Datei (.xlsx) mit der Wahlkonfiguration hoch. Die Datei wird automatisch validiert."
+                description="Laden Sie eine ODS- oder Excel-Datei (.ods, .xlsx) mit der Wahlkonfiguration hoch. Die Datei wird automatisch validiert."
                 uploadType="elections"
                 endpoint="/upload/elections"
                 validator={validateElectionExcel}
-                acceptedFileTypes=".xlsx,.xls"
+                acceptedFileTypes=".ods,.xlsx,.xls"
                 formatExample="Siehe Excel-Vorlage (Download über Menü)"
                 fileTypeLabel="Excel"
               />
