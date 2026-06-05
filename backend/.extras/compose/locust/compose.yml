@@ -1,10 +1,27 @@
 services:
+  # Frontend mit deaktiviertem Rate-Limit für Lasttests
+  frontend-loadtest:
+    image: frontend:latest
+    pull_policy: never
+    container_name: frontend-loadtest
+    volumes:
+      - ../../../frontend/nginx.loadtest.conf:/etc/nginx/nginx.conf:ro
+    expose:
+      - '8080'
+    ports:
+      - '8081:8080'
+    networks:
+      - backend_net
+      - frontend_net
+
   locust:
     image: locustio/locust
     profiles: ['dev', 'prod']
     volumes:
       - ./:/mnt/locust
-    command: -f /mnt/locust/locustfile.py
+    # WAF-Test (Standard):   LOCUST_FILE=locustfile.py
+    # Wähler-Lasttest:        LOCUST_FILE=locustfile_voting.py
+    command: -f /mnt/locust/${LOCUST_FILE:-locustfile_voting.py}
     networks:
       - frontend_net
     ports:
