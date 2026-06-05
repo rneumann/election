@@ -21,6 +21,15 @@ export const getElectionsForAdmin = async (status) => {
     case 'future':
       conditions.push('e.start > now()');
       break;
+    case 'test':
+      conditions.push('e.test_election_active = true');
+      break;
+    case 'test_stopped':
+      // Gestoppte Testwahlen: Wahl noch nicht beendet, Testmodus deaktiviert, aber bereits Stimmen vorhanden
+      conditions.push(
+        'e.test_election_active = false AND e."end" > now() AND EXISTS (SELECT 1 FROM ballots b WHERE b.election = e.id)',
+      );
+      break;
   }
 
   const sql = `
@@ -289,6 +298,11 @@ export const deleteAllElectionData = async (
     await client.query('DELETE FROM electioncandidates WHERE electionId = $1', [electionId]);
     await client.query('DELETE FROM elections WHERE id = $1', [electionId]);
 
+    // Kandidaten entfernen, die nach dem Löschen der Wahl in keiner weiteren Wahl mehr stehen
+    await client.query(
+      'DELETE FROM candidates WHERE id NOT IN (SELECT candidateId FROM electioncandidates)',
+    );
+
     await client.query('COMMIT');
 
     // Audit Log: Successful deletion of election data
@@ -307,6 +321,7 @@ export const deleteAllElectionData = async (
           'votingnotes',
           'electioncandidates',
           'elections',
+          'candidates (wahlspezifische)',
         ],
         timestamp: new Date().toISOString(),
       },
