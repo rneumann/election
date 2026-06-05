@@ -31,7 +31,7 @@ const ROW_START_DATA = 8;
 const VALIDATION_MAX_ROW = 100;
 const DEFAULT_DURATION_DAYS = 14;
 const WAHLEN_COL_COUNT = 9;
-const LISTEN_COL_COUNT = 8;       // ohne "Wahl Kennung" (= Blattname)
+const LISTEN_COL_COUNT = 8; // ohne "Wahl Kennung" (= Blattname)
 const URABSTIMMUNG_COL_COUNT = 3; // Nr, Name, Description (kein Wahlkennung-Prefix)
 
 /**
@@ -235,7 +235,7 @@ const addCandidateSheet = (workbook, sheetName, config, defaultAlignment) => {
 
   if (isReferendum) {
     sheet.columns = [
-      { width: 8,  style: { alignment: defaultAlignment } }, // A: Nr
+      { width: 8, style: { alignment: defaultAlignment } }, // A: Nr
       { width: 25, style: { alignment: defaultAlignment } }, // B: Name
       { width: 50, style: { alignment: defaultAlignment } }, // C: Description
     ];
@@ -244,7 +244,7 @@ const addCandidateSheet = (workbook, sheetName, config, defaultAlignment) => {
     sheet.getRow(3).values = [2, 'Nein', 'Ablehnung der Vorlage'];
   } else {
     sheet.columns = [
-      { width: 8,  style: { alignment: defaultAlignment } }, // A: Nr
+      { width: 8, style: { alignment: defaultAlignment } }, // A: Nr
       { width: 15, style: { alignment: defaultAlignment } }, // B: UID
       { width: 25, style: { alignment: defaultAlignment } }, // C: Liste / Schlüsselwort
       { width: 15, style: { alignment: defaultAlignment } }, // D: Vorname
@@ -253,11 +253,25 @@ const addCandidateSheet = (workbook, sheetName, config, defaultAlignment) => {
       { width: 12, style: { alignment: defaultAlignment } }, // G: Fakultät
       { width: 18, style: { alignment: defaultAlignment } }, // H: Studiengang
     ];
-    sheet.getRow(1).values = ['Nr', 'UID', 'Liste / Schlüsselwort', 'Vorname', 'Nachname', 'Mtr-Nr.', 'Fakultät', 'Studiengang'];
+    sheet.getRow(1).values = [
+      'Nr',
+      'UID',
+      'Liste / Schlüsselwort',
+      'Vorname',
+      'Nachname',
+      'Mtr-Nr.',
+      'Fakultät',
+      'Studiengang',
+    ];
     sheet.getRow(2).values = [
-      1, 'kand-001',
+      1,
+      'kand-001',
       config.listen === 1 ? 'Liste A' : 'Einzelkandidat',
-      'Max', 'Mustermann', '123456', 'IWI', 'Informatik',
+      'Max',
+      'Mustermann',
+      '123456',
+      'IWI',
+      'Informatik',
     ];
   }
 
@@ -394,7 +408,7 @@ export const generateElectionTemplate = async (presetKey = 'generic') => {
     config.kum ?? '',
     config.type ?? '',
     config.method ?? '',
-    0,
+    config.freeSlots ?? 0,
   ];
   // Zentriere alle Zellen in der Datenzeile
   dataRow.eachCell((cell) => {
@@ -442,6 +456,92 @@ export const generateVoterTemplate = async () => {
   sheet.getRow(2).values = ['123456', 'stud@h-ka.de', 'Erika', 'Mustermann', 'IWI'];
   return workbook;
 };
+
+/**
+ * Generates the election template as an ODS-ready sheet structure.
+ * @param {string} presetKey
+ * @returns {Promise<Array<{name: string, headers: string[], rows: any[][]}>>}
+ */
+export const generateElectionTemplateOds = async (presetKey = 'generic') => {
+  const allPresets = await loadAllPresets();
+  // eslint-disable-next-line security/detect-object-injection
+  const config = Object.hasOwn(allPresets, presetKey) ? allPresets[presetKey] : allPresets.generic;
+
+  const startStr = new Date().toLocaleDateString('de-DE');
+  const future = new Date();
+  future.setDate(future.getDate() + DEFAULT_DURATION_DAYS);
+  const endStr = future.toLocaleDateString('de-DE');
+
+  // Blatt 1: Wahlen
+  const wahlenHeaders = [
+    'Kennung',
+    'Info',
+    'Listen',
+    'Plätze',
+    'Stimmen pro Zettel',
+    'max. Kum.',
+    'Wahltyp',
+    'Zählverfahren',
+    'Freie Plätze',
+  ];
+  const wahlenMetaRow = ['Wahlzeitraum von', '', startStr, 'bis', '', endStr, '', '', ''];
+  const wahlenDataRow = [
+    presetKey === 'generic' ? 'meine_wahl_01' : presetKey,
+    config.info,
+    config.listen ?? 1,
+    config.seats ?? '',
+    config.votes ?? '',
+    config.kum ?? '',
+    config.type ?? '',
+    config.method ?? '',
+    config.freeSlots ?? 0,
+  ];
+
+  // Blatt 2: Listenvorlage
+  const listenHeaders = [
+    'Wahl Kennung',
+    'Nr',
+    'UID',
+    'Liste / Schlüsselwort',
+    'Vorname',
+    'Nachname',
+    'Mtr-Nr.',
+    'Fakultät',
+    'Studiengang',
+  ];
+  const listenDataRow = [
+    presetKey === 'generic' ? 'meine_wahl_01' : presetKey,
+    1,
+    'kand-001',
+    config.listen === 1 ? 'Liste A' : 'Einzelkandidat',
+    'Max',
+    'Mustermann',
+    '123456',
+    'IWI',
+    'Informatik',
+  ];
+
+  // Blatt 3: OptionsUrabstimmung
+  const optHeaders = ['Wahlkennung', 'Nr', 'Name', 'Description'];
+
+  return [
+    { name: 'Wahlen', headers: wahlenHeaders, rows: [wahlenMetaRow, wahlenDataRow] },
+    { name: 'Listenvorlage', headers: listenHeaders, rows: [listenDataRow] },
+    { name: 'OptionsUrabstimmung', headers: optHeaders, rows: [] },
+  ];
+};
+
+/**
+ * Generates the voter template as an ODS-ready sheet structure.
+ * @returns {Array<{name: string, headers: string[], rows: any[][]}>}
+ */
+export const generateVoterTemplateOds = () => [
+  {
+    name: 'Wählerverzeichnis',
+    headers: ['MatrikelNr', 'E-Mail', 'Vorname', 'Nachname', 'Fakultät'],
+    rows: [['123456', 'stud@h-ka.de', 'Erika', 'Mustermann', 'IWI']],
+  },
+];
 
 /**
  * Returns all available presets categorized as internal or external.

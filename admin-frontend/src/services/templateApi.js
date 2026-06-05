@@ -8,12 +8,14 @@ export const templateApi = {
   /*
    * Lädt das Wahl-Template herunter (Excel)
    */
-  downloadElectionTemplate: async (preset = 'generic') => {
+  downloadElectionTemplate: async (preset = 'generic', format = 'ods') => {
     try {
-      const response = await api.get(`/templates-download/template/elections?preset=${preset}`, {
-        responseType: 'blob',
-      });
-      downloadBlob(response.data, `HKA_Vorlage_${preset}.xlsx`);
+      const ext = format === 'xlsx' ? 'xlsx' : 'ods';
+      const response = await api.get(
+        `/templates-download/template/elections?preset=${preset}&format=${ext}`,
+        { responseType: 'blob' },
+      );
+      downloadBlob(response.data, `HKA_Vorlage_${preset}.${ext}`);
     } catch (error) {
       logger.error('Download election template failed:', error);
       throw error;
@@ -21,14 +23,15 @@ export const templateApi = {
   },
 
   /**
-   * Lädt das Wähler-Template herunter (Excel)
+   * Lädt das Wähler-Template herunter
    */
-  downloadVoterTemplate: async () => {
+  downloadVoterTemplate: async (format = 'ods') => {
     try {
-      const response = await api.get('/templates-download/template/voters', {
+      const ext = format === 'xlsx' ? 'xlsx' : 'ods';
+      const response = await api.get(`/templates-download/template/voters?format=${ext}`, {
         responseType: 'blob',
       });
-      downloadBlob(response.data, 'HKA_Waehler_Vorlage.xlsx');
+      downloadBlob(response.data, `HKA_Waehler_Vorlage.${ext}`);
     } catch (error) {
       logger.error('Download voter template failed:', error);
       throw error;
