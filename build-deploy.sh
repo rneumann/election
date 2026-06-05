@@ -55,6 +55,8 @@ docker save admin-frontend:latest | gzip > "$OUTDIR/admin-frontend.tar.gz"
 
 echo "==> Fertig. Images liegen in $OUTDIR/"
 
+docker image rm -f backend frontend admin-frontend 2>/dev/null || true
+
 # -- Optionaler Upload zur VM ---------------------------------------------------
 if [[ "${1:-}" == "--push-to" && -n "${2:-}" ]]; then
   TARGET="$2"
