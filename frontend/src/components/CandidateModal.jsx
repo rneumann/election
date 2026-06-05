@@ -70,8 +70,22 @@ export const CandidateInfoModal = ({ open, onClose, election }) => {
 
   const handleBack = () => setSelectedCandidate(null);
 
-  const getAvatarUrl = (c) =>
-    `https://ui-avatars.com/api/?name=${c?.firstname || '?'}+${c?.lastname || '?'}&background=random&color=fff&size=256`;
+  // Deterministischer Avatar: Initialen als SVG, Farbe aus Name abgeleitet — kein externer Aufruf
+  const getAvatarUrl = (c) => {
+    const initials = [c?.firstname, c?.lastname]
+      .filter(Boolean)
+      .map((n) => n[0].toUpperCase())
+      .join('') || '?';
+    const hue = [...(c?.firstname || c?.lastname || 'X')]
+      .reduce((acc, ch) => acc + ch.charCodeAt(0), 0) % 360;
+    const bg = `hsl(${hue},55%,45%)`;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256">
+      <rect width="256" height="256" fill="${bg}"/>
+      <text x="128" y="168" font-family="sans-serif" font-size="110" font-weight="bold"
+            text-anchor="middle" fill="#fff">${initials}</text>
+    </svg>`;
+    return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+  };
 
   if (!open) {
     return null;
