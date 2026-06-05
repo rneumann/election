@@ -21,7 +21,18 @@ export const TestElectionCountingAdminView = ({
     setCountingError('');
 
     try {
-      const futureElections = await adminService.getElectionsForAdmin('future');
+      const [activeTest, stoppedTest] = await Promise.all([
+        adminService.getElectionsForAdmin('test'),
+        adminService.getElectionsForAdmin('test_stopped'),
+      ]);
+
+      // Zusammenführen, Duplikate per id vermeiden
+      const seen = new Set();
+      const futureElections = [...activeTest, ...stoppedTest].filter((e) => {
+        if (seen.has(e.id)) return false;
+        seen.add(e.id);
+        return true;
+      });
 
       // Populate countingResult from database for finalized test elections
       const electionsWithResults = futureElections.map((election) => {
