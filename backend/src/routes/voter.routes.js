@@ -103,6 +103,7 @@ voterRouter.get(
       status !== 'active' &&
       status !== 'finished' &&
       status !== 'future' &&
+      status !== 'test' &&
       status !== undefined
     ) {
       logger.warn(`Invalid status parameter: ${status}`);
@@ -140,13 +141,7 @@ voterRouter.get(
 
       const elections = await getElections(status, voter.id, voted);
 
-      if (!elections || elections.length === 0) {
-        logger.warn('No elections found');
-        return res.status(404).json({ message: 'No elections found' });
-      }
-
-      //logger.debug(`Elections retrieved successfully res: ${JSON.stringify(elections)}`);
-      res.status(200).json(elections);
+      res.status(200).json(elections || []);
     } catch {
       // eslint-disable-next-line
       res.status(500).json({ message: 'Internal Server Error' });
