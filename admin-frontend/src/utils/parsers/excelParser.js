@@ -15,10 +15,9 @@ export const parseElectionExcel = async (file) => {
     await workbook.xlsx.load(arrayBuffer);
 
     const actualSheets = workbook.worksheets.map((ws) => ws.name);
-    const requiredSheets = [EXPECTED_SHEET_NAMES.INFO, EXPECTED_SHEET_NAMES.CANDIDATES];
-    const missingSheets = requiredSheets.filter((sheet) => !actualSheets.includes(sheet));
 
-    if (missingSheets.length > 0) {
+    // Pflicht: Blatt "Wahlen" + mindestens ein Kandidatenblatt (Blattname = Wahlkennung)
+    if (!actualSheets.includes(EXPECTED_SHEET_NAMES.INFO)) {
       return {
         success: false,
         errors: [
@@ -26,7 +25,22 @@ export const parseElectionExcel = async (file) => {
             sheet: null,
             row: null,
             field: null,
-            message: `Fehlende Tabellenblätter: ${missingSheets.join(', ')}`,
+            message: `Fehlendes Tabellenblatt: ${EXPECTED_SHEET_NAMES.INFO}`,
+            code: 'MISSING_SHEETS',
+          },
+        ],
+      };
+    }
+    const candidateSheetNames = actualSheets.filter((s) => s !== EXPECTED_SHEET_NAMES.INFO);
+    if (candidateSheetNames.length === 0) {
+      return {
+        success: false,
+        errors: [
+          {
+            sheet: null,
+            row: null,
+            field: null,
+            message: 'Keine Kandidatenblätter gefunden. Jede Wahl benötigt ein eigenes Blatt (Blattname = Wahlkennung).',
             code: 'MISSING_SHEETS',
           },
         ],
@@ -34,7 +48,6 @@ export const parseElectionExcel = async (file) => {
     }
 
     const infoSheet = workbook.getWorksheet(EXPECTED_SHEET_NAMES.INFO);
-    const candidatesSheet = workbook.getWorksheet(EXPECTED_SHEET_NAMES.CANDIDATES);
 
     // Parse multiple elections (columns) from Info sheet
     const elections = [];
@@ -117,33 +130,35 @@ export const parseElectionExcel = async (file) => {
     }
 
     logger.info(`Total elections found: ${elections.length}`);
-    const candidatesRaw = [];
-    let candidateHeaders = [];
 
-    candidatesSheet.eachRow((row, rowNumber) => {
-      if (rowNumber === 1) {
-        row.eachCell((cell) => candidateHeaders.push(cell.value ? String(cell.value).trim() : ''));
-        return;
-      }
-      const rowData = {};
-      let hasData = false;
-      row.eachCell((cell, colNumber) => {
-        const header = candidateHeaders[colNumber - 1];
-        if (header) {
-          let value = cell.value;
-          if (value && typeof value === 'object' && value.result !== undefined) {
-            value = value.result;
-          }
-          rowData[header] = value === null || value === undefined ? '' : String(value);
-          if (String(value).trim() !== '') {
-            hasData = true;
-          }
+    // Kandidaten aus allen Blättern außer "Wahlen" lesen
+    // Blattname = Wahlkennung; neue Spalten: Nr, UID, Liste/Schlüsselwort, Vorname, Nachname, Mtr-Nr., Fakultät
+    const candidatesRaw = [];
+    for (const sheetName of candidateSheetNames) {
+      const candSheet = workbook.getWorksheet(sheetName);
+      if (!candSheet) continue;
+      let candidateHeaders = [];
+      candSheet.eachRow((row, rowNumber) => {
+        if (rowNumber === 1) {
+          row.eachCell((cell) => candidateHeaders.push(cell.value ? String(cell.value).trim() : ''));
+          return;
         }
+        const rowData = { 'Wahl Kennung': sheetName };
+        let hasData = false;
+        row.eachCell((cell, colNumber) => {
+          const header = candidateHeaders[colNumber - 1];
+          if (header) {
+            let value = cell.value;
+            if (value && typeof value === 'object' && value.result !== undefined) {
+              value = value.result;
+            }
+            rowData[header] = value === null || value === undefined ? '' : String(value);
+            if (String(value).trim() !== '') hasData = true;
+          }
+        });
+        if (hasData) candidatesRaw.push(rowData);
       });
-      if (hasData) {
-        candidatesRaw.push(rowData);
-      }
-    });
+    }
 
     const candidates = candidatesRaw.map((row) => ({
       ...row,

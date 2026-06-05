@@ -6,7 +6,7 @@ import { z } from 'zod';
  */
 export const EXPECTED_SHEET_NAMES = {
   INFO: 'Wahlen',
-  CANDIDATES: 'Listenvorlage',
+  // Kandidatenblätter sind nach der Wahlkennung benannt — kein fixer Name mehr
 };
 
 export const ELECTION_TYPE_MAPPING = {

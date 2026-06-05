@@ -125,9 +125,9 @@ export const validateElectionExcel = async (file) => {
         sheet = 'Wahlen';
         field = path[2] || null;
       }
-      // Map errors in 'candidates' array to the 'Listenvorlage' sheet
+      // Map errors in 'candidates' array to the jeweiligen Kandidatenblatt
       else if (path[0] === 'candidates') {
-        sheet = 'Listenvorlage';
+        sheet = 'Kandidatenblatt';
         // Calculate the actual Excel row number (Index + Header offset)
         if (path.length > 1 && typeof path[1] === 'number') {
           row = path[1] + 2;

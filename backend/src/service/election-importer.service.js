@@ -43,14 +43,16 @@ export const importElectionData = async (filePath) => {
     }
 
     const startDateStr = electionSheet.getCell('D3').value;
-    const endDateStr = electionSheet.getCell('D4').value;
+    const startTimeStr = electionSheet.getCell('F3').value;
+    const endDateStr   = electionSheet.getCell('D4').value;
+    const endTimeStr   = electionSheet.getCell('F4').value;
 
     if (!startDateStr || !endDateStr) {
-      throw new Error('Start or end date missing expected in D3 and D4.');
+      throw new Error('Start- oder Enddatum fehlt (erwartet in D3 und D4).');
     }
 
-    const startDate = parseDate(startDateStr);
-    const endDate = parseDate(endDateStr);
+    const startDate = parseLocalDateTime(startDateStr, startTimeStr);
+    const endDate   = parseLocalDateTime(endDateStr, endTimeStr);
 
     logger.info(`Importing elections for period ${startDate} → ${endDate}`);
 
@@ -141,233 +143,98 @@ export const importElectionData = async (filePath) => {
       importedCount++;
     }
 
-    // Listenvorlage per Name suchen (robuster als Index) — Fallback auf Index 1
-    const candidateSheet =
-      workbook.worksheets.find((s) => s.name === 'Listenvorlage') ?? workbook.worksheets[1];
+    // Sheets 2..N: Blattname = Wahlkennung
+    // Kandidatenblätter: A=Nr, B=UID, C=Schlüsselwort, D=Vorname, E=Nachname, F=Mtr-Nr, G=Fakultät
+    // Urabstimmungsblätter: A=Nr, B=Name, C=Description
+    for (const sheet of workbook.worksheets.slice(1)) {
+      const electionRef = sheet.name;
+      const electionData = electionIdMap.get(electionRef);
 
-    if (workbook.worksheets.length > 1) {
-      if (!candidateSheet) {
-        logger.warn('Kandidatenblatt "Listenvorlage" nicht gefunden. Überspringe Kandidatenimport.');
-      } else {
-        logger.info(`Verarbeite Kandidaten aus Blatt "${candidateSheet.name}"...`);
-
-        let candRow = 2;
-        let candCount = 0;
-
-        while (candidateSheet.getCell(`A${candRow}`).value) {
-          const electionRef = candidateSheet.getCell(`A${candRow}`).value?.toString();
-          const electionData = electionIdMap.get(electionRef);
-
-          if (electionData) {
-            const electionUUID = electionData.id;
-            const currentElectionType = electionData.type;
-
-            // Spalten-Mapping: A=WahlKennung, B=Nr, C=uid, D=Liste/Schlüsselwort, E=Vorname, F=Nachname, G=Mtr-Nr, H=Fakultät, I=Studiengang
-            const listnum = candidateSheet.getCell(`B${candRow}`).value
-              ? Number(candidateSheet.getCell(`B${candRow}`).value)
-              : candCount + 1;
-
-            // UID wird aus Template gelesen (Spalte C)
-            const cell = candidateSheet.getCell(`C${candRow}`);
-            let templateUid = '';
-
-            if (cell.value !== null && cell.value !== undefined) {
-              if (typeof cell.value === 'number') {
-                // Falls Excel es als Zahl 1.2 erkennt, wandle es zu "1,2"
-                templateUid = cell.value.toString().replace('.', ',');
-              } else {
-                // Falls es bereits Text ist oder .text funktioniert, nimm das
-                templateUid = cell.text?.trim() || cell.value.toString().trim();
-              }
-            }
-
-            // Validierung: UID ist Pflichtfeld
-            if (!templateUid) {
-              throw new Error(
-                `Zeile ${candRow}: UID (Spalte C) ist leer. UID ist ein Pflichtfeld.`,
-              );
-            }
-
-            // Für Urabstimmungen: Prefix mit Wahlkennung für Eindeutigkeit
-            let uid;
-            if (currentElectionType === 'referendum') {
-              // Wahlkennung normalisieren (Kleinbuchstaben, Sonderzeichen entfernen)
-              const normalizedRef = electionRef
-                .toLowerCase()
-                .replace(/[^a-z0-9]/g, '')
-                .substring(0, MAX_UID_PREFIX_LENGTH);
-              uid = `${normalizedRef}_${templateUid}`;
-
-              // Sicherstellen, dass UID max 30 Zeichen (DB-Constraint)
-              if (uid.length > MAX_UID_LENGTH) {
-                uid = uid.substring(0, MAX_UID_LENGTH);
-              }
-            } else {
-              uid = templateUid;
-              if (uid.length > MAX_UID_LENGTH) {
-                throw new Error(
-                  `Zeile ${candRow}: UID "${uid}" ist zu lang (max. ${MAX_UID_LENGTH} Zeichen).`,
-                );
-              }
-            }
-
-            const keywords = candidateSheet.getCell(`D${candRow}`).value?.toString() || '';
-            const firstname = candidateSheet.getCell(`E${candRow}`).value?.toString() || '';
-            const lastname = candidateSheet.getCell(`F${candRow}`).value?.toString() || '';
-            const matrNr = candidateSheet.getCell(`G${candRow}`).value?.toString() || '';
-            const faculty = candidateSheet.getCell(`H${candRow}`).value?.toString() || '';
-
-            const notes = '';
-
-            // const admittedRaw = candidateSheet.getCell(`D${candRow}`).value;
-            //const isAdmitted =
-            //admittedRaw === false ||
-            //String(admittedRaw).toLowerCase() === 'false' ||
-            //String(admittedRaw).toLowerCase() === 'nein'
-            //? false
-            //: true;
-            const isAdmitted = true;
-
-            // Für normale Wahlen: Vorname oder Nachname erforderlich
-            // Für Urabstimmungen: Können leer sein
-            if (firstname || lastname || currentElectionType === 'referendum') {
-              // ON CONFLICT: gleiche UID = gleiche Person → Stammdaten aktualisieren,
-              // keinen zweiten Eintrag anlegen (wahlübergreifende Deduplizierung)
-              const insertCandidateQuery = `
-                INSERT INTO candidates
-                (uid, lastname, firstname, mtknr, faculty, keyword, notes, approved)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-                ON CONFLICT (uid) DO UPDATE SET
-                  lastname  = EXCLUDED.lastname,
-                  firstname = EXCLUDED.firstname,
-                  mtknr     = EXCLUDED.mtknr,
-                  faculty   = EXCLUDED.faculty,
-                  keyword   = EXCLUDED.keyword,
-                  notes     = EXCLUDED.notes,
-                  approved  = EXCLUDED.approved
-                RETURNING id
-              `;
-
-              const candRes = await db.query(insertCandidateQuery, [
-                uid,
-                lastname || null,
-                firstname || null,
-                matrNr,
-                faculty,
-                keywords,
-                notes,
-                isAdmitted,
-              ]);
-
-              const newCandidateId = candRes.rows[0].id;
-
-              const linkQuery = `
-                INSERT INTO electioncandidates (electionId, candidateId, listnum)
-                VALUES ($1, $2, $3)
-                ON CONFLICT (electionId, candidateId) DO NOTHING
-              `;
-
-              await db.query(linkQuery, [electionUUID, newCandidateId, listnum]);
-              candCount++;
-            }
-          } else {
-            if (electionRef) {
-              logger.warn(`Zeile ${candRow}: Unbekannte Wahl-Referenz "${electionRef}".`);
-            }
-          }
-          candRow++;
-        }
-        logger.info(`${candCount} Kandidaten importiert und verknüpft.`);
+      if (!electionData) {
+        logger.warn(`Blatt "${electionRef}" keiner bekannten Wahl zugeordnet — übersprungen.`);
+        continue;
       }
-    }
 
-    // Referendum-Optionen aus Sheet "OptionsUrabstimmung" importieren
-    const referendumElections = [...electionIdMap.entries()].filter(
-      ([, data]) => data.type === 'referendum',
-    );
+      const electionUUID = electionData.id;
+      const currentElectionType = electionData.type;
+      logger.info(`Verarbeite Blatt "${electionRef}" (${currentElectionType})...`);
 
-    if (referendumElections.length > 0) {
-      const optionsSheet = workbook.worksheets.find((ws) => ws.name === 'OptionsUrabstimmung');
+      let row = 2;
+      let count = 0;
 
-      if (optionsSheet) {
-        logger.info(`Verarbeite Referendum-Optionen aus Blatt "${optionsSheet.name}"...`);
+      if (currentElectionType === 'referendum') {
+        // Urabstimmung: A=Nr, B=Name, C=Description
+        while (sheet.getCell(`A${row}`).value) {
+          const nr = Number(sheet.getCell(`A${row}`).value);
+          const name = sheet.getCell(`B${row}`).value?.toString().trim() || '';
+          const description = sheet.getCell(`C${row}`).value?.toString() || '';
 
-        let optRow = 2; // Header in Zeile 1, Daten ab Zeile 2
-        let optCount = 0;
+          if (!name) throw new Error(`Blatt "${electionRef}" Zeile ${row}: Name (Spalte B) ist leer.`);
+          if (name.length > MAX_OPTION_NAME_LENGTH) throw new Error(`Blatt "${electionRef}" Zeile ${row}: Name zu lang (max. ${MAX_OPTION_NAME_LENGTH}).`);
+          if (description.length > MAX_OPTION_DESCRIPTION_LENGTH) throw new Error(`Blatt "${electionRef}" Zeile ${row}: Description zu lang.`);
+          if (!Number.isInteger(nr) || nr < 1) throw new Error(`Blatt "${electionRef}" Zeile ${row}: Nr muss positive Ganzzahl sein.`);
 
-        while (optionsSheet.getCell(`A${optRow}`).value) {
-          const wahlkennung = optionsSheet.getCell(`A${optRow}`).value?.toString();
-          const electionData = electionIdMap.get(wahlkennung);
+          const dupCheck = await db.query(
+            'SELECT id FROM candidate_options WHERE identifier = $1 AND nr = $2 LIMIT 1',
+            [electionUUID, nr],
+          );
+          if (dupCheck.rows.length > 0) throw new Error(`Blatt "${electionRef}" Zeile ${row}: Option Nr. ${nr} existiert bereits.`);
 
-          if (electionData && electionData.type === 'referendum') {
-            const electionUUID = electionData.id;
-            const nr = Number(optionsSheet.getCell(`B${optRow}`).value);
-            const name = optionsSheet.getCell(`C${optRow}`).value?.toString().trim() || '';
-            const description = optionsSheet.getCell(`D${optRow}`).value?.toString() || '';
+          await db.query(
+            'INSERT INTO candidate_options (identifier, nr, name, description) VALUES ($1, $2, $3, $4)',
+            [electionUUID, nr, name, description || null],
+          );
+          count++;
+          row++;
+        }
+        logger.info(`${count} Referendum-Optionen für "${electionRef}" importiert.`);
+      } else {
+        // Normale Wahl: A=Nr, B=UID, C=Schlüsselwort, D=Vorname, E=Nachname, F=Mtr-Nr, G=Fakultät
+        while (sheet.getCell(`A${row}`).value) {
+          const listnum = Number(sheet.getCell(`A${row}`).value) || (count + 1);
 
-            // Validierung
-            if (!name) {
-              throw new Error(`OptionsUrabstimmung Zeile ${optRow}: Name (Spalte C) ist leer.`);
-            }
+          const uidCell = sheet.getCell(`B${row}`);
+          let templateUid = '';
+          if (uidCell.value !== null && uidCell.value !== undefined) {
+            templateUid = typeof uidCell.value === 'number'
+              ? uidCell.value.toString().replace('.', ',')
+              : (uidCell.text?.trim() || uidCell.value.toString().trim());
+          }
+          if (!templateUid) throw new Error(`Blatt "${electionRef}" Zeile ${row}: UID (Spalte B) ist leer.`);
+          if (templateUid.length > MAX_UID_LENGTH) throw new Error(`Blatt "${electionRef}" Zeile ${row}: UID zu lang (max. ${MAX_UID_LENGTH}).`);
 
-            if (name.length > MAX_OPTION_NAME_LENGTH) {
-              throw new Error(
-                `OptionsUrabstimmung Zeile ${optRow}: Name "${name}" ist zu lang (max. ${MAX_OPTION_NAME_LENGTH} Zeichen).`,
-              );
-            }
+          const keywords = sheet.getCell(`C${row}`).value?.toString() || '';
+          const firstname = sheet.getCell(`D${row}`).value?.toString() || '';
+          const lastname  = sheet.getCell(`E${row}`).value?.toString() || '';
+          const matrNr    = sheet.getCell(`F${row}`).value?.toString() || '';
+          const faculty   = sheet.getCell(`G${row}`).value?.toString() || '';
 
-            if (description.length > MAX_OPTION_DESCRIPTION_LENGTH) {
-              throw new Error(
-                `OptionsUrabstimmung Zeile ${optRow}: Description ist zu lang (max. ${MAX_OPTION_DESCRIPTION_LENGTH} Zeichen).`,
-              );
-            }
-
-            if (!Number.isInteger(nr) || nr < 1) {
-              throw new Error(
-                `OptionsUrabstimmung Zeile ${optRow}: Nr (Spalte B) muss eine positive Ganzzahl sein.`,
-              );
-            }
-
-            // Duplikat-Check: Prüfe ob Option mit gleicher Nr für diese Wahl bereits existiert
-            const duplicateOptionCheck = await db.query(
-              `SELECT id FROM candidate_options WHERE identifier = $1 AND nr = $2 LIMIT 1`,
-              [electionUUID, nr],
-            );
-
-            if (duplicateOptionCheck.rows.length > 0) {
-              throw new Error(
-                `OptionsUrabstimmung Zeile ${optRow}: Option Nr. ${nr} für Wahl "${wahlkennung}" existiert bereits.`,
-              );
-            }
-
-            // Insert in candidate_options
-            const insertOptionQuery = `
-              INSERT INTO candidate_options (identifier, nr, name, description)
-              VALUES ($1, $2, $3, $4)
-            `;
-
-            await db.query(insertOptionQuery, [electionUUID, nr, name, description || null]);
-
-            optCount++;
-            logger.debug(`Option importiert: ${wahlkennung} - Nr ${nr}: ${name}`);
-          } else if (wahlkennung && !electionData) {
-            logger.warn(
-              `OptionsUrabstimmung Zeile ${optRow}: Unbekannte Wahl-Referenz "${wahlkennung}".`,
-            );
-          } else if (electionData && electionData.type !== 'referendum') {
-            logger.warn(
-              `OptionsUrabstimmung Zeile ${optRow}: Wahl "${wahlkennung}" ist keine Urabstimmung - Option wird übersprungen.`,
-            );
+          if (!firstname && !lastname) {
+            logger.warn(`Blatt "${electionRef}" Zeile ${row}: Weder Vorname noch Nachname — übersprungen.`);
+            row++;
+            continue;
           }
 
-          optRow++;
-        }
+          const candRes = await db.query(`
+            INSERT INTO candidates (uid, lastname, firstname, mtknr, faculty, keyword, notes, approved)
+            VALUES ($1, $2, $3, $4, $5, $6, '', true)
+            ON CONFLICT (uid) DO UPDATE SET
+              lastname = EXCLUDED.lastname, firstname = EXCLUDED.firstname,
+              mtknr = EXCLUDED.mtknr, faculty = EXCLUDED.faculty, keyword = EXCLUDED.keyword
+            RETURNING id`,
+            [templateUid, lastname || null, firstname || null, matrNr, faculty, keywords],
+          );
 
-        logger.info(`${optCount} Referendum-Optionen importiert.`);
-      } else {
-        logger.warn(
-          'Sheet "OptionsUrabstimmung" nicht gefunden, aber Urabstimmungen definiert. Optionen wurden nicht importiert.',
-        );
+          await db.query(`
+            INSERT INTO electioncandidates (electionId, candidateId, listnum)
+            VALUES ($1, $2, $3)
+            ON CONFLICT (electionId, candidateId) DO NOTHING`,
+            [electionUUID, candRes.rows[0].id, listnum],
+          );
+          count++;
+          row++;
+        }
+        logger.info(`${count} Kandidaten für "${electionRef}" importiert.`);
       }
     }
 
@@ -389,18 +256,45 @@ export const importElectionData = async (filePath) => {
 };
 
 /**
- * Parses a date from various formats.
- * @param {*} value
- * @returns
+ * Parst Datum und optionale Uhrzeit als lokale Zeit (Europe/Berlin) und gibt
+ * einen ISO-String mit korrektem UTC-Offset zurück.
+ * Vermeidet den klassischen Timezone-Bug: new Date('2026-06-10') → UTC-Mitternacht
+ * → landet als 02:00 MESZ in der DB.
+ *
+ * @param {Date|string|number} dateVal - Datumswert aus Excel (D3/D4)
+ * @param {string|null} timeVal       - Uhrzeit als "HH:MM" aus Excel (F3/F4), optional
+ * @returns {string} ISO-Timestamp für PostgreSQL TIMESTAMPTZ
  */
-const parseDate = (value) => {
-  if (value instanceof Date) {
-    return value;
+const parseLocalDateTime = (dateVal, timeVal) => {
+  // Datum normalisieren
+  let dateStr;
+  if (dateVal instanceof Date) {
+    // ExcelJS liefert Date-Objekte in UTC — wir wollen nur das lokale Datum
+    const y = dateVal.getUTCFullYear();
+    const m = String(dateVal.getUTCMonth() + 1).padStart(2, '0');
+    const d = String(dateVal.getUTCDate()).padStart(2, '0');
+    dateStr = `${y}-${m}-${d}`;
+  } else {
+    const s = String(dateVal).trim();
+    // Deutsches Format TT.MM.JJJJ
+    const dm = s.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
+    if (dm) {
+      dateStr = `${dm[3]}-${dm[2].padStart(2,'0')}-${dm[1].padStart(2,'0')}`;
+    } else {
+      dateStr = s; // ISO oder anderes Format, direkt verwenden
+    }
   }
-  const s = String(value).trim();
-  const m = s.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
-  if (m) {
-    return new Date(`${m[3]}-${m[2]}-${m[1]}`);
+
+  // Uhrzeit normalisieren (Standard: 00:00)
+  let timeStr = '00:00';
+  if (timeVal) {
+    const t = String(timeVal).trim();
+    if (/^\d{1,2}:\d{2}$/.test(t)) {
+      timeStr = t.padStart(5, '0');
+    }
   }
-  return new Date(s);
+
+  // Als lokale Berlin-Zeit interpretieren und an PostgreSQL übergeben
+  // PostgreSQL mit TIMESTAMPTZ + gesetzter Zeitzone interpretiert das korrekt
+  return `${dateStr}T${timeStr}:00`;
 };

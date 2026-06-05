@@ -30,9 +30,9 @@ const ROW_HEADER = 7;
 const ROW_START_DATA = 8;
 const VALIDATION_MAX_ROW = 100;
 const DEFAULT_DURATION_DAYS = 14;
-const WAHLEN_COL_COUNT = 8;
-const LISTEN_COL_COUNT = 9;
-const URABSTIMMUNG_COL_COUNT = 4;
+const WAHLEN_COL_COUNT = 9;
+const LISTEN_COL_COUNT = 8;       // ohne "Wahl Kennung" (= Blattname)
+const URABSTIMMUNG_COL_COUNT = 3; // Nr, Name, Description (kein Wahlkennung-Prefix)
 
 /**
  * INTERNE HKA STANDARDS
@@ -220,6 +220,63 @@ const loadAllPresets = async () => {
 };
 
 /**
+ * Fügt ein Kandidatenblatt für eine Wahl zum Workbook hinzu.
+ * Blattname = Wahlkennung. Spalten: Nr, UID, Liste/Schlüsselwort,
+ * Vorname, Nachname, Mtr-Nr., Fakultät, Studiengang.
+ * Bei Urabstimmungen: Nr, Name, Description.
+ * @param {ExcelJS.Workbook} workbook
+ * @param {string} sheetName - Wahlkennung (= Blattname)
+ * @param {object} config - Preset-Konfiguration
+ * @param {object} defaultAlignment
+ */
+const addCandidateSheet = (workbook, sheetName, config, defaultAlignment) => {
+  const isReferendum = config.type === 'Urabstimmung';
+  const sheet = workbook.addWorksheet(sheetName);
+
+  if (isReferendum) {
+    sheet.columns = [
+      { width: 8,  style: { alignment: defaultAlignment } }, // A: Nr
+      { width: 25, style: { alignment: defaultAlignment } }, // B: Name
+      { width: 50, style: { alignment: defaultAlignment } }, // C: Description
+    ];
+    sheet.getRow(1).values = ['Nr', 'Name', 'Description'];
+    sheet.getRow(2).values = [1, 'Ja', 'Zustimmung zur Vorlage'];
+    sheet.getRow(3).values = [2, 'Nein', 'Ablehnung der Vorlage'];
+  } else {
+    sheet.columns = [
+      { width: 8,  style: { alignment: defaultAlignment } }, // A: Nr
+      { width: 15, style: { alignment: defaultAlignment } }, // B: UID
+      { width: 25, style: { alignment: defaultAlignment } }, // C: Liste / Schlüsselwort
+      { width: 15, style: { alignment: defaultAlignment } }, // D: Vorname
+      { width: 15, style: { alignment: defaultAlignment } }, // E: Nachname
+      { width: 12, style: { alignment: defaultAlignment } }, // F: Mtr-Nr.
+      { width: 12, style: { alignment: defaultAlignment } }, // G: Fakultät
+      { width: 18, style: { alignment: defaultAlignment } }, // H: Studiengang
+    ];
+    sheet.getRow(1).values = ['Nr', 'UID', 'Liste / Schlüsselwort', 'Vorname', 'Nachname', 'Mtr-Nr.', 'Fakultät', 'Studiengang'];
+    sheet.getRow(2).values = [
+      1, 'kand-001',
+      config.listen === 1 ? 'Liste A' : 'Einzelkandidat',
+      'Max', 'Mustermann', '123456', 'IWI', 'Informatik',
+    ];
+  }
+
+  sheet.getRow(1).eachCell((c) => {
+    c.font = { bold: true, color: { argb: FONT_WHITE } };
+    c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: HKA_BLACK } };
+    c.alignment = { horizontal: 'center', vertical: 'middle' };
+  });
+
+  const colCount = isReferendum ? URABSTIMMUNG_COL_COUNT : LISTEN_COL_COUNT;
+  for (let i = 2; i <= VALIDATION_MAX_ROW; i++) {
+    const row = sheet.getRow(i);
+    for (let col = 1; col <= colCount; col++) {
+      row.getCell(col).style = { alignment: defaultAlignment, numFmt: '@' };
+    }
+  }
+};
+
+/**
  * Generiert das Wahl-Template im HKA-Design.
  * Die Struktur entspricht exakt dem vom Importer erwarteten Schema.
  * @param {string} presetKey - The preset key to use for template generation
@@ -244,10 +301,11 @@ export const generateElectionTemplate = async (presetKey = 'generic') => {
     { width: 17, style: { alignment: defaultAlignment } }, // F: max. Kum.
     { width: 25, style: { alignment: defaultAlignment } }, // G: Wahltyp
     { width: 25, style: { alignment: defaultAlignment } }, // H: Zählverfahren
+    { width: 15, style: { alignment: defaultAlignment } }, // I: Freie Plätze
   ];
 
   // Header Styling
-  sheet.mergeCells('A1:H2');
+  sheet.mergeCells('A1:I2');
   const title = sheet.getCell('A1');
   title.value = 'HKA E-Voting - Wahlkonfiguration';
   Object.assign(title, {
@@ -257,23 +315,53 @@ export const generateElectionTemplate = async (presetKey = 'generic') => {
   });
 
   // Zeit-Meta
+  // Spalten A-H: Wahlzeilen (8 Spalten) → I für Uhrzeit reservieren
+  // Zeitraum-Meta: Datum in D, Uhrzeit in E
   const cellB3 = sheet.getCell('B3');
   cellB3.value = 'Wahlzeitraum von';
   cellB3.alignment = { horizontal: 'right', vertical: 'middle' };
 
+  const cellC3 = sheet.getCell('C3');
+  cellC3.value = 'Datum:';
+  cellC3.alignment = { horizontal: 'right', vertical: 'middle' };
+
   const cellD3 = sheet.getCell('D3');
   cellD3.value = new Date().toLocaleDateString('de-DE');
   cellD3.alignment = { horizontal: 'left', vertical: 'middle' };
+  cellD3.numFmt = '@'; // als Text, nicht als Excel-Datum
+
+  const cellE3 = sheet.getCell('E3');
+  cellE3.value = 'Uhrzeit (HH:MM):';
+  cellE3.alignment = { horizontal: 'right', vertical: 'middle' };
+
+  const cellF3 = sheet.getCell('F3');
+  cellF3.value = '08:00';
+  cellF3.alignment = { horizontal: 'left', vertical: 'middle' };
+  cellF3.numFmt = '@';
 
   const cellB4 = sheet.getCell('B4');
   cellB4.value = 'bis';
   cellB4.alignment = { horizontal: 'right', vertical: 'middle' };
+
+  const cellC4 = sheet.getCell('C4');
+  cellC4.value = 'Datum:';
+  cellC4.alignment = { horizontal: 'right', vertical: 'middle' };
 
   const future = new Date();
   future.setDate(future.getDate() + DEFAULT_DURATION_DAYS);
   const cellD4 = sheet.getCell('D4');
   cellD4.value = future.toLocaleDateString('de-DE');
   cellD4.alignment = { horizontal: 'left', vertical: 'middle' };
+  cellD4.numFmt = '@';
+
+  const cellE4 = sheet.getCell('E4');
+  cellE4.value = 'Uhrzeit (HH:MM):';
+  cellE4.alignment = { horizontal: 'right', vertical: 'middle' };
+
+  const cellF4 = sheet.getCell('F4');
+  cellF4.value = '18:00';
+  cellF4.alignment = { horizontal: 'left', vertical: 'middle' };
+  cellF4.numFmt = '@';
 
   // Spalten-Header (Zeile 7) - EXAKTE NAMEN FÜR IMPORTER
   const headerTitles = [
@@ -285,6 +373,7 @@ export const generateElectionTemplate = async (presetKey = 'generic') => {
     'max. Kum.',
     'Wahltyp',
     'Zählverfahren',
+    'Freie Plätze',
   ];
   const hRow = sheet.getRow(ROW_HEADER);
   hRow.values = headerTitles;
@@ -305,6 +394,7 @@ export const generateElectionTemplate = async (presetKey = 'generic') => {
     config.kum ?? '',
     config.type ?? '',
     config.method ?? '',
+    0,
   ];
   // Zentriere alle Zellen in der Datenzeile
   dataRow.eachCell((cell) => {
@@ -328,91 +418,10 @@ export const generateElectionTemplate = async (presetKey = 'generic') => {
     }
   }
 
-  // --- BLATT 2: LISTENVORLAGE (9 SPALTEN) ---
-  const candSheet = workbook.addWorksheet('Listenvorlage');
-  candSheet.columns = [
-    { width: 18, style: { alignment: defaultAlignment } }, // Wahl Kennung
-    { width: 8, style: { alignment: defaultAlignment } }, // Nr
-    { width: 15, style: { alignment: defaultAlignment } }, // UID
-    { width: 25, style: { alignment: defaultAlignment } }, // Liste / Schlüsselwort
-    { width: 15, style: { alignment: defaultAlignment } }, // Vorname
-    { width: 15, style: { alignment: defaultAlignment } }, // Nachname
-    { width: 12, style: { alignment: defaultAlignment } }, // Mtr-Nr.
-    { width: 12, style: { alignment: defaultAlignment } }, // Fakultät
-    { width: 18, style: { alignment: defaultAlignment } }, // Studiengang
-  ];
-  const candHeaders = [
-    'Wahl Kennung',
-    'Nr',
-    'UID',
-    'Liste / Schlüsselwort',
-    'Vorname',
-    'Nachname',
-    'Mtr-Nr.',
-    'Fakultät',
-    'Studiengang',
-  ];
-  candSheet.getRow(1).values = candHeaders;
-  candSheet.getRow(1).eachCell((c) => {
-    c.font = { bold: true, color: { argb: FONT_WHITE } };
-    c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: HKA_BLACK } };
-    c.alignment = { horizontal: 'center', vertical: 'middle' };
-  });
-
-  // Beispiel-Kandidat
-  const candDataRow = candSheet.getRow(2);
-  candDataRow.values = [
-    presetKey === 'generic' ? 'meine_wahl_01' : presetKey,
-    1,
-    'kand-001',
-    config.listen === 1 ? 'Liste A' : 'Einzelkandidat',
-    'Max',
-    'Mustermann',
-    '123456',
-    'IWI',
-    'Informatik',
-  ];
-  // Zentriere alle Zellen in der Beispiel-Kandidatenzeile
-  candDataRow.eachCell((cell) => {
-    cell.alignment = { horizontal: 'center', vertical: 'middle' };
-  });
-  // Zentriere alle Zellen für zukünftige Einträge (Zeilen 2-100)
-  for (let i = 2; i <= VALIDATION_MAX_ROW; i++) {
-    const row = candSheet.getRow(i);
-    for (let col = 1; col <= LISTEN_COL_COUNT; col++) {
-      const cell = row.getCell(col);
-      cell.style = {
-        alignment: defaultAlignment,
-        numFmt: '@',
-      };
-    }
-  }
-
-  // --- BLATT 3: OPTIONSURABSTIMMUNG (WICHTIG FÜR SCHEMA) ---
-  const optSheet = workbook.addWorksheet('OptionsUrabstimmung');
-  optSheet.columns = [
-    { width: 18, style: { alignment: defaultAlignment } }, // Wahlkennung
-    { width: 8, style: { alignment: defaultAlignment } }, // Nr
-    { width: 20, style: { alignment: defaultAlignment } }, // Name
-    { width: 35, style: { alignment: defaultAlignment } }, // Description
-  ];
-  const optHeaderRow = optSheet.getRow(1);
-  optHeaderRow.values = ['Wahlkennung', 'Nr', 'Name', 'Description'];
-  optHeaderRow.eachCell((cell) => {
-    cell.font = { bold: true };
-    cell.alignment = { horizontal: 'center', vertical: 'middle' };
-  });
-  // Zentriere alle Zellen für zukünftige Einträge (Zeilen 2-100)
-  for (let i = 2; i <= VALIDATION_MAX_ROW; i++) {
-    const row = optSheet.getRow(i);
-    for (let col = 1; col <= URABSTIMMUNG_COL_COUNT; col++) {
-      const cell = row.getCell(col);
-      cell.style = {
-        alignment: defaultAlignment,
-        numFmt: '@',
-      };
-    }
-  }
+  // --- BLATT 2..N: Ein Kandidatenblatt pro Wahl (Blattname = Kennung) ---
+  // Im Template wird ein Beispielblatt für die erste Wahl generiert.
+  const exampleKey = presetKey === 'generic' ? 'meine_wahl_01' : presetKey;
+  addCandidateSheet(workbook, exampleKey, config, defaultAlignment);
 
   return workbook;
 };
