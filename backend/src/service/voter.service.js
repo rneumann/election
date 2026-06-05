@@ -23,6 +23,10 @@ export const getElections = async (status, voterId, alreadyVoted) => {
     case 'future':
       conditions.push('start > now()');
       break;
+    case 'test':
+      // Aktive Testwahlen: test_election_active=true, noch nicht beendet
+      conditions.push('test_election_active = true AND "end" >= now()');
+      break;
   }
 
   if (alreadyVoted === true) {
