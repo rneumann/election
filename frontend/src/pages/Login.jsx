@@ -22,6 +22,7 @@ const LoginContent = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [authProvider, setAuthProvider] = useState(undefined);
+  const [simulateMode, setSimulateMode] = useState(false);
   const [loading, setLoading] = useState(false);
   const [isAccessibilityMenuOpen, setAccessibilityMenuOpen] = useState(false);
   const usernameRef = useRef(null);
@@ -55,6 +56,15 @@ const LoginContent = () => {
    */
   useEffect(() => {
     usernameRef.current?.focus();
+  }, []);
+
+  /**
+   * Simulate-Mode-Status vom Backend abrufen.
+   */
+  useEffect(() => {
+    api.get('/simulate/status')
+      .then((res) => setSimulateMode(res.data?.simulateMode === true))
+      .catch(() => {});
   }, []);
 
   /**
@@ -159,6 +169,15 @@ const LoginContent = () => {
       </div>
 
       <div className="login-content bg-white dark:bg-gray-800 p-6 sm:p-8 rounded-xl shadow-2xl w-full max-w-md border border-gray-100 dark:border-gray-700 transition-colors">
+        {/* Simulate-Mode Warnung */}
+        {simulateMode && (
+          <div className="mb-4 rounded-lg bg-yellow-100 border border-yellow-400 px-4 py-3 text-yellow-800 text-sm font-semibold flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+            </svg>
+            <span>⚠ SIMULATE MODE AKTIV — keine Passwort-Validierung. Nicht für den Produktivbetrieb!</span>
+          </div>
+        )}
         {/* Logo/Header */}
         <div className="text-center mb-6 sm:mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-brand-primary rounded-full mb-4 shadow-lg">
