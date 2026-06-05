@@ -471,63 +471,53 @@ export const generateElectionTemplateOds = async (presetKey = 'generic') => {
   const future = new Date();
   future.setDate(future.getDate() + DEFAULT_DURATION_DAYS);
   const endStr = future.toLocaleDateString('de-DE');
+  const exampleKey = presetKey === 'generic' ? 'meine_wahl_01' : presetKey;
+  const isReferendum = config.type === 'Urabstimmung';
 
   // Blatt 1: Wahlen
-  const wahlenHeaders = [
-    'Kennung',
-    'Info',
-    'Listen',
-    'Plätze',
-    'Stimmen pro Zettel',
-    'max. Kum.',
-    'Wahltyp',
-    'Zählverfahren',
-    'Freie Plätze',
-  ];
-  const wahlenMetaRow = ['Wahlzeitraum von', '', startStr, 'bis', '', endStr, '', '', ''];
-  const wahlenDataRow = [
-    presetKey === 'generic' ? 'meine_wahl_01' : presetKey,
-    config.info,
-    config.listen ?? 1,
-    config.seats ?? '',
-    config.votes ?? '',
-    config.kum ?? '',
-    config.type ?? '',
-    config.method ?? '',
-    config.freeSlots ?? 0,
-  ];
+  // Zeilen-Struktur entspricht generateElectionTemplate:
+  // Zeile 1: Meta "Wahlzeitraum von" | Datum: | <Datum> | Uhrzeit: | <Zeit>
+  // Zeile 2: "bis"                   | Datum: | <Datum> | Uhrzeit: | <Zeit>
+  // Zeile 3: (leer — Abstand)
+  // Zeile 4: Header
+  // Zeile 5: Beispieldaten
+  // Metadaten als erste zwei Datenzeilen (nach dem Header) — ODS-Reader
+  // nimmt die erste nicht-leere Zeile als Header, daher dürfen Meta-Infos
+  // NICHT vor dem Header stehen.
+  // Kodierung: Kennung='Wahlzeitraum von', Listen=Datum, 'Stimmen pro Zettel'=Zeit
+  //            Kennung='bis',              Listen=Datum, 'Stimmen pro Zettel'=Zeit
+  const wahlenSheet = {
+    name: 'Wahlen',
+    headers: ['Kennung', 'Info', 'Listen', 'Plätze', 'Stimmen pro Zettel', 'max. Kum.', 'Wahltyp', 'Zählverfahren', 'Freie Plätze'],
+    rows: [
+      ['Wahlzeitraum von', 'Datum:', startStr, 'Uhrzeit (HH:MM):', '08:00', '', '', '', ''],
+      ['bis',              'Datum:', endStr,   'Uhrzeit (HH:MM):', '18:00', '', '', '', ''],
+      [
+        exampleKey,
+        config.info,
+        config.listen ?? 1,
+        config.seats ?? '',
+        config.votes ?? '',
+        config.kum ?? '',
+        config.type ?? '',
+        config.method ?? '',
+        0,
+      ],
+    ],
+  };
 
-  // Blatt 2: Listenvorlage
-  const listenHeaders = [
-    'Wahl Kennung',
-    'Nr',
-    'UID',
-    'Liste / Schlüsselwort',
-    'Vorname',
-    'Nachname',
-    'Mtr-Nr.',
-    'Fakultät',
-    'Studiengang',
-  ];
-  const listenDataRow = [
-    presetKey === 'generic' ? 'meine_wahl_01' : presetKey,
-    1,
-    'kand-001',
-    config.listen === 1 ? 'Liste A' : 'Einzelkandidat',
-    'Max',
-    'Mustermann',
-    '123456',
-    'IWI',
-    'Informatik',
-  ];
+  // Blatt 2..N: ein Kandidatenblatt pro Wahl (Blattname = Wahlkennung)
+  const candHeaders = isReferendum
+    ? ['Nr', 'Name', 'Description']
+    : ['Nr', 'UID', 'Liste / Schlüsselwort', 'Vorname', 'Nachname', 'Mtr-Nr.', 'Fakultät', 'Studiengang'];
 
-  // Blatt 3: OptionsUrabstimmung
-  const optHeaders = ['Wahlkennung', 'Nr', 'Name', 'Description'];
+  const candDataRow = isReferendum
+    ? [1, 'Ja', 'Zustimmung zur Vorlage']
+    : [1, 'kand-001', config.listen === 1 ? 'Liste A' : 'Einzelkandidat', 'Max', 'Mustermann', '123456', 'IWI', 'Informatik'];
 
   return [
-    { name: 'Wahlen', headers: wahlenHeaders, rows: [wahlenMetaRow, wahlenDataRow] },
-    { name: 'Listenvorlage', headers: listenHeaders, rows: [listenDataRow] },
-    { name: 'OptionsUrabstimmung', headers: optHeaders, rows: [] },
+    wahlenSheet,
+    { name: exampleKey, headers: candHeaders, rows: [candDataRow] },
   ];
 };
 

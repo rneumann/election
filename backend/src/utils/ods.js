@@ -154,10 +154,12 @@ const buildCell = (value) => {
 const buildRow = (cells) =>
   `<table:table-row>${cells.map(buildCell).join('')}</table:table-row>`;
 
-const buildSheet = ({ name, headers, rows }) => {
+const buildSheet = ({ name, headers, rows, metaRows }) => {
+  // optionale Meta-Zeilen vor dem Header (z.B. Wahlzeitraum)
+  const metaPart = metaRows ? metaRows.map(buildRow).join('') : '';
   const headerRow = buildRow(headers);
   const dataRows = rows.map(buildRow).join('');
-  return `<table:table table:name="${escapeXml(name)}">${headerRow}${dataRows}</table:table>`;
+  return `<table:table table:name="${escapeXml(name)}">${metaPart}${headerRow}${dataRows}</table:table>`;
 };
 
 const buildContentXml = (sheets) => `<?xml version="1.0" encoding="UTF-8"?>

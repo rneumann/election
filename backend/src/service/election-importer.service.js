@@ -293,34 +293,32 @@ const importElectionDataOds = async (filePath) => {
       throw new Error('ODS-Datei: Blatt "Wahlen" nicht gefunden');
     }
 
-    // Start- und Enddatum aus den Zeilen vor der Header-Zeile lesen.
-    // Das Template schreibt sie als erste Datenzeile nach den Headers,
-    // readOdsSheets liefert diese Zeilen als dataRows[0] mit den Header-Namen als Keys.
-    // Die Meta-Zeile hat in der Template-Struktur:
-    //   Kennung='Wahlzeitraum von', Listen=startDatum, Plätze='bis', max. Kum.=endDatum
-    const metaRow = wahlenSheet.dataRows?.[0] ?? {};
-    const isMetaRow = String(metaRow['Kennung'] ?? '').trim() === 'Wahlzeitraum von';
-    if (!isMetaRow) {
-      throw new Error(
-        'ODS-Datei: Erste Datenzeile im Blatt "Wahlen" muss "Wahlzeitraum von" enthalten.',
-      );
+    // Meta-Zeilen: Zeile 1 = "Wahlzeitraum von | Datum: | <Datum> | Uhrzeit (HH:MM): | <Zeit>"
+    //              Zeile 2 = "bis              | Datum: | <Datum> | Uhrzeit (HH:MM): | <Zeit>"
+    // readOdsSheets liefert alle Zeilen als dataRows mit Header-Spalten-Keys.
+    // Die Spalten-Keys im Wahlen-Blatt: Kennung, Info, Listen, Plätze, Stimmen pro Zettel,
+    //   max. Kum., Wahltyp, Zählverfahren, Freie Plätze
+    // Meta-Zeile 1: Kennung='Wahlzeitraum von', Info='Datum:', Listen=<Datum>, Plätze='Uhrzeit (HH:MM):', 'Stimmen pro Zettel'=<Zeit>
+    // Meta-Zeile 2: Kennung='bis',              Info='Datum:', Listen=<Datum>, Plätze='Uhrzeit (HH:MM):', 'Stimmen pro Zettel'=<Zeit>
+    const row0 = wahlenSheet.dataRows?.[0] ?? {};
+    const row1 = wahlenSheet.dataRows?.[1] ?? {};
+    if (String(row0['Kennung'] ?? '').trim() !== 'Wahlzeitraum von') {
+      throw new Error('ODS-Datei: Erste Zeile im Blatt "Wahlen" muss "Wahlzeitraum von" enthalten.');
     }
 
-    const startDate = parseDate(metaRow['Listen']);
-    const endDate = parseDate(metaRow['max. Kum.']);
+    const startDate = parseLocalDateTime(row0['Listen'], row0['Stimmen pro Zettel']);
+    const endDate   = parseLocalDateTime(row1['Listen'], row1['Stimmen pro Zettel']);
 
-    if (!startDate || isNaN(startDate) || !endDate || isNaN(endDate)) {
-      throw new Error(
-        'ODS-Datei: Start- oder Enddatum fehlt oder ist ungültig (Spalten C und F der Meta-Zeile).',
-      );
+    if (!startDate || !endDate) {
+      throw new Error('ODS-Datei: Start- oder Enddatum fehlt (Spalte C der Meta-Zeilen).');
     }
 
     await db.query('BEGIN');
     const electionIdMap = new Map();
     let importedCount = 0;
 
-    // Wahldaten ab Index 1 lesen — Index 0 ist die Meta-Zeile
-    const electionRows = wahlenSheet.dataRows.slice(1);
+    // Wahldaten ab Index 2 lesen — Indizes 0+1 sind die Meta-Zeilen
+    const electionRows = wahlenSheet.dataRows.slice(2);
     for (const row of electionRows) {
       const identifier = row['Kennung']?.toString().trim();
       if (!identifier) continue;
@@ -369,67 +367,65 @@ const importElectionDataOds = async (filePath) => {
       importedCount++;
     }
 
-    // Kandidaten aus Blatt "Listenvorlage"
-    const listenSheet = sheets['Listenvorlage'];
-    if (listenSheet) {
-      let candCount = 0;
-      for (const row of listenSheet.dataRows ?? []) {
-        const electionRef = row['Wahl Kennung']?.toString().trim();
-        const electionData = electionIdMap.get(electionRef);
-        if (!electionData) continue;
+    // Blätter 2..N: Blattname = Wahlkennung (identisch zur XLSX-Logik)
+    for (const [sheetName, sheet] of Object.entries(sheets)) {
+      if (sheetName === 'Wahlen') continue;
+      const electionData = electionIdMap.get(sheetName);
+      if (!electionData) {
+        logger.warn(`ODS: Blatt "${sheetName}" keiner bekannten Wahl zugeordnet — übersprungen.`);
+        continue;
+      }
 
-        const listnum = row['Nr'] ? Number(row['Nr']) : candCount + 1;
-        let uid = row['UID']?.toString().trim() || '';
-        if (!uid) throw new Error(`Kandidat ohne UID in Listenvorlage (Wahl: ${electionRef})`);
-        if (electionData.type === 'referendum') {
-          const normalizedRef = electionRef.toLowerCase().replace(/[^a-z0-9]/g, '').substring(0, MAX_UID_PREFIX_LENGTH);
-          uid = `${normalizedRef}_${uid}`.substring(0, MAX_UID_LENGTH);
-        } else if (uid.length > MAX_UID_LENGTH) {
-          throw new Error(`UID "${uid}" zu lang (max. ${MAX_UID_LENGTH} Zeichen)`);
+      const electionUUID = electionData.id;
+      const currentElectionType = electionData.type;
+      let count = 0;
+
+      if (currentElectionType === 'referendum') {
+        // Urabstimmung: Nr, Name, Description
+        for (const row of sheet.dataRows ?? []) {
+          const nr = Number(row['Nr']);
+          const name = row['Name']?.toString().trim() || '';
+          if (!name || !Number.isInteger(nr) || nr < 1) continue;
+          await db.query(
+            `INSERT INTO candidate_options (identifier, nr, name, description) VALUES ($1,$2,$3,$4)`,
+            [electionUUID, nr, name, row['Description']?.toString() || null],
+          );
+          count++;
         }
+        logger.info(`ODS: ${count} Referendum-Optionen für "${sheetName}" importiert.`);
+      } else {
+        // Kandidaten: Nr, UID, Liste/Schlüsselwort, Vorname, Nachname, Mtr-Nr., Fakultät
+        for (const [i, row] of (sheet.dataRows ?? []).entries()) {
+          const listnum = row['Nr'] ? Number(row['Nr']) : i + 1;
+          let uid = row['UID']?.toString().trim() || '';
+          if (!uid) throw new Error(`ODS Blatt "${sheetName}" Zeile ${i + 2}: UID fehlt.`);
+          if (uid.length > MAX_UID_LENGTH) throw new Error(`ODS Blatt "${sheetName}": UID zu lang.`);
 
-        const firstname = row['Vorname']?.toString() || '';
-        const lastname = row['Nachname']?.toString() || '';
-        if (!firstname && !lastname && electionData.type !== 'referendum') continue;
+          const firstname = row['Vorname']?.toString() || '';
+          const lastname  = row['Nachname']?.toString() || '';
+          if (!firstname && !lastname) continue;
 
-        const candRes = await db.query(
-          `INSERT INTO candidates (uid, lastname, firstname, mtknr, faculty, keyword, notes, approved)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id`,
-          [uid, lastname || null, firstname || null,
-           row['Mtr-Nr.']?.toString() || '',
-           row['Fakultät']?.toString() || '',
-           row['Liste / Schlüsselwort']?.toString() || '',
-           '', true],
-        );
-        await db.query(
-          `INSERT INTO electioncandidates (electionId, candidateId, listnum) VALUES ($1,$2,$3)`,
-          [electionData.id, candRes.rows[0].id, listnum],
-        );
-        candCount++;
+          const candRes = await db.query(
+            `INSERT INTO candidates (uid, lastname, firstname, mtknr, faculty, keyword, notes, approved)
+             VALUES ($1,$2,$3,$4,$5,$6,'',true)
+             ON CONFLICT (uid) DO UPDATE SET
+               lastname=EXCLUDED.lastname, firstname=EXCLUDED.firstname,
+               mtknr=EXCLUDED.mtknr, faculty=EXCLUDED.faculty, keyword=EXCLUDED.keyword
+             RETURNING id`,
+            [uid, lastname || null, firstname || null,
+             row['Mtr-Nr.']?.toString() || '',
+             row['Fakultät']?.toString() || '',
+             row['Liste / Schlüsselwort']?.toString() || ''],
+          );
+          await db.query(
+            `INSERT INTO electioncandidates (electionId, candidateId, listnum)
+             VALUES ($1,$2,$3) ON CONFLICT (electionId, candidateId) DO NOTHING`,
+            [electionUUID, candRes.rows[0].id, listnum],
+          );
+          count++;
+        }
+        logger.info(`ODS: ${count} Kandidaten für "${sheetName}" importiert.`);
       }
-      logger.info(`ODS: ${candCount} Kandidaten importiert`);
-    }
-
-    // Referendum-Optionen aus Blatt "OptionsUrabstimmung"
-    const optSheet = sheets['OptionsUrabstimmung'];
-    if (optSheet) {
-      let optCount = 0;
-      for (const row of optSheet.dataRows ?? []) {
-        const wahlkennung = row['Wahlkennung']?.toString().trim();
-        const electionData = electionIdMap.get(wahlkennung);
-        if (!electionData || electionData.type !== 'referendum') continue;
-
-        const nr = Number(row['Nr']);
-        const name = row['Name']?.toString().trim() || '';
-        if (!name || !Number.isInteger(nr) || nr < 1) continue;
-
-        await db.query(
-          `INSERT INTO candidate_options (identifier, nr, name, description) VALUES ($1,$2,$3,$4)`,
-          [electionData.id, nr, name, row['Description']?.toString() || null],
-        );
-        optCount++;
-      }
-      logger.info(`ODS: ${optCount} Referendum-Optionen importiert`);
     }
 
     await db.query('COMMIT');

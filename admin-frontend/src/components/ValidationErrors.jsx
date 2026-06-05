@@ -16,7 +16,7 @@ const ValidationErrors = ({ errors, fileType = 'CSV' }) => {
     return null;
   }
 
-  const isExcel = fileType === 'Excel';
+  const isExcel = fileType === 'Excel' || fileType === 'Tabelle';
 
   return (
     <div className="mt-6 bg-red-50 border border-red-200 rounded-lg overflow-hidden">

@@ -315,7 +315,7 @@ const AdminDashboard = () => {
                     className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
                   >
                     <div className="flex items-center justify-between">
-                      <span>Excel-Vorlage herunterladen</span>
+                      <span>Vorlage herunterladen</span>
                       <span className="text-xs opacity-60">3.2</span>
                     </div>
                   </button>
@@ -534,7 +534,7 @@ const AdminDashboard = () => {
             {activeSection === 'template' && (
               <div className="bg-white rounded-lg shadow-sm border border-gray-200">
                 <div className="border-b border-gray-200 px-6 py-4">
-                  <h2 className="text-xl font-bold text-gray-900">Excel-Vorlage herunterladen</h2>
+                  <h2 className="text-xl font-bold text-gray-900">Vorlage herunterladen</h2>
                   <p className="text-sm text-gray-600 mt-1">
                     Laden Sie Vorlagen für Wahl-Konfigurationen und Wählerverzeichnisse herunter
                   </p>
@@ -665,7 +665,7 @@ const AdminDashboard = () => {
                             checked={templateFormat === 'xlsx'}
                             onChange={() => setTemplateFormat('xlsx')}
                           />
-                          XLSX (Excel)
+                          XLSX (Microsoft Excel)
                         </label>
                       </div>
                       <div className="text-center">
@@ -688,13 +688,13 @@ const AdminDashboard = () => {
               <FileUploadSection
                 key="upload-elections"
                 title="Wahleinstellung hochladen"
-                description="Laden Sie eine ODS- oder Excel-Datei (.ods, .xlsx) mit der Wahlkonfiguration hoch. Die Datei wird automatisch validiert."
+                description="Laden Sie eine Tabellendatei (.ods, .xlsx) mit der Wahlkonfiguration hoch. Die Datei wird automatisch validiert."
                 uploadType="elections"
                 endpoint="/upload/elections"
                 validator={validateElectionExcel}
                 acceptedFileTypes=".ods,.xlsx,.xls"
-                formatExample="Siehe Excel-Vorlage (Download über Menü)"
-                fileTypeLabel="Excel"
+                formatExample="Siehe Vorlage (Download über Menü)"
+                fileTypeLabel="Tabelle"
               />
             )}
 
@@ -725,7 +725,7 @@ const AdminDashboard = () => {
                     Wählerverzeichnis herunterladen
                   </h2>
                   <p className="text-sm text-gray-600 mt-1">
-                    Aktuelles Wählerverzeichnis als Excel-Dokument herunterladen (enthält ein
+                    Aktuelles Wählerverzeichnis als Tabellendokument herunterladen (enthält ein
                     Tabellenblatt pro Fakultät/Studiengang)
                   </p>
                 </div>
@@ -782,7 +782,7 @@ const AdminDashboard = () => {
                     Kandidatenverzeichnis herunterladen
                   </h2>
                   <p className="text-sm text-gray-600 mt-1">
-                    Aktuelles Kandidatenverzeichnis als Excel-Dokument herunterladen (enthält ein
+                    Aktuelles Kandidatenverzeichnis als Tabellendokument herunterladen (enthält ein
                     Tabellenblatt pro Fakultät/Studiengang)
                   </p>
                 </div>
