@@ -48,10 +48,10 @@ const MASTER_CONFIG_PATH = path.join(process.cwd(), 'data', 'election_presets.js
  *       500:
  *         description: Internal server error
  */
-adminRouter.get('/elections', ensureAuthenticated, ensureHasRole(['admin']), async (req, res) => {
+adminRouter.get('/elections', ensureAuthenticated, ensureHasRole(['admin', 'committee']), async (req, res) => {
   const { status } = req.query;
 
-  if (status && !['active', 'finished', 'future'].includes(status)) {
+  if (status && !['active', 'finished', 'future', 'test', 'test_stopped'].includes(status)) {
     logger.warn(`Invalid status parameter: ${status}`);
     return res.status(400).json({ message: 'Invalid status parameter' });
   }
