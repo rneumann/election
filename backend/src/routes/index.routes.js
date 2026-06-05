@@ -12,6 +12,7 @@ import { auditRouter } from './audit.routes.js';
 import { adminRouter } from './admin.routes.js';
 // NEU: Import des Template-Download-Routers
 import { downloadRouter as templatesRouter } from './templates-download.route.js';
+import { simulateRouter } from './simulate.route.js';
 
 const { AUTH_PROVIDER } = process.env;
 
@@ -306,3 +307,6 @@ router.use('/export', ensureAuthenticated, ensureHasRole(['admin', 'committee'])
 
 // NEU: Template-Download Route registrieren
 router.use('/templates-download', ensureAuthenticated, ensureHasRole(['admin']), templatesRouter);
+
+// Simulate-Mode Endpunkte (kein Auth erforderlich für /status)
+router.use('/simulate', simulateRouter);
