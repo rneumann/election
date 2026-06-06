@@ -183,3 +183,4 @@ deploy-images/frontend.tar.gz
 scp-wahl-hka.sh
 .gitignore
 ssh-wahl-hka.sh
+on-server.sh
