@@ -303,6 +303,11 @@ export const deleteAllElectionData = async (
       'DELETE FROM candidates WHERE id NOT IN (SELECT candidateId FROM electioncandidates)',
     );
 
+    // Wähler entfernen, die nach dem Löschen der Wahl in keiner weiteren Wahl mehr eingetragen sind
+    await client.query(
+      'DELETE FROM voters WHERE id NOT IN (SELECT DISTINCT voterId FROM votingnotes)',
+    );
+
     await client.query('COMMIT');
 
     // Audit Log: Successful deletion of election data
@@ -322,6 +327,7 @@ export const deleteAllElectionData = async (
           'electioncandidates',
           'elections',
           'candidates (wahlspezifische)',
+          'voters (wahlspezifische)',
         ],
         timestamp: new Date().toISOString(),
       },
