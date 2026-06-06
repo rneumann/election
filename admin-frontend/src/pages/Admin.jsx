@@ -249,207 +249,91 @@ const AdminDashboard = () => {
               </div>
 
               <nav className="p-2">
-                {/* Verwaltung */}
+
+                {/* Wahlen vorbereiten */}
                 <div className="mb-6">
                   <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                    Verwaltung
+                    Wahlen vorbereiten
                   </div>
-                  <button
-                    onClick={() => handleSectionChange('overview')}
-                    style={getNavButtonStyle('overview')}
-                    className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span>Wahlübersicht</span>
-                      <span className="text-xs opacity-60">0</span>
-                    </div>
+                  <button onClick={() => handleSectionChange('templateBuilder')} style={getNavButtonStyle('templateBuilder')} className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50">
+                    <span>Vorlage erstellen</span>
                   </button>
-                  <button
-                    onClick={() => handleSectionChange('clear')}
-                    style={getNavButtonStyle('clear')}
-                    className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span>Datenbankbereinigung</span>
-                      <span className="text-xs opacity-60">1</span>
-                    </div>
+                  <button onClick={() => handleSectionChange('template')} style={getNavButtonStyle('template')} className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50">
+                    <span>Vordefinierte Vorlage herunterladen</span>
                   </button>
                 </div>
 
+                {/* Wahlen einrichten */}
                 <div className="mb-6">
                   <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                    Testwahlen
+                    Wahlen einrichten
                   </div>
-
-                  <button
-                    /* eslint-disable */
-                    onClick={() => handleSectionChange('test-election')}
-                    style={getNavButtonStyle('test-election')}
-                    className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span>Steuern</span>
-                      <span className="text-xs opacity-60">2.1</span>
-                    </div>
+                  <button onClick={() => handleSectionChange('definition')} style={getNavButtonStyle('definition')} className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50">
+                    <span>Wahleinstellung hochladen</span>
                   </button>
-
-                  <button
-                    onClick={() => handleSectionChange('test-election-counting')}
-                    style={getNavButtonStyle('test-election-counting')}
-                    className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span>Auszählen</span>
-                      <span className="text-xs opacity-60">2.2</span>
-                    </div>
+                  <button onClick={() => handleSectionChange('upload')} style={getNavButtonStyle('upload')} className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50">
+                    <span>Wählerverzeichnis hochladen</span>
+                  </button>
+                  <button onClick={() => handleSectionChange('download')} style={getNavButtonStyle('download')} className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50">
+                    <span>Wählerverzeichnis herunterladen</span>
+                  </button>
+                  <button onClick={() => handleSectionChange('uploadCandidates')} style={getNavButtonStyle('uploadCandidates')} className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50">
+                    <span>Kandidatenverzeichnis hochladen</span>
+                  </button>
+                  <button onClick={() => handleSectionChange('downloadCandidates')} style={getNavButtonStyle('downloadCandidates')} className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50">
+                    <span>Kandidatenverzeichnis herunterladen</span>
                   </button>
                 </div>
 
-                {/* Wahlen definieren */}
+                {/* Wahlen testen */}
                 <div className="mb-6">
                   <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                    Wahlen definieren
+                    Wahlen testen
                   </div>
-                  {/* NEU ANFANG (templates) */}
-                  <button
-                    onClick={() => setActiveSection('config')}
-                    style={getNavButtonStyle('config')}
-                    className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span>Wahl-Parameter Konfig</span>
-                      <span className="text-xs opacity-60">3.1</span>
-                    </div>
+                  <button onClick={() => handleSectionChange('test-election')} style={getNavButtonStyle('test-election')} className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50">
+                    <span>Testwahlen steuern</span>
                   </button>
-                  {/* NEU ENDE (templates) */}
-                  <button
-                    onClick={() => handleSectionChange('template')}
-                    style={getNavButtonStyle('template')}
-                    className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span>Vorlage herunterladen</span>
-                      <span className="text-xs opacity-60">3.2</span>
-                    </div>
-                  </button>
-                  <button
-                    onClick={() => handleSectionChange('templateBuilder')}
-                    style={getNavButtonStyle('templateBuilder')}
-                    className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span>Vorlage erstellen</span>
-                      <span className="text-xs opacity-60">3.2b</span>
-                    </div>
-                  </button>
-                  <button
-                    onClick={() => handleSectionChange('definition')}
-                    style={getNavButtonStyle('definition')}
-                    className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span>Wahleinstellung hochladen</span>
-                      <span className="text-xs opacity-60">3.3</span>
-                    </div>
+                  <button onClick={() => handleSectionChange('test-election-counting')} style={getNavButtonStyle('test-election-counting')} className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50">
+                    <span>Testwahlen auszählen</span>
                   </button>
                 </div>
 
-                {/* Wählerverzeichnis */}
+                {/* Wahlen durchführen */}
                 <div className="mb-6">
                   <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                    Wählerverzeichnis
+                    Wahlen durchführen
                   </div>
-                  <button
-                    onClick={() => handleSectionChange('download')}
-                    style={getNavButtonStyle('download')}
-                    className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span>Wählerverzeichnis herunterladen</span>
-                      <span className="text-xs opacity-60">4.1</span>
-                    </div>
+                  <button onClick={() => handleSectionChange('overview')} style={getNavButtonStyle('overview')} className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50">
+                    <span>Wahlübersicht</span>
                   </button>
-                  <button
-                    onClick={() => handleSectionChange('upload')}
-                    style={getNavButtonStyle('upload')}
-                    className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span>CSV-Datei hochladen</span>
-                      <span className="text-xs opacity-60">4.2</span>
-                    </div>
+                  <button disabled className="w-full text-left px-3 py-2.5 text-sm font-medium text-gray-300 cursor-not-allowed" title="Noch nicht implementiert">
+                    <span>Wahl unterbrechen</span>
+                    <span className="ml-2 text-xs text-gray-300">(in Arbeit)</span>
+                  </button>
+                  <button onClick={() => handleSectionChange('counting')} style={getNavButtonStyle('counting')} className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50">
+                    <span>Wahlergebnisse auszählen</span>
                   </button>
                 </div>
 
-                {/* Kandidatenverzeichnis */}
-                <div className="mb-6">
-                  <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                    Kandidatenverzeichnis
-                  </div>
-                  <button
-                    onClick={() => handleSectionChange('uploadCandidates')}
-                    style={getNavButtonStyle('uploadCandidates')}
-                    className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span>CSV-Datei hochladen</span>
-                      <span className="text-xs opacity-60">5.1</span>
-                    </div>
-                  </button>
-                  <button
-                    onClick={() => handleSectionChange('downloadCandidates')}
-                    style={getNavButtonStyle('downloadCandidates')}
-                    className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span>Kandidatenverzeichnis herunterladen</span>
-                      <span className="text-xs opacity-60">5.2</span>
-                    </div>
-                  </button>
-                </div>
-
-                {/* Auszählung */}
-                <div className="mb-6">
-                  <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                    Auszählung
-                  </div>
-                  <button
-                    onClick={() => handleSectionChange('counting')}
-                    style={getNavButtonStyle('counting')}
-                    className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span>Wahlergebnisse auszählen</span>
-                      <span className="text-xs opacity-60">6</span>
-                    </div>
-                  </button>
-                </div>
-
-                {/* Sicherheit */}
+                {/* Administratives */}
                 <div>
                   <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                    Sicherheit
+                    Administratives
                   </div>
-                  <button
-                    onClick={() => handleSectionChange('integrity')}
-                    style={getNavButtonStyle('integrity')}
-                    className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span>🔒 Integritätsprüfung</span>
-                      <span className="text-xs opacity-60">7</span>
-                    </div>
+                  <button onClick={() => handleSectionChange('clear')} style={getNavButtonStyle('clear')} className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50">
+                    <span>Datenbankbereinigung</span>
                   </button>
-                  <button
-                    onClick={() => navigate('/admin/audit')}
-                    className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50 text-gray-700"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span>📋 Audit Logs</span>
-                      <span className="text-xs opacity-60">8</span>
-                    </div>
+                  <button onClick={() => setActiveSection('config')} style={getNavButtonStyle('config')} className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50">
+                    <span>Wahl-Parameter Konfiguration</span>
+                  </button>
+                  <button onClick={() => handleSectionChange('integrity')} style={getNavButtonStyle('integrity')} className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50">
+                    <span>Integritätsprüfung</span>
+                  </button>
+                  <button onClick={() => navigate('/admin/audit')} className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50 text-gray-700">
+                    <span>Audit-Logs</span>
                   </button>
                 </div>
+
               </nav>
             </div>
           </aside>

@@ -1,5 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { adminService } from '../services/adminApi.js';
+
+const REFRESH_INTERVAL_MS = 5000;
 
 const formatDate = (iso) =>
   iso
@@ -49,23 +51,70 @@ const ElectionOverview = () => {
   const [elections, setElections] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [autoRefresh, setAutoRefresh] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState(null);
+  const intervalRef = useRef(null);
 
-  useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      try {
-        const data = await adminService.getElectionsForAdmin();
-        setElections(data || []);
-      } catch (err) {
-        setError('Fehler beim Laden der Wahlen: ' + err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
+  const load = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
+    try {
+      const data = await adminService.getElectionsForAdmin();
+      setElections(data || []);
+      setLastUpdated(new Date());
+      setError('');
+    } catch (err) {
+      setError('Fehler beim Laden der Wahlen: ' + err.message);
+    } finally {
+      if (!silent) setLoading(false);
+    }
   }, []);
 
-  if (loading) {
+  // Initialer Load
+  useEffect(() => { load(); }, [load]);
+
+  // Auto-Refresh
+  useEffect(() => {
+    if (autoRefresh) {
+      intervalRef.current = setInterval(() => load(true), REFRESH_INTERVAL_MS);
+    } else {
+      clearInterval(intervalRef.current);
+    }
+    return () => clearInterval(intervalRef.current);
+  }, [autoRefresh, load]);
+
+  const Toolbar = () => (
+    <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 bg-gray-50">
+      <button
+        onClick={() => load(false)}
+        disabled={loading}
+        className="flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-800 font-medium transition-colors disabled:opacity-50"
+        aria-label="Aktualisieren"
+      >
+        <svg className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+        </svg>
+        Aktualisieren
+      </button>
+
+      <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">
+        <div
+          onClick={() => setAutoRefresh((v) => !v)}
+          className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${autoRefresh ? 'bg-blue-600' : 'bg-gray-300'}`}
+        >
+          <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${autoRefresh ? 'translate-x-4' : 'translate-x-1'}`} />
+        </div>
+        Auto-Refresh (5 s)
+      </label>
+
+      {lastUpdated && (
+        <span className="ml-auto text-xs text-gray-400">
+          Zuletzt: {lastUpdated.toLocaleTimeString('de-DE')}
+        </span>
+      )}
+    </div>
+  );
+
+  if (loading && elections.length === 0) {
     return (
       <div className="flex items-center gap-3 p-6 text-gray-500">
         <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
@@ -79,18 +128,26 @@ const ElectionOverview = () => {
 
   if (error) {
     return (
-      <div className="p-6 text-red-600 bg-red-50 rounded-lg border border-red-200">{error}</div>
+      <>
+        <Toolbar />
+        <div className="p-6 text-red-600 bg-red-50 rounded-lg border border-red-200">{error}</div>
+      </>
     );
   }
 
   if (elections.length === 0) {
     return (
-      <div className="p-6 text-gray-500 text-sm">Keine Wahlen vorhanden.</div>
+      <>
+        <Toolbar />
+        <div className="p-6 text-gray-500 text-sm">Keine Wahlen vorhanden.</div>
+      </>
     );
   }
 
   return (
-    <div className="overflow-x-auto">
+    <div>
+      <Toolbar />
+      <div className="overflow-x-auto">
       <table className="min-w-full divide-y divide-gray-200 text-sm">
         <thead className="bg-gray-50">
           <tr>
@@ -162,6 +219,7 @@ const ElectionOverview = () => {
           })}
         </tbody>
       </table>
+    </div>
     </div>
   );
 };
