@@ -236,10 +236,11 @@ export const deleteAllData = async (actorId = 'system', actorRole = 'admin') => 
     await client.query('DELETE FROM candidates');
     await client.query('DELETE FROM voters');
     await client.query('DELETE FROM candidate_options');
+    await client.query('DELETE FROM audit_log');
 
     await client.query('COMMIT');
 
-    // Audit Log: Successful deletion of ALL data
+    // Audit Log: Successful deletion of ALL data (neu geschrieben nach dem Löschen)
     await writeAuditLog({
       actionType: 'DELETE_ALL_DATA',
       level: 'CRITICAL',
@@ -257,6 +258,7 @@ export const deleteAllData = async (actorId = 'system', actorRole = 'admin') => 
           'candidates',
           'voters',
           'candidate_options',
+          'audit_log',
         ],
         timestamp: new Date().toISOString(),
       },
