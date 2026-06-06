@@ -177,7 +177,11 @@ app.use(async (req, res, next) => {
   const lastActivity = req.session.lastActivity || now;
   const diff = now - lastActivity;
 
-  if (diff > 30 * 60 * 1000) {
+  const timeoutMs = ['admin', 'committee'].includes(user.role)
+    ? 30 * 60 * 1000   // Admin/Committee: 30 Minuten
+    : 5  * 60 * 1000;  // Wähler: 5 Minuten
+
+  if (diff > timeoutMs) {
     logger.debug('Session timeout detected logging out user');
 
     req.session.destroy();
