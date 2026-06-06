@@ -25,6 +25,7 @@ import { DeleteDataView } from '../components/DeleteDataView.jsx';
 //NEU ANFANG (templates)
 import { templateApi } from '../services/templateApi.js';
 import IntegrityCheckView from '../components/IntegrityCheckView.jsx';
+import ElectionOverview from '../components/ElectionOverview.jsx';
 //NEU ENDE (templates)
 
 /**
@@ -252,6 +253,16 @@ const AdminDashboard = () => {
                     Verwaltung
                   </div>
                   <button
+                    onClick={() => handleSectionChange('overview')}
+                    style={getNavButtonStyle('overview')}
+                    className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span>Wahlübersicht</span>
+                      <span className="text-xs opacity-60">0</span>
+                    </div>
+                  </button>
+                  <button
                     onClick={() => handleSectionChange('clear')}
                     style={getNavButtonStyle('clear')}
                     className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
@@ -434,6 +445,18 @@ const AdminDashboard = () => {
           {/* Right Content Area */}
           <div className="flex-1 w-full lg:w-auto">
             {/* Datenbereinigung Section */}
+            {activeSection === 'overview' && (
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div className="border-b border-gray-200 px-6 py-4">
+                  <h2 className="text-xl font-bold text-gray-900">Wahlübersicht</h2>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Alle definierten Wahlen mit Wähler- und Stimmzettelzählung.
+                  </p>
+                </div>
+                <ElectionOverview />
+              </div>
+            )}
+
             {activeSection === 'clear' && (
               <div className="bg-white rounded-lg shadow-sm border border-gray-200">
                 <div className="border-b border-gray-200 px-6 py-4">
