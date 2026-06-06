@@ -38,6 +38,23 @@ export const templateApi = {
     }
   },
 
+  /**
+   * Exportiert die aktuell in der DB gespeicherten Wahlen als Tabellendatei
+   */
+  exportElections: async (format = 'ods') => {
+    try {
+      const ext = format === 'xlsx' ? 'xlsx' : 'ods';
+      const response = await api.get(
+        `/templates-download/elections/export?format=${ext}`,
+        { responseType: 'blob' },
+      );
+      downloadBlob(response.data, `Wahlkonfiguration_Export.${ext}`);
+    } catch (error) {
+      logger.error('Export der Wahlen fehlgeschlagen:', error);
+      throw error;
+    }
+  },
+
   /*
    * Lädt eine JSON-Konfigurationsdatei für neue Wahlarten hoch
    */

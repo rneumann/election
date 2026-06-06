@@ -99,6 +99,15 @@ const AdminDashboard = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const handleExportElections = async (format) => {
+    try {
+      await templateApi.exportElections(format);
+      showAlert('success', 'Wahlen erfolgreich exportiert');
+    } catch {
+      showAlert('error', 'Fehler beim Export der Wahlen');
+    }
+  };
+
   const handleDownloadTemplate = async () => {
     try {
       if (templateType === 'voters') {
@@ -350,6 +359,16 @@ const AdminDashboard = () => {
                     <div className="flex items-center justify-between">
                       <span>Wahleinstellung hochladen</span>
                       <span className="text-xs opacity-60">3.3</span>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => handleSectionChange('exportElections')}
+                    style={getNavButtonStyle('exportElections')}
+                    className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span>Wahlen exportieren</span>
+                      <span className="text-xs opacity-60">3.4</span>
                     </div>
                   </button>
                 </div>
@@ -746,6 +765,40 @@ const AdminDashboard = () => {
                 formatExample="Siehe Vorlage (Download über Menü)"
                 fileTypeLabel="Tabelle"
               />
+            )}
+
+            {/* Wahlen exportieren Section */}
+            {activeSection === 'exportElections' && (
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div className="border-b border-gray-200 px-6 py-4">
+                  <h2 className="text-xl font-bold text-gray-900">Wahlen exportieren</h2>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Exportiert alle aktuell in der Datenbank gespeicherten Wahlen als ausgefüllte
+                    Tabellendatei — kompatibel mit dem Import-Format.
+                  </p>
+                </div>
+                <div className="p-6 flex flex-col items-center gap-6">
+                  <div className="flex items-center gap-6">
+                    <ResponsiveButton
+                      onClick={() => handleExportElections('ods')}
+                      variant="primary"
+                      size="medium"
+                    >
+                      Als ODS exportieren
+                    </ResponsiveButton>
+                    <ResponsiveButton
+                      onClick={() => handleExportElections('xlsx')}
+                      variant="outline"
+                      size="medium"
+                    >
+                      Als XLSX exportieren
+                    </ResponsiveButton>
+                  </div>
+                  <p className="text-xs text-gray-400">
+                    Die exportierte Datei kann direkt wieder importiert werden (Abschnitt 3.3).
+                  </p>
+                </div>
+              </div>
             )}
 
             {/* Wählerverzeichnisse hochladen Section */}

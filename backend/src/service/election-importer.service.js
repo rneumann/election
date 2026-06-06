@@ -1,6 +1,7 @@
 import ExcelJS from 'exceljs';
 import { logger } from '../conf/logger/logger.js';
 import { client } from '../database/db.js';
+import { loadDocumentStructure, colName, rowValue } from '../conf/config-loader.js';
 import { readOdsSheets, isOdsFile } from '../utils/ods.js';
 
 const ELECTION_TYPE_MAPPING = new Map([
@@ -57,106 +58,83 @@ const importElectionDataXlsx = async (filePath) => {
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.readFile(filePath);
 
+    const docs = await loadDocumentStructure();
+    const electionDef = docs.elections;
+    const metaCfg = electionDef.metaRows;
+    // Spaltenindex aus Config (0-basiert → Excel-Buchstabe)
+    const colLetter = (idx) => String.fromCharCode(65 + idx);
+    const colIdx = (field) => electionDef.columns.findIndex((c) => c.field === field);
+
     const electionSheet = workbook.worksheets[0];
-    if (!electionSheet) {
-      throw new Error('This workbook has no worksheets.');
-    }
+    if (!electionSheet) throw new Error('This workbook has no worksheets.');
 
-    const startDateStr = electionSheet.getCell('D3').value;
-    const startTimeStr = electionSheet.getCell('F3').value;
-    const endDateStr   = electionSheet.getCell('D4').value;
-    const endTimeStr   = electionSheet.getCell('F4').value;
+    // Meta-Zeilen: Datum in Spalte dateCol (0-basiert), Zeit in timeCol
+    const startDateStr = electionSheet.getCell(`${colLetter(metaCfg.start.dateCol)}3`).value;
+    const startTimeStr = electionSheet.getCell(`${colLetter(metaCfg.start.timeCol)}3`).value;
+    const endDateStr   = electionSheet.getCell(`${colLetter(metaCfg.end.dateCol)}4`).value;
+    const endTimeStr   = electionSheet.getCell(`${colLetter(metaCfg.end.timeCol)}4`).value;
 
-    if (!startDateStr || !endDateStr) {
-      throw new Error('Start- oder Enddatum fehlt (erwartet in D3 und D4).');
-    }
+    if (!startDateStr || !endDateStr) throw new Error('Start- oder Enddatum fehlt.');
 
     const startDate = parseLocalDateTime(startDateStr, startTimeStr);
     const endDate   = parseLocalDateTime(endDateStr, endTimeStr);
-
     logger.info(`Importing elections for period ${startDate} → ${endDate}`);
 
     await db.query('BEGIN');
 
     const electionIdMap = new Map();
-    let rowIndex = 8;
+    let rowIndex = docs.elections.columns.length > 0 ? 8 : 8; // dataStartRow aus org-config wäre ideal
     let importedCount = 0;
 
-    while (electionSheet.getCell(`A${rowIndex}`).value) {
-      const identifier = electionSheet.getCell(`A${rowIndex}`).value?.toString();
-      const info = electionSheet.getCell(`B${rowIndex}`).value?.toString() || '';
-      const listValRaw = electionSheet.getCell(`C${rowIndex}`).value;
-      const listvotes =
-        listValRaw == 1 || listValRaw == '1' || listValRaw === true ? 1 : parseInt(listValRaw) || 0;
-      const seatsValue = electionSheet.getCell(`D${rowIndex}`).value;
-      const votesPerBallotValue = electionSheet.getCell(`E${rowIndex}`).value;
-      const maxKumValue = electionSheet.getCell(`F${rowIndex}`).value;
-      const electionTypeText = electionSheet.getCell(`G${rowIndex}`).value?.toString().trim();
-      const countingMethodText = electionSheet.getCell(`H${rowIndex}`).value?.toString().trim();
-      const freeSlotsValue = electionSheet.getCell(`I${rowIndex}`).value;
+    const identifierCol = colLetter(colIdx('identifier'));
+    while (electionSheet.getCell(`${identifierCol}${rowIndex}`).value) {
+      const getCol = (field) => electionSheet.getCell(`${colLetter(colIdx(field))}${rowIndex}`).value;
 
-      const seatsToFill = Number(seatsValue);
-      const votesPerBallot = votesPerBallotValue ? Number(votesPerBallotValue) : seatsToFill;
+      const identifier     = getCol('identifier')?.toString();
+      const info           = getCol('info')?.toString() || '';
+      const listValRaw     = getCol('listvotes');
+      const listvotes      = listValRaw == 1 || listValRaw == '1' || listValRaw === true ? 1 : parseInt(listValRaw) || 0;
+      const seatsValue     = getCol('seats_to_fill');
+      const votesPerBallotValue = getCol('votes_per_ballot');
+      const maxKumValue    = getCol('max_cumulative_votes');
+      const electionTypeText   = getCol('election_type')?.toString().trim();
+      const countingMethodText = getCol('counting_method')?.toString().trim();
+      const freeSlotsValue = getCol('free_slots');
+
+      const seatsToFill        = Number(seatsValue);
+      const votesPerBallot     = votesPerBallotValue ? Number(votesPerBallotValue) : seatsToFill;
       const maxCumulativeVotes = Number(maxKumValue) || 0;
-      const freeSlots = Number.isInteger(Number(freeSlotsValue)) ? Math.max(0, Number(freeSlotsValue)) : 0;
+      const freeSlots          = Number.isInteger(Number(freeSlotsValue)) ? Math.max(0, Number(freeSlotsValue)) : 0;
 
       if (!Number.isInteger(seatsToFill) || seatsToFill < 1) {
-        throw new Error(
-          `Invalid seats_to_fill in row ${rowIndex}: must be a positive integer, got ${seatsValue}`,
-        );
+        throw new Error(`Invalid seats_to_fill in row ${rowIndex}: must be a positive integer, got ${seatsValue}`);
       }
       const electionType = ELECTION_TYPE_MAPPING.get(electionTypeText);
       if (!electionType) {
-        throw new Error(
-          `Invalid election_type '${electionTypeText}' in row ${rowIndex}. Expected: Mehrheitswahl, Verhältniswahl, or Urabstimmung.`,
-        );
+        throw new Error(`Invalid election_type '${electionTypeText}' in row ${rowIndex}. Expected: ${docs.validations.electionTypes.join(', ')}.`);
       }
       const countingMethod = COUNTING_METHOD_MAPPING.get(countingMethodText);
       if (!countingMethod) {
-        throw new Error(
-          `Invalid counting_method '${countingMethodText}' in row ${rowIndex}. Expected: Sainte-Laguë, Hare-Niemeyer, Einfache Mehrheit, Absolute Mehrheit, or Ja/Nein/Enthaltung.`,
-        );
+        throw new Error(`Invalid counting_method '${countingMethodText}' in row ${rowIndex}. Expected: ${docs.validations.countingMethods.join(', ')}.`);
       }
-      logger.info(
-        `Row ${rowIndex}: ${info} → election_type=${electionType}, counting_method=${countingMethod}`,
+
+      logger.info(`Row ${rowIndex}: ${info} → election_type=${electionType}, counting_method=${countingMethod}`);
+
+      const duplicateCheck = await db.query(
+        `SELECT id FROM elections WHERE info = $1 AND start = $2 AND "end" = $3 LIMIT 1`,
+        [info, startDate, endDate],
       );
-
-      // Check for duplicates: same info and date range
-      const duplicateCheckQuery = `
-        SELECT id FROM elections 
-        WHERE info = $1 AND start = $2 AND "end" = $3
-        LIMIT 1;
-      `;
-      const duplicateCheck = await db.query(duplicateCheckQuery, [info, startDate, endDate]);
-
       if (duplicateCheck.rows.length > 0) {
-        throw new Error(
-          `Wahl "${info}" (${startDate} - ${endDate}) existiert bereits. Import abgebrochen.`,
-        );
+        throw new Error(`Wahl "${info}" (${startDate} - ${endDate}) existiert bereits. Import abgebrochen.`);
       }
 
-      const insertElectionQuery = `
-        INSERT INTO elections (
-          info, description, listvotes, seats_to_fill, votes_per_ballot,
-          max_cumulative_votes, free_slots, start, "end", election_type, counting_method
-        )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-        RETURNING id;
-      `;
-
-      const res = await db.query(insertElectionQuery, [
-        info,
-        identifier,
-        listvotes,
-        seatsToFill,
-        votesPerBallot,
-        maxCumulativeVotes,
-        freeSlots,
-        startDate,
-        endDate,
-        electionType,
-        countingMethod,
-      ]);
+      const res = await db.query(
+        `INSERT INTO elections (info, description, listvotes, seats_to_fill, votes_per_ballot,
+           max_cumulative_votes, free_slots, start, "end", election_type, counting_method)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING id`,
+        [info, identifier, listvotes, seatsToFill, votesPerBallot,
+         maxCumulativeVotes, freeSlots, startDate, endDate, electionType, countingMethod],
+      );
 
       electionIdMap.set(identifier, { id: res.rows[0].id, type: electionType });
       rowIndex++;
@@ -184,12 +162,19 @@ const importElectionDataXlsx = async (filePath) => {
 
       if (currentElectionType === 'referendum') {
         // Urabstimmung: A=Nr, B=Name, C=Description
-        while (sheet.getCell(`A${row}`).value) {
-          const nr = Number(sheet.getCell(`A${row}`).value);
-          const name = sheet.getCell(`B${row}`).value?.toString().trim() || '';
-          const description = sheet.getCell(`C${row}`).value?.toString() || '';
+                // Spaltenindizes aus Config (0-basiert)
+        const refDef  = docs.referendum;
+        const candDef = docs.candidates;
+        const refColIdx  = (field) => refDef.columns.findIndex((c) => c.field === field);
+        const candColIdx = (field) => candDef.columns.findIndex((c) => c.field === field);
+        const xlCell = (colIdx, r) => sheet.getCell(`${String.fromCharCode(65 + colIdx)}${r}`);
 
-          if (!name) throw new Error(`Blatt "${electionRef}" Zeile ${row}: Name (Spalte B) ist leer.`);
+        while (xlCell(0, row).value) {
+          const nr = Number(xlCell(refColIdx('nr'), row).value);
+          const name = xlCell(refColIdx('name'), row).value?.toString().trim() || '';
+          const description = xlCell(refColIdx('description'), row).value?.toString() || '';
+
+          if (!name) throw new Error(`Blatt "${electionRef}" Zeile ${row}: Name ist leer.`);
           if (name.length > MAX_OPTION_NAME_LENGTH) throw new Error(`Blatt "${electionRef}" Zeile ${row}: Name zu lang (max. ${MAX_OPTION_NAME_LENGTH}).`);
           if (description.length > MAX_OPTION_DESCRIPTION_LENGTH) throw new Error(`Blatt "${electionRef}" Zeile ${row}: Description zu lang.`);
           if (!Number.isInteger(nr) || nr < 1) throw new Error(`Blatt "${electionRef}" Zeile ${row}: Nr muss positive Ganzzahl sein.`);
@@ -209,25 +194,28 @@ const importElectionDataXlsx = async (filePath) => {
         }
         logger.info(`${count} Referendum-Optionen für "${electionRef}" importiert.`);
       } else {
-        // Normale Wahl: A=Nr, B=UID, C=Schlüsselwort, D=Vorname, E=Nachname, F=Mtr-Nr, G=Fakultät
+        const candDef = docs.candidates;
+        const candColIdx = (field) => candDef.columns.findIndex((c) => c.field === field);
+        const xlCell = (colIdx, r) => sheet.getCell(`${String.fromCharCode(65 + candColIdx(colIdx))}${r}`);
+
         while (sheet.getCell(`A${row}`).value) {
           const listnum = Number(sheet.getCell(`A${row}`).value) || (count + 1);
 
-          const uidCell = sheet.getCell(`B${row}`);
+          const uidCell = sheet.getCell(`${String.fromCharCode(65 + candColIdx('uid'))}${row}`);
           let templateUid = '';
           if (uidCell.value !== null && uidCell.value !== undefined) {
             templateUid = typeof uidCell.value === 'number'
               ? uidCell.value.toString().replace('.', ',')
               : (uidCell.text?.trim() || uidCell.value.toString().trim());
           }
-          if (!templateUid) throw new Error(`Blatt "${electionRef}" Zeile ${row}: UID (Spalte B) ist leer.`);
+          if (!templateUid) throw new Error(`Blatt "${electionRef}" Zeile ${row}: UID ist leer.`);
           if (templateUid.length > MAX_UID_LENGTH) throw new Error(`Blatt "${electionRef}" Zeile ${row}: UID zu lang (max. ${MAX_UID_LENGTH}).`);
 
-          const keywords = sheet.getCell(`C${row}`).value?.toString() || '';
-          const firstname = sheet.getCell(`D${row}`).value?.toString() || '';
-          const lastname  = sheet.getCell(`E${row}`).value?.toString() || '';
-          const matrNr    = sheet.getCell(`F${row}`).value?.toString() || '';
-          const faculty   = sheet.getCell(`G${row}`).value?.toString() || '';
+          const keywords  = xlCell('keyword',    row).value?.toString() || '';
+          const firstname = xlCell('firstname',  row).value?.toString() || '';
+          const lastname  = xlCell('lastname',   row).value?.toString() || '';
+          const matrNr    = xlCell('mtknr',      row).value?.toString() || '';
+          const faculty   = xlCell('faculty',    row).value?.toString() || '';
 
           if (!firstname && !lastname) {
             logger.warn(`Blatt "${electionRef}" Zeile ${row}: Weder Vorname noch Nachname — übersprungen.`);
@@ -285,10 +273,15 @@ const importElectionDataOds = async (filePath) => {
   const db = await client.connect();
 
   try {
+    const docs = await loadDocumentStructure();
+    const electionDef = docs.elections;
+    const metaCfg = electionDef.metaRows;
+    // Hilfsfunktion: Spaltenwert aus ODS-Datenzeile anhand DB-Feldname
+    const rv = (sheetDef, row, field) => rowValue(sheetDef, row, field);
     const sheets = await readOdsSheets(filePath);
 
     // Blatt "Wahlen" auslesen
-    const wahlenSheet = sheets['Wahlen'];
+    const wahlenSheet = sheets[electionDef.sheetName];
     if (!wahlenSheet) {
       throw new Error('ODS-Datei: Blatt "Wahlen" nicht gefunden');
     }
@@ -300,43 +293,46 @@ const importElectionDataOds = async (filePath) => {
     //   max. Kum., Wahltyp, Zählverfahren, Freie Plätze
     // Meta-Zeile 1: Kennung='Wahlzeitraum von', Info='Datum:', Listen=<Datum>, Plätze='Uhrzeit (HH:MM):', 'Stimmen pro Zettel'=<Zeit>
     // Meta-Zeile 2: Kennung='bis',              Info='Datum:', Listen=<Datum>, Plätze='Uhrzeit (HH:MM):', 'Stimmen pro Zettel'=<Zeit>
-    const row0 = wahlenSheet.dataRows?.[0] ?? {};
-    const row1 = wahlenSheet.dataRows?.[1] ?? {};
-    if (String(row0['Kennung'] ?? '').trim() !== 'Wahlzeitraum von') {
-      throw new Error('ODS-Datei: Erste Zeile im Blatt "Wahlen" muss "Wahlzeitraum von" enthalten.');
+    // Meta-Zeilen stehen jetzt in rawRows (vor dem Header), dataRows enthält nur Wahldaten
+    const rawRows = wahlenSheet.rawRows ?? [];
+    // rawRows sind Arrays (nicht Objekt-Maps) — Spaltenindizes: 0=Kennung, 2=Datum, 4=Zeit
+    const metaStart = rawRows.find((r) => String(r[0] ?? '').trim() === metaCfg.start.marker);
+    const metaEnd   = rawRows.find((r) => String(r[0] ?? '').trim() === metaCfg.end.marker);
+
+    if (!metaStart || !metaEnd) {
+      throw new Error('ODS-Datei: Meta-Zeilen "Wahlzeitraum von" / "bis" nicht gefunden (müssen vor dem Header stehen).');
     }
 
-    const startDate = parseLocalDateTime(row0['Listen'], row0['Stimmen pro Zettel']);
-    const endDate   = parseLocalDateTime(row1['Listen'], row1['Stimmen pro Zettel']);
+    const startDate = parseLocalDateTime(metaStart[2], metaStart[4]);
+    const endDate   = parseLocalDateTime(metaEnd[2],   metaEnd[4]);
 
     if (!startDate || !endDate) {
-      throw new Error('ODS-Datei: Start- oder Enddatum fehlt (Spalte C der Meta-Zeilen).');
+      throw new Error('ODS-Datei: Start- oder Enddatum fehlt.');
     }
 
     await db.query('BEGIN');
     const electionIdMap = new Map();
     let importedCount = 0;
 
-    // Wahldaten ab Index 2 lesen — Indizes 0+1 sind die Meta-Zeilen
-    const electionRows = wahlenSheet.dataRows.slice(2);
+    // dataRows enthält nur die echten Wahldaten (Meta-Zeilen sind in rawRows)
+    const electionRows = wahlenSheet.dataRows;
     for (const row of electionRows) {
-      const identifier = row['Kennung']?.toString().trim();
+      const identifier = rv(electionDef, row, 'identifier')?.toString().trim();
       if (!identifier) continue;
 
-      const info = row['Info'] || '';
-      const listValRaw = row['Listen'];
-      const listvotes =
-        listValRaw == 1 || listValRaw === 'true' ? 1 : parseInt(listValRaw) || 0;
-      const seatsToFill = Number(row['Plätze']);
-      const votesPerBallotRaw = row['Stimmen pro Zettel'];
+      const info           = rv(electionDef, row, 'info') || '';
+      const listValRaw     = rv(electionDef, row, 'listvotes');
+      const listvotes      = listValRaw == 1 || listValRaw === 'true' ? 1 : parseInt(listValRaw) || 0;
+      const seatsToFill    = Number(rv(electionDef, row, 'seats_to_fill'));
+      const votesPerBallotRaw = rv(electionDef, row, 'votes_per_ballot');
       const votesPerBallot = votesPerBallotRaw ? Number(votesPerBallotRaw) : seatsToFill;
-      const maxCumulativeVotes = Number(row['max. Kum.']) || 0;
-      const freeSlots = Math.max(0, parseInt(row['Freie Plätze'] ?? '0') || 0);
-      const electionTypeText = row['Wahltyp']?.toString().trim();
-      const countingMethodText = row['Zählverfahren']?.toString().trim();
+      const maxCumulativeVotes = Number(rv(electionDef, row, 'max_cumulative_votes')) || 0;
+      const freeSlots      = Math.max(0, parseInt(rv(electionDef, row, 'free_slots') ?? '0') || 0);
+      const electionTypeText   = rv(electionDef, row, 'election_type')?.toString().trim();
+      const countingMethodText = rv(electionDef, row, 'counting_method')?.toString().trim();
 
       if (!Number.isInteger(seatsToFill) || seatsToFill < 1) {
-        throw new Error(`Ungültige Plätze für Wahl "${identifier}": ${row['Plätze']}`);
+        throw new Error(`Ungültige Plätze für Wahl "${identifier}": ${rv(electionDef, row, 'seats_to_fill')}`);
       }
       const electionType = ELECTION_TYPE_MAPPING.get(electionTypeText);
       if (!electionType) {
@@ -369,7 +365,7 @@ const importElectionDataOds = async (filePath) => {
 
     // Blätter 2..N: Blattname = Wahlkennung (identisch zur XLSX-Logik)
     for (const [sheetName, sheet] of Object.entries(sheets)) {
-      if (sheetName === 'Wahlen') continue;
+      if (sheetName === electionDef.sheetName) continue;
       const electionData = electionIdMap.get(sheetName);
       if (!electionData) {
         logger.warn(`ODS: Blatt "${sheetName}" keiner bekannten Wahl zugeordnet — übersprungen.`);
@@ -383,12 +379,12 @@ const importElectionDataOds = async (filePath) => {
       if (currentElectionType === 'referendum') {
         // Urabstimmung: Nr, Name, Description
         for (const row of sheet.dataRows ?? []) {
-          const nr = Number(row['Nr']);
-          const name = row['Name']?.toString().trim() || '';
+          const nr = Number(rv(docs.referendum, row, 'nr'));
+          const name = rv(docs.referendum, row, 'name')?.toString().trim() || '';
           if (!name || !Number.isInteger(nr) || nr < 1) continue;
           await db.query(
             `INSERT INTO candidate_options (identifier, nr, name, description) VALUES ($1,$2,$3,$4)`,
-            [electionUUID, nr, name, row['Description']?.toString() || null],
+            [electionUUID, nr, name, rv(docs.referendum, row, 'description')?.toString() || null],
           );
           count++;
         }
@@ -396,13 +392,14 @@ const importElectionDataOds = async (filePath) => {
       } else {
         // Kandidaten: Nr, UID, Liste/Schlüsselwort, Vorname, Nachname, Mtr-Nr., Fakultät
         for (const [i, row] of (sheet.dataRows ?? []).entries()) {
-          const listnum = row['Nr'] ? Number(row['Nr']) : i + 1;
-          let uid = row['UID']?.toString().trim() || '';
+          const cd = docs.candidates;
+          const listnum = rv(cd, row, 'listnum') ? Number(rv(cd, row, 'listnum')) : i + 1;
+          let uid = rv(cd, row, 'uid')?.toString().trim() || '';
           if (!uid) throw new Error(`ODS Blatt "${sheetName}" Zeile ${i + 2}: UID fehlt.`);
           if (uid.length > MAX_UID_LENGTH) throw new Error(`ODS Blatt "${sheetName}": UID zu lang.`);
 
-          const firstname = row['Vorname']?.toString() || '';
-          const lastname  = row['Nachname']?.toString() || '';
+          const firstname = rv(cd, row, 'firstname')?.toString() || '';
+          const lastname  = rv(cd, row, 'lastname')?.toString()  || '';
           if (!firstname && !lastname) continue;
 
           const candRes = await db.query(
@@ -413,9 +410,9 @@ const importElectionDataOds = async (filePath) => {
                mtknr=EXCLUDED.mtknr, faculty=EXCLUDED.faculty, keyword=EXCLUDED.keyword
              RETURNING id`,
             [uid, lastname || null, firstname || null,
-             row['Mtr-Nr.']?.toString() || '',
-             row['Fakultät']?.toString() || '',
-             row['Liste / Schlüsselwort']?.toString() || ''],
+             rv(cd, row, 'mtknr')?.toString()   || '',
+             rv(cd, row, 'faculty')?.toString()  || '',
+             rv(cd, row, 'keyword')?.toString()  || ''],
           );
           await db.query(
             `INSERT INTO electioncandidates (electionId, candidateId, listnum)
