@@ -106,7 +106,7 @@ app.use(
       httpOnly: true,
       secure: NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 1000 * (60 * 3 + 45), // 3.45 minutes
+      maxAge: 1000 * 60 * 5, // 5 Minuten
     },
   }),
 );
@@ -177,7 +177,7 @@ app.use(async (req, res, next) => {
   const lastActivity = req.session.lastActivity || now;
   const diff = now - lastActivity;
 
-  if (diff > 3 * 60 * 1000) {
+  if (diff > 30 * 60 * 1000) {
     logger.debug('Session timeout detected logging out user');
 
     req.session.destroy();
@@ -210,12 +210,7 @@ app.use(async (req, res, next) => {
     return res.status(401).json({ message: 'Session expired' });
   }
 
-  const isHeartbeat = req.path === '/api/auth/me' || req.path === '/auth/me';
-
-  if (!isHeartbeat) {
-    logger.debug('Updating last activity timestamp');
-    req.session.lastActivity = now;
-  }
+  req.session.lastActivity = now;
 
   next();
 });
