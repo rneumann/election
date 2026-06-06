@@ -103,11 +103,20 @@ export const performCounting = async (electionId, userId) => {
         [electionId],
       );
     } else {
+      // LEFT JOIN statt INNER JOIN (counting-View) — liefert alle Kandidaten auch ohne Stimmen
       votesRes = await db.query(
-        `SELECT listnum, firstname, lastname, votes 
-         FROM counting 
-         WHERE electionid = $1
-         ORDER BY listnum`,
+        `SELECT
+           ec.listnum,
+           c.firstname,
+           c.lastname,
+           c.faculty,
+           COALESCE(SUM(bv.votes), 0) AS votes
+         FROM electioncandidates ec
+         JOIN candidates c ON c.id = ec.candidateid
+         LEFT JOIN ballotvotes bv ON bv.election = ec.electionid AND bv.listnum = ec.listnum
+         WHERE ec.electionid = $1
+         GROUP BY ec.listnum, c.firstname, c.lastname, c.faculty
+         ORDER BY ec.listnum`,
         [electionId],
       );
     }
@@ -116,13 +125,11 @@ export const performCounting = async (electionId, userId) => {
 
     if (votes.length === 0) {
       logger.warn(`No votes found for election ${electionId}`);
-      // For majority elections, no candidates means configuration error
       if (election.election_type === 'majority_vote') {
         throw new Error(
           `No candidates configured for majority election: ${electionId}. Please add candidates before counting.`,
         );
       }
-      // For proportional/referendum, allow counting with no votes
     }
 
     logger.info(`Loaded ${votes.length} vote entries for counting`);

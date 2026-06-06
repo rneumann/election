@@ -441,6 +441,127 @@ export const generateElectionTemplate = async (presetKey = 'generic') => {
 };
 
 /**
+ * Generiert ein XLSX-Workbook aus benutzerdefinierten Wahldaten (kein Preset).
+ * @param {{startDate:string, startTime:string, endDate:string, endTime:string, elections:Array}} data
+ * @returns {Promise<ExcelJS.Workbook>}
+ */
+export const generateElectionTemplateFromData = async (data) => {
+  const workbook = new ExcelJS.Workbook();
+  const defaultAlignment = { horizontal: 'center', vertical: 'middle' };
+
+  // --- Blatt 1: Wahlen ---
+  const sheet = workbook.addWorksheet('Wahlen', { views: [{ showGridLines: false }] });
+  sheet.columns = [
+    { width: 20, style: { alignment: defaultAlignment } },
+    { width: 35, style: { alignment: defaultAlignment } },
+    { width: 20, style: { alignment: defaultAlignment } },
+    { width: 17, style: { alignment: defaultAlignment } },
+    { width: 20, style: { alignment: defaultAlignment } },
+    { width: 17, style: { alignment: defaultAlignment } },
+    { width: 25, style: { alignment: defaultAlignment } },
+    { width: 25, style: { alignment: defaultAlignment } },
+    { width: 15, style: { alignment: defaultAlignment } },
+  ];
+
+  sheet.mergeCells('A1:I2');
+  const title = sheet.getCell('A1');
+  title.value = 'HKA E-Voting - Wahlkonfiguration';
+  Object.assign(title, {
+    font: { size: 16, bold: true, color: { argb: FONT_WHITE } },
+    fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: HKA_RED } },
+    alignment: { vertical: 'middle', horizontal: 'center' },
+  });
+
+  const setCellText = (addr, value, align = 'left') => {
+    const c = sheet.getCell(addr);
+    c.value = value;
+    c.alignment = { horizontal: align, vertical: 'middle' };
+    c.numFmt = '@';
+  };
+
+  setCellText('B3', 'Wahlzeitraum von', 'right');
+  setCellText('C3', 'Datum:', 'right');
+  setCellText('D3', data.startDate, 'left');
+  setCellText('E3', 'Uhrzeit (HH:MM):', 'right');
+  setCellText('F3', data.startTime || '08:00', 'left');
+  setCellText('B4', 'bis', 'right');
+  setCellText('C4', 'Datum:', 'right');
+  setCellText('D4', data.endDate, 'left');
+  setCellText('E4', 'Uhrzeit (HH:MM):', 'right');
+  setCellText('F4', data.endTime || '18:00', 'left');
+
+  const headerTitles = ['Kennung', 'Info', 'Listen', 'Plätze', 'Stimmen pro Zettel', 'max. Kum.', 'Wahltyp', 'Zählverfahren', 'Freie Plätze'];
+  const hRow = sheet.getRow(ROW_HEADER);
+  hRow.values = headerTitles;
+  hRow.eachCell((c) => {
+    c.font = { bold: true, color: { argb: FONT_WHITE } };
+    c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: HKA_BLACK } };
+    c.alignment = { horizontal: 'center', vertical: 'middle' };
+  });
+
+  const typeList = `"${TYPE_VERHAELTNIS},${TYPE_MEHRHEIT},${TYPE_URABSTIMMUNG}"`;
+  const methodList = `"${METHOD_SAINTE_LAGUE},${METHOD_HARE_NIEMEYER},${METHOD_SIMPLE_MAJORITY},${METHOD_ABSOLUTE_MAJORITY},${METHOD_YES_NO}"`;
+  for (let i = ROW_START_DATA; i <= VALIDATION_MAX_ROW; i++) {
+    sheet.getCell(`G${i}`).dataValidation = { type: 'list', formulae: [typeList] };
+    sheet.getCell(`H${i}`).dataValidation = { type: 'list', formulae: [methodList] };
+    const row = sheet.getRow(i);
+    for (let col = 1; col <= WAHLEN_COL_COUNT; col++) {
+      row.getCell(col).style = { alignment: defaultAlignment, numFmt: '@' };
+    }
+  }
+
+  data.elections.forEach((e, idx) => {
+    const row = sheet.getRow(ROW_START_DATA + idx);
+    row.values = [e.kennung, e.info, e.listen ?? 0, e.plaetze, e.stimmen, e.kum ?? 0, e.wahltyp, e.zaehlverfahren, e.freieplaetze ?? 0];
+    row.eachCell((c) => { c.alignment = defaultAlignment; });
+  });
+
+  // Kandidatenblätter pro Wahl
+  data.elections.forEach((e) => {
+    const config = {
+      type: e.wahltyp,
+      listen: e.listen,
+    };
+    addCandidateSheet(workbook, e.kennung, config, defaultAlignment);
+  });
+
+  return workbook;
+};
+
+/**
+ * Generiert ODS-Sheets aus benutzerdefinierten Wahldaten.
+ * @param {{startDate:string, startTime:string, endDate:string, endTime:string, elections:Array}} data
+ * @returns {Array<{name:string, headers:string[], rows:any[][]}>}
+ */
+export const generateElectionTemplateOdsFromData = (data) => {
+  const wahlenHeaders = ['Kennung', 'Info', 'Listen', 'Plätze', 'Stimmen pro Zettel', 'max. Kum.', 'Wahltyp', 'Zählverfahren', 'Freie Plätze'];
+
+  const metaVon = ['Wahlzeitraum von', 'Datum:', data.startDate, 'Uhrzeit (HH:MM):', data.startTime || '08:00', '', '', '', ''];
+  const metaBis = ['bis', 'Datum:', data.endDate, 'Uhrzeit (HH:MM):', data.endTime || '18:00', '', '', '', ''];
+
+  const electionRows = data.elections.map((e) => [
+    e.kennung, e.info, e.listen ?? 0, e.plaetze, e.stimmen, e.kum ?? 0, e.wahltyp, e.zaehlverfahren, e.freieplaetze ?? 0,
+  ]);
+
+  const sheets = [
+    { name: 'Wahlen', headers: wahlenHeaders, rows: [metaVon, metaBis, ...electionRows] },
+  ];
+
+  data.elections.forEach((e) => {
+    const isReferendum = e.wahltyp === 'Urabstimmung';
+    const candHeaders = isReferendum
+      ? ['Nr', 'Name', 'Description']
+      : ['Nr', 'UID', 'Liste / Schlüsselwort', 'Vorname', 'Nachname', 'Mtr-Nr.', 'Fakultät', 'Studiengang'];
+    const candExample = isReferendum
+      ? [1, 'Ja', 'Zustimmung zur Vorlage']
+      : [1, 'kand-001', e.listen === 1 ? 'Liste A' : 'Einzelkandidat', 'Max', 'Mustermann', '123456', 'IWI', 'Informatik'];
+    sheets.push({ name: e.kennung, headers: candHeaders, rows: [candExample] });
+  });
+
+  return sheets;
+};
+
+/**
  * Generates a voter template Excel workbook.
  * @returns {Promise<ExcelJS.Workbook>} The generated Excel workbook
  */

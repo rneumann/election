@@ -4,7 +4,9 @@ import { streamWorkbook } from '../utils/excel.js';
 import { streamOdsFile } from '../utils/ods.js';
 import {
   generateElectionTemplate,
+  generateElectionTemplateFromData,
   generateElectionTemplateOds,
+  generateElectionTemplateOdsFromData,
   generateVoterTemplate,
   generateVoterTemplateOds,
 } from '../service/template.service.js';
@@ -27,6 +29,36 @@ downloadRouter.get(
       } else {
         const workbook = await generateElectionTemplate(preset);
         await streamWorkbook(workbook, res, `HKA_Vorlage_${preset}.xlsx`);
+      }
+    } catch (err) {
+      res.status(500).json({ message: 'Fehler beim Generieren der Vorlage', error: err.message });
+    }
+  },
+);
+
+// POST /api/templates-download/template/elections/custom
+downloadRouter.post(
+  '/template/elections/custom',
+  ensureAuthenticated,
+  ensureHasRole('admin'),
+  async (req, res) => {
+    try {
+      const { startDate, startTime, endDate, endTime, elections, format } = req.body;
+
+      if (!startDate || !endDate || !Array.isArray(elections) || elections.length === 0) {
+        return res.status(400).json({ message: 'startDate, endDate und elections sind erforderlich' });
+      }
+
+      const data = { startDate, startTime, endDate, endTime, elections };
+      const useOds = format !== 'xlsx';
+      const filename = `HKA_Wahlkonfiguration.${useOds ? 'ods' : 'xlsx'}`;
+
+      if (useOds) {
+        const sheets = generateElectionTemplateOdsFromData(data);
+        await streamOdsFile(sheets, res, filename);
+      } else {
+        const workbook = await generateElectionTemplateFromData(data);
+        await streamWorkbook(workbook, res, filename);
       }
     } catch (err) {
       res.status(500).json({ message: 'Fehler beim Generieren der Vorlage', error: err.message });

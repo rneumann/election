@@ -26,6 +26,8 @@ import { DeleteDataView } from '../components/DeleteDataView.jsx';
 import { templateApi } from '../services/templateApi.js';
 import IntegrityCheckView from '../components/IntegrityCheckView.jsx';
 import ElectionOverview from '../components/ElectionOverview.jsx';
+import ElectionTemplateBuilder from '../components/ElectionTemplateBuilder.jsx';
+import VoterUploadMulti from '../components/VoterUploadMulti.jsx';
 //NEU ENDE (templates)
 
 /**
@@ -328,6 +330,16 @@ const AdminDashboard = () => {
                     <div className="flex items-center justify-between">
                       <span>Vorlage herunterladen</span>
                       <span className="text-xs opacity-60">3.2</span>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => handleSectionChange('templateBuilder')}
+                    style={getNavButtonStyle('templateBuilder')}
+                    className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span>Vorlage erstellen</span>
+                      <span className="text-xs opacity-60">3.2b</span>
                     </div>
                   </button>
                   <button
@@ -706,6 +718,21 @@ const AdminDashboard = () => {
               </div>
             )}
 
+            {/* Vorlage erstellen Section */}
+            {activeSection === 'templateBuilder' && (
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div className="border-b border-gray-200 px-6 py-4">
+                  <h2 className="text-xl font-bold text-gray-900">Vorlage erstellen</h2>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Wahlzeitraum und Wahlen direkt eingeben — die Vorlage wird konsistent und sofort importierbar erstellt.
+                  </p>
+                </div>
+                <div className="p-6">
+                  <ElectionTemplateBuilder />
+                </div>
+              </div>
+            )}
+
             {/* Wahleinstellung hochladen Section */}
             {activeSection === 'definition' && (
               <FileUploadSection
@@ -721,23 +748,20 @@ const AdminDashboard = () => {
               />
             )}
 
-            {/* Wähler CSV hochladen Section */}
+            {/* Wählerverzeichnisse hochladen Section */}
             {activeSection === 'upload' && (
-              <FileUploadSection
-                key="upload-voters"
-                title="Wählerverzeichnis hochladen"
-                description="CSV-Datei mit den Wählern hochladen und einer zukünftigen Wahl zuordnen. Die Datei muss aus einer Kopfzeile und den folgenden, durch Komma getrennten Spalten bestehen:"
-                uploadType="voters"
-                endpoint="/upload/voters"
-                validator={validateVoterCSV}
-                transformer={transformVoterFile}
-                acceptedFileTypes=".csv"
-                formatExample="RZ-Kennung,Fakultät,Vorname,Nachname,Matr.Nr,Studienganskürzel,Studiengang"
-                formatExampleData="abcd1234,AB,Max,Mustermann,123456,ARTB,Architektur"
-                fileTypeLabel="CSV"
-                requiresElection={true}
-                electionFilter="future"
-              />
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div className="border-b border-gray-200 px-6 py-4">
+                  <h2 className="text-xl font-bold text-gray-900">Wählerverzeichnisse hochladen</h2>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Für jede Wahl ohne Wählerverzeichnis eine CSV-Datei auswählen und anschließend en-bloc hochladen.
+                    Format: <code className="text-xs bg-gray-100 px-1 rounded">RZ-Kennung,Fakultät,Vorname,Nachname,Matr.Nr</code>
+                  </p>
+                </div>
+                <div className="p-6">
+                  <VoterUploadMulti />
+                </div>
+              </div>
             )}
 
             {/* Wählerverzeichnis herunterladen Section */}
