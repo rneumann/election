@@ -237,15 +237,6 @@ const AdminDashboard = () => {
                 <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">
                   Navigation
                 </h2>
-                <p className="text-xs text-gray-500 mt-1">Funktionen zur Wahlverwaltung</p>
-              </div>
-
-              <div className="px-5 py-4 bg-gray-50 border-b border-gray-200">
-                <p className="text-xs text-gray-700 leading-relaxed">
-                  Die folgende Liste enthält alle notwendigen Funktionen zur Einrichtung/Änderung
-                  von Wahlen. Um eine neue Wahl einzurichten, folgen Sie einfach den Schritten in
-                  der angegebenen Reihenfolge.
-                </p>
               </div>
 
               <nav className="p-2">
