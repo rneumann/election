@@ -12,9 +12,9 @@ import { MAX_FILE_SIZE } from './constants.js';
  * @returns {Promise<Object>} Returns an object containing success status, validation errors, or validated data with stats.
  */
 export const validateElectionExcel = async (file) => {
-  const fileExtension = file.name.split('.').pop();
+  const fileExtension = file.name.split('.').pop().toLowerCase();
   logger.info(
-    `Starting Excel validation for file type: .${fileExtension}, size: ${(file.size / 1024).toFixed(2)}KB`,
+    `Starting validation for file type: .${fileExtension}, size: ${(file.size / 1024).toFixed(2)}KB`,
   );
 
   // Check if file exceeds the maximum allowed size
@@ -30,6 +30,20 @@ export const validateElectionExcel = async (file) => {
           code: 'FILE_TOO_LARGE',
         },
       ],
+    };
+  }
+
+  // ODS-Dateien können clientseitig nicht geparst werden (ExcelJS unterstützt kein ODS).
+  // Validierung erfolgt vollständig serverseitig.
+  if (fileExtension === 'ods') {
+    logger.info('ODS-Datei erkannt – clientseitige Validierung übersprungen, Backend validiert.');
+    return {
+      success: true,
+      stats: {
+        electionName: 'ODS-Datei (wird serverseitig validiert)',
+        electionInfo: file.name,
+        totalCandidates: '?',
+      },
     };
   }
 

@@ -39,6 +39,10 @@ export const readOdsSheets = async (filePath) => {
   const parser = new XMLParser({
     ignoreAttributes: false,
     attributeNamePrefix: '@_',
+    // Zellwerte immer als Strings lesen — verhindert dass "1" zu 1 (number) wird
+    // und dann typeof t === 'string' fehlschlägt
+    parseTagValue: false,
+    parseAttributeValue: false,
     isArray: (name) =>
       ['table:table', 'table:table-row', 'table:table-cell', 'text:p'].includes(name),
   });
@@ -67,11 +71,16 @@ export const readOdsSheets = async (filePath) => {
         // Wiederholte leere Zellen expandieren
         const repeat = parseInt(cell['@_table:number-columns-repeated'] ?? '1', 10);
         const textNodes = cell['text:p'];
+        // Mit parseTagValue:false liefert fast-xml-parser text:p immer als String-Array
         const rawVal = Array.isArray(textNodes)
-          ? textNodes.map((t) => (typeof t === 'string' ? t : t?.['#text'] ?? '')).join('')
+          ? textNodes
+              .map((t) =>
+                typeof t === 'string' ? t : (t?.['#text'] ?? String(t ?? '')),
+              )
+              .join('')
           : typeof textNodes === 'string'
             ? textNodes
-            : (textNodes?.['#text'] ?? '');
+            : String(textNodes ?? '');
         const val = rawVal ?? '';
 
         for (let i = 0; i < Math.min(repeat, 50); i++) {
