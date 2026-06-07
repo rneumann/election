@@ -184,3 +184,5 @@ scp-wahl-hka.sh
 .gitignore
 ssh-wahl-hka.sh
 on-server.sh
+
+*.pyc
