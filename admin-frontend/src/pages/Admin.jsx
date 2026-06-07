@@ -2,7 +2,6 @@
 import { useEffect, useCallback } from 'react';
 //NEU ENDE (templates)
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useTheme } from '../hooks/useTheme.js';
 import CountingSection from '../components/counting/CountingSection.jsx';
@@ -26,6 +25,7 @@ import { DeleteDataView } from '../components/DeleteDataView.jsx';
 import api from '../services/api.js';
 import { templateApi } from '../services/templateApi.js';
 import IntegrityCheckView from '../components/IntegrityCheckView.jsx';
+import AuditLogTable from '../components/AuditLogTable.jsx';
 import ElectionOverview from '../components/ElectionOverview.jsx';
 import ElectionTemplateBuilder from '../components/ElectionTemplateBuilder.jsx';
 import VoterUploadMulti from '../components/VoterUploadMulti.jsx';
@@ -86,7 +86,6 @@ const NavButton = ({ onClick, active, disabled, title: tooltip, badge, children 
 const AdminDashboard = () => {
   const { user, logout } = useAuth();
   const theme = useTheme();
-  const navigate = useNavigate();
   const [showConfirmAlert, setShowConfirmAlert] = useState(false);
   const [simulateMode, setSimulateMode] = useState(false);
   // NEU ANFANG (templates)
@@ -383,7 +382,7 @@ const AdminDashboard = () => {
                   <NavButton onClick={() => handleSectionChange('clear')} active={activeSection === 'clear'}>Datenbankbereinigung</NavButton>
                   <NavButton onClick={() => handleSectionChange('config')} active={activeSection === 'config'}>Wahl-Parameter Konfiguration</NavButton>
                   <NavButton onClick={() => handleSectionChange('integrity')} active={activeSection === 'integrity'}>Integritätsprüfung</NavButton>
-                  <NavButton onClick={() => navigate('/admin/audit')}>Audit-Logs</NavButton>
+                  <NavButton onClick={() => handleSectionChange('audit')} active={activeSection === 'audit'}>Audit-Logs</NavButton>
                 </NavSection>
 
               </nav>
@@ -871,6 +870,21 @@ const AdminDashboard = () => {
                 countingError={countingError}
                 setCountingError={setCountingError}
               />
+            )}
+
+            {/* Audit-Log Section */}
+            {activeSection === 'audit' && (
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div className="border-b px-6 py-4">
+                  <h2 className="text-xl font-bold">Audit-Logs</h2>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Revisionssichere Aufzeichnung aller sicherheitsrelevanten Vorgänge. Die Integrität wird durch kryptografische Verkettung (Hash-Chain) gewährleistet.
+                  </p>
+                </div>
+                <div className="p-6">
+                  <AuditLogTable />
+                </div>
+              </div>
             )}
 
             {/* Integrity Check Section */}
