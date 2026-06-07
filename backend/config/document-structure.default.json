@@ -1,0 +1,69 @@
+{
+  "elections": {
+    "sheetName": "Wahlen",
+    "headerMarkers": ["Kennung"],
+    "metaRows": {
+      "start": {
+        "marker":      "Wahlzeitraum von",
+        "dateLabel":   "Datum:",
+        "timeLabel":   "Uhrzeit (HH:MM):",
+        "defaultTime": "08:00",
+        "dateCol":     2,
+        "timeCol":     4
+      },
+      "end": {
+        "marker":      "bis",
+        "dateLabel":   "Datum:",
+        "timeLabel":   "Uhrzeit (HH:MM):",
+        "defaultTime": "18:00",
+        "dateCol":     2,
+        "timeCol":     4
+      }
+    },
+    "columns": [
+      { "name": "Kennung",            "width": 20, "field": "identifier"            },
+      { "name": "Info",               "width": 35, "field": "info"                  },
+      { "name": "Listen",             "width": 20, "field": "listvotes"             },
+      { "name": "Plätze",             "width": 17, "field": "seats_to_fill"         },
+      { "name": "Stimmen pro Zettel", "width": 20, "field": "votes_per_ballot"      },
+      { "name": "max. Kum.",          "width": 17, "field": "max_cumulative_votes"  },
+      { "name": "Wahltyp",            "width": 25, "field": "election_type",        "validation": "electionTypes"    },
+      { "name": "Zählverfahren",      "width": 25, "field": "counting_method",      "validation": "countingMethods"  },
+      { "name": "Freie Plätze",       "width": 15, "field": "free_slots",           "default": 0 }
+    ]
+  },
+  "candidates": {
+    "nameFromField": "identifier",
+    "columns": [
+      { "name": "Nr",                    "width":  8, "field": "listnum"    },
+      { "name": "UID",                   "width": 15, "field": "uid"        },
+      { "name": "Liste / Schlüsselwort", "width": 25, "field": "keyword"   },
+      { "name": "Vorname",               "width": 15, "field": "firstname"  },
+      { "name": "Nachname",              "width": 15, "field": "lastname"   },
+      { "name": "Mtr-Nr.",               "width": 12, "field": "mtknr"      },
+      { "name": "Fakultät",              "width": 12, "field": "faculty"    },
+      { "name": "Studiengang",           "width": 18, "field": "studiengang", "optional": true }
+    ]
+  },
+  "referendum": {
+    "nameFromField": "identifier",
+    "columns": [
+      { "name": "Nr",          "width":  8, "field": "nr"          },
+      { "name": "Name",        "width": 25, "field": "name"        },
+      { "name": "Description", "width": 50, "field": "description" }
+    ]
+  },
+  "voters": {
+    "columns": [
+      { "name": "MatrikelNr", "width": 15, "field": "mtknr"     },
+      { "name": "E-Mail",     "width": 30, "field": "email"     },
+      { "name": "Vorname",    "width": 20, "field": "firstname" },
+      { "name": "Nachname",   "width": 20, "field": "lastname"  },
+      { "name": "Fakultät",   "width": 15, "field": "faculty"   }
+    ]
+  },
+  "validations": {
+    "electionTypes":   ["Verhältniswahl", "Mehrheitswahl", "Urabstimmung"],
+    "countingMethods": ["Sainte-Laguë", "Hare-Niemeyer", "Einfache Mehrheit", "Absolute Mehrheit", "Ja/Nein/Enthaltung"]
+  }
+}

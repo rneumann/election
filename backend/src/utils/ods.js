@@ -91,12 +91,18 @@ export const readOdsSheets = async (filePath) => {
       allRows.push(values);
     }
 
-    // Erste nicht-leere Zeile als Header verwenden
-    const headerIdx = allRows.findIndex((r) => r.some((v) => v !== ''));
+    // Header-Zeile finden: erste Zeile die "Kennung" oder "Nr" als erstes nicht-leeres
+    // Element enthält — so können Meta-Zeilen (Wahlzeitraum etc.) davor stehen.
+    const HEADER_MARKERS = ['Kennung', 'Nr'];
+    let headerIdx = allRows.findIndex((r) =>
+      HEADER_MARKERS.includes(r.find((v) => v !== '')),
+    );
+    // Fallback: erste nicht-leere Zeile
+    if (headerIdx === -1) headerIdx = allRows.findIndex((r) => r.some((v) => v !== ''));
     if (headerIdx === -1) continue;
 
     const headers = allRows[headerIdx];
-    // rawRows: alle Zeilen vor dem Header (z.B. Meta-Informationen)
+    // rawRows: alle Zeilen vor dem Header (Meta-Informationen wie Wahlzeitraum)
     const rawRows = allRows.slice(0, headerIdx);
     const dataRows = [];
 

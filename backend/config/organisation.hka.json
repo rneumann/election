@@ -1,0 +1,17 @@
+{
+  "name": "HKA",
+  "fullName": "Hochschule Karlsruhe",
+  "logo": null,
+  "colors": {
+    "primary": "FFE30613",
+    "dark":    "FF000000",
+    "white":   "FFFFFFFF"
+  },
+  "document": {
+    "titlePrefix": "HKA E-Voting",
+    "electionDurationDays": 14,
+    "headerRowIndex": 7,
+    "dataStartRowIndex": 8,
+    "validationMaxRow": 100
+  }
+}

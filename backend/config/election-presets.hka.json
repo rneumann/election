@@ -1,0 +1,15 @@
+{
+  "generic":           { "info": "Gremienwahl Beispiel",                   "type": "",               "method": "",                   "listen": 1, "seats": null, "votes": null, "kum": null },
+  "stupa_verhaeltnis": { "info": "Studierendenparlament (Verhältniswahl)",  "type": "Verhältniswahl", "method": "Sainte-Laguë",       "listen": 1, "seats": null, "votes": null, "kum": 0    },
+  "stupa_mehrheit":    { "info": "Studierendenparlament (Mehrheitswahl)",   "type": "Mehrheitswahl",  "method": "Einfache Mehrheit",  "listen": 0, "seats": null, "votes": null, "kum": null },
+  "fachschaft":        { "info": "Wahl des Fachschaftsvorstands",           "type": "Mehrheitswahl",  "method": "Absolute Mehrheit",  "listen": 0, "seats": null, "votes": 1,    "kum": 0    },
+  "senat_verhaeltnis": { "info": "Senat (Verhältniswahl)",                  "type": "Verhältniswahl", "method": "Hare-Niemeyer",      "listen": 1, "seats": null, "votes": null, "kum": 2    },
+  "senat_mehrheit":    { "info": "Senat (Mehrheitswahl)",                   "type": "Mehrheitswahl",  "method": "Einfache Mehrheit",  "listen": 0, "seats": null, "votes": null, "kum": 2    },
+  "fakrat_verhaeltnis":{ "info": "Fakultätsrat (Verhältniswahl)",           "type": "Verhältniswahl", "method": "Hare-Niemeyer",      "listen": 1, "seats": null, "votes": null, "kum": null },
+  "fakrat_mehrheit":   { "info": "Fakultätsrat (Mehrheitswahl)",            "type": "Mehrheitswahl",  "method": "Einfache Mehrheit",  "listen": 0, "seats": null, "votes": null, "kum": null },
+  "urabstimmung":      { "info": "Urabstimmung",                            "type": "Urabstimmung",   "method": "Ja/Nein/Enthaltung", "listen": 0, "seats": 1,    "votes": 1,    "kum": 0    },
+  "prorektor":         { "info": "Wahl der Prorektoren",                    "type": "Urabstimmung",   "method": "Ja/Nein/Enthaltung", "listen": 0, "seats": 1,    "votes": 1,    "kum": 0    },
+  "dekan_wahlgang1":   { "info": "Wahl Dekan/Prodekan (1. Wahlgang)",       "type": "Mehrheitswahl",  "method": "Absolute Mehrheit",  "listen": 0, "seats": 1,    "votes": 1,    "kum": 0    },
+  "dekan_wahlgang2":   { "info": "Wahl Dekan/Prodekan (2. Wahlgang)",       "type": "Mehrheitswahl",  "method": "Einfache Mehrheit",  "listen": 0, "seats": 1,    "votes": 1,    "kum": 0    },
+  "senat_professoren": { "info": "Wahl der Professoren in den Senat",       "type": "Mehrheitswahl",  "method": "Einfache Mehrheit",  "listen": 0, "seats": 2,    "votes": 2,    "kum": 2    }
+}

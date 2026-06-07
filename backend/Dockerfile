@@ -21,6 +21,7 @@ COPY package*.json ./
 COPY server.js ./
 COPY src/ ./src/
 COPY data/ ./data/
+COPY config/ ./config/
 
 RUN mkdir -p /app/uploads \
  && chown node:node /app/uploads \

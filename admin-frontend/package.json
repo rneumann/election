@@ -31,7 +31,7 @@
     "@mui/material": "^7.3.6",
     "@mui/utils": "^7.3.6",
     "@playwright/test": "^1.57.0",
-    "axios": "^1.13.1",
+    "axios": "^1.17.0",
     "dotenv": "^17.2.3",
     "exceljs": "^4.4.0",
     "license-checker": "^25.0.1",

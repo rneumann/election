@@ -30,7 +30,7 @@
     "@mui/icons-material": "^7.3.6",
     "@mui/material": "^7.3.6",
     "@mui/utils": "^7.3.6",
-    "axios": "^1.13.1",
+    "axios": "^1.17.0",
     "exceljs": "^4.4.0",
     "license-checker": "^25.0.1",
     "loglevel": "^1.9.2",
