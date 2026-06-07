@@ -186,3 +186,4 @@ ssh-wahl-hka.sh
 on-server.sh
 
 *.pyc
+backend/.extras/compose/locust/__pycache__/locustfile_voting.cpython-314.pyc
