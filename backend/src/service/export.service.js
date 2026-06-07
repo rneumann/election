@@ -341,6 +341,49 @@ export const exportElectionDefinitionRoute = async (req, res, next) => {
         ' ',
         ' ',
       ]);
+
+      // Kandidatenliste als eigenes Sheet pro Wahl
+      const candidatesRes = await safeQuery(
+        `SELECT ec.listnum,
+                c.keyword,
+                c.firstname,
+                c.lastname,
+                c.faculty,
+                c.mtknr,
+                c.approved
+         FROM electioncandidates ec
+         JOIN candidates c ON c.id = ec.candidateId
+         WHERE ec.electionId = $1
+         ORDER BY ec.listnum ASC`,
+        [election.id],
+      );
+
+      const candidateSheet = workbook.addWorksheet(
+        `Kandidaten ${election.id}`.substring(0, 31),
+      );
+      candidateSheet.addRow(['Wahl-ID', election.id]);
+      candidateSheet.addRow(['Bezeichnung', election.info]);
+      candidateSheet.addRow([]);
+      candidateSheet.addRow([
+        'Listen-Nr.',
+        'Kürzel',
+        'Vorname',
+        'Nachname',
+        'Fakultät',
+        'Matrikelnummer',
+        'Zugelassen',
+      ]);
+      for (const c of candidatesRes.rows) {
+        candidateSheet.addRow([
+          c.listnum,
+          c.keyword ?? '',
+          c.firstname ?? '',
+          c.lastname ?? '',
+          c.faculty ?? '',
+          c.mtknr ?? '',
+          c.approved ? 'Ja' : 'Nein',
+        ]);
+      }
     }
 
     writeAuditLog({
