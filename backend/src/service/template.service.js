@@ -3,7 +3,12 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import ExcelJS from 'exceljs';
 import { logger } from '../conf/logger/logger.js';
-import { loadOrganisation, loadDocumentStructure, loadInternalPresets, headerNames } from '../conf/config-loader.js';
+import {
+  loadOrganisation,
+  loadDocumentStructure,
+  loadInternalPresets,
+  headerNames,
+} from '../conf/config-loader.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -26,13 +31,28 @@ const CONFIG_PATH = path.join(__dirname, '../../data/election_presets.json');
 const mapNewFormatToOld = (preset) => {
   const countingMethod = preset.counting_method || 'highest_votes';
   const votesPerBallot = preset.votes_per_ballot || 1;
-  let type = 'Mehrheitswahl', method = 'Einfache Mehrheit';
-  let seats = preset.candidates_per_list || null, votes = votesPerBallot, listen = 0;
+  let type = 'Mehrheitswahl',
+    method = 'Einfache Mehrheit';
+  let seats = preset.candidates_per_list || null,
+    votes = votesPerBallot,
+    listen = 0;
   let kum = preset.allow_cumulation ? votesPerBallot : 0;
-  if (countingMethod === 'referendum')             { type = 'Urabstimmung';   method = 'Ja/Nein/Enthaltung'; seats = 1; votes = 1; }
-  else if (countingMethod.includes('sainte'))      { type = 'Verhältniswahl'; method = 'Sainte-Laguë';       listen = 1; }
-  else if (countingMethod === 'hare_niemeyer')     { type = 'Verhältniswahl'; method = 'Hare-Niemeyer';      listen = 1; }
-  else if (preset.absolute_majority_required)      { method = 'Absolute Mehrheit'; }
+  if (countingMethod === 'referendum') {
+    type = 'Urabstimmung';
+    method = 'Ja/Nein/Enthaltung';
+    seats = 1;
+    votes = 1;
+  } else if (countingMethod.includes('sainte')) {
+    type = 'Verhältniswahl';
+    method = 'Sainte-Laguë';
+    listen = 1;
+  } else if (countingMethod === 'hare_niemeyer') {
+    type = 'Verhältniswahl';
+    method = 'Hare-Niemeyer';
+    listen = 1;
+  } else if (preset.absolute_majority_required) {
+    method = 'Absolute Mehrheit';
+  }
   return { info: preset.info || 'Wahl', type, method, listen, seats, votes, kum };
 };
 
@@ -55,7 +75,9 @@ const loadAllPresets = async () => {
       customPresets[key] = preset.counting_method ? mapNewFormatToOld(preset) : preset;
       /* eslint-enable security/detect-object-injection */
     });
-  } catch { logger.debug('Keine externe Konfiguration gefunden.'); }
+  } catch {
+    logger.debug('Keine externe Konfiguration gefunden.');
+  }
   return { ...internalPresets, ...customPresets };
 };
 
@@ -122,9 +144,14 @@ const addCandidateSheet = (workbook, sheetName, preset, docs, colors) => {
     sheet.getRow(3).values = [2, 'Nein', 'Ablehnung der Vorlage'];
   } else {
     sheet.getRow(2).values = [
-      1, 'kand-001',
+      1,
+      'kand-001',
       preset.listen === 1 ? 'Liste A' : 'Einzelkandidat',
-      'Max', 'Mustermann', '123456', 'IWI', 'Informatik',
+      'Max',
+      'Mustermann',
+      '123456',
+      'IWI',
+      'Informatik',
     ];
   }
 
@@ -158,8 +185,8 @@ const setupWahlenSheet = (sheet, org, docs, startDate, startTime, endDate, endTi
   const meta = docs.elections.metaRows;
   const colDefs = docs.elections.columns;
   const colCount = colDefs.length;
-  const ROW_HEADER   = docCfg.headerRowIndex;
-  const ROW_DATA     = docCfg.dataStartRowIndex;
+  const ROW_HEADER = docCfg.headerRowIndex;
+  const ROW_DATA = docCfg.dataStartRowIndex;
   const VALIDATION_MAX = docCfg.validationMaxRow;
 
   sheet.columns = buildSheetColumns(colDefs);
@@ -173,21 +200,28 @@ const setupWahlenSheet = (sheet, org, docs, startDate, startTime, endDate, endTi
   title.alignment = { vertical: 'middle', horizontal: 'center' };
 
   // Meta-Zeilen (Zeilen 3–4): Wahlzeitraum mit Datum und Uhrzeit
+  /**
+   * Setzt den Wert und die Ausrichtung einer Zelle in den Meta-Zeilen.
+   * Alle Meta-Zellen haben Text-Formatierung (@) und vertikale Mitte.
+   * @param addr Zellenadresse, z.B. "B3"
+   * @param value Anzuzeigender Wert
+   * @param align Horizontale Ausrichtung: "left", "center" oder "right" (default: "left")
+   */
   const setCell = (addr, value, align = 'left') => {
     const c = sheet.getCell(addr);
     c.value = value;
     c.alignment = { horizontal: align, vertical: 'middle' };
     c.numFmt = '@';
   };
-  setCell('B3', meta.start.marker,     'right');
-  setCell('C3', meta.start.dateLabel,  'right');
-  setCell('D3', startDate,             'left');
-  setCell('E3', meta.start.timeLabel,  'right');
+  setCell('B3', meta.start.marker, 'right');
+  setCell('C3', meta.start.dateLabel, 'right');
+  setCell('D3', startDate, 'left');
+  setCell('E3', meta.start.timeLabel, 'right');
   setCell('F3', startTime || meta.start.defaultTime, 'left');
-  setCell('B4', meta.end.marker,       'right');
-  setCell('C4', meta.end.dateLabel,    'right');
-  setCell('D4', endDate,               'left');
-  setCell('E4', meta.end.timeLabel,    'right');
+  setCell('B4', meta.end.marker, 'right');
+  setCell('C4', meta.end.dateLabel, 'right');
+  setCell('D4', endDate, 'left');
+  setCell('E4', meta.end.timeLabel, 'right');
   setCell('F4', endTime || meta.end.defaultTime, 'left');
 
   // Header-Zeile (Zeile 7 per Default aus Config)
@@ -197,14 +231,22 @@ const setupWahlenSheet = (sheet, org, docs, startDate, startTime, endDate, endTi
 
   // Dropdown-Validierungen und Text-Formatierung für alle Datenzeilen
   const vals = docs.validations;
-  const typeColIdx   = colDefs.findIndex((c) => c.validation === 'electionTypes')   + 1;
+  const typeColIdx = colDefs.findIndex((c) => c.validation === 'electionTypes') + 1;
   const methodColIdx = colDefs.findIndex((c) => c.validation === 'countingMethods') + 1;
-  const typeColLetter   = String.fromCharCode(64 + typeColIdx);
+  const typeColLetter = String.fromCharCode(64 + typeColIdx);
   const methodColLetter = String.fromCharCode(64 + methodColIdx);
 
   for (let i = ROW_DATA; i <= VALIDATION_MAX; i++) {
-    if (typeColIdx)   sheet.getCell(`${typeColLetter}${i}`).dataValidation   = { type: 'list', formulae: [buildValidationList(vals.electionTypes)]   };
-    if (methodColIdx) sheet.getCell(`${methodColLetter}${i}`).dataValidation = { type: 'list', formulae: [buildValidationList(vals.countingMethods)] };
+    if (typeColIdx)
+      sheet.getCell(`${typeColLetter}${i}`).dataValidation = {
+        type: 'list',
+        formulae: [buildValidationList(vals.electionTypes)],
+      };
+    if (methodColIdx)
+      sheet.getCell(`${methodColLetter}${i}`).dataValidation = {
+        type: 'list',
+        formulae: [buildValidationList(vals.countingMethods)],
+      };
     const row = sheet.getRow(i);
     for (let col = 1; col <= colCount; col++) {
       row.getCell(col).style = { alignment: defaultAlignment, numFmt: '@' };
@@ -225,7 +267,11 @@ const setupWahlenSheet = (sheet, org, docs, startDate, startTime, endDate, endTi
  * @returns {Promise<ExcelJS.Workbook>} Fertiges ExcelJS-Workbook zum Streamen
  */
 export const generateElectionTemplate = async (presetKey = 'generic') => {
-  const [allPresets, org, docs] = await Promise.all([loadAllPresets(), loadOrganisation(), loadDocumentStructure()]);
+  const [allPresets, org, docs] = await Promise.all([
+    loadAllPresets(),
+    loadOrganisation(),
+    loadDocumentStructure(),
+  ]);
   /* eslint-disable security/detect-object-injection */
   const config = Object.hasOwn(allPresets, presetKey) ? allPresets[presetKey] : allPresets.generic;
   /* eslint-enable security/detect-object-injection */
@@ -236,7 +282,9 @@ export const generateElectionTemplate = async (presetKey = 'generic') => {
   const endDate = future.toLocaleDateString('de-DE');
 
   const workbook = new ExcelJS.Workbook();
-  const sheet = workbook.addWorksheet(docs.elections.sheetName, { views: [{ showGridLines: false }] });
+  const sheet = workbook.addWorksheet(docs.elections.sheetName, {
+    views: [{ showGridLines: false }],
+  });
 
   setupWahlenSheet(sheet, org, docs, startDate, null, endDate, null);
 
@@ -244,11 +292,19 @@ export const generateElectionTemplate = async (presetKey = 'generic') => {
   const exampleKey = presetKey === 'generic' ? 'meine_wahl_01' : presetKey;
   const dataRow = sheet.getRow(ROW_DATA);
   dataRow.values = [
-    exampleKey, config.info, config.listen ?? 1,
-    config.seats ?? '', config.votes ?? '', config.kum ?? '',
-    config.type ?? '', config.method ?? '', 0,
+    exampleKey,
+    config.info,
+    config.listen ?? 1,
+    config.seats ?? '',
+    config.votes ?? '',
+    config.kum ?? '',
+    config.type ?? '',
+    config.method ?? '',
+    0,
   ];
-  dataRow.eachCell((c) => { c.alignment = defaultAlignment; });
+  dataRow.eachCell((c) => {
+    c.alignment = defaultAlignment;
+  });
 
   addCandidateSheet(workbook, exampleKey, config, docs, org.colors);
   return workbook;
@@ -268,16 +324,36 @@ export const generateElectionTemplate = async (presetKey = 'generic') => {
 export const generateElectionTemplateFromData = async (data) => {
   const [org, docs] = await Promise.all([loadOrganisation(), loadDocumentStructure()]);
   const workbook = new ExcelJS.Workbook();
-  const sheet = workbook.addWorksheet(docs.elections.sheetName, { views: [{ showGridLines: false }] });
+  const sheet = workbook.addWorksheet(docs.elections.sheetName, {
+    views: [{ showGridLines: false }],
+  });
 
   const { ROW_DATA } = setupWahlenSheet(
-    sheet, org, docs, data.startDate, data.startTime, data.endDate, data.endTime,
+    sheet,
+    org,
+    docs,
+    data.startDate,
+    data.startTime,
+    data.endDate,
+    data.endTime,
   );
 
   data.elections.forEach((e, idx) => {
     const row = sheet.getRow(ROW_DATA + idx);
-    row.values = [e.kennung, e.info, e.listen ?? 0, e.plaetze, e.stimmen, e.kum ?? 0, e.wahltyp, e.zaehlverfahren, e.freieplaetze ?? 0];
-    row.eachCell((c) => { c.alignment = defaultAlignment; });
+    row.values = [
+      e.kennung,
+      e.info,
+      e.listen ?? 0,
+      e.plaetze,
+      e.stimmen,
+      e.kum ?? 0,
+      e.wahltyp,
+      e.zaehlverfahren,
+      e.freieplaetze ?? 0,
+    ];
+    row.eachCell((c) => {
+      c.alignment = defaultAlignment;
+    });
     addCandidateSheet(workbook, e.kennung, { type: e.wahltyp, listen: e.listen }, docs, org.colors);
   });
 
@@ -299,15 +375,48 @@ export const generateElectionTemplateOdsFromData = async (data) => {
   const docs = await loadDocumentStructure();
   const meta = docs.elections.metaRows;
   const wahlenHeaders = headerNames(docs.elections);
-  const metaVon = [meta.start.marker, meta.start.dateLabel, data.startDate, meta.start.timeLabel, data.startTime || meta.start.defaultTime, '', '', '', ''];
-  const metaBis = [meta.end.marker,   meta.end.dateLabel,   data.endDate,   meta.end.timeLabel,   data.endTime   || meta.end.defaultTime,   '', '', '', ''];
+  const metaVon = [
+    meta.start.marker,
+    meta.start.dateLabel,
+    data.startDate,
+    meta.start.timeLabel,
+    data.startTime || meta.start.defaultTime,
+    '',
+    '',
+    '',
+    '',
+  ];
+  const metaBis = [
+    meta.end.marker,
+    meta.end.dateLabel,
+    data.endDate,
+    meta.end.timeLabel,
+    data.endTime || meta.end.defaultTime,
+    '',
+    '',
+    '',
+    '',
+  ];
 
   const electionRows = data.elections.map((e) => [
-    e.kennung, e.info, e.listen ?? 0, e.plaetze, e.stimmen, e.kum ?? 0, e.wahltyp, e.zaehlverfahren, e.freieplaetze ?? 0,
+    e.kennung,
+    e.info,
+    e.listen ?? 0,
+    e.plaetze,
+    e.stimmen,
+    e.kum ?? 0,
+    e.wahltyp,
+    e.zaehlverfahren,
+    e.freieplaetze ?? 0,
   ]);
 
   const sheets = [
-    { name: docs.elections.sheetName, headers: wahlenHeaders, metaRows: [metaVon, metaBis], rows: electionRows },
+    {
+      name: docs.elections.sheetName,
+      headers: wahlenHeaders,
+      metaRows: [metaVon, metaBis],
+      rows: electionRows,
+    },
   ];
 
   data.elections.forEach((e) => {
@@ -315,7 +424,16 @@ export const generateElectionTemplateOdsFromData = async (data) => {
     const sheetDef = isReferendum ? docs.referendum : docs.candidates;
     const candExample = isReferendum
       ? [1, 'Ja', 'Zustimmung zur Vorlage']
-      : [1, 'kand-001', e.listen === 1 ? 'Liste A' : 'Einzelkandidat', 'Max', 'Mustermann', '123456', 'IWI', 'Informatik'];
+      : [
+          1,
+          'kand-001',
+          e.listen === 1 ? 'Liste A' : 'Einzelkandidat',
+          'Max',
+          'Mustermann',
+          '123456',
+          'IWI',
+          'Informatik',
+        ];
     sheets.push({ name: e.kennung, headers: headerNames(sheetDef), rows: [candExample] });
   });
 
@@ -365,25 +483,59 @@ export const generateElectionTemplateOds = async (presetKey = 'generic') => {
     name: docs.elections.sheetName,
     headers: headerNames(docs.elections),
     metaRows: [
-      [meta.start.marker, meta.start.dateLabel, startStr, meta.start.timeLabel, meta.start.defaultTime, '', '', '', ''],
-      [meta.end.marker,   meta.end.dateLabel,   endStr,   meta.end.timeLabel,   meta.end.defaultTime,   '', '', '', ''],
+      [
+        meta.start.marker,
+        meta.start.dateLabel,
+        startStr,
+        meta.start.timeLabel,
+        meta.start.defaultTime,
+        '',
+        '',
+        '',
+        '',
+      ],
+      [
+        meta.end.marker,
+        meta.end.dateLabel,
+        endStr,
+        meta.end.timeLabel,
+        meta.end.defaultTime,
+        '',
+        '',
+        '',
+        '',
+      ],
     ],
-    rows: [[
-      exampleKey, config.info, config.listen ?? 1,
-      config.seats ?? '', config.votes ?? '', config.kum ?? '',
-      config.type ?? '', config.method ?? '', 0,
-    ]],
+    rows: [
+      [
+        exampleKey,
+        config.info,
+        config.listen ?? 1,
+        config.seats ?? '',
+        config.votes ?? '',
+        config.kum ?? '',
+        config.type ?? '',
+        config.method ?? '',
+        0,
+      ],
+    ],
   };
 
   const sheetDef = isReferendum ? docs.referendum : docs.candidates;
   const candDataRow = isReferendum
     ? [1, 'Ja', 'Zustimmung zur Vorlage']
-    : [1, 'kand-001', config.listen === 1 ? 'Liste A' : 'Einzelkandidat', 'Max', 'Mustermann', '123456', 'IWI', 'Informatik'];
+    : [
+        1,
+        'kand-001',
+        config.listen === 1 ? 'Liste A' : 'Einzelkandidat',
+        'Max',
+        'Mustermann',
+        '123456',
+        'IWI',
+        'Informatik',
+      ];
 
-  return [
-    wahlenSheet,
-    { name: exampleKey, headers: headerNames(sheetDef), rows: [candDataRow] },
-  ];
+  return [wahlenSheet, { name: exampleKey, headers: headerNames(sheetDef), rows: [candDataRow] }];
 };
 
 /**
@@ -394,11 +546,13 @@ export const generateElectionTemplateOds = async (presetKey = 'generic') => {
  */
 export const generateVoterTemplateOds = async () => {
   const docs = await loadDocumentStructure();
-  return [{
-    name: 'Wählerverzeichnis',
-    headers: headerNames(docs.voters),
-    rows: [['123456', 'stud@h-ka.de', 'Erika', 'Mustermann', 'IWI']],
-  }];
+  return [
+    {
+      name: 'Wählerverzeichnis',
+      headers: headerNames(docs.voters),
+      rows: [['123456', 'stud@h-ka.de', 'Erika', 'Mustermann', 'IWI']],
+    },
+  ];
 };
 
 /**
@@ -410,7 +564,10 @@ export const generateVoterTemplateOds = async () => {
  *                     external: Array<{ key: string, info: string }> }>}
  */
 export const getAvailablePresets = async () => {
-  const [allPresets, internalPresets] = await Promise.all([loadAllPresets(), loadInternalPresets()]);
+  const [allPresets, internalPresets] = await Promise.all([
+    loadAllPresets(),
+    loadInternalPresets(),
+  ]);
   const internalKeys = Object.keys(internalPresets);
   const result = { internal: [], external: [] };
   Object.keys(allPresets).forEach((key) => {
