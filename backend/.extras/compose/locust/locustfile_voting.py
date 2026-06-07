@@ -2,14 +2,15 @@
 Lasttest: Parallele Wähler (Simulate Mode)
 ==========================================
 Simuliert echte Wähler, die sich einloggen und zufällig abstimmen.
-Setzt SIMULATE_MODE=true im Backend voraus – Passwörter werden nicht geprüft.
+Der Simulationsmodus muss im Admin-Bereich (*Wahlen testen*) aktiv sein –
+Passwörter werden dann nicht geprüft.
 
 Jeder Wähler kommt genau einmal dran (Queue). Sind alle abgearbeitet,
 beendet sich der Test automatisch.
 
 Voraussetzungen
 ---------------
-* Backend läuft mit SIMULATE_MODE=true (in .env oder docker-compose)
+* Simulationsmodus ist im Admin-Bereich aktiviert
 * Wähler sind im Wählerverzeichnis eingetragen
 
 Starten (2 parallele User, alle Wähler einmal):
@@ -47,7 +48,7 @@ def on_test_start(environment, **kwargs):
     try:
         resp = requests.get(f"{host}/api/simulate/voters", verify=False, timeout=10)
         if resp.status_code == 403:
-            print("[FEHLER] SIMULATE_MODE ist nicht aktiv. Bitte SIMULATE_MODE=true in .env setzen.")
+            print("[FEHLER] Simulationsmodus ist nicht aktiv. Bitte im Admin-Bereich unter 'Wahlen testen' aktivieren.")
             environment.runner.quit()
             return
         resp.raise_for_status()

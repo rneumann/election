@@ -1,6 +1,7 @@
 import { writeAuditLog } from '../audit/auditLogger.js';
 import { logger } from '../conf/logger/logger.js';
 import { client } from '../database/db.js';
+import { disableSimulateMode } from '../routes/simulate.route.js';
 
 /**
  * Retrieves all elections that are active or will be active in the future.
@@ -126,6 +127,8 @@ export const cleanupExpiredTestElections = async () => {
     );
 
     if (rows.length === 0) return;
+
+    disableSimulateMode();
 
     for (const election of rows) {
       logger.warn(

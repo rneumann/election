@@ -37,7 +37,6 @@ Dieses Projekt stellt das Backend für das Online-Wahlsystem der HKA bereit. Es 
 | `NODE_ENV`        | Laufzeitumgebung (`development` / `production`)                          | `development`                   |
 | `CONFIG_PROFILE`  | Organisations-Profil; wählt alle `config/*.{profile}.json`-Dateien       | `hka`                           |
 | `AUTH_PROVIDER`   | Authentifizierungs-Backend: `ldap` oder `keycloak`                       | `ldap`                          |
-| `SIMULATE_MODE`   | `true` → beliebige Logins ohne LDAP (nur für Tests/Demo!)                | `false`                         |
 | `AD_URL`          | LDAP-Server-URL                                                          | `ldap://localhost:389`          |
 | `AD_BASE_DN`      | LDAP Base-DN für Benutzersuche                                           | `DC=example,DC=com`             |
 | `AD_DOMAIN`       | LDAP-Domain                                                              | `example.com`                   |
@@ -61,7 +60,7 @@ Secrets generieren:
 node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
 ```
 
-> **SIMULATE_MODE:** Wenn `SIMULATE_MODE=true` gesetzt ist, wird LDAP vollständig übersprungen. Jedes Benutzerkürzel wird ohne Passwortprüfung akzeptiert (Rolle: `voter`). Dieser Modus eignet sich ausschließlich für Demo- und Testbetrieb — niemals in Produktion aktivieren.
+> **Simulationsmodus:** Wird zur Laufzeit über den Admin-Bereich (*Wahlen testen*) gesteuert — kein Neustart und kein Konfigurationsparameter nötig. Wenn aktiv, wird LDAP übersprungen und jedes Benutzerkürzel ohne Passwortprüfung akzeptiert (Rolle: `voter`). Der Modus deaktiviert sich automatisch bei Wahlbeginn und kann nicht aktiviert werden, solange eine Wahl läuft. Alle angemeldeten Wähler werden beim Umschalten abgemeldet.
 
 ### Organisations-Konfigurationsdateien
 

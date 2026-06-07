@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { logger } from '../conf/logger/logger.js';
+import { isSimulateMode } from './simulate.route.js';
 import {
   checkAlreadyVoted,
   checkIfCandidateIsValid,
@@ -316,6 +317,15 @@ voterRouter.post(
     if (!req.is('application/json')) {
       logger.warn('Invalid Content-Type header');
       return res.status(415).json({ message: 'Content-Type must be application/json' });
+    }
+
+    // Session-Konsistenzprüfung: Simulationsmodus darf sich seit dem Login nicht geändert haben
+    const sessionIsSimulate = req.user?.authProvider === 'simulate';
+    if (sessionIsSimulate !== isSimulateMode()) {
+      logger.warn(
+        `Ballot rejected: authProvider="${req.user?.authProvider}" but simulateMode=${isSimulateMode()} — session invalidated`,
+      );
+      return res.status(403).json({ message: 'Sitzung ungültig – bitte neu anmelden.' });
     }
 
     // chack if request body is valid

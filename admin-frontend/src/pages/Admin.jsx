@@ -217,6 +217,18 @@ const AdminDashboard = () => {
     setMobileMenuOpen(false);
   };
 
+  const handleToggleSimulateMode = async () => {
+    try {
+      const result = await adminService.toggleSimulateMode();
+      if (result !== null) {
+        setSimulateMode(result.simulateMode);
+        showAlert('success', result.simulateMode ? 'Simulationsmodus aktiviert' : 'Simulationsmodus deaktiviert');
+      }
+    } catch (err) {
+      showAlert('error', err?.response?.data?.message ?? 'Fehler beim Umschalten des Simulationsmodus');
+    }
+  };
+
   const handleDeleteAllData = async () => {
     try {
       await adminService.deleteAllData(selectedElectionForDeletion);
@@ -334,6 +346,27 @@ const AdminDashboard = () => {
                 </NavSection>
 
                 <NavSection title="Wahlen testen">
+                  <div className="pl-5 pr-3 py-2 flex items-center justify-between">
+                    <span className="flex items-center gap-1.5 text-sm font-medium text-gray-700">
+                      <span className="text-[7px] shrink-0 text-brand-primary">▶</span>
+                      Simulationsmodus
+                    </span>
+                    <button
+                      onClick={handleToggleSimulateMode}
+                      title={simulateMode ? 'Simulationsmodus deaktivieren' : 'Simulationsmodus aktivieren'}
+                      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none ${
+                        simulateMode ? 'bg-yellow-500' : 'bg-gray-300'
+                      }`}
+                      role="switch"
+                      aria-checked={simulateMode}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow transition duration-200 ${
+                          simulateMode ? 'translate-x-4' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
                   <NavButton onClick={() => handleSectionChange('test-election')} active={activeSection === 'test-election'}>Testwahlen steuern</NavButton>
                   {showTestNav && (
                     <NavButton onClick={() => handleSectionChange('test-election-counting')} active={activeSection === 'test-election-counting'}>Testwahlen auszählen</NavButton>

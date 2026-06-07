@@ -12,7 +12,7 @@ Die Anwendung ist als **Single Page Application (SPA)** umgesetzt und kommunizie
 
 - Authentifizierung für Admin und Wahlausschuss (LDAP / Keycloak / Simulate)
 - Zentrale Admin-Oberfläche mit strukturierter Seitenleiste (`NavSection` / `NavButton`)
-- SIMULATE_MODE-Banner (sichtbarer Hinweis bei aktiviertem Testmodus)
+- Simulationsmodus-Schalter (*Wahlen testen*) mit Banner-Hinweis bei aktiviertem Modus
 - Import von wahlrelevanten Daten (CSV / Excel)
   - Wählerlisten
   - Kandidatenlisten

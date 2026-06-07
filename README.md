@@ -165,10 +165,6 @@ CONFIG_PROFILE=hka
 # Authentifizierungs-Anbieter: ldap | keycloak
 AUTH_PROVIDER=ldap
 
-# Simulationsmodus: Akzeptiert beliebige Anmeldedaten ohne LDAP/Wählerprüfung
-# Nützlich für Tests und Demos – niemals in Produktion aktivieren!
-SIMULATE_MODE=false
-
 # LDAP / AD
 AD_URL=ldap://localhost:389
 AD_BASE_DN=DC=example,DC=com
@@ -198,7 +194,7 @@ SESSION_SECRET=
 BALLOT_SECRET=
 ```
 
-> **SIMULATE_MODE:** Wenn `SIMULATE_MODE=true` gesetzt ist, wird die LDAP-Authentifizierung vollständig übersprungen. Jedes Benutzerkürzel wird ohne Passwortprüfung akzeptiert. Der Benutzer erhält die Rolle `voter`. Falls kein Wählerverzeichnis für eine Wahl hinterlegt ist, sind keine Wahlen sichtbar — dies ist kein Fehler. Dieser Modus eignet sich ausschließlich für Demo- und Testbetrieb.
+> **Simulationsmodus:** Der Simulationsmodus kann im Admin-Bereich unter *Wahlen testen* zur Laufzeit ein- und ausgeschaltet werden. Wenn er aktiv ist, wird die LDAP-Authentifizierung vollständig übersprungen — jedes Benutzerkürzel wird ohne Passwortprüfung akzeptiert (Rolle: `voter`). Der Modus deaktiviert sich automatisch, sobald eine echte Wahl startet, und kann nicht aktiviert werden, solange eine Wahl läuft. Beim Umschalten werden alle angemeldeten Wähler abgemeldet. Ausschließlich für Demo- und Testbetrieb geeignet.
 
 #### 7.1.2 Backend(Compose)
 
