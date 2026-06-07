@@ -6,16 +6,20 @@ import ResponsiveButton from '../components/ResponsiveButton';
 import { logger } from '../conf/logger/logger';
 import { useAlert } from '../context/AlertContext';
 import { candidateApi } from '../services/candidateApi';
+import { voterApi } from '../services/voterApi';
 import { AccessibilityContext, AccessibilityProvider } from '../context/AccessibilityContext';
 import AccessibilityMenu from '../components/AccessibilityMenu';
+import { useAuth } from '../context/AuthContext';
 
 export const CandidatePageContent = () => {
   const [uploadData, setUploadData] = useState(null);
   const [description, setDescription] = useState('');
   const [currentData, setCurrentData] = useState(null);
+  const [electionActive, setElectionActive] = useState(false);
   const { showAlert } = useAlert();
   const { settings } = useContext(AccessibilityContext);
   const [isAccessibilityMenuOpen, setAccessibilityMenuOpen] = useState(false);
+  const { user } = useAuth();
 
   useEffect(() => {
     const html = document.documentElement;
@@ -94,9 +98,17 @@ export const CandidatePageContent = () => {
   useEffect(() => {
     const fetchData = async () => {
       await fetchCandidateInfo();
+      if (user?.username) {
+        try {
+          const activeElections = await voterApi.getElections('active', user.username, false);
+          setElectionActive(Array.isArray(activeElections) && activeElections.length > 0);
+        } catch (error) {
+          logger.error(`Error fetching active elections: ${error.message}`);
+        }
+      }
     };
     fetchData();
-  }, []);
+  }, [user]);
 
   return (
     <div
@@ -113,6 +125,12 @@ export const CandidatePageContent = () => {
             Hier können Sie Ihre persönlichen Kandidateninformationen einsehen und verwalten.
           </p>
 
+          {electionActive && (
+            <div className="mb-6 p-4 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-300 dark:border-yellow-600 rounded-lg text-yellow-800 dark:text-yellow-200 text-sm font-medium">
+              Während einer laufenden Wahl können keine Änderungen vorgenommen werden.
+            </div>
+          )}
+
           {/* Image Upload Component */}
           <div className="mb-8">
             <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4 transition-colors">
@@ -123,7 +141,7 @@ export const CandidatePageContent = () => {
             <div className="flex flex-col sm:flex-row sm:space-x-8">
               {/* 1. Picture Upload */}
               <div className="w-full sm:w-2/3 mb-6 sm:mb-0 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-100 dark:border-gray-600 shadow-inner transition-colors">
-                <ImageUploadCandidate setUploadData={setUploadData} />
+                <ImageUploadCandidate setUploadData={setUploadData} disabled={electionActive} />
               </div>
 
               {/* 2. Picture Preview */}
@@ -196,21 +214,23 @@ export const CandidatePageContent = () => {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               maxLength={200}
-              className="
-                w-full 
-                p-3 sm:p-4 
+              disabled={electionActive}
+              className={`
+                w-full
+                p-3 sm:p-4
                 text-base sm:text-lg
-                rounded-lg 
-                border-2 border-gray-300 dark:border-gray-600 
-                bg-white dark:bg-gray-700 
+                rounded-lg
+                border-2 border-gray-300 dark:border-gray-600
+                bg-white dark:bg-gray-700
                 text-gray-900 dark:text-gray-100
-                shadow-sm 
+                shadow-sm
                 transition-colors
-                focus:border-brand-primary dark:focus:border-blue-500 
-                focus:ring-brand-primary dark:focus:ring-blue-500 focus:ring-1 
-                resize-vertical 
+                focus:border-brand-primary dark:focus:border-blue-500
+                focus:ring-brand-primary dark:focus:ring-blue-500 focus:ring-1
+                resize-vertical
                 placeholder:text-gray-400 dark:placeholder:text-gray-500
-              "
+                ${electionActive ? 'opacity-50 cursor-not-allowed' : ''}
+              `}
               placeholder="Fügen Sie eine kurze Beschreibung Ihrer Kandidatur hinzu..."
             ></textarea>
 
@@ -226,6 +246,7 @@ export const CandidatePageContent = () => {
               variant="primary"
               className="w-full sm:w-auto"
               onClick={clearAllEntries}
+              disabled={electionActive}
             >
               bisherige Informationen löschen!
             </ResponsiveButton>
@@ -233,6 +254,7 @@ export const CandidatePageContent = () => {
               variant="primary"
               className="w-full sm:w-auto"
               onClick={saveNewEntries}
+              disabled={electionActive}
             >
               Beschreibung speichern
             </ResponsiveButton>

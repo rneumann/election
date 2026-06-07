@@ -57,11 +57,13 @@ const getCroppedImage = async (imageSrc, pixelCrop) => {
   });
 };
 
-export const ImageUploadCandidate = ({ setUploadData }) => {
+export const ImageUploadCandidate = ({ setUploadData, disabled = false }) => {
   const [image, setImage] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [freeze, setFreeze] = useState(false);
+
+  const isDisabled = disabled || freeze;
 
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
@@ -185,9 +187,9 @@ export const ImageUploadCandidate = ({ setUploadData }) => {
             crop={crop}
             zoom={zoom}
             aspect={3 / 4}
-            onCropChange={freeze ? () => {} : setCrop}
-            onZoomChange={freeze ? () => {} : setZoom}
-            onCropComplete={freeze ? () => {} : onCropComplete}
+            onCropChange={isDisabled ? () => {} : setCrop}
+            onZoomChange={isDisabled ? () => {} : setZoom}
+            onCropComplete={isDisabled ? () => {} : onCropComplete}
             cropShape="rect"
             showGrid={true}
             style={{
@@ -205,7 +207,7 @@ export const ImageUploadCandidate = ({ setUploadData }) => {
             </span>
             <div className="flex-1">
               <Slider
-                disabled={freeze}
+                disabled={isDisabled}
                 min={1}
                 max={3}
                 step={0.1}
@@ -257,16 +259,17 @@ export const ImageUploadCandidate = ({ setUploadData }) => {
       {/* Upload Area */}
       <div
         /* eslint-disable */
-        className={`flex flex-col items-center justify-center p-12 text-center rounded-xl transition-all duration-300 ease-in-out border-2 cursor-pointer 
+        className={`flex flex-col items-center justify-center p-12 text-center rounded-xl transition-all duration-300 ease-in-out border-2
+          ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
           ${
-            isDragging
+            isDragging && !disabled
               ? 'border-brand-primary bg-brand-primary-light/20 border-solid shadow-lg'
               : 'border-gray-300 border-dashed hover:border-brand-primary/50'
           }`}
-        onDrop={onDrop}
-        onDragOver={onDragOver}
-        onDragLeave={onDragLeave}
-        onClick={() => document.getElementById('fileInput').click()}
+        onDrop={disabled ? undefined : onDrop}
+        onDragOver={disabled ? undefined : onDragOver}
+        onDragLeave={disabled ? undefined : onDragLeave}
+        onClick={disabled ? undefined : () => document.getElementById('fileInput').click()}
       >
         <div
           className={`inline-flex items-center justify-center w-16 h-16 rounded-full mb-4 transition-all duration-300 ${

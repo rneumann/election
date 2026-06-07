@@ -15,12 +15,22 @@ Voraussetzungen
 
 Starten (2 parallele User, alle Wähler einmal):
 
+Über Docker Compose (empfohlen — WAF im selben Netz, HTTPS automatisch):
+
+    LOCUST_FILE=locustfile_voting.py \\
+      docker compose -f compose.yml \\
+        -f backend/.extras/compose/locust/compose.yml \\
+        --profile prod run --rm locust \\
+        --users 2 --spawn-rate 2 --headless --only-summary
+
+Alternativ standalone (Host manuell angeben):
+
     docker run --rm \\
       -v $(pwd)/backend/.extras/compose/locust:/mnt/locust \\
-      --network host \\
+      --network election_frontend_net \\
       locustio/locust \\
       -f /mnt/locust/locustfile_voting.py \\
-      --host http://localhost:8081 \\
+      --host https://waf:8443 \\
       --users 2 --spawn-rate 2 \\
       --headless --only-summary
 
@@ -55,7 +65,7 @@ def on_test_start(environment, **kwargs):
         uids = [v["uid"] for v in resp.json()]
         for uid in uids:
             _voter_queue.put(uid)
-        print(f"[INFO] {_voter_queue.qsize()} Wähler in Queue geladen.")
+        # print(f"[INFO] {_voter_queue.qsize()} Wähler in Queue geladen.")
     except Exception as e:
         print(f"[FEHLER] Wähler konnten nicht geladen werden: {e}")
         environment.runner.quit()
@@ -115,7 +125,7 @@ class VoterUser(HttpUser):
             uid = _voter_queue.get_nowait()
         except queue.Empty:
             # Queue leer → Test beenden
-            print("[INFO] Alle Wähler abgearbeitet – Test wird beendet.")
+            # print("[INFO] Alle Wähler abgearbeitet – Test wird beendet.")
             self.environment.runner.quit()
             return
         self._login(uid)
@@ -134,9 +144,10 @@ class VoterUser(HttpUser):
                 self.voter_uid = uid
                 self.csrf_token = resp.json().get("csrfToken")
                 resp.success()
+                # print(f"[LOGIN OK] {uid}")
             else:
+                print(f"[LOGIN FAIL] {uid} → HTTP {resp.status_code}: {resp.text[:80]}")
                 resp.failure(f"Login fehlgeschlagen ({resp.status_code})")
-                # Wähler übersprungen, nächsten holen
                 self._next_voter()
 
     # ------------------------------------------------------------------ Task
@@ -144,6 +155,7 @@ class VoterUser(HttpUser):
     @task
     def vote_in_active_elections(self):
         if not self.voter_uid:
+            # print("[SKIP] voter_uid ist None")
             return
 
         # 1. Aktive + Testwahlen abrufen
@@ -157,13 +169,17 @@ class VoterUser(HttpUser):
                 name="/api/voter/{uid}/elections",
             ) as resp:
                 if resp.status_code == 401:
+                    print(f"[ELECTIONS 401] {self.voter_uid} status={status} → Session abgelaufen")
                     resp.failure("Session abgelaufen")
                     self._next_voter()
                     return
                 if resp.status_code == 200:
-                    elections.extend(resp.json())
+                    found = resp.json()
+                    # print(f"[ELECTIONS OK] {self.voter_uid} status={status} → {len(found)} Wahlen")
+                    elections.extend(found)
                     resp.success()
                 else:
+                    print(f"[ELECTIONS ERR] {self.voter_uid} status={status} → HTTP {resp.status_code}: {resp.text[:120]}")
                     resp.failure(f"Wahlen laden fehlgeschlagen ({resp.status_code})")
                     return
 
@@ -172,12 +188,13 @@ class VoterUser(HttpUser):
         elections = [e for e in elections if not (e["id"] in seen or seen.add(e["id"]))]
 
         if not elections:
-            # Keine Wahlen für diesen Wähler → nächsten holen
+            print(f"[NO ELECTIONS] {self.voter_uid} → übersprungen")
             self._next_voter()
             return
 
         election = random.choice(elections)
         election_id = election["id"]
+        # print(f"[VOTE] {self.voter_uid} → Wahl '{election.get('info')}' ({election_id})")
 
         # 2. Kandidaten laden
         with self.client.get(
@@ -187,6 +204,7 @@ class VoterUser(HttpUser):
             name="/api/voter/elections/{id}",
         ) as resp:
             if resp.status_code != 200:
+                print(f"[CANDIDATES ERR] {election_id} → HTTP {resp.status_code}: {resp.text[:120]}")
                 resp.failure(f"Kandidaten laden fehlgeschlagen ({resp.status_code})")
                 return
             election_detail = resp.json()
@@ -195,13 +213,16 @@ class VoterUser(HttpUser):
         candidates = election_detail.get("candidates", [])
         votes_per_ballot = election_detail.get("votes_per_ballot", 1)
         max_cumulative = election_detail.get("max_cumulative_votes", 1)
+        # print(f"[CANDIDATES] {election_id} → {len(candidates)} Kandidaten, votes_per_ballot={votes_per_ballot}")
 
         if not candidates:
+            print(f"[NO CANDIDATES] {election_id} → keine zugelassenen Kandidaten")
             self._next_voter()
             return
 
         vote_decision = _random_vote(candidates, votes_per_ballot, max_cumulative)
         if not vote_decision:
+            print(f"[NO VOTE DECISION] votes_per_ballot={votes_per_ballot}, max_cumulative={max_cumulative}")
             self._next_voter()
             return
 

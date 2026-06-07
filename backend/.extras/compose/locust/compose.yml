@@ -21,7 +21,8 @@ services:
       - ./:/mnt/locust
     # WAF-Test (Standard):   LOCUST_FILE=locustfile.py
     # Wähler-Lasttest:        LOCUST_FILE=locustfile_voting.py
-    command: -f /mnt/locust/${LOCUST_FILE:-locustfile_voting.py}
+    # Host über WAF (HTTPS) damit Secure-Cookies korrekt übertragen werden
+    command: -f /mnt/locust/${LOCUST_FILE:-locustfile_voting.py} --host https://localhost:443
     networks:
       - frontend_net
     ports:

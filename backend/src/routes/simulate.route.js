@@ -89,10 +89,20 @@ simulateRouter.get('/voters', async (req, res) => {
   }
 
   try {
-    const result = await client.query(
-      'SELECT uid, firstname, lastname FROM voters ORDER BY uid',
-    );
-    logger.warn(`SIMULATE_MODE: Wähler-Liste abgerufen (${result.rows.length} Einträge)`);
+    // Nur Wähler zurückgeben, die in mindestens einer aktiven Testwahl
+    // noch nicht abgestimmt haben — so liefert jeder Eintrag auch wirklich
+    // eine wählbare Wahl im Locust-Test.
+    const result = await client.query(`
+      SELECT DISTINCT v.uid, v.firstname, v.lastname
+      FROM voters v
+      INNER JOIN votingnotes vn ON vn.voterId = v.id
+      INNER JOIN elections e ON e.id = vn.electionId
+      WHERE e.test_election_active = true
+        AND e."end" >= now()
+        AND vn.voted = false
+      ORDER BY v.uid
+    `);
+    logger.warn(`SIMULATE_MODE: Wähler-Liste abgerufen (${result.rows.length} wahlberechtigte Einträge)`);
     res.json(result.rows);
   } catch (err) {
     logger.error('Fehler beim Abrufen der Wähler:', err);
