@@ -28,9 +28,9 @@
    - [Vorbereitung](#81-vorbereitung)
    - [Start der Anwendung](#82-start-der-anwendung)
    - [Alternativstart](#821-start-der-anwendungen-alternativ)
-9. [Konfiguration der Styles](#9-style-konfigurationen)
-   - [Definition](#91-style-definitionen)
-   - [Anpassung](#92-style-anpassung)
+9. [Organisations- und Style-Konfiguration](#9-organisations--und-style-konfiguration)
+   - [CONFIG_PROFILE](#91-config_profile)
+   - [Theme-Konfiguration](#92-theme-konfiguration-frontends)
 10. [Produktivbetrieb (Docker)](#10-produktivbetrieb-docker)
     - [Build & Start](#101-build--start)
     - [Stoppen](#102-stoppen)
@@ -116,15 +116,17 @@ Das System unterstützt folgende Wahlarten:
 
 ## 5. Funktionale Kernmodule
 
-| Modul                | Beschreibung                                          |
-| -------------------- | ----------------------------------------------------- |
-| Benutzermanagement   | Authentifizierung, Rollen- und Rechteverwaltung       |
-| Wahlverwaltung       | Erstellung, Konfiguration und Terminierung von Wahlen |
-| Kandidatenmanagement | Einzel- und Listenverwaltung                          |
-| Stimmabgabe          | Verschlüsselte, verifizierbare Online-Stimmabgabe     |
-| Auswertung           | Automatisierte, nachvollziehbare Auszählung           |
-| Audit & Logging      | Revisionssichere Protokollierung                      |
-| Testmodus            | Simulierter Wahlbetrieb                               |
+| Modul                    | Beschreibung                                                                     |
+| ------------------------ | -------------------------------------------------------------------------------- |
+| Benutzermanagement       | Authentifizierung, Rollen- und Rechteverwaltung (LDAP / Keycloak / Simulate)     |
+| Wahlverwaltung           | Erstellung, Konfiguration und Terminierung von Wahlen                            |
+| Kandidatenmanagement     | Einzel- und Listenverwaltung                                                     |
+| Stimmabgabe              | Verschlüsselte, verifizierbare Online-Stimmabgabe                                |
+| Auswertung               | Automatisierte, nachvollziehbare Auszählung inkl. Stimmzettel-Matrix-Export      |
+| Integritätsprüfung       | Stimmzettel-Integritätscheck pro Wahl (Lücken, Ungültigkeiten)                   |
+| Audit & Logging          | Revisionssichere Protokollierung                                                 |
+| Testmodus                | Simulierter Wahlbetrieb mit automatischer Bereinigung bei Wahlstart              |
+| Organisations-Konfiguration | Vollständig austauschbares Erscheinungsbild und Texte über `CONFIG_PROFILE`   |
 
 ---
 
@@ -157,6 +159,16 @@ backend/.env
 NODE_ENV=development
 PORT=3000
 
+# Organisations-Profil (wählt config/organisation.{profile}.json etc.)
+CONFIG_PROFILE=hka
+
+# Authentifizierungs-Anbieter: ldap | keycloak
+AUTH_PROVIDER=ldap
+
+# Simulationsmodus: Akzeptiert beliebige Anmeldedaten ohne LDAP/Wählerprüfung
+# Nützlich für Tests und Demos – niemals in Produktion aktivieren!
+SIMULATE_MODE=false
+
 # LDAP / AD
 AD_URL=ldap://localhost:389
 AD_BASE_DN=DC=example,DC=com
@@ -185,6 +197,8 @@ DB_NAME=wahl_dev
 SESSION_SECRET=
 BALLOT_SECRET=
 ```
+
+> **SIMULATE_MODE:** Wenn `SIMULATE_MODE=true` gesetzt ist, wird die LDAP-Authentifizierung vollständig übersprungen. Jedes Benutzerkürzel wird ohne Passwortprüfung akzeptiert. Der Benutzer erhält die Rolle `voter`. Falls kein Wählerverzeichnis für eine Wahl hinterlegt ist, sind keine Wahlen sichtbar — dies ist kein Fehler. Dieser Modus eignet sich ausschließlich für Demo- und Testbetrieb.
 
 #### 7.1.2 Backend(Compose)
 
@@ -414,66 +428,81 @@ Alle Services greifen dabei auf die zuvor definierten `.env`-Variablen zu.
 
 ---
 
-## 9. Style Konfigurationen
+## 9. Organisations- und Style-Konfiguration
 
-Konfiguration der Seitendarstellung.
+Das System unterstützt mehrere Organisationen über den **`CONFIG_PROFILE`-Mechanismus**: Eine einzige Umgebungsvariable wählt alle organisations­spezifischen Konfigurationsdateien aus.
 
-### 9.1 Style Definitionen
+### 9.1 CONFIG_PROFILE
 
-Um das UI-Design an Ihr Schema anzupassen finden Sie eine Datei mit den öffentlichen [Stylings](./frontend/theme.config.js).
+| Komponente      | Konfigurationsdatei                                                    |
+| --------------- | ---------------------------------------------------------------------- |
+| Backend         | `backend/config/organisation.{profile}.json`                          |
+| Backend         | `backend/config/election-presets.{profile}.json`                      |
+| Backend         | `backend/config/document-structure.{profile}.json`                    |
+| Wähler-Frontend | `frontend/config/theme.{profile}.json`                                |
+| Admin-Frontend  | `admin-frontend/config/theme.{profile}.json`                          |
 
-### 9.2 Style Anpassung
+Der Standardwert ist `hka`. Für eine andere Organisation genügt es, neue JSON-Dateien nach demselben Schema anzulegen und `CONFIG_PROFILE` zu setzen.
 
-In der Datei befinden sich Konfigurationen wie beispielsweise
+**Lokal (Entwicklung):**
 
-| Sektion            | Beschreibung                                                                          |
-| ------------------ | ------------------------------------------------------------------------------------- |
-| **`institution`**  | Name und Kürzel der Einrichtung (wird im Header/Titel angezeigt).                     |
-| **`colors`**       | Definition der Corporate Identity Farben (Primärfarbe, Akzente, Text).                |
-| **`text`**         | sichtbare Texte der App (optional Anpassbar)                                          |
-| **`placeholders`** | Platzhalter für beispielsweise Eingabefelder (optional Anpassbar)                     |
-| **`roles`**        | Mapping der technischen Rollen zu Anzeigenamen (z.B. `committee` -> "Wahlausschuss"). |
-
-### Beispiel-Konfiguration
-
-```javascript
-// theme.config.js
-export const themeConfig = {
-  // 1. Mandanten-Daten
-  institution: {
-    name: 'HKA',
-    fullName: 'Hochschule Karlsruhe',
-  },
-
-  // 2. Corporate Design (Tailwind nutzt diese Variablen)
-  colors: {
-    primary: '#e20000ff', // Hauptfarbe (Buttons, Header)
-    dark: '#333333',      // Dunkler Text
-    lightGray: '#F5F5F5', // Hintergründe
-  },
-
-  // 3. Wording
-  text: {
-    appTitle: 'Wahlsystem',
-    loginSubtitle: 'Bitte melden Sie sich mit Ihren Anmeldedaten an',
-  },
-
-  // 4. Platzhalter für flexible Anpassungen
-  placeholder: {
-    loginUsername: 'Ihr RZ-Kürzel', // Der Platzhalter im Login-Feld
-    loginPassword: 'Ihr Passwort', // Der Platzhalter im Password-Feld
-  }
-
-  // 5. Rollen-Bezeichnungen
-  roles: {
-    admin: 'Administrator',
-    voter: 'Wähler',
-  }
-};
+```bash
+CONFIG_PROFILE=myorg npm run dev
 ```
 
-Hier nehmen Sie die nötigen Anpassungen vor, welche dann vom System aktualisiert werden, sodass Sie ihre Änderungen dann einsehen können.
-Farbliche oder strukturelle Designs werden zur Laufzeit geladen und sollte deshalb in dieser .config-Datei erhalten bleiben.
+**Docker-Build:**
+
+```bash
+docker build --build-arg CONFIG_PROFILE=myorg -t frontend_image ./frontend
+docker build --build-arg CONFIG_PROFILE=myorg -t admin_frontend_image ./admin-frontend
+```
+
+### 9.2 Theme-Konfiguration (Frontends)
+
+Die Datei `config/theme.{profile}.json` steuert das visuelle Erscheinungsbild beider Frontends. Sie wird **zur Build-Zeit** eingelesen (Vite `define`) und als Konstante in die Anwendung eingebettet; Tailwind CSS liest dieselbe Datei beim Build für die Utility-Klassen.
+
+| Sektion            | Beschreibung                                                                              |
+| ------------------ | ----------------------------------------------------------------------------------------- |
+| **`institution`**  | Name und Kürzel der Einrichtung (wird im Header/Titel angezeigt)                          |
+| **`colors`**       | Corporate-Identity-Farben: `primary`, `secondary`, `accent`, `dark`, `gray`, `lightGray`  |
+| **`text`**         | Sichtbare App-Texte (Titel, Login-Untertitel, …)                                          |
+| **`placeholders`** | Platzhalter für Eingabefelder (Benutzername, Passwort)                                    |
+| **`roles`**        | Mapping technischer Rollen zu Anzeigenamen (z. B. `committee` → „Wahlausschuss")          |
+
+**Beispiel** (`config/theme.hka.json`):
+
+```json
+{
+  "institution": { "name": "HKA", "fullName": "Hochschule Karlsruhe" },
+  "colors": {
+    "primary": "#e20000",
+    "secondary": "#E2001A",
+    "accent": "#E2001A",
+    "dark": "#333333",
+    "gray": "#666666",
+    "lightGray": "#F5F5F5"
+  },
+  "text": {
+    "appTitle": "Wahlsystem Admin",
+    "loginSubtitle": "Bitte melden Sie sich mit Ihren Zugangsdaten an"
+  },
+  "placeholders": {
+    "loginUsername": "Benutzername",
+    "loginPassword": "Passwort"
+  },
+  "roles": {
+    "admin": "Administrator",
+    "committee": "Wahlausschuss",
+    "voter": "Wähler"
+  }
+}
+```
+
+**Neue Organisation einrichten:**
+
+1. `frontend/config/theme.myorg.json` und `admin-frontend/config/theme.myorg.json` nach obigem Schema anlegen.
+2. `backend/config/organisation.myorg.json` (sowie `election-presets` und `document-structure`) anlegen.
+3. `CONFIG_PROFILE=myorg` in der Umgebung bzw. als Docker-Build-Argument setzen.
 
 ## 10. Produktivbetrieb (Docker)
 

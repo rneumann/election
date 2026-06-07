@@ -129,12 +129,44 @@ npm run format
 
 ---
 
+## Umgebungsvariablen
+
+Backend-URLs und weitere Konfigurationen werden über die Vite-Environment-Mechanismen (`import.meta.env`) gesteuert.
+
+| Variable                    | Beschreibung                                          | Beispiel              |
+| --------------------------- | ----------------------------------------------------- | --------------------- |
+| `VITE_API_BASE_URL`         | Basis-URL der Backend-API                             | `/api`                |
+| `VITE_USERNAME_PATTERN`     | Regex-Muster für erlaubte Benutzernamen beim Login    | `^[a-z0-9]+$`         |
+| `VITE_LOG_LEVEL`            | Log-Level der Frontend-Konsole                        | `debug`               |
+| `VITE_ENABLE_KEYCLOAK_AUTH` | Keycloak-Login aktivieren                             | `false`               |
+
+---
+
+## Organisations- und Theme-Konfiguration
+
+Das visuelle Erscheinungsbild wird über `CONFIG_PROFILE` gesteuert. Die zugehörige JSON-Datei liegt unter `config/theme.{profile}.json` und wird **zur Build-Zeit** eingelesen.
+
+| Sektion            | Beschreibung                                                               |
+| ------------------ | -------------------------------------------------------------------------- |
+| **`institution`**  | Name und Kürzel der Einrichtung                                            |
+| **`colors`**       | Corporate-Identity-Farben (`primary`, `secondary`, `dark`, `lightGray`, …) |
+| **`text`**         | Sichtbare App-Texte (Titel, Login-Untertitel)                              |
+| **`placeholders`** | Platzhalter für Eingabefelder                                              |
+| **`roles`**        | Anzeigenamen für Rollen                                                    |
+
+Docker-Image mit abweichendem Profil bauen:
+
+```bash
+docker build --build-arg CONFIG_PROFILE=myorg -t frontend_image .
+```
+
+Für weitere Details zum Organisations-Konfigurationssystem siehe [Haupt-README](../README.md#9-organisations--und-style-konfiguration).
+
+---
+
 ## Docker & Deployment
-- `VITE_USERNAME_PATTERN`: Username pattern for login (Standard: `^[a-z0-9]+$`)
 
-- `VITE_ENABLE_KEYCLOAK_AUTH`: Keycloak-Login aktivieren (`true`/`false`)
-
-Das Frontend kann als **statische Anwendung über Nginx** ausgeliefert werden.
+Das Frontend wird als **statische Anwendung über Nginx** ausgeliefert.
 
 Docker-Image bauen:
 
@@ -142,18 +174,8 @@ Docker-Image bauen:
 docker build -t frontend_image .
 ```
 
-Der Container enthält:
+Der Container enthält den Vite-Build und eine vorkonfigurierte Nginx-Instanz.
 
-- den Vite-Build
-- eine vorkonfigurierte Nginx-Instanz zur Auslieferung der Assets
-
-Für den `dockerized` Start des Frontends siehe [README](/backend/.extras/compose/frontend/README.md)
-
----
-
-## Umgebungsvariablen
-
-Backend-URLs und weitere Konfigurationen werden über die Vite-Environment-Mechanismen (`import.meta.env`) gesteuert.
-Details sind abhängig von der jeweiligen Deployment-Umgebung (Development / Production).
+Für den containerisierten Start des Frontends siehe [README](/backend/.extras/compose/frontend/README.md)
 
 ---

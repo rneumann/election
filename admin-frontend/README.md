@@ -10,18 +10,24 @@ Die Anwendung ist als **Single Page Application (SPA)** umgesetzt und kommunizie
 
 ## Features
 
-- Authentifizierung für Admin-Benutzer
-- Zentrale Admin-Oberfläche (Dashboard)
-- Import von Wahl-relevanten Daten (CSV / Excel)
+- Authentifizierung für Admin und Wahlausschuss (LDAP / Keycloak / Simulate)
+- Zentrale Admin-Oberfläche mit strukturierter Seitenleiste (`NavSection` / `NavButton`)
+- SIMULATE_MODE-Banner (sichtbarer Hinweis bei aktiviertem Testmodus)
+- Import von wahlrelevanten Daten (CSV / Excel)
   - Wählerlisten
   - Kandidatenlisten
   - Wahleinstellungen
 - Validierung der Importdateien
+- Wahlübersicht mit Warnmarkierung bei fehlenden Kandidaten oder Wählern
 - Auszählung von Wahlergebnissen
-- Export der Ergebnisse (Excel)
+- Stimmzettel-Integritätsprüfung pro Wahl
+- Export der Ergebnisse in ODS oder XLSX
+  - Amtlicher Ergebnisbericht
+  - Stimmzettel-Matrix (Pivot-Tabelle: Zeilen = Stimmzettel, Spalten = Kandidaten)
+- Automatische Bereinigung abgelaufener Testwahl-Daten beim Öffnen der Wahlübersicht
 - Globales Fehler- und Alert-System
 - Barrierefreiheits-Unterstützung
-- Theme-Unterstützung (z. B. Dark Mode)
+- Vollständig austauschbares Erscheinungsbild über `CONFIG_PROFILE`
 
 ---
 
@@ -123,9 +129,31 @@ Das Build-Artefakt wird im `dist/`-Verzeichnis erzeugt.
 
 ---
 
+## Organisations- und Theme-Konfiguration
+
+Das visuelle Erscheinungsbild wird über `CONFIG_PROFILE` gesteuert. Die zugehörige JSON-Datei liegt unter `config/theme.{profile}.json` und wird **zur Build-Zeit** eingelesen (Vite `define` + Tailwind CSS).
+
+| Sektion            | Beschreibung                                                               |
+| ------------------ | -------------------------------------------------------------------------- |
+| **`institution`**  | Name und Kürzel der Einrichtung                                            |
+| **`colors`**       | Corporate-Identity-Farben (`primary`, `secondary`, `dark`, `lightGray`, …) |
+| **`text`**         | Sichtbare App-Texte (Titel, Login-Untertitel)                              |
+| **`placeholders`** | Platzhalter für Eingabefelder                                              |
+| **`roles`**        | Anzeigenamen für Rollen                                                    |
+
+Docker-Image mit abweichendem Profil bauen:
+
+```bash
+docker build --build-arg CONFIG_PROFILE=myorg -t admin_frontend_image .
+```
+
+Für weitere Details zum Organisations-Konfigurationssystem siehe [Haupt-README](../README.md#9-organisations--und-style-konfiguration).
+
+---
+
 ## Docker & Deployment
 
-Das administrative Frontend kann als **statische Anwendung über Nginx** ausgeliefert werden.
+Das Admin-Frontend wird als **statische Anwendung über Nginx** ausgeliefert.
 
 Docker-Image bauen:
 
@@ -133,12 +161,9 @@ Docker-Image bauen:
 docker build -t admin_frontend_image .
 ```
 
-Der Container enthält:
+Der Container enthält den Vite-Build und eine vorkonfigurierte Nginx-Instanz.
 
-- den Vite-Build
-- eine vorkonfigurierte Nginx-Instanz zur Auslieferung der Assets
-
-Für den `dockerized` Start des Admin-Frontends siehe [README](/backend/.extras/compose/admin_frontend/README.md)
+Für den containerisierten Start des Admin-Frontends siehe [README](/backend/.extras/compose/admin_frontend/README.md)
 
 ---
 
@@ -147,9 +172,3 @@ Für den `dockerized` Start des Admin-Frontends siehe [README](/backend/.extras/
 - Alle Admin-Funktionen sind **authentifizierungspflichtig**
 - Zugriff erfolgt ausschließlich über das zugehörige Backend
 - Sensible Logik (z. B. Auszählung) wird serverseitig abgesichert
-
----
-
-## Hinweise
-
-- Gemeinsame Module sind bewusst generisch gehalten, um Wiederverwendung zu ermöglichen
