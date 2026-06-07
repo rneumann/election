@@ -166,14 +166,21 @@ const ElectionOverview = () => {
         <tbody className="bg-white divide-y divide-gray-100">
           {elections.map((e) => {
             const voters = Number(e.voters) || 0;
+            const candidates = Number(e.candidates) || 0;
             const ballots = Number(e.ballots) || 0;
             const participation = voters > 0 ? ((ballots / voters) * 100).toFixed(1) : '—';
+            const missingData = voters === 0 || candidates === 0;
 
             return (
-              <tr key={e.id} className="hover:bg-gray-50 transition-colors">
+              <tr key={e.id} className={`transition-colors ${missingData ? 'bg-yellow-50 hover:bg-yellow-100' : 'hover:bg-gray-50'}`}>
                 <td className="px-4 py-3">
                   <div className="font-medium text-gray-900">{e.info}</div>
                   <div className="text-xs text-gray-400">{e.description}</div>
+                  {missingData && (
+                    <div className="text-xs text-yellow-700 font-medium mt-0.5">
+                      ⚠ {voters === 0 && candidates === 0 ? 'Keine Wähler und keine Kandidaten' : voters === 0 ? 'Keine Wähler eingetragen' : 'Keine Kandidaten eingetragen'}
+                    </div>
+                  )}
                 </td>
                 <td className="px-4 py-3">
                   <StatusBadge election={e} />
@@ -181,8 +188,8 @@ const ElectionOverview = () => {
                 <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{formatDate(e.start)}</td>
                 <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{formatDate(e.end)}</td>
                 <td className="px-4 py-3 text-right text-gray-700">{e.seats_to_fill}</td>
-                <td className="px-4 py-3 text-right text-gray-700">{e.candidates}</td>
-                <td className="px-4 py-3 text-right text-gray-700">{voters}</td>
+                <td className={`px-4 py-3 text-right font-medium ${candidates === 0 ? 'text-yellow-700' : 'text-gray-700'}`}>{candidates}</td>
+                <td className={`px-4 py-3 text-right font-medium ${voters === 0 ? 'text-yellow-700' : 'text-gray-700'}`}>{voters}</td>
                 <td className="px-4 py-3 text-right text-gray-700">{ballots}</td>
                 <td className="px-4 py-3 text-right">
                   {voters > 0 ? (

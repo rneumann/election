@@ -3,7 +3,6 @@ import { Client } from 'ldapts';
 import { checkAdminOrCommittee } from '../auth.js';
 import { logger } from '../../conf/logger/logger.js';
 import { checkIfVoterIsCandidate } from '../../service/candidate.service.js';
-import { client as dbClient } from '../../database/db.js';
 
 export const ldapStrategy = new Strategy(async (username, password, done) => {
   const user = await login(username, password);
@@ -29,14 +28,9 @@ export const login = async (username, password) => {
     return adminOrCommittee;
   }
 
-  // Simulate mode: skip LDAP, authenticate any voter by uid only
+  // Simulate mode: skip LDAP and voter list check, authenticate any username
   if (process.env.SIMULATE_MODE === 'true') {
     logger.warn(`SIMULATE_MODE aktiv: Passwort-Validierung übersprungen für "${username}"`);
-    const res = await dbClient.query('SELECT uid FROM voters WHERE uid = $1', [username]);
-    if (res.rows.length === 0) {
-      logger.warn(`SIMULATE_MODE: Wähler "${username}" nicht im Wählerverzeichnis`);
-      return undefined;
-    }
     const isCandidate = await checkIfVoterIsCandidate(username);
     return { username, role: 'voter', authProvider: 'simulate', isCandidate };
   }

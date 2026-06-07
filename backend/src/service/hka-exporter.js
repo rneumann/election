@@ -113,7 +113,7 @@ export const generateOfficialReport = async (resultId) => {
     // 3. Logo einfügen
     try {
       const logoId = workbook.addImage({
-        filename: path.join(__dirname, '../assets/hka_logo.png'),
+        filename: path.join(__dirname, '../assets/HKA_Logo.png'),
         extension: 'png',
       });
       sheet.addImage(logoId, {

@@ -6,6 +6,7 @@ import {
   exportTotalResultsRoute,
   exportBallotsRoute,
   exportElectionDefinitionRoute,
+  exportBallotMatrixRoute,
 } from '../service/export.service.js';
 
 //NEU
@@ -211,6 +212,17 @@ exportRoute.get('/election-result/:resultId', async (req, res) => {
     return res.status(500).json({ error: 'Failed to generate Excel export' });
   }
 });
+
+/**
+ * GET /api/export/ballot-matrix/:electionId?format=ods|xlsx
+ * Exports a pivot table: rows = ballots, columns = candidates (Nr. + Name)
+ */
+exportRoute.get(
+  '/ballot-matrix/:electionId',
+  ensureAuthenticated,
+  ensureHasRole(['admin', 'committee']),
+  exportBallotMatrixRoute,
+);
 
 // NEU: Die Route für den neuen Button
 exportRoute.get('/results/:resultId/official', ensureAuthenticated, async (req, res) => {

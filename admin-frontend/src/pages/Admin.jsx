@@ -23,12 +23,48 @@ import { logger } from '../conf/logger/logger.js';
 import { useAlert } from '../context/AlertContext.jsx';
 import { DeleteDataView } from '../components/DeleteDataView.jsx';
 //NEU ANFANG (templates)
+import api from '../services/api.js';
 import { templateApi } from '../services/templateApi.js';
 import IntegrityCheckView from '../components/IntegrityCheckView.jsx';
 import ElectionOverview from '../components/ElectionOverview.jsx';
 import ElectionTemplateBuilder from '../components/ElectionTemplateBuilder.jsx';
 import VoterUploadMulti from '../components/VoterUploadMulti.jsx';
 //NEU ENDE (templates)
+
+const NavSection = ({ title, children }) => (
+  <div className="mb-5">
+    <div className="px-3 py-2 text-xs font-bold text-gray-600 uppercase tracking-wide border-l-2 border-brand-primary ml-1 mb-0.5">
+      {title}
+    </div>
+    {children}
+  </div>
+);
+
+const NavButton = ({ onClick, active, disabled, title: tooltip, badge, children }) => {
+  if (disabled) {
+    return (
+      <button
+        disabled
+        title={tooltip}
+        className="w-full text-left px-3 py-1.5 text-sm font-medium text-gray-300 cursor-not-allowed"
+      >
+        {children}
+      </button>
+    );
+  }
+  return (
+    <button
+      onClick={onClick}
+      title={tooltip}
+      className={`w-full text-left px-3 py-1.5 text-sm font-medium transition-colors flex items-center justify-between ${
+        active ? 'bg-brand-primary text-white' : 'text-gray-700 hover:bg-gray-50'
+      }`}
+    >
+      <span>{children}</span>
+      {badge && <span className="text-xs opacity-60 ml-2">{badge}</span>}
+    </button>
+  );
+};
 
 /**
  * Admin Dashboard - Main admin interface
@@ -48,6 +84,7 @@ const AdminDashboard = () => {
   const theme = useTheme();
   const navigate = useNavigate();
   const [showConfirmAlert, setShowConfirmAlert] = useState(false);
+  const [simulateMode, setSimulateMode] = useState(false);
   // NEU ANFANG (templates)
   const [templateType, setTemplateType] = useState('generic');
   const [templateFormat, setTemplateFormat] = useState('ods');
@@ -90,6 +127,13 @@ const AdminDashboard = () => {
       logger.error('Fehler beim Laden der Presets');
       setPresetOptions({ internal: [], external: [] });
     }
+  }, []);
+
+  // Simulate-Mode-Status abrufen
+  useEffect(() => {
+    api.get('/simulate/status')
+      .then((res) => setSimulateMode(res.data?.simulateMode === true))
+      .catch(() => {});
   }, []);
 
   // Lade Presets beim Mount
@@ -143,11 +187,6 @@ const AdminDashboard = () => {
    * @param {string} section - Section identifier
    * @returns {object} Style object
    */
-  const getNavButtonStyle = (section) => ({
-    backgroundColor: activeSection === section ? theme.colors.primary : 'transparent',
-    color: activeSection === section ? '#ffffff' : theme.colors.dark,
-  });
-
   /**
    * Handle section change
    *
@@ -231,6 +270,16 @@ const AdminDashboard = () => {
         </div>
       </header>
 
+      {/* Simulate-Mode Banner */}
+      {simulateMode && (
+        <div className="bg-yellow-400 text-yellow-900 text-sm font-semibold text-center py-2 px-4 flex items-center justify-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+          </svg>
+          SIMULATE MODE AKTIV — Authentifizierung ohne LDAP. Nicht für den Produktivbetrieb!
+        </div>
+      )}
+
       {/* Main Content */}
       <main className="flex-1 container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
         <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
@@ -250,99 +299,37 @@ const AdminDashboard = () => {
 
               <nav className="p-2">
 
-                {/* Wahlen vorbereiten */}
-                <div className="mb-6">
-                  <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                    Wahlen vorbereiten
-                  </div>
-                  <button onClick={() => handleSectionChange('templateBuilder')} style={getNavButtonStyle('templateBuilder')} className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50">
-                    <span>Vorlage erstellen</span>
-                  </button>
-                  <button onClick={() => handleSectionChange('template')} style={getNavButtonStyle('template')} className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50">
-                    <span>Vordefinierte Vorlage herunterladen</span>
-                  </button>
-                </div>
+                <NavSection title="Wahlen vorbereiten">
+                  <NavButton onClick={() => handleSectionChange('templateBuilder')} active={activeSection === 'templateBuilder'}>Vorlage erstellen</NavButton>
+                  <NavButton onClick={() => handleSectionChange('template')} active={activeSection === 'template'}>Vordefinierte Vorlage herunterladen</NavButton>
+                </NavSection>
 
-                {/* Wahlen einrichten */}
-                <div className="mb-6">
-                  <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                    Wahlen einrichten
-                  </div>
-                  <button onClick={() => handleSectionChange('definition')} style={getNavButtonStyle('definition')} className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50">
-                    <span>Wahleinstellung hochladen</span>
-                  </button>
-                  <button onClick={() => handleSectionChange('upload')} style={getNavButtonStyle('upload')} className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50">
-                    <span>Wählerverzeichnis hochladen</span>
-                  </button>
-                  <button onClick={() => handleSectionChange('download')} style={getNavButtonStyle('download')} className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50">
-                    <span>Wählerverzeichnis herunterladen</span>
-                  </button>
-                  <button onClick={() => handleSectionChange('uploadCandidates')} style={getNavButtonStyle('uploadCandidates')} className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50">
-                    <span>Kandidatenverzeichnis hochladen</span>
-                  </button>
-                  <button onClick={() => handleSectionChange('downloadCandidates')} style={getNavButtonStyle('downloadCandidates')} className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50">
-                    <span>Kandidatenverzeichnis herunterladen</span>
-                  </button>
-                </div>
+                <NavSection title="Wahlen einrichten">
+                  <NavButton onClick={() => handleSectionChange('definition')} active={activeSection === 'definition'}>Wahleinstellung hochladen</NavButton>
+                  <NavButton onClick={() => handleSectionChange('upload')} active={activeSection === 'upload'}>Wählerverzeichnis hochladen</NavButton>
+                  <NavButton disabled title="Noch nicht implementiert">Wählerverzeichnis herunterladen</NavButton>
+                  <NavButton onClick={() => handleSectionChange('uploadCandidates')} active={activeSection === 'uploadCandidates'}>Kandidatenverzeichnis hochladen</NavButton>
+                  <NavButton disabled title="Noch nicht implementiert">Kandidatenverzeichnis herunterladen</NavButton>
+                </NavSection>
 
-                {/* Wahlen testen */}
-                <div className="mb-6">
-                  <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                    Wahlen testen
-                  </div>
-                  <button onClick={() => handleSectionChange('test-election')} style={getNavButtonStyle('test-election')} className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50">
-                    <span>Testwahlen steuern</span>
-                  </button>
-                  <button onClick={() => handleSectionChange('test-election-counting')} style={getNavButtonStyle('test-election-counting')} className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50">
-                    <span>Testwahlen auszählen</span>
-                  </button>
-                  <button
-                    onClick={() => handleSectionChange('exportElections')}
-                    style={getNavButtonStyle('exportElections')}
-                    className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span>Wahlen exportieren</span>
-                      <span className="text-xs opacity-60">3.4</span>
-                    </div>
-                  </button>
-                </div>
+                <NavSection title="Wahlen testen">
+                  <NavButton onClick={() => handleSectionChange('test-election')} active={activeSection === 'test-election'}>Testwahlen steuern</NavButton>
+                  <NavButton onClick={() => handleSectionChange('test-election-counting')} active={activeSection === 'test-election-counting'}>Testwahlen auszählen</NavButton>
+                  <NavButton onClick={() => handleSectionChange('exportElections')} active={activeSection === 'exportElections'} badge="3.4">Wahlen exportieren</NavButton>
+                </NavSection>
 
-                {/* Wahlen durchführen */}
-                <div className="mb-6">
-                  <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                    Wahlen durchführen
-                  </div>
-                  <button onClick={() => handleSectionChange('overview')} style={getNavButtonStyle('overview')} className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50">
-                    <span>Wahlübersicht</span>
-                  </button>
-                  <button disabled className="w-full text-left px-3 py-2.5 text-sm font-medium text-gray-300 cursor-not-allowed" title="Noch nicht implementiert">
-                    <span>Wahl unterbrechen</span>
-                    <span className="ml-2 text-xs text-gray-300">(in Arbeit)</span>
-                  </button>
-                  <button onClick={() => handleSectionChange('counting')} style={getNavButtonStyle('counting')} className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50">
-                    <span>Wahlergebnisse auszählen</span>
-                  </button>
-                </div>
+                <NavSection title="Wahlen durchführen">
+                  <NavButton onClick={() => handleSectionChange('overview')} active={activeSection === 'overview'}>Wahlübersicht</NavButton>
+                  <NavButton disabled title="Noch nicht implementiert">Wahl unterbrechen <span className="text-xs">(in Arbeit)</span></NavButton>
+                  <NavButton onClick={() => handleSectionChange('counting')} active={activeSection === 'counting'}>Wahlergebnisse auszählen</NavButton>
+                </NavSection>
 
-                {/* Administratives */}
-                <div>
-                  <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                    Administratives
-                  </div>
-                  <button onClick={() => handleSectionChange('clear')} style={getNavButtonStyle('clear')} className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50">
-                    <span>Datenbankbereinigung</span>
-                  </button>
-                  <button onClick={() => setActiveSection('config')} style={getNavButtonStyle('config')} className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50">
-                    <span>Wahl-Parameter Konfiguration</span>
-                  </button>
-                  <button onClick={() => handleSectionChange('integrity')} style={getNavButtonStyle('integrity')} className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50">
-                    <span>Integritätsprüfung</span>
-                  </button>
-                  <button onClick={() => navigate('/admin/audit')} className="w-full text-left px-3 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50 text-gray-700">
-                    <span>Audit-Logs</span>
-                  </button>
-                </div>
+                <NavSection title="Administratives">
+                  <NavButton onClick={() => handleSectionChange('clear')} active={activeSection === 'clear'}>Datenbankbereinigung</NavButton>
+                  <NavButton onClick={() => handleSectionChange('config')} active={activeSection === 'config'}>Wahl-Parameter Konfiguration</NavButton>
+                  <NavButton onClick={() => handleSectionChange('integrity')} active={activeSection === 'integrity'}>Integritätsprüfung</NavButton>
+                  <NavButton onClick={() => navigate('/admin/audit')}>Audit-Logs</NavButton>
+                </NavSection>
 
               </nav>
             </div>
@@ -492,31 +479,43 @@ const AdminDashboard = () => {
                       <p className="text-sm text-gray-500 mb-4">
                         Leere Vorlage zum manuellen Ausfüllen
                       </p>
-                      <a
-                        href="/templates/ElectionInfoTemplate.xlsx"
-                        download="ElectionInfoTemplate.xlsx"
-                        className="inline-block"
+                      <div className="flex items-center justify-center gap-3 mb-4">
+                        <span className="text-sm text-gray-600">Format:</span>
+                        <label className="flex items-center gap-1 text-sm cursor-pointer">
+                          <input
+                            type="radio"
+                            name="blankoFormat"
+                            value="ods"
+                            checked={templateFormat === 'ods'}
+                            onChange={() => setTemplateFormat('ods')}
+                          />
+                          ODS
+                        </label>
+                        <label className="flex items-center gap-1 text-sm cursor-pointer">
+                          <input
+                            type="radio"
+                            name="blankoFormat"
+                            value="xlsx"
+                            checked={templateFormat === 'xlsx'}
+                            onChange={() => setTemplateFormat('xlsx')}
+                          />
+                          XLSX
+                        </label>
+                      </div>
+                      <ResponsiveButton
+                        onClick={async () => {
+                          try {
+                            await templateApi.downloadElectionTemplate('generic', templateFormat);
+                            showAlert('success', 'Vorlage erfolgreich heruntergeladen');
+                          } catch {
+                            showAlert('error', 'Fehler beim Download');
+                          }
+                        }}
+                        variant="primary"
+                        size="medium"
                       >
-                        <button
-                          style={{ backgroundColor: theme.colors.primary }}
-                          className="px-5 py-2.5 text-white text-sm font-medium rounded-md hover:opacity-90 transition-opacity flex items-center gap-2 mx-auto"
-                        >
-                          <svg
-                            className="w-4 h-4"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                            />
-                          </svg>
-                          Download (.xlsx)
-                        </button>
-                      </a>
+                        Download (.{templateFormat})
+                      </ResponsiveButton>
                     </div>
 
                     {/* Vorgefertigte Vorlagen Card */}

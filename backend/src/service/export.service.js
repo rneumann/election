@@ -1,8 +1,9 @@
 import ExcelJS from 'exceljs';
 import { logger } from '../conf/logger/logger.js';
 import { safeQuery } from '../database/db.js';
-import { createBasicWorkbook, streamWorkbook } from '../utils/excel.js';
+import { createBasicWorkbook, streamWorkbook, EXCEL_MIME_TYPE } from '../utils/excel.js';
 import { writeAuditLog } from '../audit/auditLogger.js';
+import { streamOdsFile, ODS_MIME_TYPE } from '../utils/ods.js';
 
 // Sheet Names
 const SHEET_TOTAL_RESULTS = 'Total Results';
@@ -114,6 +115,133 @@ export const exportBallotsRoute = async (req, res, next) => {
     await streamWorkbook(workbook, res, `election-anonymized-ballots-${electionId}.xlsx`);
   } catch (err) {
     logger.error('Error exporting ballots:', err);
+    next(err);
+  }
+};
+
+/**
+ * Route handler that exports a pivot table: rows = ballots, columns = candidates.
+ * Supports ?format=ods (default) or ?format=xlsx.
+ */
+export const exportBallotMatrixRoute = async (req, res, next) => {
+  const { electionId } = req.params;
+  if (!electionId) {
+    return res.status(400).json({ message: 'electionId is required' });
+  }
+
+  const format = (req.query.format || 'ods').toLowerCase();
+
+  try {
+    // 1. Election info
+    const electionRes = await safeQuery(
+      `SELECT info FROM elections WHERE id = $1`,
+      [electionId],
+    );
+    if (!electionRes.rows.length) {
+      return res.status(404).json({ message: 'Election not found.' });
+    }
+    const electionName = electionRes.rows[0].info;
+
+    // 2. Candidates sorted by listnum
+    const candidatesRes = await safeQuery(
+      `SELECT ec.listnum,
+              COALESCE(c.firstname || ' ' || c.lastname, 'Liste ' || ec.listnum) AS name
+       FROM electioncandidates ec
+       LEFT JOIN candidates c ON c.id = ec.candidateid
+       WHERE ec.electionid = $1
+       ORDER BY ec.listnum ASC`,
+      [electionId],
+    );
+    const candidates = candidatesRes.rows; // [{listnum, name}]
+
+    if (!candidates.length) {
+      return res.status(404).json({ message: 'No candidates found.' });
+    }
+
+    // 3. All ballots sorted by serial_id
+    const ballotsRes = await safeQuery(
+      `SELECT id, serial_id, valid FROM ballots WHERE election = $1 ORDER BY serial_id ASC`,
+      [electionId],
+    );
+    if (!ballotsRes.rows.length) {
+      return res.status(404).json({ message: 'No ballots found.' });
+    }
+    const ballots = ballotsRes.rows;
+
+    // 4. All votes for this election
+    const votesRes = await safeQuery(
+      `SELECT bv.ballot, bv.listnum, bv.votes
+       FROM ballotvotes bv
+       WHERE bv.election = $1`,
+      [electionId],
+    );
+
+    // Index votes by ballot id → listnum → votes
+    const voteIndex = new Map();
+    for (const row of votesRes.rows) {
+      if (!voteIndex.has(row.ballot)) voteIndex.set(row.ballot, new Map());
+      voteIndex.get(row.ballot).set(row.listnum, Number(row.votes));
+    }
+
+    // 5. Build header and data rows
+    const candidateHeaders = candidates.map((c) => `${c.listnum}: ${c.name}`);
+    const headers = ['Stimmzettel-Nr.', 'Gültig', ...candidateHeaders];
+
+    const dataRows = ballots.map((b) => {
+      const ballotVotes = voteIndex.get(b.id) || new Map();
+      const voteCols = candidates.map((c) => ballotVotes.get(c.listnum) ?? 0);
+      return [b.serial_id, b.valid ? 'Ja' : 'Nein', ...voteCols];
+    });
+
+    writeAuditLog({
+      actionType: 'ELECTION_RESULTS_EXPORTED',
+      level: 'INFO',
+      actorId: req.user?.username || 'system',
+      actorRole: req.user?.role || 'admin',
+      details: { electionId, type: 'ballot_matrix', format },
+    }).catch((e) => logger.error(e));
+
+    const safeName = electionName.replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '_').substring(0, 40);
+    const timestamp = new Date().toISOString().split('T')[0];
+
+    if (format === 'xlsx') {
+      const workbook = new ExcelJS.Workbook();
+      const sheet = workbook.addWorksheet('Stimmzettel');
+
+      // Header row with bold formatting
+      const headerRow = sheet.addRow(headers);
+      headerRow.font = { bold: true };
+      headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD3D3D3' } };
+
+      // Data rows — numeric columns stay as numbers
+      for (const row of dataRows) {
+        sheet.addRow(row);
+      }
+
+      // Auto-width for first two columns
+      sheet.getColumn(1).width = 18;
+      sheet.getColumn(2).width = 10;
+      for (let i = 3; i <= headers.length; i++) {
+        sheet.getColumn(i).width = Math.max(12, candidateHeaders[i - 3].length * 0.85);
+      }
+
+      const filename = `Stimmzettel_${safeName}_${timestamp}.xlsx`;
+      res.setHeader('Content-Type', EXCEL_MIME_TYPE);
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      await workbook.xlsx.write(res);
+      res.end();
+    } else {
+      // ODS — numeric values as strings (compatible with Calc/Excel)
+      const odsRows = dataRows.map((row) => row.map(String));
+      const filename = `Stimmzettel_${safeName}_${timestamp}.ods`;
+      await streamOdsFile(
+        [{ name: 'Stimmzettel', headers, rows: odsRows }],
+        res,
+        filename,
+      );
+    }
+  } catch (err) {
+    logger.error('Error exporting ballot matrix:', err);
     next(err);
   }
 };

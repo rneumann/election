@@ -12,6 +12,7 @@ import {
   deleteAllElectionData,
   getElectionsForAdmin,
   resetElectionData,
+  cleanupExpiredTestElections,
 } from '../service/admin.service.js';
 import { getAvailablePresets } from '../service/template.service.js';
 import { integrityService } from '../service/integrity.service.js';
@@ -57,6 +58,7 @@ adminRouter.get('/elections', ensureAuthenticated, ensureHasRole(['admin', 'comm
   }
 
   try {
+    await cleanupExpiredTestElections();
     const elections = await getElectionsForAdmin(status);
     logger.debug(`Admin elections retrieved: ${elections.length}`);
     res.status(200).json(elections);
@@ -375,6 +377,47 @@ adminRouter.get(
       res.json(result);
     } catch (error) {
       logger.error('Fehler bei Audit Log Chain Prüfung:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  },
+);
+
+/**
+ * GET /admin/integrity/ballots/:electionId
+ * Prüft die Integrität der einzelnen Stimmzettel einer Wahl
+ */
+adminRouter.get(
+  '/integrity/ballots/:electionId',
+  ensureAuthenticated,
+  ensureHasRole('admin'),
+  async (req, res) => {
+    try {
+      const { electionId } = req.params;
+      logger.info(`Admin startet Ballot-Integritätsprüfung für Wahl ${electionId}`);
+      const result = await integrityService.verifyBallotIntegrity(electionId);
+      res.json(result);
+    } catch (error) {
+      logger.error('Fehler bei Ballot-Integritätsprüfung:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  },
+);
+
+/**
+ * GET /admin/integrity/all-ballots
+ * Prüft die Integrität der Stimmzettel aller Wahlen
+ */
+adminRouter.get(
+  '/integrity/all-ballots',
+  ensureAuthenticated,
+  ensureHasRole('admin'),
+  async (req, res) => {
+    try {
+      logger.info('Admin startet Ballot-Integritätsprüfung für alle Wahlen');
+      const result = await integrityService.verifyAllBallotIntegrity();
+      res.json(result);
+    } catch (error) {
+      logger.error('Fehler bei Gesamt-Ballot-Integritätsprüfung:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },

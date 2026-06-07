@@ -263,7 +263,7 @@ const IntegrityCheckView = () => {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <h3 className="font-bold mb-3 text-lg">🗳️ Alle Stimmzettel</h3>
           <p className="text-sm text-gray-600 mb-4">
-            Prüft alle Wahlen und deren Stimmzettel-Ketten auf Manipulationen
+            Prüft jeden einzelnen Stimmzettel aller Wahlen auf Konsistenz (serial_id-Lücken, gültige Stimmen)
           </p>
           <ResponsiveButton
             onClick={handleCheckAllBallots}

@@ -113,6 +113,53 @@ export const getElectionsForAdmin = async (status) => {
 };
 
 /**
+ * Finds all elections where the real election has started (now >= start)
+ * but test_election_active is still true, then automatically deactivates
+ * the test mode and deletes all test ballot data.
+ * Safe to call on every relevant request — exits quickly if nothing to do.
+ */
+export const cleanupExpiredTestElections = async () => {
+  try {
+    const { rows } = await client.query(
+      `SELECT id, info FROM elections
+       WHERE test_election_active = true AND start <= now()`,
+    );
+
+    if (rows.length === 0) return;
+
+    for (const election of rows) {
+      logger.warn(
+        `Auto-cleanup: Testwahl für "${election.info}" (${election.id}) wird beendet, da die Wahl gestartet hat.`,
+      );
+      try {
+        await client.query('BEGIN');
+        await client.query('DELETE FROM election_results WHERE election_id = $1', [election.id]);
+        await client.query('UPDATE votingnotes SET voted = false WHERE electionId = $1', [election.id]);
+        await client.query('DELETE FROM ballotvotes WHERE election = $1', [election.id]);
+        await client.query('DELETE FROM ballots WHERE election = $1', [election.id]);
+        await client.query('UPDATE elections SET test_election_active = false WHERE id = $1', [election.id]);
+        await client.query('COMMIT');
+
+        writeAuditLog({
+          actionType: 'AUTO_CLEANUP_TEST_ELECTION',
+          level: 'WARN',
+          actorRole: 'SYSTEM',
+          details: {
+            electionId: election.id,
+            info: `Testwahl automatisch beendet und Daten gelöscht: "${election.info}"`,
+          },
+        }).catch((e) => logger.error(e));
+      } catch (err) {
+        await client.query('ROLLBACK');
+        logger.error(`Auto-cleanup fehlgeschlagen für Wahl ${election.id}: ${err.message}`);
+      }
+    }
+  } catch (err) {
+    logger.error(`cleanupExpiredTestElections fehlgeschlagen: ${err.message}`);
+  }
+};
+
+/**
  * Resets all voting data for an election.
  * This function is intended to be used for test elections only.
  * It will delete all results, voting notes and ballots associated with the election.

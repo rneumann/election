@@ -1,0 +1,29 @@
+{
+  "institution": {
+    "name": "HKA",
+    "fullName": "Hochschule Karlsruhe"
+  },
+  "colors": {
+    "primary":   "#e20000",
+    "secondary": "#E2001A",
+    "accent":    "#E2001A",
+    "dark":      "#333333",
+    "gray":      "#666666",
+    "lightGray": "#F5F5F5"
+  },
+  "text": {
+    "appTitle":        "Wahlsystem Admin",
+    "loginSubtitle":   "Bitte melden Sie sich mit Ihren Admin-Anmeldedaten an",
+    "welcomeTitle":    "Willkommen im HKA Wahlsystem Admin",
+    "welcomeSubtitle": "Administration des BSI-konformen Online-Wahlsystems"
+  },
+  "roles": {
+    "admin":     "Administrator",
+    "committee": "Wahlausschuss",
+    "voter":     "Wähler"
+  },
+  "placeholders": {
+    "loginUsername": "Benutzername",
+    "loginPassword": "Passwort"
+  }
+}

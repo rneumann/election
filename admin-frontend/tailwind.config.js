@@ -1,52 +1,56 @@
-import { themeConfig } from './theme.config.js';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const profile = process.env.CONFIG_PROFILE || 'hka';
+const themePath = path.join(__dirname, `config/theme.${profile}.json`);
+
+let colors;
+try {
+  colors = JSON.parse(fs.readFileSync(themePath, 'utf-8')).colors;
+} catch {
+  // Fallback to HKA defaults if profile file is missing
+  colors = JSON.parse(fs.readFileSync(path.join(__dirname, 'config/theme.hka.json'), 'utf-8')).colors;
+}
 
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ['./index.html', './src/**/*.{js,jsx}'],
-  darkMode: 'class', // Enable manual dark mode toggle via 'dark' class on html
+  darkMode: 'class',
   theme: {
     extend: {
       colors: {
-        // Primary brand colors from theme.config.js
-        primary: themeConfig.colors.primary,
-        secondary: themeConfig.colors.secondary,
-        accent: themeConfig.colors.accent,
-
-        // Legacy HKA names (for backward compatibility)
-        'hka-red': themeConfig.colors.primary,
-        'hka-dark': themeConfig.colors.dark,
-        'hka-gray': themeConfig.colors.gray,
-        'hka-light-gray': themeConfig.colors.lightGray,
-
-        // Semantic color names (recommended for new code)
-        'brand-primary': themeConfig.colors.primary,
-        'brand-dark': themeConfig.colors.dark,
-        'brand-gray': themeConfig.colors.gray,
-        'brand-light': themeConfig.colors.lightGray,
+        primary:          colors.primary,
+        secondary:        colors.secondary,
+        accent:           colors.accent,
+        'hka-red':        colors.primary,
+        'hka-dark':       colors.dark,
+        'hka-gray':       colors.gray,
+        'hka-light-gray': colors.lightGray,
+        'brand-primary':  colors.primary,
+        'brand-dark':     colors.dark,
+        'brand-gray':     colors.gray,
+        'brand-light':    colors.lightGray,
       },
-      // Optimized for mobile devices
       fontSize: {
-        '2xs': '0.625rem', // 10px - for very small mobile text
+        '2xs': '0.625rem',
       },
-      minHeight: {
-        touch: '44px', // Apple's recommended touch target size
-      },
-      minWidth: {
-        touch: '44px',
-      },
+      minHeight: { touch: '44px' },
+      minWidth:  { touch: '44px' },
       keyframes: {
         slideIn: {
-          '0%': { opacity: '0', transform: 'translateY(-10px)' },
+          '0%':   { opacity: '0', transform: 'translateY(-10px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
         },
         shrink: {
-          '0%': { width: '100%' },
+          '0%':   { width: '100%' },
           '100%': { width: '0%' },
         },
       },
       animation: {
         'slide-in': 'slideIn 0.3s ease-out',
-        shrink: 'shrink 5s linear forwards',
+        shrink:     'shrink 5s linear forwards',
       },
     },
   },

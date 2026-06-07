@@ -17,6 +17,9 @@ COPY . .
 ARG NODE_ENV
 ENV NODE_ENV=$NODE_ENV
 
+ARG CONFIG_PROFILE=hka
+ENV CONFIG_PROFILE=$CONFIG_PROFILE
+
 # Build the application
 RUN npm run build
 

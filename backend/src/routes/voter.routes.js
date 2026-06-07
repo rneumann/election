@@ -12,6 +12,7 @@ import {
   searchVotersByName,
 } from '../service/voter.service.js';
 import { ensureAuthenticated, ensureHasRole } from '../auth/auth.js';
+import { cleanupExpiredTestElections } from '../service/admin.service.js';
 import { ballotInputSchema } from '../schemas/ballot.js';
 
 export const voterRouter = Router();
@@ -138,6 +139,9 @@ voterRouter.get(
         return res.status(404).json({ message: 'Voter not found' });
       }
       //logger.debug(`Voter retrieved successfully res: ${JSON.stringify(voter)}`);
+
+      // Abgelaufene Testwahlen vor dem Laden bereinigen (fire-and-forget mit await für Reihenfolge)
+      await cleanupExpiredTestElections();
 
       const elections = await getElections(status, voter.id, voted);
 

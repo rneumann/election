@@ -1,9 +1,26 @@
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
-import path from "path";
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const profile = process.env.CONFIG_PROFILE || 'hka';
+const themePath = path.join(__dirname, `config/theme.${profile}.json`);
+
+let themeConfig;
+try {
+  themeConfig = JSON.parse(fs.readFileSync(themePath, 'utf-8'));
+} catch {
+  console.warn(`[vite] theme config for profile "${profile}" not found, falling back to hka`);
+  themeConfig = JSON.parse(fs.readFileSync(path.join(__dirname, 'config/theme.hka.json'), 'utf-8'));
+}
 
 export default defineConfig({
   plugins: [react()],
+  define: {
+    __THEME_CONFIG__: JSON.stringify(themeConfig),
+  },
   server: {
     port: 5174, // Different port from main frontend (5173)
     proxy: {

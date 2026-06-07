@@ -1,6 +1,6 @@
 /* eslint-disable */
 import { useEffect, useState } from 'react';
-import api, { exportElectionResultExcel, exportOfficialReport } from '../../services/api.js';
+import api, { exportElectionResultExcel, exportOfficialReport, exportBallotMatrix } from '../../services/api.js';
 import { adminService } from '../../services/adminApi.js';
 import { logger } from '../../conf/logger/logger.js';
 import { ConfirmationAlert } from '../ConfirmationAlert.jsx';
@@ -182,6 +182,26 @@ const CountingSection = ({
     }
   };
   // NEU ENDE (templates)
+
+  const [ballotMatrixFormat, setBallotMatrixFormat] = useState('ods');
+
+  const handleExportBallotMatrix = async (electionId, electionName) => {
+    try {
+      const blob = await exportBallotMatrix(electionId, ballotMatrixFormat);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      const timestamp = new Date().toISOString().split('T')[0];
+      const safeName = (electionName || electionId.substring(0, 8)).replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '_').substring(0, 40);
+      link.download = `Stimmzettel_${safeName}_${timestamp}.${ballotMatrixFormat}`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      setCountingError(`Fehler beim Stimmzettel-Matrix-Export: ${err.message}`);
+    }
+  };
 
   /**
    * Export election result as Excel file
@@ -808,6 +828,31 @@ const CountingSection = ({
                               </svg>
                               Amtliches Wahlergebnis (HKA) herunterladen
                             </button>
+                            {/* Stimmzettel-Matrix Export */}
+                            <div className="mt-3 border border-gray-200 rounded-lg p-3 bg-gray-50">
+                              <p className="text-xs font-semibold text-gray-700 mb-2">Stimmzettel-Matrix (Nachprüfung)</p>
+                              <p className="text-xs text-gray-500 mb-2">Tabellarische Übersicht: Zeilen = Stimmzettel, Spalten = Kandidaten/Wahloptionen</p>
+                              <div className="flex items-center gap-3 mb-2 text-xs">
+                                <span className="text-gray-600">Format:</span>
+                                <label className="flex items-center gap-1 cursor-pointer">
+                                  <input type="radio" name={`bmf-${election.id}`} value="ods" checked={ballotMatrixFormat === 'ods'} onChange={() => setBallotMatrixFormat('ods')} />
+                                  ODS
+                                </label>
+                                <label className="flex items-center gap-1 cursor-pointer">
+                                  <input type="radio" name={`bmf-${election.id}`} value="xlsx" checked={ballotMatrixFormat === 'xlsx'} onChange={() => setBallotMatrixFormat('xlsx')} />
+                                  XLSX
+                                </label>
+                              </div>
+                              <button
+                                onClick={() => handleExportBallotMatrix(election.id, election.info)}
+                                className="w-full px-4 py-2 bg-white border-2 border-gray-400 text-gray-700 font-semibold rounded-lg hover:bg-gray-100 transition-colors flex items-center justify-center gap-2 text-sm"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18M10 3v18M14 3v18" />
+                                </svg>
+                                Stimmzettel-Matrix herunterladen (.{ballotMatrixFormat})
+                              </button>
+                            </div>
                             {/* NEU ENDE (templates) */}
 
                             {/* Finalize Button - only show if not yet finalized */}

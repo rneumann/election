@@ -88,6 +88,25 @@ export const exportElectionResultExcel = async (resultId) => {
   }
 };
 
+/**
+ * Downloads ballot matrix (pivot: rows=ballots, cols=candidates) for an election.
+ * @param {string} electionId
+ * @param {'ods'|'xlsx'} format
+ * @returns {Promise<Blob>}
+ */
+export const exportBallotMatrix = async (electionId, format = 'ods') => {
+  try {
+    const response = await api.get(`/export/ballot-matrix/${electionId}?format=${format}`, {
+      responseType: 'blob',
+      timeout: 60000,
+    });
+    return response.data;
+  } catch (error) {
+    logger.error('Error exporting ballot matrix:', error);
+    throw error;
+  }
+};
+
 // NEU: Export function for official HKA report
 export const exportOfficialReport = async (resultId) => {
   try {
