@@ -133,11 +133,16 @@ const AdminDashboard = () => {
     }
   }, []);
 
-  // Simulate-Mode-Status abrufen
+  // Simulate-Mode-Status abrufen und periodisch prüfen
   useEffect(() => {
-    api.get('/simulate/status')
-      .then((res) => setSimulateMode(res.data?.simulateMode === true))
-      .catch(() => {});
+    const fetchSimulateStatus = () =>
+      api.get('/simulate/status')
+        .then((res) => setSimulateMode(res.data?.simulateMode === true))
+        .catch(() => {});
+
+    fetchSimulateStatus();
+    const interval = setInterval(fetchSimulateStatus, 10000);
+    return () => clearInterval(interval);
   }, []);
 
   const refreshTestNavVisibility = useCallback(async () => {

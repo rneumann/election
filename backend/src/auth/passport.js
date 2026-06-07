@@ -23,11 +23,13 @@ passport.serializeUser((user, done) => {
     refreshToken: AUTH_PROVIDER === 'keycloak' ? user.refreshToken : undefined,
     role: user.role,
     isCandidate: user.isCandidate || false,
+    authProvider: user.authProvider,
   });
 });
 
 passport.deserializeUser(async (obj, done) => {
   let user = await getUserInfo(obj.username, obj.authProvider);
+  user.authProvider = obj.authProvider;
   if (AUTH_PROVIDER === 'keycloak') {
     user.accessToken = obj.accessToken;
     user.refreshToken = obj.refreshToken;
