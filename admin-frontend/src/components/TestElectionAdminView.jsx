@@ -5,7 +5,7 @@ import { useAlert } from '../context/AlertContext';
 import ResponsiveButton from './ResponsiveButton';
 import { Alert } from './Alert';
 
-export const TestElectionAdminView = () => {
+export const TestElectionAdminView = ({ onDataChange }) => {
   const [showDeleteAlert, setShowDeleteAlert] = useState(false);
   const [selectedElectionId, setSelectedElectionId] = useState(null);
   const [futureElections, setFutureElections] = useState([]);
@@ -26,6 +26,7 @@ export const TestElectionAdminView = () => {
       const elections = await adminService.getElectionsForAdmin('future');
       setFutureElections(elections);
       logger.debug('Updated futureElections:', futureElections);
+      onDataChange?.();
     } catch (error) {
       logger.error('Error toggling election:', error);
     }
@@ -36,6 +37,7 @@ export const TestElectionAdminView = () => {
       await adminService.deleteTestElectionData(electionId);
       setFutureElections(await adminService.getElectionsForAdmin('future'));
       showAlert('success', 'Testdaten wurden geloescht');
+      onDataChange?.();
     } catch (error) {
       logger.error('Error deleting test data');
       logger.debug(error);

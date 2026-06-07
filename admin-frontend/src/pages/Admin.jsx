@@ -46,8 +46,9 @@ const NavButton = ({ onClick, active, disabled, title: tooltip, badge, children 
       <button
         disabled
         title={tooltip}
-        className="w-full text-left px-3 py-1.5 text-sm font-medium text-gray-300 cursor-not-allowed"
+        className="w-full text-left pl-5 pr-3 py-1.5 text-sm font-medium text-gray-300 cursor-not-allowed flex items-center gap-1.5"
       >
+        <span className="text-[7px] text-gray-300">▶</span>
         {children}
       </button>
     );
@@ -56,11 +57,14 @@ const NavButton = ({ onClick, active, disabled, title: tooltip, badge, children 
     <button
       onClick={onClick}
       title={tooltip}
-      className={`w-full text-left px-3 py-1.5 text-sm font-medium transition-colors flex items-center justify-between ${
+      className={`w-full text-left pl-5 pr-3 py-1.5 text-sm font-medium transition-colors flex items-center justify-between ${
         active ? 'bg-brand-primary text-white' : 'text-gray-700 hover:bg-gray-50'
       }`}
     >
-      <span>{children}</span>
+      <span className="flex items-center gap-1.5">
+        <span className={`text-[7px] shrink-0 ${active ? 'text-white' : 'text-brand-primary'}`}>▶</span>
+        {children}
+      </span>
       {badge && <span className="text-xs opacity-60 ml-2">{badge}</span>}
     </button>
   );
@@ -103,6 +107,7 @@ const AdminDashboard = () => {
   const [loadingDeletionElections, setLoadingDeletionElections] = useState(false);
   const [selectedElectionForDeletion, setSelectedElectionForDeletion] = useState('all');
   const [electionsForDeletion, setElectionsForDeletion] = useState([]);
+  const [showTestNav, setShowTestNav] = useState(false);
 
   // NEU ANFANG (templates)
   const [presetOptions, setPresetOptions] = useState({ internal: [], external: [] });
@@ -135,6 +140,21 @@ const AdminDashboard = () => {
       .then((res) => setSimulateMode(res.data?.simulateMode === true))
       .catch(() => {});
   }, []);
+
+  const refreshTestNavVisibility = useCallback(async () => {
+    const [testActive, testStopped, realActive] = await Promise.all([
+      adminService.getElectionsForAdmin('test'),
+      adminService.getElectionsForAdmin('test_stopped'),
+      adminService.getElectionsForAdmin('active'),
+    ]);
+    const hasTestData = testActive.length > 0 || testStopped.length > 0;
+    const hasRealElectionRunning = realActive.length > 0;
+    setShowTestNav(hasTestData && !hasRealElectionRunning);
+  }, []);
+
+  useEffect(() => {
+    refreshTestNavVisibility();
+  }, [refreshTestNavVisibility]);
 
   // Lade Presets beim Mount
   useEffect(() => {
@@ -306,6 +326,7 @@ const AdminDashboard = () => {
 
                 <NavSection title="Wahlen einrichten">
                   <NavButton onClick={() => handleSectionChange('definition')} active={activeSection === 'definition'}>Wahleinstellung hochladen</NavButton>
+                  <NavButton onClick={() => handleSectionChange('exportElections')} active={activeSection === 'exportElections'}>Wahleinstellungen exportieren</NavButton>
                   <NavButton onClick={() => handleSectionChange('upload')} active={activeSection === 'upload'}>Wählerverzeichnis hochladen</NavButton>
                   <NavButton disabled title="Noch nicht implementiert">Wählerverzeichnis herunterladen</NavButton>
                   <NavButton onClick={() => handleSectionChange('uploadCandidates')} active={activeSection === 'uploadCandidates'}>Kandidatenverzeichnis hochladen</NavButton>
@@ -314,8 +335,9 @@ const AdminDashboard = () => {
 
                 <NavSection title="Wahlen testen">
                   <NavButton onClick={() => handleSectionChange('test-election')} active={activeSection === 'test-election'}>Testwahlen steuern</NavButton>
-                  <NavButton onClick={() => handleSectionChange('test-election-counting')} active={activeSection === 'test-election-counting'}>Testwahlen auszählen</NavButton>
-                  <NavButton onClick={() => handleSectionChange('exportElections')} active={activeSection === 'exportElections'} badge="3.4">Wahlen exportieren</NavButton>
+                  {showTestNav && (
+                    <NavButton onClick={() => handleSectionChange('test-election-counting')} active={activeSection === 'test-election-counting'}>Testwahlen auszählen</NavButton>
+                  )}
                 </NavSection>
 
                 <NavSection title="Wahlen durchführen">
@@ -788,7 +810,7 @@ const AdminDashboard = () => {
               </div>
             )}
 
-            {activeSection === 'test-election' && <TestElectionAdminView />}
+            {activeSection === 'test-election' && <TestElectionAdminView onDataChange={refreshTestNavVisibility} />}
             {activeSection === 'test-election-counting' && (
               <TestElectionCountingAdminView
                 theme={theme}
