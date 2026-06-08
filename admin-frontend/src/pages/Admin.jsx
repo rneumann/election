@@ -29,6 +29,7 @@ import AuditLogTable from '../components/AuditLogTable.jsx';
 import ElectionOverview from '../components/ElectionOverview.jsx';
 import ElectionTemplateBuilder from '../components/ElectionTemplateBuilder.jsx';
 import VoterUploadMulti from '../components/VoterUploadMulti.jsx';
+import BallotPreview from '../components/BallotPreview.jsx';
 //NEU ENDE (templates)
 
 const NavSection = ({ title, children }) => (
@@ -347,6 +348,7 @@ const AdminDashboard = () => {
                   <NavButton disabled title="Noch nicht implementiert">Wählerverzeichnis herunterladen</NavButton>
                   <NavButton onClick={() => handleSectionChange('uploadCandidates')} active={activeSection === 'uploadCandidates'}>Kandidatenverzeichnis hochladen</NavButton>
                   <NavButton disabled title="Noch nicht implementiert">Kandidatenverzeichnis herunterladen</NavButton>
+                  <NavButton onClick={() => handleSectionChange('ballotPreview')} active={activeSection === 'ballotPreview'}>Stimmzettel-Vorschau</NavButton>
                 </NavSection>
 
                 <NavSection title="Wahlen testen">
@@ -844,6 +846,18 @@ const AdminDashboard = () => {
                     </ResponsiveButton>
                   </div>
                 </div>
+              </div>
+            )}
+
+            {activeSection === 'ballotPreview' && (
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div className="border-b border-gray-200 px-6 py-4">
+                  <h2 className="text-xl font-bold text-gray-900">Stimmzettel-Vorschau</h2>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Schematische Darstellung des Stimmzettels für eine Wahl mit allen eingetragenen Kandidaten.
+                  </p>
+                </div>
+                <BallotPreview />
               </div>
             )}
 

@@ -92,6 +92,17 @@ export const adminService = {
     }
   },
 
+  getElectionById: async (electionId) => {
+    try {
+      const response = await api.get(`/voter/elections/${electionId}`);
+      if (response.status !== 200) return null;
+      return response.data;
+    } catch (err) {
+      logger.error('[adminService] getElectionById failed', err);
+      return null;
+    }
+  },
+
   finalizeElectionResults: async (electionId, version) => {
     try {
       const response = await api.post(`/counting/${electionId}/finalize`, { version });
