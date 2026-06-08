@@ -76,10 +76,9 @@ export const generateElectionResultExcel = async (resultId) => {
     let optionNamesMap = {};
     if (result.election_type === 'referendum') {
       const optionsQuery = `
-        SELECT ec.listnum, c.keyword 
+        SELECT ec.listnum, ec.keyword
         FROM electioncandidates ec
-        JOIN candidates c ON c.id = ec.candidateid
-        WHERE ec.electionid = $1 
+        WHERE ec.electionid = $1
         ORDER BY ec.listnum
       `;
       const optionsRes = await db.query(optionsQuery, [result.election_id]);

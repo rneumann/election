@@ -100,7 +100,7 @@ export const getElectionById = async (electionId) => {
         'firstname', c.firstname,
         'mtknr', c.mtknr,
         'faculty', c.faculty,
-        'keyword', c.keyword,
+        'keyword', ec.keyword,
         'listnum', ec.listnum
       )) FILTER (WHERE c.id IS NOT NULL AND c.approved), '[]') AS candidates
     FROM elections e

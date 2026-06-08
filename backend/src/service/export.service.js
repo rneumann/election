@@ -345,7 +345,7 @@ export const exportElectionDefinitionRoute = async (req, res, next) => {
       // Kandidatenliste als eigenes Sheet pro Wahl
       const candidatesRes = await safeQuery(
         `SELECT ec.listnum,
-                c.keyword,
+                ec.keyword,
                 c.firstname,
                 c.lastname,
                 c.faculty,

@@ -8,15 +8,16 @@ import { parseCsv, parseExcel } from '../utils/parsers.js';
  * @param {Object} row - The input row object
  * @returns {Object} The cleaned row object
  */
+const allowedColumns = ['uid', 'lastname', 'firstname', 'mtknr', 'faculty', 'notes'];
+const candidateFileColumns = [...allowedColumns, 'keyword'];
+
 export const safeRow = (row) => {
   const cleaned = {};
-  for (const col of allowedColumns) {
+  for (const col of candidateFileColumns) {
     cleaned[col] = row[col] ?? null;
   }
   return cleaned;
 };
-
-const allowedColumns = ['uid', 'lastname', 'firstname', 'mtknr', 'faculty', 'keyword', 'notes'];
 
 /**
  * Inserts candidates and links them to an election within a single transaction.
@@ -51,7 +52,6 @@ const insertCandidates = async (data, electionId = null) => {
                firstname = EXCLUDED.firstname,
                mtknr     = EXCLUDED.mtknr,
                faculty   = EXCLUDED.faculty,
-               keyword   = EXCLUDED.keyword,
                notes     = EXCLUDED.notes
              RETURNING id, uid`,
       values: flatValues,
@@ -67,12 +67,14 @@ const insertCandidates = async (data, electionId = null) => {
       );
       let nextListnum = maxRes.rows[0].max + 1;
 
-      for (const row of insertResult.rows) {
+      for (let i = 0; i < insertResult.rows.length; i++) {
+        const row = insertResult.rows[i];
+        const keyword = data[i]?.keyword ?? null;
         await client.query({
-          text: `INSERT INTO electioncandidates (electionId, candidateId, listnum, is_adhoc)
-                 VALUES ($1, $2, $3, false)
-                 ON CONFLICT (electionId, candidateId) DO NOTHING`,
-          values: [electionId, row.id, nextListnum],
+          text: `INSERT INTO electioncandidates (electionId, candidateId, listnum, keyword, is_adhoc)
+                 VALUES ($1, $2, $3, $4, false)
+                 ON CONFLICT (electionId, candidateId) DO UPDATE SET keyword = EXCLUDED.keyword`,
+          values: [electionId, row.id, nextListnum, keyword],
         });
         nextListnum++;
       }
