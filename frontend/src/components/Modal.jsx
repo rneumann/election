@@ -257,7 +257,7 @@ export const Modal = ({ open, setOpen, electionId, refreshElections }) => {
                 ) : (
                   <>
                     <div className="px-3 py-2">Kandidat*in</div>
-                    <div className="px-3 py-2">Schlagwort</div>
+                    <div className="px-3 py-2">Liste/Schlagwort</div>
                   </>
                 )}
                 <div className="px-3 py-2 text-right">Stimmen</div>
