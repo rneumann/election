@@ -104,7 +104,7 @@ export const getElectionById = async (electionId) => {
         'listnum', ec.listnum
       )) FILTER (WHERE c.id IS NOT NULL AND c.approved), '[]') AS candidates
     FROM elections e
-    LEFT JOIN electioncandidates ec ON e.id = ec.electionId
+    LEFT JOIN electioncandidates ec ON e.id = ec.electionId AND ec.is_adhoc = false
     LEFT JOIN candidates c ON ec.candidateId = c.id
     WHERE e.id = $1
     GROUP BY e.id
