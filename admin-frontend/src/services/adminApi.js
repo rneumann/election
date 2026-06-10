@@ -78,6 +78,31 @@ export const adminService = {
    * @param {number} version - Version number to finalize
    * @returns {Promise<Object>} Response with success status
    */
+  toggleSimulateMode: async () => {
+    try {
+      const response = await api.post('/simulate/toggle');
+      if (response.status !== 200) {
+        handleHttpStatus(response);
+        return null;
+      }
+      return response.data;
+    } catch (err) {
+      logger.error('[adminService] toggleSimulateMode failed', err);
+      throw err;
+    }
+  },
+
+  getElectionById: async (electionId) => {
+    try {
+      const response = await api.get(`/voter/elections/${electionId}`);
+      if (response.status !== 200) return null;
+      return response.data;
+    } catch (err) {
+      logger.error('[adminService] getElectionById failed', err);
+      return null;
+    }
+  },
+
   finalizeElectionResults: async (electionId, version) => {
     try {
       const response = await api.post(`/counting/${electionId}/finalize`, { version });

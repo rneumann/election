@@ -224,20 +224,20 @@ const importElectionDataXlsx = async (filePath) => {
           }
 
           const candRes = await db.query(`
-            INSERT INTO candidates (uid, lastname, firstname, mtknr, faculty, keyword, notes, approved)
-            VALUES ($1, $2, $3, $4, $5, $6, '', true)
+            INSERT INTO candidates (uid, lastname, firstname, mtknr, faculty, notes, approved)
+            VALUES ($1, $2, $3, $4, $5, '', true)
             ON CONFLICT (uid) DO UPDATE SET
               lastname = EXCLUDED.lastname, firstname = EXCLUDED.firstname,
-              mtknr = EXCLUDED.mtknr, faculty = EXCLUDED.faculty, keyword = EXCLUDED.keyword
+              mtknr = EXCLUDED.mtknr, faculty = EXCLUDED.faculty
             RETURNING id`,
-            [templateUid, lastname || null, firstname || null, matrNr, faculty, keywords],
+            [templateUid, lastname || null, firstname || null, matrNr, faculty],
           );
 
           await db.query(`
-            INSERT INTO electioncandidates (electionId, candidateId, listnum)
-            VALUES ($1, $2, $3)
-            ON CONFLICT (electionId, candidateId) DO NOTHING`,
-            [electionUUID, candRes.rows[0].id, listnum],
+            INSERT INTO electioncandidates (electionId, candidateId, listnum, keyword)
+            VALUES ($1, $2, $3, $4)
+            ON CONFLICT (electionId, candidateId) DO UPDATE SET keyword = EXCLUDED.keyword`,
+            [electionUUID, candRes.rows[0].id, listnum, keywords],
           );
           count++;
           row++;
@@ -403,21 +403,20 @@ const importElectionDataOds = async (filePath) => {
           if (!firstname && !lastname) continue;
 
           const candRes = await db.query(
-            `INSERT INTO candidates (uid, lastname, firstname, mtknr, faculty, keyword, notes, approved)
-             VALUES ($1,$2,$3,$4,$5,$6,'',true)
+            `INSERT INTO candidates (uid, lastname, firstname, mtknr, faculty, notes, approved)
+             VALUES ($1,$2,$3,$4,$5,'',true)
              ON CONFLICT (uid) DO UPDATE SET
                lastname=EXCLUDED.lastname, firstname=EXCLUDED.firstname,
-               mtknr=EXCLUDED.mtknr, faculty=EXCLUDED.faculty, keyword=EXCLUDED.keyword
+               mtknr=EXCLUDED.mtknr, faculty=EXCLUDED.faculty
              RETURNING id`,
             [uid, lastname || null, firstname || null,
              rv(cd, row, 'mtknr')?.toString()   || '',
-             rv(cd, row, 'faculty')?.toString()  || '',
-             rv(cd, row, 'keyword')?.toString()  || ''],
+             rv(cd, row, 'faculty')?.toString()  || ''],
           );
           await db.query(
-            `INSERT INTO electioncandidates (electionId, candidateId, listnum)
-             VALUES ($1,$2,$3) ON CONFLICT (electionId, candidateId) DO NOTHING`,
-            [electionUUID, candRes.rows[0].id, listnum],
+            `INSERT INTO electioncandidates (electionId, candidateId, listnum, keyword)
+             VALUES ($1,$2,$3,$4) ON CONFLICT (electionId, candidateId) DO UPDATE SET keyword = EXCLUDED.keyword`,
+            [electionUUID, candRes.rows[0].id, listnum, rv(cd, row, 'keyword')?.toString() || ''],
           );
           count++;
         }

@@ -21,7 +21,6 @@ CREATE TABLE
     firstname TEXT,
     mtknr TEXT,
     faculty TEXT,
-    keyword TEXT,
     notes TEXT,
     approved BOOLEAN NOT NULL DEFAULT FALSE
   );
@@ -96,6 +95,7 @@ CREATE TABLE
     electionId UUID NOT NULL REFERENCES elections (id) ON DELETE CASCADE ON UPDATE CASCADE,
     candidateId UUID NOT NULL REFERENCES candidates (id) ON DELETE CASCADE ON UPDATE CASCADE,
     listnum INT NOT NULL,
+    keyword TEXT,
     is_adhoc BOOLEAN NOT NULL DEFAULT false,
     PRIMARY KEY (electionId, candidateId),
     CONSTRAINT uq_election_listnum UNIQUE (electionId, listnum)

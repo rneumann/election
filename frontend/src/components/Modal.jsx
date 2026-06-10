@@ -245,19 +245,19 @@ export const Modal = ({ open, setOpen, electionId, refreshElections }) => {
               {/* Header - only visible on sm+ */}
               <div
                 className="
-                  hidden sm:grid sm:grid-cols-4
+                  hidden sm:grid sm:grid-cols-[2.5rem_1fr_1fr_5rem]
                   bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 text-xs font-semibold uppercase tracking-wider transition-colors
                 "
               >
                 <div className="px-3 py-2">Nr.</div>
                 {election?.election_type === 'referendum' ? (
                   <>
-                    <div className="px-3 py-2">Beschreibung</div>
+                    <div className="px-3 py-2 col-span-2">Beschreibung</div>
                   </>
                 ) : (
                   <>
-                    <div className="px-3 py-2">Schlagwort</div>
                     <div className="px-3 py-2">Kandidat*in</div>
+                    <div className="px-3 py-2">Liste/Schlagwort</div>
                   </>
                 )}
                 <div className="px-3 py-2 text-right">Stimmen</div>
@@ -270,15 +270,15 @@ export const Modal = ({ open, setOpen, electionId, refreshElections }) => {
                     <div
                       key={cand.candidateId}
                       className="
-                      flex items-center justify-between sm:grid sm:grid-cols-4 
-                      gap-3 sm:gap-0 px-4 py-3 sm:py-4 
+                      flex items-center justify-between sm:grid sm:grid-cols-[2.5rem_1fr_1fr_5rem]
+                      gap-3 sm:gap-0 px-4 py-3 sm:py-4
                       hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors
                     "
                     >
                       {/* Info-Block: Nr, Schlagwort & Name gruppiert auf Mobile */}
                       <div className="flex items-center gap-3 sm:contents">
                         {/* Nr. */}
-                        <div className="flex flex-col sm:block min-w-[2rem]">
+                        <div className="flex flex-col sm:block">
                           <div className="sm:hidden text-[10px] uppercase text-gray-500 dark:text-gray-400">
                             Nr.
                           </div>

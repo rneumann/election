@@ -2,7 +2,6 @@
 import { useEffect, useCallback } from 'react';
 //NEU ENDE (templates)
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useTheme } from '../hooks/useTheme.js';
 import CountingSection from '../components/counting/CountingSection.jsx';
@@ -26,9 +25,11 @@ import { DeleteDataView } from '../components/DeleteDataView.jsx';
 import api from '../services/api.js';
 import { templateApi } from '../services/templateApi.js';
 import IntegrityCheckView from '../components/IntegrityCheckView.jsx';
+import AuditLogTable from '../components/AuditLogTable.jsx';
 import ElectionOverview from '../components/ElectionOverview.jsx';
 import ElectionTemplateBuilder from '../components/ElectionTemplateBuilder.jsx';
 import VoterUploadMulti from '../components/VoterUploadMulti.jsx';
+import BallotPreview from '../components/BallotPreview.jsx';
 //NEU ENDE (templates)
 
 const NavSection = ({ title, children }) => (
@@ -46,8 +47,9 @@ const NavButton = ({ onClick, active, disabled, title: tooltip, badge, children 
       <button
         disabled
         title={tooltip}
-        className="w-full text-left px-3 py-1.5 text-sm font-medium text-gray-300 cursor-not-allowed"
+        className="w-full text-left pl-5 pr-3 py-1.5 text-sm font-medium text-gray-300 cursor-not-allowed flex items-center gap-1.5"
       >
+        <span className="text-[7px] text-gray-300">▶</span>
         {children}
       </button>
     );
@@ -56,11 +58,14 @@ const NavButton = ({ onClick, active, disabled, title: tooltip, badge, children 
     <button
       onClick={onClick}
       title={tooltip}
-      className={`w-full text-left px-3 py-1.5 text-sm font-medium transition-colors flex items-center justify-between ${
+      className={`w-full text-left pl-5 pr-3 py-1.5 text-sm font-medium transition-colors flex items-center justify-between ${
         active ? 'bg-brand-primary text-white' : 'text-gray-700 hover:bg-gray-50'
       }`}
     >
-      <span>{children}</span>
+      <span className="flex items-center gap-1.5">
+        <span className={`text-[7px] shrink-0 ${active ? 'text-white' : 'text-brand-primary'}`}>▶</span>
+        {children}
+      </span>
       {badge && <span className="text-xs opacity-60 ml-2">{badge}</span>}
     </button>
   );
@@ -82,7 +87,6 @@ const NavButton = ({ onClick, active, disabled, title: tooltip, badge, children 
 const AdminDashboard = () => {
   const { user, logout } = useAuth();
   const theme = useTheme();
-  const navigate = useNavigate();
   const [showConfirmAlert, setShowConfirmAlert] = useState(false);
   const [simulateMode, setSimulateMode] = useState(false);
   // NEU ANFANG (templates)
@@ -103,6 +107,7 @@ const AdminDashboard = () => {
   const [loadingDeletionElections, setLoadingDeletionElections] = useState(false);
   const [selectedElectionForDeletion, setSelectedElectionForDeletion] = useState('all');
   const [electionsForDeletion, setElectionsForDeletion] = useState([]);
+  const [showTestNav, setShowTestNav] = useState(false);
 
   // NEU ANFANG (templates)
   const [presetOptions, setPresetOptions] = useState({ internal: [], external: [] });
@@ -129,12 +134,32 @@ const AdminDashboard = () => {
     }
   }, []);
 
-  // Simulate-Mode-Status abrufen
+  // Simulate-Mode-Status abrufen und periodisch prüfen
   useEffect(() => {
-    api.get('/simulate/status')
-      .then((res) => setSimulateMode(res.data?.simulateMode === true))
-      .catch(() => {});
+    const fetchSimulateStatus = () =>
+      api.get('/simulate/status')
+        .then((res) => setSimulateMode(res.data?.simulateMode === true))
+        .catch(() => {});
+
+    fetchSimulateStatus();
+    const interval = setInterval(fetchSimulateStatus, 10000);
+    return () => clearInterval(interval);
   }, []);
+
+  const refreshTestNavVisibility = useCallback(async () => {
+    const [testActive, testStopped, realActive] = await Promise.all([
+      adminService.getElectionsForAdmin('test'),
+      adminService.getElectionsForAdmin('test_stopped'),
+      adminService.getElectionsForAdmin('active'),
+    ]);
+    const hasTestData = testActive.length > 0 || testStopped.length > 0;
+    const hasRealElectionRunning = realActive.length > 0;
+    setShowTestNav(hasTestData && !hasRealElectionRunning);
+  }, []);
+
+  useEffect(() => {
+    refreshTestNavVisibility();
+  }, [refreshTestNavVisibility]);
 
   // Lade Presets beim Mount
   useEffect(() => {
@@ -195,6 +220,18 @@ const AdminDashboard = () => {
   const handleSectionChange = (section) => {
     setActiveSection(section);
     setMobileMenuOpen(false);
+  };
+
+  const handleToggleSimulateMode = async () => {
+    try {
+      const result = await adminService.toggleSimulateMode();
+      if (result !== null) {
+        setSimulateMode(result.simulateMode);
+        showAlert('success', result.simulateMode ? 'Simulationsmodus aktiviert' : 'Simulationsmodus deaktiviert');
+      }
+    } catch (err) {
+      showAlert('error', err?.response?.data?.message ?? 'Fehler beim Umschalten des Simulationsmodus');
+    }
   };
 
   const handleDeleteAllData = async () => {
@@ -306,16 +343,40 @@ const AdminDashboard = () => {
 
                 <NavSection title="Wahlen einrichten">
                   <NavButton onClick={() => handleSectionChange('definition')} active={activeSection === 'definition'}>Wahleinstellung hochladen</NavButton>
+                  <NavButton onClick={() => handleSectionChange('exportElections')} active={activeSection === 'exportElections'}>Wahleinstellungen exportieren</NavButton>
                   <NavButton onClick={() => handleSectionChange('upload')} active={activeSection === 'upload'}>Wählerverzeichnis hochladen</NavButton>
                   <NavButton disabled title="Noch nicht implementiert">Wählerverzeichnis herunterladen</NavButton>
                   <NavButton onClick={() => handleSectionChange('uploadCandidates')} active={activeSection === 'uploadCandidates'}>Kandidatenverzeichnis hochladen</NavButton>
                   <NavButton disabled title="Noch nicht implementiert">Kandidatenverzeichnis herunterladen</NavButton>
+                  <NavButton onClick={() => handleSectionChange('ballotPreview')} active={activeSection === 'ballotPreview'}>Stimmzettel-Vorschau</NavButton>
                 </NavSection>
 
                 <NavSection title="Wahlen testen">
+                  <div className="pl-5 pr-3 py-2 flex items-center justify-between">
+                    <span className="flex items-center gap-1.5 text-sm font-medium text-gray-700">
+                      <span className="text-[7px] shrink-0 text-brand-primary">▶</span>
+                      Simulationsmodus
+                    </span>
+                    <button
+                      onClick={handleToggleSimulateMode}
+                      title={simulateMode ? 'Simulationsmodus deaktivieren' : 'Simulationsmodus aktivieren'}
+                      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none ${
+                        simulateMode ? 'bg-yellow-500' : 'bg-gray-300'
+                      }`}
+                      role="switch"
+                      aria-checked={simulateMode}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow transition duration-200 ${
+                          simulateMode ? 'translate-x-4' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
                   <NavButton onClick={() => handleSectionChange('test-election')} active={activeSection === 'test-election'}>Testwahlen steuern</NavButton>
-                  <NavButton onClick={() => handleSectionChange('test-election-counting')} active={activeSection === 'test-election-counting'}>Testwahlen auszählen</NavButton>
-                  <NavButton onClick={() => handleSectionChange('exportElections')} active={activeSection === 'exportElections'} badge="3.4">Wahlen exportieren</NavButton>
+                  {showTestNav && (
+                    <NavButton onClick={() => handleSectionChange('test-election-counting')} active={activeSection === 'test-election-counting'}>Testwahlen auszählen</NavButton>
+                  )}
                 </NavSection>
 
                 <NavSection title="Wahlen durchführen">
@@ -328,7 +389,7 @@ const AdminDashboard = () => {
                   <NavButton onClick={() => handleSectionChange('clear')} active={activeSection === 'clear'}>Datenbankbereinigung</NavButton>
                   <NavButton onClick={() => handleSectionChange('config')} active={activeSection === 'config'}>Wahl-Parameter Konfiguration</NavButton>
                   <NavButton onClick={() => handleSectionChange('integrity')} active={activeSection === 'integrity'}>Integritätsprüfung</NavButton>
-                  <NavButton onClick={() => navigate('/admin/audit')}>Audit-Logs</NavButton>
+                  <NavButton onClick={() => handleSectionChange('audit')} active={activeSection === 'audit'}>Audit-Logs</NavButton>
                 </NavSection>
 
               </nav>
@@ -788,7 +849,19 @@ const AdminDashboard = () => {
               </div>
             )}
 
-            {activeSection === 'test-election' && <TestElectionAdminView />}
+            {activeSection === 'ballotPreview' && (
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div className="border-b border-gray-200 px-6 py-4">
+                  <h2 className="text-xl font-bold text-gray-900">Stimmzettel-Vorschau</h2>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Schematische Darstellung des Stimmzettels für eine Wahl mit allen eingetragenen Kandidaten.
+                  </p>
+                </div>
+                <BallotPreview />
+              </div>
+            )}
+
+            {activeSection === 'test-election' && <TestElectionAdminView onDataChange={refreshTestNavVisibility} />}
             {activeSection === 'test-election-counting' && (
               <TestElectionCountingAdminView
                 theme={theme}
@@ -816,6 +889,21 @@ const AdminDashboard = () => {
                 countingError={countingError}
                 setCountingError={setCountingError}
               />
+            )}
+
+            {/* Audit-Log Section */}
+            {activeSection === 'audit' && (
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div className="border-b px-6 py-4">
+                  <h2 className="text-xl font-bold">Audit-Logs</h2>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Revisionssichere Aufzeichnung aller sicherheitsrelevanten Vorgänge. Die Integrität wird durch kryptografische Verkettung (Hash-Chain) gewährleistet.
+                  </p>
+                </div>
+                <div className="p-6">
+                  <AuditLogTable />
+                </div>
+              </div>
             )}
 
             {/* Integrity Check Section */}

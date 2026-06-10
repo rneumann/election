@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { Spinner } from './Spinner';
 
@@ -275,6 +275,8 @@ AuditRow.propTypes = {
 
 // --- HAUPTKOMPONENTE ---
 
+const REFRESH_INTERVAL_MS = 10000;
+
 const AuditLogTable = () => {
   const [order, setOrder] = useState('desc');
   const [orderBy, setOrderBy] = useState('id');
@@ -282,6 +284,9 @@ const AuditLogTable = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [glitchMode, setGlitchMode] = useState(false);
+  const [autoRefresh, setAutoRefresh] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState(null);
+  const intervalRef = useRef(null);
 
   // Filter State
   const [searchTerm, setSearchTerm] = useState('');
@@ -289,26 +294,34 @@ const AuditLogTable = () => {
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(10); // NEU: State für RowsPerPage
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  const fetchLogs = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
+    try {
+      const response = await fetch('/api/audit/logs');
+      if (!response.ok) throw new Error('Fehler beim Laden der Protokolle');
+      const data = await response.json();
+      setLogs(data);
+      setLastUpdated(new Date());
+      setError(null);
+    } catch {
+      setError('Verbindung zum Server fehlgeschlagen.');
+    } finally {
+      if (!silent) setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchLogs(); }, [fetchLogs]);
 
   useEffect(() => {
-    const fetchLogs = async () => {
-      try {
-        const response = await fetch('/api/audit/logs');
-        if (!response.ok) {
-          throw new Error('Fehler beim Laden der Protokolle');
-        }
-        const data = await response.json();
-        setLogs(data);
-        setError(null);
-      } catch (err) {
-        setError('Verbindung zum Server fehlgeschlagen.');
-      } finally {
-        setLoading(false);
-      }
-    };
-    void fetchLogs();
-  }, []);
+    if (autoRefresh) {
+      intervalRef.current = setInterval(() => fetchLogs(true), REFRESH_INTERVAL_MS);
+    } else {
+      clearInterval(intervalRef.current);
+    }
+    return () => clearInterval(intervalRef.current);
+  }, [autoRefresh, fetchLogs]);
 
   const filteredLogs = useMemo(() => {
     return logs.filter((log) => {
@@ -462,6 +475,37 @@ const AuditLogTable = () => {
           }}
         />
       )}
+
+      {/* --- TOOLBAR --- */}
+      <div className="flex items-center gap-3 mb-4">
+        <button
+          onClick={() => fetchLogs(false)}
+          disabled={loading}
+          className="flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-800 font-medium transition-colors disabled:opacity-50"
+          aria-label="Aktualisieren"
+        >
+          <svg className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          Aktualisieren
+        </button>
+
+        <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">
+          <div
+            onClick={() => setAutoRefresh((v) => !v)}
+            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${autoRefresh ? 'bg-blue-600' : 'bg-gray-300'}`}
+          >
+            <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${autoRefresh ? 'translate-x-4' : 'translate-x-1'}`} />
+          </div>
+          Auto-Refresh (10 s)
+        </label>
+
+        {lastUpdated && (
+          <span className="ml-auto text-xs text-gray-400">
+            Stand: {lastUpdated.toLocaleTimeString('de-DE')}
+          </span>
+        )}
+      </div>
 
       {/* --- FILTER BAR --- */}
       <div className="mb-6 flex flex-col sm:flex-row gap-4 justify-between items-end sm:items-center">

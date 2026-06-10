@@ -25,27 +25,54 @@ Dieses Projekt stellt das Backend für das Online-Wahlsystem der HKA bereit. Es 
 
 ## Voraussetzungen
 
-- Node.js >= 18.x
+- Node.js >= 20.x
 - npm >= 9.x
-- `.env` Datei im Projektstamm mit mindestens:
+- `.env`-Datei im Verzeichnis `backend/` (lokal) bzw. `backend/.extras/compose/backend/.env` (Docker Compose)
 
-```env
-PORT=3000
-NODE_ENV=development
+### Umgebungsvariablen
 
-AD_URL={...}
-AD_BASE_DN={...}    # LDAP Base DN -> Volle DN angeben, nötig für Authentifizierung bind (BASE_DN, Passwort), der eingegebene username wird als UID interpretiert.
-AD_DOMAIN={...}     # LDAP Domain
+| Variable          | Beschreibung                                                             | Beispiel                        |
+| ----------------- | ------------------------------------------------------------------------ | ------------------------------- |
+| `PORT`            | Port des HTTP-Servers                                                    | `3000`                          |
+| `NODE_ENV`        | Laufzeitumgebung (`development` / `production`)                          | `development`                   |
+| `CONFIG_PROFILE`  | Organisations-Profil; wählt alle `config/*.{profile}.json`-Dateien       | `hka`                           |
+| `AUTH_PROVIDER`   | Authentifizierungs-Backend: `ldap` oder `keycloak`                       | `ldap`                          |
+| `AD_URL`          | LDAP-Server-URL                                                          | `ldap://localhost:389`          |
+| `AD_BASE_DN`      | LDAP Base-DN für Benutzersuche                                           | `DC=example,DC=com`             |
+| `AD_DOMAIN`       | LDAP-Domain                                                              | `example.com`                   |
+| `AD_USER_BIND_DN` | Bind-DN-Vorlage (`${username}` wird ersetzt)                             | `ADS\${username}`               |
+| `KC_BASE_URL`     | Keycloak-Basis-URL                                                       | `http://localhost:8080`         |
+| `KC_REALM`        | Keycloak-Realm                                                           | `DevRealm`                      |
+| `CLIENT_ID`       | OAuth2-Client-ID                                                         | `react-app`                     |
+| `CLIENT_SECRET`   | OAuth2-Client-Secret                                                     | `secret`                        |
+| `REDIRECT_URI`    | OAuth2-Callback-URL                                                      | `http://localhost:3000/api/...` |
+| `DB_HOST`         | PostgreSQL-Hostname                                                      | `localhost`                     |
+| `DB_PORT`         | PostgreSQL-Port                                                          | `5432`                          |
+| `DB_USER`         | Datenbankbenutzer                                                        | `election`                      |
+| `DB_PASSWORD`     | Datenbankpasswort                                                        | *(Secret)*                      |
+| `DB_NAME`         | Datenbankname                                                            | `election_db`                   |
+| `SESSION_SECRET`  | Signierschlüssel für Sessions                                            | *(Secret)*                      |
+| `BALLOT_SECRET`   | Schlüssel für Stimmzettel-Hashes                                         | *(Secret)*                      |
 
+Secrets generieren:
 
-ADMIN_PASSWORD={...}
-COMMITTEE_PASSWORD={...}
-
-SECRET={...} # Secret Key für die cookie-session, man kann ihn generieren mit -> node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
-
-BALLOT_SECRET={...} # Secret Key für die Ballot Hashes, man kann ihn generieren mit -> node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
-
+```bash
+node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
 ```
+
+> **Simulationsmodus:** Wird zur Laufzeit über den Admin-Bereich (*Wahlen testen*) gesteuert — kein Neustart und kein Konfigurationsparameter nötig. Wenn aktiv, wird LDAP übersprungen und jedes Benutzerkürzel ohne Passwortprüfung akzeptiert (Rolle: `voter`). Der Modus deaktiviert sich automatisch bei Wahlbeginn und kann nicht aktiviert werden, solange eine Wahl läuft. Alle angemeldeten Wähler werden beim Umschalten abgemeldet.
+
+### Organisations-Konfigurationsdateien
+
+Das Backend liest beim Start die folgenden Dateien anhand von `CONFIG_PROFILE`:
+
+| Datei                                      | Inhalt                                              |
+| ------------------------------------------ | --------------------------------------------------- |
+| `config/organisation.{profile}.json`       | Organisations-Metadaten, Kontaktdaten               |
+| `config/election-presets.{profile}.json`   | Voreinstellungen für Wahlparameter                  |
+| `config/document-structure.{profile}.json` | Dokumentstruktur für den amtlichen Ergebnisbericht  |
+
+Standardprofil: `hka`. Neue Profile durch Anlegen entsprechender JSON-Dateien hinzufügen.
 
 ## Installation
 

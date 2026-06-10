@@ -91,14 +91,14 @@ export const performCounting = async (electionId, userId) => {
       votesRes = await db.query(
         `SELECT 
            ec.listnum, 
-           c.keyword AS firstname, 
-           '' AS lastname, 
+           ec.keyword AS firstname,
+           '' AS lastname,
            COALESCE(SUM(bv.votes), 0) AS votes
          FROM electioncandidates ec
          JOIN candidates c ON c.id = ec.candidateid
          LEFT JOIN ballotvotes bv ON bv.election = ec.electionid AND bv.listnum = ec.listnum
          WHERE ec.electionid = $1
-         GROUP BY ec.listnum, c.keyword
+         GROUP BY ec.listnum, ec.keyword
          ORDER BY ec.listnum`,
         [electionId],
       );

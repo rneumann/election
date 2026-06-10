@@ -103,6 +103,9 @@ export const AuthProvider = ({ children }) => {
       return;
     }
     logger.debug('Starting session heartbeat interval');
+
+    let knownSimulateModeVersion = null;
+
     const interval = setInterval(async () => {
       try {
         const { data } = await api.get('/auth/me', { withCredentials: true });
@@ -110,10 +113,25 @@ export const AuthProvider = ({ children }) => {
         if (!data?.authenticated) {
           logger.debug('Session heartbeat: invalid → logout');
           logout();
+          return;
         }
       } catch {
         logger.debug('Session heartbeat: error or 401 → logout');
         logout();
+        return;
+      }
+
+      // Simulationsmodus-Wechsel erkennen → abmelden
+      try {
+        const { data: simData } = await api.get('/simulate/status');
+        if (knownSimulateModeVersion === null) {
+          knownSimulateModeVersion = simData.version;
+        } else if (simData.version !== knownSimulateModeVersion) {
+          logger.debug('Simulationsmodus hat gewechselt → logout');
+          logout();
+        }
+      } catch {
+        // Simulate-Status nicht erreichbar – kein Logout nötig
       }
     }, 60 * 1000); // every minute
 
