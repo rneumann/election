@@ -182,7 +182,7 @@ export const getCandidatesForElection = async (electionId) => {
       c.faculty
     FROM electioncandidates ec
     JOIN candidates c ON c.id = ec.candidateId
-    WHERE ec.electionId = $1
+    WHERE ec.electionId = $1 AND ec.is_adhoc = false
     ORDER BY c.lastname ASC
   `;
 
