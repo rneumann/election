@@ -18,5 +18,19 @@
   "css.lint.unknownAtRules": "ignore",
   "[nginx]": {
     "editor.defaultFormatter": "ahmadalli.vscode-nginx-conf"
-  }
+  },
+  "sqltools.connections": [
+    {
+      "ssh": "Disabled",
+      "previewLimit": 50,
+      "server": "10.65.65.44",
+      "port": 5432,
+      "driver": "PostgreSQL",
+      "name": "Election DB",
+      "group": "HKA",
+      "database": "election_db",
+      "username": "election",
+      "password": "p-2026-ur-awp!"
+    }
+  ]
 }

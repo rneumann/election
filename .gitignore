@@ -187,3 +187,4 @@ on-server.sh
 
 *.pyc
 **/__pycache__
+.vscode/settings.json
