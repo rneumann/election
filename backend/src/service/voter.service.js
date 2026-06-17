@@ -205,6 +205,16 @@ export const createBallot = async (ballot, voter) => {
     await client.query('BEGIN');
     await client.query('SELECT id FROM elections WHERE id = $1 FOR UPDATE', [ballot.electionId]);
 
+    // Doppel-Vote innerhalb der Transaktion prüfen (verhindert Race Condition)
+    const votingNoteRes = await client.query(
+      'SELECT voted FROM votingnotes WHERE voterId = $1 AND electionId = $2 FOR UPDATE',
+      [voter.id, ballot.electionId],
+    );
+    if (votingNoteRes.rows[0]?.voted === true) {
+      await client.query('ROLLBACK');
+      return undefined;
+    }
+
     // Ad-hoc-Kandidaten aus freeSlots in die Wahl aufnehmen und listnums auflösen
     const adhocVotes = [];
     for (const slot of ballot.freeSlots ?? []) {

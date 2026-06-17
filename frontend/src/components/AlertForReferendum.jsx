@@ -15,6 +15,7 @@ export const AlertForReferendum = ({
   invalidHandOver,
   onCancel,
   refreshElections,
+  onVoteSuccess,
   options,
 }) => {
   const theme = useTheme();
@@ -44,13 +45,14 @@ export const AlertForReferendum = ({
       }
 
       showAlert('success', 'Wahl erfolgreich erstellt');
+      onVoteSuccess?.(election.id);
+      await refreshElections();
     } catch {
       showAlert('error', 'Unerwarteter Fehler');
     } finally {
       setShowSpinner(false);
       setShowAlert(false);
       onCancel();
-      await refreshElections();
     }
   };
 

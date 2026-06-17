@@ -8,7 +8,7 @@ import { AccessibilityContext } from '../context/AccessibilityContext';
 import ResponsiveButton from './ResponsiveButton';
 import { Alert } from './Alert';
 
-export const Modal = ({ open, setOpen, electionId, refreshElections }) => {
+export const Modal = ({ open, setOpen, electionId, refreshElections, onVoteSuccess }) => {
   const [election, setElection] = useState(undefined);
   const [showAlert, setShowAlert] = useState(false);
   const [votes, setVotes] = useState({});
@@ -209,6 +209,7 @@ export const Modal = ({ open, setOpen, electionId, refreshElections }) => {
                 invalidHandOver={invalidHandOver}
                 onCancel={onCancel}
                 refreshElections={refreshElections}
+                onVoteSuccess={onVoteSuccess}
               />
             </div>
           )}

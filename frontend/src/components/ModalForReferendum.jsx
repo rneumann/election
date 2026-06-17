@@ -9,7 +9,7 @@ import ResponsiveButton from './ResponsiveButton';
 import { AlertForReferendum } from './AlertForReferendum';
 const MAX_UID_PREFIX_LENGTH = 20;
 
-export const ModalForReferendum = ({ open, setOpen, electionId, refreshElections }) => {
+export const ModalForReferendum = ({ open, setOpen, electionId, refreshElections, onVoteSuccess }) => {
   const [election, setElection] = useState(undefined);
   const [options, setOptions] = useState([]);
   const [showAlert, setShowAlert] = useState(false);
@@ -176,6 +176,7 @@ export const ModalForReferendum = ({ open, setOpen, electionId, refreshElections
                 invalidHandOver={invalidHandOver}
                 onCancel={onCancel}
                 refreshElections={refreshElections}
+                onVoteSuccess={onVoteSuccess}
                 options={options}
               />
             </div>

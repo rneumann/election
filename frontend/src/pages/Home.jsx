@@ -62,6 +62,10 @@ const HomeContent = () => {
    * It fetches the list of elections from the API and updates the state with the new data.
    * If an error occurs, it logs an error message to the console.
    */
+  const handleVoteSuccess = useCallback((electionId) => {
+    setElectionsActive((prev) => prev.filter((e) => e.id !== electionId));
+  }, []);
+
   const refreshElections = useCallback(async () => {
     try {
       const [active, future, alreadyVoted] = await Promise.all([
@@ -406,6 +410,7 @@ const HomeContent = () => {
               setOpen={setOpen}
               electionId={selectedElection?.id}
               refreshElections={refreshElections}
+              onVoteSuccess={handleVoteSuccess}
             />
           ) : (
             <Modal
@@ -413,6 +418,7 @@ const HomeContent = () => {
               setOpen={setOpen}
               electionId={selectedElection?.id}
               refreshElections={refreshElections}
+              onVoteSuccess={handleVoteSuccess}
             />
           )}
 

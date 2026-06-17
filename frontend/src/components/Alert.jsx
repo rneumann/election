@@ -16,6 +16,7 @@ export const Alert = ({
   invalidHandOver,
   onCancel,
   refreshElections,
+  onVoteSuccess,
 }) => {
   const theme = useTheme();
   const [showSpinner, setShowSpinner] = useState(false);
@@ -57,6 +58,7 @@ export const Alert = ({
       }
 
       showAlert('success', 'Wahl erfolgreich erstellt');
+      onVoteSuccess?.(election.id);
       await refreshElections();
     } catch {
       showAlert('error', 'Unerwarteter Fehler');
