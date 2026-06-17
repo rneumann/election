@@ -95,7 +95,7 @@ const AdminDashboard = () => {
   const [selectedConfigFile, setSelectedConfigFile] = useState(null);
   const [uploadStatus, setUploadStatus] = useState('');
   // NEU ENDE (templates)
-  const [activeSection, setActiveSection] = useState('counting');
+  const [activeSection, setActiveSection] = useState('overview');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { showAlert } = useAlert();
   // Counting section state
@@ -108,6 +108,7 @@ const AdminDashboard = () => {
   const [selectedElectionForDeletion, setSelectedElectionForDeletion] = useState('all');
   const [electionsForDeletion, setElectionsForDeletion] = useState([]);
   const [showTestNav, setShowTestNav] = useState(false);
+  const [hasActiveElection, setHasActiveElection] = useState(false);
 
   // NEU ANFANG (templates)
   const [presetOptions, setPresetOptions] = useState({ internal: [], external: [] });
@@ -146,6 +147,13 @@ const AdminDashboard = () => {
     return () => clearInterval(interval);
   }, []);
 
+  const ELECTION_LOCKED_SECTIONS = [
+    'templateBuilder', 'template',
+    'definition', 'exportElections', 'upload', 'uploadCandidates', 'ballotPreview',
+    'test-election', 'test-election-counting',
+    'clear', 'config',
+  ];
+
   const refreshTestNavVisibility = useCallback(async () => {
     const [testActive, testStopped, realActive] = await Promise.all([
       adminService.getElectionsForAdmin('test'),
@@ -155,11 +163,18 @@ const AdminDashboard = () => {
     const hasTestData = testActive.length > 0 || testStopped.length > 0;
     const hasRealElectionRunning = realActive.length > 0;
     setShowTestNav(hasTestData && !hasRealElectionRunning);
+    setHasActiveElection(hasRealElectionRunning);
   }, []);
 
   useEffect(() => {
     refreshTestNavVisibility();
   }, [refreshTestNavVisibility]);
+
+  useEffect(() => {
+    if (hasActiveElection && ELECTION_LOCKED_SECTIONS.includes(activeSection)) {
+      setActiveSection('counting');
+    }
+  }, [hasActiveElection, activeSection]);
 
   // Lade Presets beim Mount
   useEffect(() => {
@@ -337,31 +352,32 @@ const AdminDashboard = () => {
               <nav className="p-2">
 
                 <NavSection title="Wahlen vorbereiten">
-                  <NavButton onClick={() => handleSectionChange('templateBuilder')} active={activeSection === 'templateBuilder'}>Vorlage erstellen</NavButton>
-                  <NavButton onClick={() => handleSectionChange('template')} active={activeSection === 'template'}>Vordefinierte Vorlage herunterladen</NavButton>
+                  <NavButton onClick={() => handleSectionChange('templateBuilder')} active={activeSection === 'templateBuilder'} disabled={hasActiveElection} title={hasActiveElection ? 'Während einer laufenden Wahl gesperrt' : undefined}>Vorlage erstellen</NavButton>
+                  <NavButton onClick={() => handleSectionChange('template')} active={activeSection === 'template'} disabled={hasActiveElection} title={hasActiveElection ? 'Während einer laufenden Wahl gesperrt' : undefined}>Vordefinierte Vorlage herunterladen</NavButton>
                 </NavSection>
 
                 <NavSection title="Wahlen einrichten">
-                  <NavButton onClick={() => handleSectionChange('definition')} active={activeSection === 'definition'}>Wahleinstellung hochladen</NavButton>
-                  <NavButton onClick={() => handleSectionChange('exportElections')} active={activeSection === 'exportElections'}>Wahleinstellungen exportieren</NavButton>
-                  <NavButton onClick={() => handleSectionChange('upload')} active={activeSection === 'upload'}>Wählerverzeichnis hochladen</NavButton>
+                  <NavButton onClick={() => handleSectionChange('definition')} active={activeSection === 'definition'} disabled={hasActiveElection} title={hasActiveElection ? 'Während einer laufenden Wahl gesperrt' : undefined}>Wahleinstellung hochladen</NavButton>
+                  <NavButton onClick={() => handleSectionChange('exportElections')} active={activeSection === 'exportElections'} disabled={hasActiveElection} title={hasActiveElection ? 'Während einer laufenden Wahl gesperrt' : undefined}>Wahleinstellungen exportieren</NavButton>
+                  <NavButton onClick={() => handleSectionChange('upload')} active={activeSection === 'upload'} disabled={hasActiveElection} title={hasActiveElection ? 'Während einer laufenden Wahl gesperrt' : undefined}>Wählerverzeichnis hochladen</NavButton>
                   <NavButton disabled title="Noch nicht implementiert">Wählerverzeichnis herunterladen</NavButton>
-                  <NavButton onClick={() => handleSectionChange('uploadCandidates')} active={activeSection === 'uploadCandidates'}>Kandidatenverzeichnis hochladen</NavButton>
+                  <NavButton onClick={() => handleSectionChange('uploadCandidates')} active={activeSection === 'uploadCandidates'} disabled={hasActiveElection} title={hasActiveElection ? 'Während einer laufenden Wahl gesperrt' : undefined}>Kandidatenverzeichnis hochladen</NavButton>
                   <NavButton disabled title="Noch nicht implementiert">Kandidatenverzeichnis herunterladen</NavButton>
-                  <NavButton onClick={() => handleSectionChange('ballotPreview')} active={activeSection === 'ballotPreview'}>Stimmzettel-Vorschau</NavButton>
+                  <NavButton onClick={() => handleSectionChange('ballotPreview')} active={activeSection === 'ballotPreview'} disabled={hasActiveElection} title={hasActiveElection ? 'Während einer laufenden Wahl gesperrt' : undefined}>Stimmzettel-Vorschau</NavButton>
                 </NavSection>
 
                 <NavSection title="Wahlen testen">
                   <div className="pl-5 pr-3 py-2 flex items-center justify-between">
-                    <span className="flex items-center gap-1.5 text-sm font-medium text-gray-700">
-                      <span className="text-[7px] shrink-0 text-brand-primary">▶</span>
+                    <span className={`flex items-center gap-1.5 text-sm font-medium ${hasActiveElection ? 'text-gray-300' : 'text-gray-700'}`}>
+                      <span className={`text-[7px] shrink-0 ${hasActiveElection ? 'text-gray-300' : 'text-brand-primary'}`}>▶</span>
                       Simulationsmodus
                     </span>
                     <button
-                      onClick={handleToggleSimulateMode}
-                      title={simulateMode ? 'Simulationsmodus deaktivieren' : 'Simulationsmodus aktivieren'}
-                      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none ${
-                        simulateMode ? 'bg-yellow-500' : 'bg-gray-300'
+                      onClick={hasActiveElection ? undefined : handleToggleSimulateMode}
+                      disabled={hasActiveElection}
+                      title={hasActiveElection ? 'Während einer laufenden Wahl gesperrt' : simulateMode ? 'Simulationsmodus deaktivieren' : 'Simulationsmodus aktivieren'}
+                      className={`relative inline-flex h-5 w-9 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none ${
+                        hasActiveElection ? 'cursor-not-allowed opacity-40 bg-gray-300' : `cursor-pointer ${simulateMode ? 'bg-yellow-500' : 'bg-gray-300'}`
                       }`}
                       role="switch"
                       aria-checked={simulateMode}
@@ -373,9 +389,9 @@ const AdminDashboard = () => {
                       />
                     </button>
                   </div>
-                  <NavButton onClick={() => handleSectionChange('test-election')} active={activeSection === 'test-election'}>Testwahlen steuern</NavButton>
+                  <NavButton onClick={() => handleSectionChange('test-election')} active={activeSection === 'test-election'} disabled={hasActiveElection} title={hasActiveElection ? 'Während einer laufenden Wahl gesperrt' : undefined}>Testwahlen steuern</NavButton>
                   {showTestNav && (
-                    <NavButton onClick={() => handleSectionChange('test-election-counting')} active={activeSection === 'test-election-counting'}>Testwahlen auszählen</NavButton>
+                    <NavButton onClick={() => handleSectionChange('test-election-counting')} active={activeSection === 'test-election-counting'} disabled={hasActiveElection} title={hasActiveElection ? 'Während einer laufenden Wahl gesperrt' : undefined}>Testwahlen auszählen</NavButton>
                   )}
                 </NavSection>
 
@@ -386,8 +402,8 @@ const AdminDashboard = () => {
                 </NavSection>
 
                 <NavSection title="Administratives">
-                  <NavButton onClick={() => handleSectionChange('clear')} active={activeSection === 'clear'}>Datenbankbereinigung</NavButton>
-                  <NavButton onClick={() => handleSectionChange('config')} active={activeSection === 'config'}>Wahl-Parameter Konfiguration</NavButton>
+                  <NavButton onClick={() => handleSectionChange('clear')} active={activeSection === 'clear'} disabled={hasActiveElection} title={hasActiveElection ? 'Während einer laufenden Wahl gesperrt' : undefined}>Datenbankbereinigung</NavButton>
+                  <NavButton onClick={() => handleSectionChange('config')} active={activeSection === 'config'} disabled={hasActiveElection} title={hasActiveElection ? 'Während einer laufenden Wahl gesperrt' : undefined}>Wahl-Parameter Konfiguration</NavButton>
                   <NavButton onClick={() => handleSectionChange('integrity')} active={activeSection === 'integrity'}>Integritätsprüfung</NavButton>
                   <NavButton onClick={() => handleSectionChange('audit')} active={activeSection === 'audit'}>Audit-Logs</NavButton>
                 </NavSection>
