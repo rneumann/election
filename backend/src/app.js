@@ -127,11 +127,12 @@ app.use((req, res, next) => {
   }
 
   const ip = (req.headers['x-forwarded-for'] || '').split(',')[0]?.trim() || req.ip;
+  const ipPrefix = ip.split('.').slice(0, 3).join('.');
   const ua = req.headers['user-agent'] || 'unknown';
 
   const fingerprint = crypto
     .createHash('sha256')
-    .update(INTERNAL_FINGERPRINT_SALT + ip + ua) // Pepper aus env nutzen
+    .update(INTERNAL_FINGERPRINT_SALT + ipPrefix + ua)
     .digest('hex');
 
   if (req.session.freshUser || !req.session.fingerprint) {
