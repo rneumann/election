@@ -13,14 +13,15 @@ services:
       - ./conf.d/global_tuning.conf:/etc/nginx/conf.d/global_tuning.conf:ro
       - ./conf.d/security_logic.conf:/etc/nginx/conf.d/z_rate_limit_apply.conf:ro
     depends_on:
-      - admin_frontend
+      admin_frontend:
+        condition: service_healthy
     environment:
       - MODSEC_AUDIT_ENGINE=on
       - MODSEC_AUDIT_LOG=/var/log/modsecurity/host/audit.log
       - LOGLEVEL=warn
       - ERRORLOG=/var/log/modsecurity/host/error.log
       - SSL_OCSP_STAPLING=off
-      - MAX_FILE_SIZE=5000000
+      - MAX_FILE_SIZE=536870912
       - ALLOWED_METHODS=GET POST PUT DELETE
       # --- Webserver Basis ---
       - SERVER_NAME=${SERVER_NAME:-localhost}
@@ -41,4 +42,4 @@ services:
 
       # --- Nginx Limits ---
       - WORKER_CONNECTIONS=1024
-      - CLIENT_MAX_BODY_SIZE=10M
+      - CLIENT_MAX_BODY_SIZE=512M

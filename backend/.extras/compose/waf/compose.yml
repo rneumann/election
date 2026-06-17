@@ -14,7 +14,8 @@ services:
       - ./conf.d/global_tuning.conf:/etc/nginx/conf.d/global_tuning.conf:ro
       - ./conf.d/security_logic.conf:/etc/nginx/conf.d/z_rate_limit_apply.conf:ro
     depends_on:
-      - frontend
+      frontend:
+        condition: service_healthy
     environment:
       - MODSEC_AUDIT_ENGINE=on
       - MODSEC_AUDIT_LOG=/var/log/modsecurity/host/audit.log

@@ -23,14 +23,11 @@ COPY src/ ./src/
 COPY data/ ./data/
 COPY config/ ./config/
 
-RUN mkdir -p /app/uploads \
- && chown node:node /app/uploads \
- && chmod 700 /app/uploads
+RUN apk add --no-cache postgresql-client
 
-# Set environment variable
-ENV NODE_ENV=production
-# Run in non-root user (node user is created by base image)
-RUN chown node:node ./
+RUN mkdir -p /app/uploads \
+ && chown -R node:node /app \
+ && chmod 700 /app/uploads
 USER node
 
 # Export port

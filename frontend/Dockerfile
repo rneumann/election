@@ -37,7 +37,9 @@ RUN mkdir -p /tmp/nginx/client_body_temp \
              /tmp/nginx/fastcgi_temp \
              /tmp/nginx/uwsgi_temp \
              /tmp/nginx/scgi_temp \
-    && chown -R nginx:nginx /tmp/nginx
+    && chown -R nginx:nginx /tmp/nginx \
+    && chown nginx:nginx /etc/nginx/nginx.conf \
+    && chmod 644 /etc/nginx/nginx.conf
 
 
 USER nginx
