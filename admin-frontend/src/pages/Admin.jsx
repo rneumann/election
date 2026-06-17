@@ -84,6 +84,131 @@ const NavButton = ({ onClick, active, disabled, title: tooltip, badge, children 
  *
  * @returns {React.ReactElement} Admin dashboard page
  */
+const BackupRestoreSection = ({ showAlert, hasActiveElection }) => {
+  const [restoreFile, setRestoreFile] = useState(null);
+  const [restoring, setRestoring] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [confirmRestore, setConfirmRestore] = useState(false);
+
+  const handleBackup = async () => {
+    setDownloading(true);
+    try {
+      await adminService.downloadBackup();
+      showAlert('success', 'Backup erfolgreich heruntergeladen');
+    } catch {
+      showAlert('error', 'Backup fehlgeschlagen');
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  const handleRestore = async () => {
+    if (!restoreFile) return;
+    setRestoring(true);
+    setUploadProgress(0);
+    setConfirmRestore(false);
+    try {
+      await adminService.restoreBackup(restoreFile, (e) => {
+        setUploadProgress(Math.round((e.loaded / e.total) * 100));
+      });
+      showAlert('success', 'Datenbank erfolgreich wiederhergestellt');
+      setRestoreFile(null);
+    } catch (err) {
+      showAlert('error', err?.response?.data?.message ?? 'Restore fehlgeschlagen');
+    } finally {
+      setRestoring(false);
+      setUploadProgress(0);
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+      <div className="border-b border-gray-200 px-6 py-4">
+        <h2 className="text-xl font-bold text-gray-900">Backup / Restore</h2>
+        <p className="text-sm text-gray-600 mt-1">
+          Datenbank sichern oder aus einem Backup wiederherstellen (Disaster Recovery).
+        </p>
+      </div>
+
+      {hasActiveElection && (
+        <div className="mx-6 mt-4 p-3 bg-yellow-50 border border-yellow-300 rounded text-sm text-yellow-800">
+          ⚠️ Eine Wahl läuft gerade. Backup empfohlen vor dem Restore.
+        </div>
+      )}
+
+      <div className="p-6 flex flex-col gap-8">
+        {/* Backup */}
+        <div className="border border-gray-100 rounded-lg p-5">
+          <h3 className="font-semibold text-gray-900 mb-1">Datenbank sichern</h3>
+          <p className="text-sm text-gray-500 mb-4">
+            Erstellt einen vollständigen pg_dump als SQL-Datei und lädt ihn herunter.
+          </p>
+          <ResponsiveButton
+            onClick={handleBackup}
+            disabled={downloading}
+            variant="primary"
+            size="medium"
+          >
+            {downloading ? 'Wird erstellt…' : 'Backup herunterladen'}
+          </ResponsiveButton>
+        </div>
+
+        {/* Restore */}
+        <div className={`border rounded-lg p-5 ${hasActiveElection ? 'border-gray-200 opacity-60' : 'border-red-100'}`}>
+          <h3 className="font-semibold text-gray-900 mb-1">Datenbank wiederherstellen</h3>
+          <p className="text-sm text-gray-500 mb-4">
+            Spielt eine zuvor heruntergeladene SQL-Datei ein. <strong>Achtung: überschreibt vorhandene Daten.</strong>
+          </p>
+
+          {hasActiveElection ? (
+            <p className="text-sm text-gray-400 italic">Während einer laufenden Wahl nicht verfügbar.</p>
+          ) : (
+            <>
+              <input
+                type="file"
+                accept=".sql,.dump"
+                onChange={(e) => { setRestoreFile(e.target.files[0]); setConfirmRestore(false); }}
+                className="block text-sm mb-4 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-red-50 file:text-red-700 file:cursor-pointer"
+              />
+
+              {restoreFile && !confirmRestore && (
+                <div className="flex items-center gap-3">
+                  <span className="text-sm text-gray-700">{restoreFile.name}</span>
+                  <ResponsiveButton onClick={() => setConfirmRestore(true)} variant="danger" size="small">
+                    Restore starten
+                  </ResponsiveButton>
+                </div>
+              )}
+
+              {confirmRestore && (
+                <div className="p-4 bg-red-50 border border-red-300 rounded-lg">
+                  <p className="text-sm font-semibold text-red-800 mb-3">
+                    Sicher? Die aktuelle Datenbank wird überschrieben. Diese Aktion kann nicht rückgängig gemacht werden.
+                  </p>
+                  <div className="flex gap-3">
+                    <ResponsiveButton onClick={handleRestore} variant="danger" size="small" disabled={restoring}>
+                      {restoring ? `Wird eingespielt… ${uploadProgress}%` : 'Ja, Restore durchführen'}
+                    </ResponsiveButton>
+                    <ResponsiveButton onClick={() => setConfirmRestore(false)} variant="outline" size="small" disabled={restoring}>
+                      Abbrechen
+                    </ResponsiveButton>
+                  </div>
+                  {restoring && (
+                    <div className="mt-3 w-full bg-gray-200 rounded-full h-2">
+                      <div className="bg-red-500 h-2 rounded-full transition-all" style={{ width: `${uploadProgress}%` }} />
+                    </div>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const AdminDashboard = () => {
   const { user, logout } = useAuth();
   const theme = useTheme();
@@ -403,6 +528,7 @@ const AdminDashboard = () => {
 
                 <NavSection title="Administratives">
                   <NavButton onClick={() => handleSectionChange('clear')} active={activeSection === 'clear'} disabled={hasActiveElection} title={hasActiveElection ? 'Während einer laufenden Wahl gesperrt' : undefined}>Datenbankbereinigung</NavButton>
+                  <NavButton onClick={() => handleSectionChange('backup')} active={activeSection === 'backup'}>Backup / Restore</NavButton>
                   <NavButton onClick={() => handleSectionChange('config')} active={activeSection === 'config'} disabled={hasActiveElection} title={hasActiveElection ? 'Während einer laufenden Wahl gesperrt' : undefined}>Wahl-Parameter Konfiguration</NavButton>
                   <NavButton onClick={() => handleSectionChange('integrity')} active={activeSection === 'integrity'}>Integritätsprüfung</NavButton>
                   <NavButton onClick={() => handleSectionChange('audit')} active={activeSection === 'audit'}>Audit-Logs</NavButton>
@@ -920,6 +1046,11 @@ const AdminDashboard = () => {
                   <AuditLogTable />
                 </div>
               </div>
+            )}
+
+            {/* Backup / Restore Section */}
+            {activeSection === 'backup' && (
+              <BackupRestoreSection showAlert={showAlert} hasActiveElection={hasActiveElection} />
             )}
 
             {/* Integrity Check Section */}

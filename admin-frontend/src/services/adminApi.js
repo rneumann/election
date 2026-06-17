@@ -103,6 +103,27 @@ export const adminService = {
     }
   },
 
+  downloadBackup: async () => {
+    const response = await api.get('/admin/db/backup', { responseType: 'blob' });
+    const url = URL.createObjectURL(new Blob([response.data]));
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `backup_${timestamp}.sql`;
+    a.click();
+    URL.revokeObjectURL(url);
+  },
+
+  restoreBackup: async (file, onUploadProgress) => {
+    const formData = new FormData();
+    formData.append('backup', file);
+    const response = await api.post('/admin/db/restore', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      onUploadProgress,
+    });
+    return response.data;
+  },
+
   finalizeElectionResults: async (electionId, version) => {
     try {
       const response = await api.post(`/counting/${electionId}/finalize`, { version });

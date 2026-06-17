@@ -1,5 +1,7 @@
 import fs from 'fs/promises';
+import { createWriteStream } from 'fs';
 import path from 'path';
+import { spawn } from 'child_process';
 import multer from 'multer';
 
 import express from 'express';
@@ -423,3 +425,122 @@ adminRouter.get(
   },
 );
 
+
+// Multer für Restore-Uploads
+const backupUpload = multer({
+  dest: path.join(process.cwd(), 'uploads', 'temp'),
+  limits: { fileSize: 512 * 1024 * 1024 }, // 512 MB
+  fileFilter: (req, file, cb) => {
+    if (file.originalname.endsWith('.sql') || file.originalname.endsWith('.dump')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Nur .sql oder .dump Dateien erlaubt'));
+    }
+  },
+});
+
+const getDbEnv = () => ({
+  ...process.env,
+  PGPASSWORD: process.env.DB_PASSWORD,
+});
+
+/**
+ * GET /admin/db/backup
+ * Erstellt einen pg_dump und streamt ihn als .sql-Datei
+ */
+adminRouter.get(
+  '/db/backup',
+  ensureAuthenticated,
+  ensureHasRole('admin'),
+  async (req, res) => {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const filename = `backup_${timestamp}.sql`;
+
+    res.setHeader('Content-Type', 'application/octet-stream');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+
+    const args = [
+      '--host', process.env.DB_HOST || 'localhost',
+      '--port', process.env.DB_PORT || '5432',
+      '--username', process.env.DB_USER,
+      '--dbname', process.env.DB_NAME,
+      '--no-password',
+      '--format', 'plain',
+      '--no-owner',
+      '--no-acl',
+    ];
+
+    const dump = spawn('pg_dump', args, { env: getDbEnv() });
+
+    dump.stdout.pipe(res);
+
+    let stderr = '';
+    dump.stderr.on('data', (d) => { stderr += d.toString(); });
+
+    dump.on('error', (err) => {
+      logger.error('pg_dump spawn error:', err);
+      if (!res.headersSent) res.status(500).json({ message: 'pg_dump nicht gefunden' });
+      else res.destroy();
+    });
+
+    dump.on('close', (code) => {
+      if (code !== 0) {
+        logger.error(`pg_dump exited with code ${code}: ${stderr}`);
+        if (!res.headersSent) res.status(500).json({ message: 'Backup fehlgeschlagen' });
+        else res.destroy();
+      } else {
+        logger.info(`Backup erstellt: ${filename}`);
+      }
+    });
+  },
+);
+
+/**
+ * POST /admin/db/restore
+ * Spielt ein .sql-Dump über psql ein
+ */
+adminRouter.post(
+  '/db/restore',
+  ensureAuthenticated,
+  ensureHasRole('admin'),
+  backupUpload.single('backup'),
+  async (req, res) => {
+    if (!req.file) {
+      return res.status(400).json({ message: 'Keine Datei hochgeladen' });
+    }
+
+    const filePath = req.file.path;
+
+    try {
+      await new Promise((resolve, reject) => {
+        const args = [
+          '--host', process.env.DB_HOST || 'localhost',
+          '--port', process.env.DB_PORT || '5432',
+          '--username', process.env.DB_USER,
+          '--dbname', process.env.DB_NAME,
+          '--no-password',
+          '--file', filePath,
+        ];
+
+        const psql = spawn('psql', args, { env: getDbEnv() });
+
+        let stderr = '';
+        psql.stderr.on('data', (d) => { stderr += d.toString(); });
+
+        psql.on('error', (err) => reject(new Error(`psql nicht gefunden: ${err.message}`)));
+        psql.on('close', (code) => {
+          if (code !== 0) reject(new Error(`psql exited ${code}: ${stderr}`));
+          else resolve();
+        });
+      });
+
+      logger.info(`Restore erfolgreich eingespielt: ${req.file.originalname}`);
+      res.json({ message: 'Datenbank erfolgreich wiederhergestellt' });
+    } catch (err) {
+      logger.error('Restore fehlgeschlagen:', err);
+      res.status(500).json({ message: `Restore fehlgeschlagen: ${err.message}` });
+    } finally {
+      await fs.unlink(filePath).catch(() => {});
+    }
+  },
+);
