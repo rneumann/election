@@ -215,13 +215,15 @@ export const performCounting = async (electionId, userId) => {
 
       result.allocation = result.allocation.map((listEntry) => {
         const listCandidates = candidatesByList[listEntry.firstname] || [];
-        const elected = listCandidates.slice(0, listEntry.seats).map((c) => ({
+        const list_candidates = listCandidates.map((c, i) => ({
           listnum: c.listnum,
           firstname: c.firstname,
           lastname: c.lastname,
           votes: c.votes,
+          is_elected: i < listEntry.seats,
         }));
-        return { ...listEntry, elected_candidates: elected };
+        const elected_candidates = list_candidates.filter((c) => c.is_elected);
+        return { ...listEntry, elected_candidates, list_candidates };
       });
 
       logger.info(`Resolved elected candidates for ${result.allocation.length} lists`);

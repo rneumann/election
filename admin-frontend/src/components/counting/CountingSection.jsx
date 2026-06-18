@@ -702,25 +702,28 @@ const CountingSection = ({
                                                 )}
                                               </div>
                                             </div>
-                                            {/* Elected candidates within list */}
-                                            {listEntry.elected_candidates?.length > 0 && (
-                                              <div className="border-t border-gray-200 px-3 py-1.5 space-y-1">
-                                                {listEntry.elected_candidates.map((c, cidx) => (
-                                                  <div key={cidx} className="flex justify-between items-center text-[11px]">
-                                                    <span className="flex items-center gap-1 text-gray-800">
-                                                      <span className="text-green-600 font-bold">✓</span>
-                                                      {c.firstname} {c.lastname}
+                                            {/* All candidates with individual votes */}
+                                            {listEntry.list_candidates?.length > 0 && (
+                                              <div className="border-t border-gray-200 divide-y divide-gray-100">
+                                                {listEntry.list_candidates.map((c, cidx) => (
+                                                  <div
+                                                    key={cidx}
+                                                    className={`flex justify-between items-center px-3 py-1.5 text-[11px] ${c.is_elected ? 'bg-green-50' : 'bg-white'}`}
+                                                  >
+                                                    <span className="flex items-center gap-1.5">
+                                                      {c.is_elected
+                                                        ? <span className="text-green-600 font-bold text-xs">✓</span>
+                                                        : <span className="text-gray-300 text-xs">–</span>
+                                                      }
+                                                      <span className={c.is_elected ? 'font-semibold text-gray-900' : 'text-gray-500'}>
+                                                        {c.firstname} {c.lastname}
+                                                      </span>
                                                     </span>
-                                                    <span className="text-gray-500">
+                                                    <span className={c.is_elected ? 'font-semibold text-gray-700' : 'text-gray-400'}>
                                                       {c.votes} {c.votes === 1 ? 'Stimme' : 'Stimmen'}
                                                     </span>
                                                   </div>
                                                 ))}
-                                              </div>
-                                            )}
-                                            {listEntry.seats === 0 && (
-                                              <div className="border-t border-gray-200 px-3 py-1.5 text-[11px] text-gray-400 italic">
-                                                Kein Sitz erhalten
                                               </div>
                                             )}
                                           </div>
