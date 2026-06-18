@@ -202,159 +202,140 @@ export const generateElectionResultExcel = async (resultId) => {
       result.election_type === 'referendum'
         ? ['Option', 'Votes', 'Percentage', 'Status']
         : result.election_type === 'proportional_representation'
-          ? ['List #', 'Candidate', 'Votes', 'Seats', 'Percentage']
+          ? ['Liste / Kandidat', 'Stimmen', 'Sitze', 'Quote', 'Status']
           : ['List #', 'Candidate', 'Votes', 'Status', 'Percentage'];
 
     headers.forEach((header, index) => {
       const cell = worksheet.getCell(headerRow, index + 1);
       cell.value = header;
       cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
-      cell.fill = {
-        type: 'pattern',
-        pattern: 'solid',
-        fgColor: { argb: 'FF4472C4' },
-      };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4472C4' } };
       cell.alignment = { horizontal: 'center', vertical: 'middle' };
       cell.border = {
-        top: { style: 'thin' },
-        left: { style: 'thin' },
-        bottom: { style: 'thin' },
-        right: { style: 'thin' },
+        top: { style: 'thin' }, left: { style: 'thin' },
+        bottom: { style: 'thin' }, right: { style: 'thin' },
       };
     });
 
     currentRow++;
 
-    // Results data rows - support both 'allocation' and 'all_candidates' fields
-    let candidatesData = [];
+    // ── Proportional representation: list summary + per-candidate detail ──
+    if (result.election_type === 'proportional_representation') {
+      const allocation = resultData.allocation || [];
 
-    // Special handling for referendums with hybrid mode support
-    if (result.election_type === 'referendum') {
-      if (resultData.yes_votes !== undefined) {
-        // Legacy binary format (3 options) - use real option names from DB
-        candidatesData = [
-          {
-            listnum: 1,
-            option: optionNamesMap[1] || 'Ja',
-            votes: resultData.yes_votes,
-            percentage: resultData.yes_percentage,
-            status: resultData.result === 'ACCEPTED' ? 'Angenommen' : '-',
-          },
-          {
-            listnum: 2,
-            option: optionNamesMap[2] || 'Nein',
-            votes: resultData.no_votes,
-            percentage: resultData.no_percentage,
-            status: resultData.result === 'REJECTED' ? 'Abgelehnt' : '-',
-          },
-          {
-            listnum: 3,
-            option: optionNamesMap[3] || 'Enthaltung',
-            votes: resultData.abstain_votes || 0,
-            percentage: resultData.abstain_percentage || '0.00',
-            status: '-',
-          },
-        ];
-      } else if (resultData.all_candidates) {
-        // Plurality format (N options) - use real option names from DB
-        candidatesData = resultData.all_candidates.map((candidate, index) => ({
-          listnum: candidate.listnum,
-          option:
-            optionNamesMap[candidate.listnum] || candidate.name || `Option ${candidate.listnum}`,
-          votes: candidate.votes,
-          percentage: candidate.percentage,
-          status: index === 0 && !resultData.ties_detected ? 'Gewinner' : '-',
-        }));
-      }
-    } else {
-      candidatesData =
-        resultData.allocation || resultData.all_candidates || resultData.elected || [];
-    }
+      allocation.forEach((listEntry) => {
+        const listName = listEntry.firstname?.trim() || `Liste ${listEntry.listnum}`;
+        const hasSeats = (listEntry.seats || 0) > 0;
 
-    if (Array.isArray(candidatesData) && candidatesData.length > 0) {
-      candidatesData.forEach((candidate) => {
-        const row = worksheet.getRow(currentRow);
+        // List header row
+        const listRow = worksheet.getRow(currentRow);
+        listRow.getCell(COL_A).value = listName;
+        listRow.getCell(COL_A).font = { bold: true };
+        listRow.getCell(COL_B).value = listEntry.votes;
+        listRow.getCell(COL_B).font = { bold: true };
+        listRow.getCell(COL_C).value = listEntry.seats ?? 0;
+        listRow.getCell(COL_C).font = { bold: true };
+        listRow.getCell(COL_D).value = listEntry.quota ? `${listEntry.quota}` : '-';
+        listRow.getCell(COL_E).value = listEntry.is_tie ? '⚠ Gleichstand' : hasSeats ? '✓ Sitze erhalten' : 'Kein Sitz';
 
-        if (result.election_type === 'referendum') {
-          // Referendum format - use option name from data
-          const optionName = candidate.option || `Option ${candidate.listnum}`;
-          row.getCell(COL_A).value = optionName;
-          row.getCell(COL_B).value = candidate.votes;
-          row.getCell(COL_C).value = candidate.percentage ? `${candidate.percentage}%` : '-';
-          row.getCell(COL_D).value = candidate.status || '-';
-        } else if (result.election_type === 'proportional_representation') {
-          // Proportional representation format
-          row.getCell(COL_A).value = candidate.listnum;
-          row.getCell(COL_B).value = `${candidate.firstname} ${candidate.lastname}`;
-          row.getCell(COL_C).value = candidate.votes;
-          row.getCell(COL_D).value = candidate.seats || 0;
-          row.getCell(COL_E).value = candidate.percentage ? `${candidate.percentage}%` : '-';
+        const listFill = listEntry.is_tie
+          ? { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFF4E6' } }
+          : hasSeats
+            ? { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD4EDDA' } }
+            : { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' } };
 
-          // Highlight candidates with ties (yellow) - has priority
-          if (candidate.is_tie) {
-            row.eachCell((cell) => {
-              cell.fill = {
-                type: 'pattern',
-                pattern: 'solid',
-                fgColor: { argb: 'FFFFF4E6' }, // Light yellow
-              };
-            });
-          }
-          // Highlight elected candidates (green) - only if NOT in a tie
-          else if (candidate.seats > 0) {
-            row.eachCell((cell) => {
-              cell.fill = {
-                type: 'pattern',
-                pattern: 'solid',
-                fgColor: { argb: 'FFD4EDDA' }, // Light green
-              };
-            });
-          }
-        } else {
-          // Majority vote format
-          row.getCell(COL_A).value = candidate.listnum;
-          row.getCell(COL_B).value = `${candidate.firstname} ${candidate.lastname}`;
-          row.getCell(COL_C).value = candidate.votes;
-          row.getCell(COL_D).value = candidate.is_elected
-            ? 'Elected'
-            : candidate.is_tie
-              ? 'Tie'
-              : 'Not Elected';
-          row.getCell(COL_E).value = candidate.percentage ? `${candidate.percentage}%` : '-';
-
-          // Highlight elected candidates
-          if (candidate.is_elected) {
-            row.eachCell((cell) => {
-              cell.fill = {
-                type: 'pattern',
-                pattern: 'solid',
-                fgColor: { argb: 'FFD4EDDA' },
-              };
-            });
-          }
-
-          // Highlight ties
-          if (candidate.is_tie) {
-            row.eachCell((cell) => {
-              cell.fill = {
-                type: 'pattern',
-                pattern: 'solid',
-                fgColor: { argb: 'FFFFF4E6' },
-              };
-            });
-          }
-        }
-
-        // Apply borders to all cells
-        row.eachCell((cell) => {
+        listRow.eachCell((cell) => {
+          cell.fill = listFill;
           cell.border = {
-            top: { style: 'thin' },
-            left: { style: 'thin' },
-            bottom: { style: 'thin' },
-            right: { style: 'thin' },
+            top: { style: 'thin' }, left: { style: 'thin' },
+            bottom: { style: 'thin' }, right: { style: 'thin' },
           };
         });
+        currentRow++;
 
+        // Individual candidate rows within the list
+        const candidates = listEntry.list_candidates || [];
+        candidates.forEach((c) => {
+          const candRow = worksheet.getRow(currentRow);
+          candRow.getCell(COL_A).value = `    ${c.firstname} ${c.lastname}`;
+          candRow.getCell(COL_B).value = c.votes;
+          candRow.getCell(COL_C).value = '';
+          candRow.getCell(COL_D).value = '';
+          candRow.getCell(COL_E).value = c.is_elected ? '✓ Gewählt' : '';
+
+          if (c.is_elected) {
+            candRow.eachCell((cell) => {
+              cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE8F5E9' } };
+            });
+          }
+          candRow.eachCell((cell) => {
+            cell.border = {
+              top: { style: 'thin' }, left: { style: 'thin' },
+              bottom: { style: 'thin' }, right: { style: 'thin' },
+            };
+          });
+          currentRow++;
+        });
+      });
+
+    // ── Referendum ──
+    } else if (result.election_type === 'referendum') {
+      let candidatesData = [];
+      if (resultData.yes_votes !== undefined) {
+        candidatesData = [
+          { option: optionNamesMap[1] || 'Ja',         votes: resultData.yes_votes,      percentage: resultData.yes_percentage,          status: resultData.result === 'ACCEPTED' ? 'Angenommen' : '-' },
+          { option: optionNamesMap[2] || 'Nein',        votes: resultData.no_votes,       percentage: resultData.no_percentage,           status: resultData.result === 'REJECTED' ? 'Abgelehnt' : '-' },
+          { option: optionNamesMap[3] || 'Enthaltung',  votes: resultData.abstain_votes || 0, percentage: resultData.abstain_percentage || '0.00', status: '-' },
+        ];
+      } else if (resultData.all_candidates) {
+        candidatesData = resultData.all_candidates.map((c, i) => ({
+          option: optionNamesMap[c.listnum] || c.name || `Option ${c.listnum}`,
+          votes: c.votes,
+          percentage: c.percentage,
+          status: i === 0 && !resultData.ties_detected ? 'Gewinner' : '-',
+        }));
+      }
+      candidatesData.forEach((candidate) => {
+        const row = worksheet.getRow(currentRow);
+        row.getCell(COL_A).value = candidate.option;
+        row.getCell(COL_B).value = candidate.votes;
+        row.getCell(COL_C).value = candidate.percentage ? `${candidate.percentage}%` : '-';
+        row.getCell(COL_D).value = candidate.status || '-';
+        row.eachCell((cell) => {
+          cell.border = {
+            top: { style: 'thin' }, left: { style: 'thin' },
+            bottom: { style: 'thin' }, right: { style: 'thin' },
+          };
+        });
+        currentRow++;
+      });
+
+    // ── Majority vote ──
+    } else {
+      const candidatesData = resultData.allocation || resultData.all_candidates || resultData.elected || [];
+      candidatesData.forEach((candidate) => {
+        const row = worksheet.getRow(currentRow);
+        row.getCell(COL_A).value = candidate.listnum;
+        row.getCell(COL_B).value = `${candidate.firstname || ''} ${candidate.lastname || ''}`.trim();
+        row.getCell(COL_C).value = candidate.votes;
+        row.getCell(COL_D).value = candidate.is_elected ? 'Gewählt' : candidate.is_tie ? 'Gleichstand' : 'Nicht gewählt';
+        row.getCell(COL_E).value = candidate.percentage ? `${candidate.percentage}%` : '-';
+
+        if (candidate.is_elected) {
+          row.eachCell((cell) => {
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD4EDDA' } };
+          });
+        } else if (candidate.is_tie) {
+          row.eachCell((cell) => {
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFF4E6' } };
+          });
+        }
+        row.eachCell((cell) => {
+          cell.border = {
+            top: { style: 'thin' }, left: { style: 'thin' },
+            bottom: { style: 'thin' }, right: { style: 'thin' },
+          };
+        });
         currentRow++;
       });
     }
