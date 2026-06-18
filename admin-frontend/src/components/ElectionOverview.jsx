@@ -3,16 +3,14 @@ import { adminService } from '../services/adminApi.js';
 
 const REFRESH_INTERVAL_MS = 5000;
 
-const formatDate = (iso) =>
-  iso
-    ? new Date(iso).toLocaleString('de-DE', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      })
-    : '—';
+const formatDate = (iso) => {
+  if (!iso) return { date: '—', time: '' };
+  const d = new Date(iso);
+  return {
+    date: d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+    time: d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }),
+  };
+};
 
 const StatusBadge = ({ election }) => {
   const now = new Date();
@@ -148,7 +146,7 @@ const ElectionOverview = () => {
     <div>
       <Toolbar />
       <div className="overflow-x-auto">
-      <table className="min-w-full divide-y divide-gray-200 text-sm">
+      <table className="w-full min-w-max divide-y divide-gray-200 text-sm">
         <thead className="bg-gray-50">
           <tr>
             <th className="px-4 py-3 text-left font-semibold text-gray-600 uppercase tracking-wider text-xs">Bezeichnung</th>
@@ -185,8 +183,14 @@ const ElectionOverview = () => {
                 <td className="px-4 py-3">
                   <StatusBadge election={e} />
                 </td>
-                <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{formatDate(e.start)}</td>
-                <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{formatDate(e.end)}</td>
+                <td className="px-4 py-3 text-gray-600">
+                  <div>{formatDate(e.start).date}</div>
+                  <div className="text-xs text-gray-400">{formatDate(e.start).time}</div>
+                </td>
+                <td className="px-4 py-3 text-gray-600">
+                  <div>{formatDate(e.end).date}</div>
+                  <div className="text-xs text-gray-400">{formatDate(e.end).time}</div>
+                </td>
                 <td className="px-4 py-3 text-right text-gray-700">{e.seats_to_fill}</td>
                 <td className={`px-4 py-3 text-right font-medium ${candidates === 0 ? 'text-yellow-700' : 'text-gray-700'}`}>{candidates}</td>
                 <td className={`px-4 py-3 text-right font-medium ${voters === 0 ? 'text-yellow-700' : 'text-gray-700'}`}>{voters}</td>

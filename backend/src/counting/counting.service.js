@@ -89,8 +89,8 @@ export const performCounting = async (electionId, userId) => {
 
     if (election.election_type === 'referendum') {
       votesRes = await db.query(
-        `SELECT 
-           ec.listnum, 
+        `SELECT
+           ec.listnum,
            ec.keyword AS firstname,
            '' AS lastname,
            COALESCE(SUM(bv.votes), 0) AS votes
@@ -102,8 +102,25 @@ export const performCounting = async (electionId, userId) => {
          ORDER BY ec.listnum`,
         [electionId],
       );
+    } else if (election.election_type === 'proportional_representation') {
+      // Aggregate votes per list (keyword) — Hare-Niemeyer and Sainte-Laguë operate on lists,
+      // not individual candidates. listnum is the lowest candidate number of each list.
+      votesRes = await db.query(
+        `SELECT
+           MIN(ec.listnum) AS listnum,
+           ec.keyword AS firstname,
+           '' AS lastname,
+           COALESCE(SUM(bv.votes), 0) AS votes
+         FROM electioncandidates ec
+         JOIN candidates c ON c.id = ec.candidateid
+         LEFT JOIN ballotvotes bv ON bv.election = ec.electionid AND bv.listnum = ec.listnum
+         WHERE ec.electionid = $1
+         GROUP BY ec.keyword
+         ORDER BY MIN(ec.listnum)`,
+        [electionId],
+      );
     } else {
-      // LEFT JOIN statt INNER JOIN (counting-View) — liefert alle Kandidaten auch ohne Stimmen
+      // majority_vote: one row per candidate
       votesRes = await db.query(
         `SELECT
            ec.listnum,
@@ -170,6 +187,45 @@ export const performCounting = async (electionId, userId) => {
     logger.info(
       `Counting completed: algorithm=${result.algorithm}, ties=${result.ties_detected || false}`,
     );
+
+    // For proportional elections: resolve which candidates within each list are elected,
+    // ranked by individual vote count. Stored directly in result_data for a self-contained result.
+    if (election.election_type === 'proportional_representation' && result.allocation) {
+      const candidateRes = await db.query(
+        `SELECT
+           ec.keyword AS list_keyword,
+           ec.listnum,
+           c.firstname,
+           c.lastname,
+           COALESCE(SUM(bv.votes), 0)::int AS votes
+         FROM electioncandidates ec
+         JOIN candidates c ON c.id = ec.candidateid
+         LEFT JOIN ballotvotes bv ON bv.election = ec.electionid AND bv.listnum = ec.listnum
+         WHERE ec.electionid = $1
+         GROUP BY ec.keyword, ec.listnum, c.firstname, c.lastname
+         ORDER BY ec.keyword, COALESCE(SUM(bv.votes), 0) DESC, ec.listnum`,
+        [electionId],
+      );
+
+      const candidatesByList = candidateRes.rows.reduce((acc, row) => {
+        if (!acc[row.list_keyword]) acc[row.list_keyword] = [];
+        acc[row.list_keyword].push(row);
+        return acc;
+      }, {});
+
+      result.allocation = result.allocation.map((listEntry) => {
+        const listCandidates = candidatesByList[listEntry.firstname] || [];
+        const elected = listCandidates.slice(0, listEntry.seats).map((c) => ({
+          listnum: c.listnum,
+          firstname: c.firstname,
+          lastname: c.lastname,
+          votes: c.votes,
+        }));
+        return { ...listEntry, elected_candidates: elected };
+      });
+
+      logger.info(`Resolved elected candidates for ${result.allocation.length} lists`);
+    }
 
     // Determine next version number for this election
     // Use SELECT FOR UPDATE on election row to prevent race conditions

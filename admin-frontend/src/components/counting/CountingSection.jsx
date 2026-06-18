@@ -662,47 +662,70 @@ const CountingSection = ({
                                   <p className="text-xs font-semibold text-gray-700 mb-2">
                                     Sitzzuteilung:
                                   </p>
-                                  <div className="space-y-1">
+                                  <div className="space-y-2">
                                     {election.countingResult.fullResults.result_data.allocation.map(
-                                      (candidate, idx) => (
-                                        <div
-                                          key={idx}
-                                          className={`flex justify-between items-center p-2 rounded text-xs ${candidate.is_tie ? 'bg-yellow-50 border border-yellow-200' : 'bg-gray-50'}`}
-                                        >
-                                          <span className="font-medium text-gray-900">
-                                            {candidate.candidate ||
-                                              candidate.name ||
-                                              `${candidate.firstname || ''} ${candidate.lastname || ''}`.trim() ||
-                                              `Option ${candidate.listnum}`}
-                                          </span>
-                                          <div className="text-right flex flex-col items-end">
-                                            <div className="flex items-center gap-2">
-                                              <span className="font-bold text-gray-900">
-                                                {candidate.votes}{' '}
-                                                {candidate.votes === 1 ? 'Stimme' : 'Stimmen'}
+                                      (listEntry, idx) => {
+                                        const listName =
+                                          listEntry.candidate?.trim() ||
+                                          listEntry.firstname ||
+                                          `Liste ${listEntry.listnum}`;
+                                        return (
+                                          <div
+                                            key={idx}
+                                            className={`rounded border text-xs ${listEntry.is_tie ? 'border-yellow-300 bg-yellow-50' : 'border-gray-200 bg-gray-50'}`}
+                                          >
+                                            {/* List header */}
+                                            <div className="flex justify-between items-center px-3 py-2">
+                                              <span className="font-semibold text-gray-900">
+                                                {listName}
                                               </span>
-                                              {candidate.seats !== undefined && (
-                                                <span className="text-blue-600 font-semibold">
-                                                  · {candidate.seats}{' '}
-                                                  {candidate.seats === 1 ? 'Sitz' : 'Sitze'}
+                                              <div className="flex items-center gap-2">
+                                                <span className="text-gray-600">
+                                                  {listEntry.votes}{' '}
+                                                  {listEntry.votes === 1 ? 'Stimme' : 'Stimmen'}
                                                 </span>
-                                              )}
+                                                {listEntry.seats !== undefined && (
+                                                  <span className={`px-1.5 py-0.5 rounded-sm font-semibold ${listEntry.seats > 0 ? 'bg-blue-600 text-white' : 'bg-gray-300 text-gray-600'}`}>
+                                                    {listEntry.seats}{' '}
+                                                    {listEntry.seats === 1 ? 'Sitz' : 'Sitze'}
+                                                  </span>
+                                                )}
+                                                {listEntry.quota && (
+                                                  <span className="text-gray-400">
+                                                    Quote: {listEntry.quota}
+                                                  </span>
+                                                )}
+                                                {listEntry.is_tie && (
+                                                  <span className="px-1.5 py-0.5 bg-yellow-500 text-white rounded-sm text-[10px] font-semibold">
+                                                    Gleichstand
+                                                  </span>
+                                                )}
+                                              </div>
                                             </div>
-                                            <div className="flex items-center gap-2 mt-1">
-                                              {candidate.quota && (
-                                                <span className="text-gray-500 text-xs">
-                                                  Quote: {candidate.quota}
-                                                </span>
-                                              )}
-                                              {candidate.is_tie && (
-                                                <span className="px-1.5 py-0.5 bg-yellow-500 text-white rounded-sm text-[10px] font-semibold">
-                                                  Gleichstand
-                                                </span>
-                                              )}
-                                            </div>
+                                            {/* Elected candidates within list */}
+                                            {listEntry.elected_candidates?.length > 0 && (
+                                              <div className="border-t border-gray-200 px-3 py-1.5 space-y-1">
+                                                {listEntry.elected_candidates.map((c, cidx) => (
+                                                  <div key={cidx} className="flex justify-between items-center text-[11px]">
+                                                    <span className="flex items-center gap-1 text-gray-800">
+                                                      <span className="text-green-600 font-bold">✓</span>
+                                                      {c.firstname} {c.lastname}
+                                                    </span>
+                                                    <span className="text-gray-500">
+                                                      {c.votes} {c.votes === 1 ? 'Stimme' : 'Stimmen'}
+                                                    </span>
+                                                  </div>
+                                                ))}
+                                              </div>
+                                            )}
+                                            {listEntry.seats === 0 && (
+                                              <div className="border-t border-gray-200 px-3 py-1.5 text-[11px] text-gray-400 italic">
+                                                Kein Sitz erhalten
+                                              </div>
+                                            )}
                                           </div>
-                                        </div>
-                                      ),
+                                        );
+                                      },
                                     )}
                                   </div>
                                 </div>
