@@ -157,7 +157,7 @@ candidateRouter.post(
 
     const candidateInfo = candidateInfoSchema.safeParse({
       candidate_uid: req.user.username,
-      info: req.body.info,
+      info: req.body.info?.replace(/\r/g, ''),
       picture_content_type: req.file?.mimetype,
       picture_data: req.file?.buffer,
     });
@@ -271,7 +271,7 @@ candidateRouter.put(
 
     const candidateInfo = candidateInfoSchema.safeParse({
       candidate_uid: req.user.username,
-      info: req.body.info,
+      info: req.body.info?.replace(/\r/g, ''),
       picture_content_type: req.file?.mimetype,
       picture_data: req.file?.buffer,
     });
