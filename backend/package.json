@@ -34,7 +34,7 @@
     "jszip": "^3.10.1",
     "ldapts": "^8.0.9",
     "license-checker": "^25.0.1",
-    "multer": "^2.0.2",
+    "multer": "^2.2.0",
     "passport": "^0.7.0",
     "passport-local": "^1.0.0",
     "passport-oauth2": "^1.8.0",
