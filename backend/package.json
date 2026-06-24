@@ -76,5 +76,8 @@
     "prettier": "3.6.2",
     "supertest": "^7.1.4",
     "vitest": "^4.0.6"
+  },
+  "allowScripts": {
+    "pdfkit@0.19.1": true
   }
 }

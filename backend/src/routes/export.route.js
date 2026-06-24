@@ -230,13 +230,10 @@ exportRoute.get('/results/:resultId/official', ensureAuthenticated, async (req, 
     const { resultId } = req.params;
     const buffer = await generateOfficialReport(resultId);
 
-    res.setHeader(
-      'Content-Type',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    );
+    res.setHeader('Content-Type', 'application/pdf');
     res.setHeader(
       'Content-Disposition',
-      `attachment; filename="Amtliches_Ergebnis_${resultId.substring(0, RESULT_ID_SUBSTRING_LENGTH)}.xlsx"`,
+      `attachment; filename="Amtliches_Ergebnis_${resultId.substring(0, RESULT_ID_SUBSTRING_LENGTH)}.pdf"`,
     );
     res.send(buffer);
   } catch (err) {

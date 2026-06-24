@@ -1,388 +1,318 @@
+import PDFDocument from 'pdfkit';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import ExcelJS from 'exceljs';
 import { logger } from '../conf/logger/logger.js';
 import { client } from '../database/db.js';
 
-// Setup für Dateipfade
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// --- KONSTANTEN: FARBEN ---
-const COLORS = {
-  HKA_RED: 'FFE2001A',
-  HKA_BLACK: 'FF333333',
-  WHITE: 'FFFFFFFF',
-  BG_HEADER: 'FFE2001A',
-  BG_METADATA: 'FFF5F5F5',
-  BG_STATS: 'FFEAF2F8', // Helles Blau für Statistik
-  BG_SUCCESS: 'FFD4EDDA',
-  BG_WARNING: 'FFFFF4E6',
-  BORDER_GREY: 'FFCCCCCC',
-};
+// ── Farben ──────────────────────────────────────────────────────────────────
+const HKA_RED  = '#E2001A';
+const DARK     = '#333333';
+const GREY_BG  = '#F5F5F5';
+const BLUE_BG  = '#EAF2F8';
+const GREEN_BG = '#D4EDDA';
+const CAND_BG  = '#E8F5E9';
+const YELLOW_BG= '#FFF4E6';
+const LIST_BG  = '#E0E0E0';
+const BORDER   = '#CCCCCC';
+const WHITE    = '#FFFFFF';
 
-// --- KONSTANTEN: LAYOUT & DIMENSIONEN ---
-const COL_WIDTH_A = 35;
-const COL_WIDTH_B = 35;
-const COL_WIDTH_C = 15;
-const COL_WIDTH_D = 25;
-const COL_WIDTH_E = 15;
+// ── Seitenmaße (A4 in pt) ───────────────────────────────────────────────────
+const MARGIN     = 50;
+const PAGE_W     = 595.28;
+const PAGE_H     = 841.89;
+const CONTENT_W  = PAGE_W - MARGIN * 2;
 
-const LOGO_WIDTH = 180;
-const LOGO_HEIGHT = 55;
-const START_ROW = 5;
-const FONT_SIZE_TITLE = 16;
-const COL_START = 1;
-const COL_END = 5;
+// ── Hilfsfunktionen ──────────────────────────────────────────────────────────
+const fmtDate = (d) =>
+  d ? new Date(d).toLocaleDateString('de-DE', { timeZone: 'Europe/Berlin' }) : '-';
 
-// Spalten-Indizes
-const COL_IDX_LABEL = 1;
-const COL_IDX_VALUE = 2;
-const COL_IDX_VOTES = 3;
-const COL_IDX_STATUS = 4;
-const COL_IDX_PERCENT = 5;
-const COL_IDX_SIGN_LEFT = 1;
-const COL_IDX_SIGN_RIGHT = 4;
+const fmtDateTime = (d) =>
+  d ? new Date(d).toLocaleString('de-DE', {
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Berlin',
+  }) : '-';
 
-// --- KONSTANTEN: TEXTE ---
-const TEXT_TITLE = 'AMTLICHES WAHLERGEBNIS';
-const TEXT_FINAL = 'FINAL';
-const TEXT_DRAFT = 'VORLÄUFIG';
-const TEXT_YES = 'JA';
-const TEXT_NO = 'NEIN';
-const TEXT_ABSTAIN = 'Enthaltung';
-const TEXT_ACCEPTED = 'Angenommen';
-const TEXT_REJECTED = 'Abgelehnt';
-const STATUS_ELECTED = 'GEWÄHLT';
-const STATUS_NOT_ELECTED = 'Nicht gewählt';
-const STATUS_TIE = 'STICHWAHL NÖTIG';
+const labelElectionType = (t) =>
+  ({ majority_vote: 'Mehrheitswahl', proportional_representation: 'Verhältniswahl', referendum: 'Referendum' })[t] || t;
 
-// --- LOGIK KONSTANTEN ---
-const RESULT_ACCEPTED = 'ACCEPTED';
-const RESULT_REJECTED = 'REJECTED';
+const labelMethod = (m) =>
+  ({ sainte_lague: 'Sainte-Laguë', hare_niemeyer: 'Hare-Niemeyer',
+     highest_votes_simple: 'Einfache Mehrheit', highest_votes_absolute: 'Absolute Mehrheit',
+     yes_no_referendum: 'Ja/Nein/Enthaltung' })[m] || m;
 
 /**
- * Generiert das offizielle Wahlergebnis (HKA Design).
- * @param {string} resultId - Die ID des Wahlergebnisses
- * @returns {Promise<Buffer>} Der Excel-Datei-Buffer
+ * Zeichnet eine einfarbige Zeile mit Zellentext.
+ * Setzt doc.y explizit auf y + h nach dem Rendern.
+ */
+const makeRowDrawer = (doc) => (cells, widths, opts = {}) => {
+  const { bg = null, bold = false, color = DARK, h = 20, indent = 0 } = opts;
+
+  if (doc.y + h > PAGE_H - MARGIN) doc.addPage();
+
+  const y = doc.y;
+
+  if (bg) doc.rect(MARGIN, y, CONTENT_W, h).fill(bg);
+
+  let x = MARGIN + indent;
+  cells.forEach((cell, i) => {
+    const w = widths[i] - (i === 0 ? indent : 0);
+    const text = cell === null || cell === undefined ? '' : String(cell);
+    if (text) {
+      doc
+        .fontSize(9)
+        .font(bold ? 'Helvetica-Bold' : 'Helvetica')
+        .fillColor(color)
+        .text(text, x + 4, y + Math.max(1, (h - 10) / 2), { width: w - 8, lineBreak: false, ellipsis: true });
+    }
+    x += widths[i];
+  });
+
+  doc.rect(MARGIN, y, CONTENT_W, h).strokeColor(BORDER).lineWidth(0.5).stroke();
+  doc.y = y + h;
+};
+
+/**
+ * Zeichnet einen Schlüssel-Wert-Block (Metadaten / Statistik).
+ */
+const makeKvDrawer = (doc) => (key, value, bg = GREY_BG) => {
+  const y = doc.y;
+  const h = 20;
+  doc.rect(MARGIN, y, CONTENT_W, h).fill(bg);
+  doc.fontSize(10).font('Helvetica-Bold').fillColor(DARK)
+     .text(key, MARGIN + 6, y + 5, { width: 180, lineBreak: false });
+  doc.fontSize(10).font('Helvetica').fillColor(DARK)
+     .text(String(value ?? '-'), MARGIN + 192, y + 5, { width: CONTENT_W - 198, lineBreak: false });
+  doc.rect(MARGIN, y, CONTENT_W, h).strokeColor(BORDER).lineWidth(0.5).stroke();
+  doc.y = y + h;
+};
+
+/**
+ * Zeichnet einen farbigen Abschnitts-Header.
+ */
+const makeSectionHeader = (doc) => (title) => {
+  doc.moveDown(0.8);
+  doc.fontSize(11).font('Helvetica-Bold').fillColor(HKA_RED).text(title);
+  doc.moveDown(0.2);
+};
+
+// ── Hauptfunktion ────────────────────────────────────────────────────────────
+
+/**
+ * Generiert das amtliche Wahlergebnis als PDF.
+ * @param {string} resultId - UUID des Wahlergebnisses
+ * @returns {Promise<Buffer>} PDF als Buffer
  */
 export const generateOfficialReport = async (resultId) => {
   const db = await client.connect();
 
   try {
-    // 1. Daten laden
-    const query = `
-      SELECT 
-        er.result_data, er.counted_at, er.is_final, er.version,
-        e.info as election_name, e.description, e.election_type, 
-        e.counting_method, e.seats_to_fill, e.start, e."end",
-        COUNT(b.id) as total_ballots,
-        COUNT(b.id) FILTER (WHERE b.valid = TRUE) as valid_ballots,
-        COUNT(b.id) FILTER (WHERE b.valid = FALSE) as invalid_ballots
-      FROM election_results er
-      JOIN elections e ON er.election_id = e.id
-      LEFT JOIN ballots b ON b.election = e.id
-      WHERE er.id = $1
-      GROUP BY er.id, e.id
-    `;
+    const { rows } = await db.query(
+      `SELECT
+         er.result_data, er.counted_at, er.is_final, er.version,
+         e.info AS election_name, e.description, e.election_type,
+         e.counting_method, e.seats_to_fill, e.start, e."end",
+         COUNT(b.id)                                    AS total_ballots,
+         COUNT(b.id) FILTER (WHERE b.valid = TRUE)      AS valid_ballots,
+         COUNT(b.id) FILTER (WHERE b.valid = FALSE)     AS invalid_ballots,
+         (SELECT COUNT(*) FROM votingnotes vn WHERE vn."electionid" = e.id) AS eligible_voters
+       FROM election_results er
+       JOIN elections e ON er.election_id = e.id
+       LEFT JOIN ballots b ON b.election = e.id
+       WHERE er.id = $1
+       GROUP BY er.id, e.id`,
+      [resultId],
+    );
 
-    const { rows } = await db.query(query, [resultId]);
-    if (rows.length === 0) {
-      throw new Error('Ergebnis nicht gefunden');
-    }
+    if (rows.length === 0) throw new Error('Ergebnis nicht gefunden');
 
     const result = rows[0];
-    const data = result.result_data;
+    const data   = result.result_data;
+    const isProp = result.election_type === 'proportional_representation';
+    const isRef  = result.election_type === 'referendum';
 
-    // 2. Excel erstellen
-    const workbook = new ExcelJS.Workbook();
-    workbook.creator = 'HKA E-Voting System';
-    workbook.created = new Date();
+    // ── PDF-Dokument anlegen ─────────────────────────────────────────────────
+    const doc = new PDFDocument({ size: 'A4', margin: MARGIN, autoFirstPage: true, info: {
+      Title:   'Amtliches Wahlergebnis',
+      Author:  'HKA E-Voting System',
+      Subject: result.election_name,
+    }});
 
-    const sheet = workbook.addWorksheet('Amtliches Ergebnis');
+    const bufPromise = new Promise((resolve, reject) => {
+      const chunks = [];
+      doc.on('data',  (c) => chunks.push(c));
+      doc.on('end',   () => resolve(Buffer.concat(chunks)));
+      doc.on('error', reject);
+    });
 
-    // Spaltenbreiten
-    sheet.columns = [
-      { width: COL_WIDTH_A },
-      { width: COL_WIDTH_B },
-      { width: COL_WIDTH_C },
-      { width: COL_WIDTH_D },
-      { width: COL_WIDTH_E },
-    ];
+    const row    = makeRowDrawer(doc);
+    const kv     = makeKvDrawer(doc);
+    const section = makeSectionHeader(doc);
 
-    // 3. Logo einfügen
+    // ── Logo ─────────────────────────────────────────────────────────────────
     try {
-      const logoId = workbook.addImage({
-        filename: path.join(__dirname, '../assets/HKA_Logo.png'),
-        extension: 'png',
-      });
-      sheet.addImage(logoId, {
-        tl: { col: 0, row: 0 },
-        ext: { width: LOGO_WIDTH, height: LOGO_HEIGHT },
-      });
-    } catch (err) {
-      logger.warn('HKA Logo nicht gefunden - Export läuft ohne Logo weiter.', err.message);
+      doc.image(path.join(__dirname, '../assets/HKA_Logo.png'), MARGIN, MARGIN, { height: 42 });
+    } catch {
+      logger.warn('HKA Logo nicht gefunden – PDF wird ohne Logo erstellt.');
     }
 
-    let rowNum = START_ROW;
+    // Status-Badge oben rechts
+    const statusText  = result.is_final ? 'FINAL' : 'VORLÄUFIG';
+    const statusColor = result.is_final ? '#28A745' : '#CC6600';
+    doc.fontSize(10).font('Helvetica-Bold').fillColor(statusColor)
+       .text(statusText, MARGIN, MARGIN + 14, { width: CONTENT_W, align: 'right' });
 
-    // 4. Titel & Header
-    const titleRow = sheet.getRow(rowNum);
-    sheet.mergeCells(`A${rowNum}:E${rowNum}`);
-    const titleCell = titleRow.getCell(COL_IDX_LABEL);
-    titleCell.value = TEXT_TITLE;
-    titleCell.font = {
-      name: 'Arial',
-      size: FONT_SIZE_TITLE,
-      bold: true,
-      color: { argb: COLORS.HKA_RED },
-    };
-    titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
-    titleCell.border = {
-      bottom: { style: 'thick', color: { argb: COLORS.HKA_RED } },
-    };
-    rowNum += 2;
+    // ── Titel ─────────────────────────────────────────────────────────────────
+    doc.y = MARGIN + 58;
+    doc.fontSize(18).font('Helvetica-Bold').fillColor(HKA_RED)
+       .text('AMTLICHES WAHLERGEBNIS', { align: 'center' });
+    doc.moveDown(0.25);
+    const titleUnderY = doc.y;
+    doc.moveTo(MARGIN, titleUnderY).lineTo(MARGIN + CONTENT_W, titleUnderY)
+       .strokeColor(HKA_RED).lineWidth(2).stroke();
+    doc.y = titleUnderY + 6;
+    doc.moveDown(0.5);
 
-    // 5. Metadaten Block (Infos zur Wahl)
-    const infos = [
-      ['Wahlbezeichnung:', result.election_name],
-      ['Wahlart:', result.election_type],
-      ['Sitze:', result.seats_to_fill],
-      [
-        'Zeitraum:',
-        `${new Date(result.start).toLocaleDateString()} - ${new Date(result.end).toLocaleDateString()}`,
-      ],
-      ['Status:', result.is_final ? TEXT_FINAL : TEXT_DRAFT],
-    ];
+    // ── Metadaten ─────────────────────────────────────────────────────────────
+    section('WAHLANGABEN');
+    kv('Wahlbezeichnung:',  result.election_name);
+    kv('Beschreibung:',     result.description || '-');
+    kv('Wahlart:',          labelElectionType(result.election_type));
+    kv('Auszählmethode:',   labelMethod(result.counting_method));
+    kv('Sitze gesamt:',     result.seats_to_fill);
+    kv('Wahlzeitraum:',     `${fmtDate(result.start)} – ${fmtDate(result.end)}`);
+    kv('Ausgezählt am:',    fmtDateTime(result.counted_at));
+    kv('Version:',          result.version);
 
-    infos.forEach(([key, val]) => {
-      const r = sheet.getRow(rowNum);
-      r.getCell(COL_IDX_LABEL).value = key;
-      r.getCell(COL_IDX_LABEL).font = { bold: true, name: 'Arial', size: 11 };
-      r.getCell(COL_IDX_LABEL).alignment = { vertical: 'middle', horizontal: 'left' };
-      r.getCell(COL_IDX_VALUE).value = val;
-      r.getCell(COL_IDX_VALUE).font = { name: 'Arial', size: 11 };
-      r.getCell(COL_IDX_VALUE).alignment = { vertical: 'middle', horizontal: 'center' };
-      r.height = 20;
+    // ── Statistik ─────────────────────────────────────────────────────────────
+    const total    = parseInt(result.total_ballots,   10) || 0;
+    const valid    = parseInt(result.valid_ballots,   10) || 0;
+    const invalid  = parseInt(result.invalid_ballots, 10) || 0;
+    const eligible = parseInt(result.eligible_voters, 10) || 0;
+    const rate     = eligible > 0 ? ((total / eligible) * 100).toFixed(2) : '0.00';
 
-      for (let i = COL_START; i <= COL_END; i += 1) {
-        r.getCell(i).fill = {
-          type: 'pattern',
-          pattern: 'solid',
-          fgColor: { argb: COLORS.BG_METADATA },
-        };
-        r.getCell(i).alignment = { vertical: 'middle', horizontal: i === COL_START ? 'left' : 'center', wrapText: true };
-        r.getCell(i).border = {
-          top: { style: 'thin', color: { argb: COLORS.BORDER_GREY } },
-          bottom: { style: 'thin', color: { argb: COLORS.BORDER_GREY } },
-          left: { style: 'thin', color: { argb: COLORS.BORDER_GREY } },
-          right: { style: 'thin', color: { argb: COLORS.BORDER_GREY } },
-        };
-      }
-      rowNum += 1;
-    });
-    rowNum += 1; // Kleiner Abstand
+    section('WAHLSTATISTIK');
+    kv('Wahlberechtigte:',        eligible, BLUE_BG);
+    kv('Abgegebene Stimmzettel:', total,    BLUE_BG);
+    kv('Gültige Stimmzettel:',    valid,    BLUE_BG);
+    kv('Ungültige Stimmzettel:',  invalid,  BLUE_BG);
+    kv('Beteiligungsquote:',      `${rate}%`, BLUE_BG);
 
-    // --- 6. Statistik / Wahlbeteiligung ---
-    // Berechnung der Quote
-    const total = parseInt(result.total_ballots, 10) || 0;
-    const valid = parseInt(result.valid_ballots, 10) || 0;
-    const invalid = parseInt(result.invalid_ballots, 10) || 0;
-    const rate = total > 0 ? ((valid / total) * 100).toFixed(2) : '0.00';
-
-    const statsHeader = sheet.getRow(rowNum);
-    statsHeader.getCell(COL_IDX_LABEL).value = 'STATISTIK';
-    statsHeader.getCell(COL_IDX_LABEL).font = { bold: true, color: { argb: COLORS.HKA_RED } };
-    rowNum += 1;
-
-    const stats = [
-      ['Abgegebene Stimmen (Gesamt):', total],
-      ['Gültige Stimmen:', valid],
-      ['Ungültige Stimmen:', invalid],
-      ['Gültigkeitsquote:', `${rate}%`],
-    ];
-
-    stats.forEach(([key, val]) => {
-      const r = sheet.getRow(rowNum);
-      r.getCell(COL_IDX_LABEL).value = key;
-      r.getCell(COL_IDX_LABEL).font = { bold: true, name: 'Arial', size: 11 };
-      r.getCell(COL_IDX_LABEL).alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
-      r.getCell(COL_IDX_VALUE).value = val;
-      r.getCell(COL_IDX_VALUE).font = { name: 'Arial', size: 11 };
-      r.getCell(COL_IDX_VALUE).alignment = { vertical: 'middle', horizontal: 'center' };
-      r.height = 20;
-
-      // Leichter blauer Hintergrund für Statistik
-      for (let i = COL_START; i <= COL_END; i += 1) {
-        r.getCell(i).fill = {
-          type: 'pattern',
-          pattern: 'solid',
-          fgColor: { argb: COLORS.BG_STATS },
-        };
-        r.getCell(i).border = {
-          top: { style: 'thin', color: { argb: COLORS.BORDER_GREY } },
-          bottom: { style: 'thin', color: { argb: COLORS.BORDER_GREY } },
-          left: { style: 'thin', color: { argb: COLORS.BORDER_GREY } },
-          right: { style: 'thin', color: { argb: COLORS.BORDER_GREY } },
-        };
-        r.getCell(i).alignment = { vertical: 'middle', horizontal: i === COL_START ? 'left' : 'center', wrapText: true };
-      }
-      rowNum += 1;
-    });
-    rowNum += 2; // Abstand vor Ergebnissen
-
-    // 7. Ergebnisse (Kandidaten / Referendum)
-    const headRow = sheet.getRow(rowNum);
-    const typeLower = result.election_type ? result.election_type.toLowerCase() : '';
-    const isReferendum = typeLower.includes('referendum') || typeLower.includes('urabstimmung');
-
-    const headers = isReferendum
-      ? ['Option', 'Stimmen', 'Prozent', 'Status', '']
-      : ['Platz/Liste', 'Kandidat:in', 'Stimmen', 'Status', 'Prozent'];
-
-    headers.forEach((h, i) => {
-      if (!h) {
-        return;
-      }
-      const cell = headRow.getCell(i + 1);
-      cell.value = h;
-      cell.font = { bold: true, color: { argb: COLORS.WHITE }, name: 'Arial', size: 11 };
-      cell.fill = {
-        type: 'pattern',
-        pattern: 'solid',
-        fgColor: { argb: COLORS.BG_HEADER },
-      };
-      cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-      cell.border = {
-        top: { style: 'thin', color: { argb: COLORS.HKA_BLACK } },
-        bottom: { style: 'thin', color: { argb: COLORS.HKA_BLACK } },
-        left: { style: 'thin', color: { argb: COLORS.HKA_BLACK } },
-        right: { style: 'thin', color: { argb: COLORS.HKA_BLACK } },
-      };
-    });
-    headRow.height = 25;
-    rowNum += 1;
-
-    // Kandidatenliste holen
-    let candidates = data.allocation || data.all_candidates || data.elected || [];
-
-    // Daten mappen falls Referendum
-    if (isReferendum && data.yes_votes !== undefined) {
-      candidates = [
-        {
-          option: TEXT_YES,
-          votes: data.yes_votes,
-          percentage: data.yes_percentage,
-          status: data.result === RESULT_ACCEPTED ? TEXT_ACCEPTED : '-',
-        },
-        {
-          option: TEXT_NO,
-          votes: data.no_votes,
-          percentage: data.no_percentage,
-          status: data.result === RESULT_REJECTED ? TEXT_REJECTED : '-',
-        },
-        {
-          option: TEXT_ABSTAIN,
-          votes: data.abstain_votes,
-          percentage: data.abstain_percentage,
-          status: '-',
-        },
-      ];
+    // ── Gleichstand-Hinweis ───────────────────────────────────────────────────
+    if (data.ties_detected) {
+      doc.moveDown(0.5);
+      const wy = doc.y;
+      const wh = 28;
+      doc.rect(MARGIN, wy, CONTENT_W, wh).fill(YELLOW_BG);
+      doc.fontSize(9).font('Helvetica-Bold').fillColor('#CC6600')
+         .text(
+           `⚠  STIMMENGLEICHHEIT – ${data.tie_info || 'Losentscheid erforderlich'}`,
+           MARGIN + 6, wy + 8,
+           { width: CONTENT_W - 12, lineBreak: false, ellipsis: true },
+         );
+      doc.rect(MARGIN, wy, CONTENT_W, wh).strokeColor('#CC6600').lineWidth(1).stroke();
+      doc.y = wy + wh;
     }
 
-    candidates.forEach((c) => {
-      const r = sheet.getRow(rowNum);
+    // ── Ergebnisse ────────────────────────────────────────────────────────────
+    section('ERGEBNIS');
 
-      // --- WERTE & FARBEN SETZEN ---
-      if (isReferendum) {
-        r.getCell(COL_IDX_LABEL).value = c.option;
-        r.getCell(COL_IDX_VALUE).value = c.votes;
-        r.getCell(COL_IDX_VOTES).value = c.percentage ? `${c.percentage}%` : '-';
-        r.getCell(COL_IDX_STATUS).value = c.status;
+    if (isProp) {
+      // Verhältniswahl: Liste → Kandidaten
+      const widths = [185, 70, 55, 75, 110];
+      // Tabellenkopf (roter Hintergrund)
+      const hdrY = doc.y;
+      doc.rect(MARGIN, hdrY, CONTENT_W, 22).fill(HKA_RED);
+      doc.y = hdrY;
+      row(['Liste / Kandidat', 'Stimmen', 'Sitze', 'Quote', 'Status'], widths,
+          { bold: true, color: WHITE, h: 22 });
 
-        if (c.option === TEXT_YES && data.result === RESULT_ACCEPTED) {
-          for (let i = COL_START; i <= COL_END; i += 1) {
-            r.getCell(i).fill = {
-              type: 'pattern',
-              pattern: 'solid',
-              fgColor: { argb: COLORS.BG_SUCCESS },
-            };
-          }
-        }
-      } else {
-        r.getCell(COL_IDX_LABEL).value = c.listnum ? `Liste ${c.listnum}` : '-';
-        r.getCell(COL_IDX_VALUE).value = `${c.firstname} ${c.lastname}`;
-        r.getCell(COL_IDX_VOTES).value = c.votes;
+      (data.allocation || []).forEach((listEntry) => {
+        const listName = listEntry.firstname?.trim() || `Liste ${listEntry.listnum}`;
+        const hasSeats = (listEntry.seats || 0) > 0;
+        const listBg   = listEntry.is_tie ? YELLOW_BG : hasSeats ? GREEN_BG : LIST_BG;
+        const listStatus = listEntry.is_tie
+          ? '⚠ Gleichstand'
+          : hasSeats ? '✓ Sitze erhalten' : 'Kein Sitz';
 
-        let status = STATUS_NOT_ELECTED;
-        let color = null;
+        row([listName, listEntry.votes, listEntry.seats ?? 0, listEntry.quota || '-', listStatus],
+            widths, { bg: listBg, bold: true, h: 22 });
 
-        if (c.seats > 0 || c.is_elected) {
-          status = c.seats ? `${c.seats} Sitz(e)` : STATUS_ELECTED;
-          color = COLORS.BG_SUCCESS;
-        }
-        if (c.is_tie) {
-          status = STATUS_TIE;
-          color = COLORS.BG_WARNING;
-        }
+        (listEntry.list_candidates || []).forEach((c) => {
+          row(
+            [`${c.firstname} ${c.lastname}`, c.votes, '', '', c.is_elected ? '✓ Gewählt' : ''],
+            widths,
+            { bg: c.is_elected ? CAND_BG : null, indent: 16, h: 18 },
+          );
+        });
+      });
 
-        r.getCell(COL_IDX_STATUS).value = status;
-        r.getCell(COL_IDX_PERCENT).value = c.percentage ? `${c.percentage}%` : '';
+    } else if (isRef) {
+      // Referendum
+      const widths = [225, 85, 85, 100];
+      const hdrY = doc.y;
+      doc.rect(MARGIN, hdrY, CONTENT_W, 22).fill(HKA_RED);
+      doc.y = hdrY;
+      row(['Option', 'Stimmen', 'Prozent', 'Status'], widths, { bold: true, color: WHITE, h: 22 });
 
-        if (color) {
-          for (let i = COL_START; i <= COL_END; i += 1) {
-            r.getCell(i).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: color } };
-          }
-        }
-      }
+      const refRows = data.yes_votes !== undefined
+        ? [
+            ['Ja',          data.yes_votes,       `${data.yes_percentage}%`,         data.result === 'ACCEPTED' ? 'Angenommen' : '-'],
+            ['Nein',        data.no_votes,         `${data.no_percentage}%`,          data.result === 'REJECTED' ? 'Abgelehnt'  : '-'],
+            ['Enthaltung',  data.abstain_votes||0, `${data.abstain_percentage||'0.00'}%`, '-'],
+          ]
+        : (data.all_candidates || []).map((c, i) => [
+            c.name || `Option ${c.listnum}`, c.votes, c.percentage ? `${c.percentage}%` : '-',
+            i === 0 && !data.ties_detected ? 'Gewinner' : '-',
+          ]);
 
-      // --- AUSRICHTUNG (ALIGNMENT) ---
-      // 1. Spalte A (Liste/Option): Links + Einzug
-      r.getCell(COL_IDX_LABEL).alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
+      refRows.forEach((r) => row(r, widths, { h: 20 }));
 
-      // 2. Restliche Spalten je nach Wahltyp
-      if (isReferendum) {
-        // Bei Referendum sind Zahlen in Spalte B, C und Status in D -> alles zentrieren
-        r.getCell(COL_IDX_VALUE).alignment = { vertical: 'middle', horizontal: 'center' };
-        r.getCell(COL_IDX_VOTES).alignment = { vertical: 'middle', horizontal: 'center' };
-        r.getCell(COL_IDX_STATUS).alignment = { vertical: 'middle', horizontal: 'center' };
-      } else {
-        // Bei Wahl: Kandidat links, Stimmen/Prozent/Status zentriert
-        r.getCell(COL_IDX_VALUE).alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
-        r.getCell(COL_IDX_VOTES).alignment = { vertical: 'middle', horizontal: 'center' };
-        r.getCell(COL_IDX_STATUS).alignment = { vertical: 'middle', horizontal: 'center' };
-        r.getCell(COL_IDX_PERCENT).alignment = { vertical: 'middle', horizontal: 'center' };
-      }
+    } else {
+      // Mehrheitswahl
+      const widths = [40, 195, 80, 115, 65];
+      const hdrY = doc.y;
+      doc.rect(MARGIN, hdrY, CONTENT_W, 22).fill(HKA_RED);
+      doc.y = hdrY;
+      row(['Nr.', 'Kandidat:in', 'Stimmen', 'Status', 'Prozent'], widths,
+          { bold: true, color: WHITE, h: 22 });
 
-      // --- SCHRIFTEN & RÄNDER ---
-      for (let i = COL_START; i <= COL_END; i += 1) {
-        const cell = r.getCell(i);
-        cell.font = { name: 'Arial', size: 11 };
-        cell.border = {
-          top: { style: 'thin', color: { argb: COLORS.BORDER_GREY } },
-          bottom: { style: 'thin', color: { argb: COLORS.BORDER_GREY } },
-          left: { style: 'thin', color: { argb: COLORS.BORDER_GREY } },
-          right: { style: 'thin', color: { argb: COLORS.BORDER_GREY } },
-        };
-      }
-      r.height = 22;
+      const candidates = (data.allocation || data.all_candidates || data.elected || [])
+        .filter((c) => (Number(c.votes) || 0) > 0);
+      candidates.forEach((c) => {
+        const status = c.is_elected ? 'GEWÄHLT' : c.is_tie ? 'GLEICHSTAND' : 'Nicht gewählt';
+        const bg     = c.is_elected ? GREEN_BG : c.is_tie ? YELLOW_BG : null;
+        row(
+          [c.listnum, `${c.firstname||''} ${c.lastname||''}`.trim(), c.votes, status,
+           c.percentage ? `${c.percentage}%` : '-'],
+          widths, { bg, h: 20 },
+        );
+      });
+    }
 
-      rowNum += 1;
+    // ── Unterschriftszeilen ───────────────────────────────────────────────────
+    const SIG_BLOCK_H = 60;
+    if (doc.y + 40 + SIG_BLOCK_H > PAGE_H - MARGIN) doc.addPage();
+    const sigTopY  = doc.y + 40;
+    const halfW    = (CONTENT_W - 30) / 2;
+    const rightX   = MARGIN + halfW + 30;
+
+    [[MARGIN, 'Ort, Datum, Unterschrift Wahlleitung'],
+     [rightX,  'Ort, Datum, Unterschrift Wahlausschuss']].forEach(([x, label]) => {
+      doc.moveTo(x, sigTopY).lineTo(x + halfW, sigTopY)
+         .strokeColor(DARK).lineWidth(0.5).stroke();
+      doc.fontSize(8).font('Helvetica').fillColor(DARK)
+         .text(label, x, sigTopY + 5, { width: halfW, align: 'center' });
     });
 
-    rowNum += 3;
+    doc.end();
+    logger.info(`PDF-Export erfolgreich für Ergebnis ${resultId}`);
+    return await bufPromise;
 
-    // 8. Unterschriften
-    const signRow = sheet.getRow(rowNum);
-    signRow.getCell(COL_IDX_SIGN_LEFT).value = 'Ort, Datum, Unterschrift Wahlleitung';
-    signRow.getCell(COL_IDX_SIGN_LEFT).border = { top: { style: 'thin' } };
-
-    signRow.getCell(COL_IDX_SIGN_RIGHT).value = 'Ort, Datum, Unterschrift Wahlausschuss';
-    signRow.getCell(COL_IDX_SIGN_RIGHT).border = { top: { style: 'thin' } };
-
-    return await workbook.xlsx.writeBuffer();
   } catch (err) {
-    logger.error('Error generating official report:', err);
+    logger.error('Fehler beim Erstellen des PDF-Exports:', err);
     throw err;
   } finally {
     db.release();
