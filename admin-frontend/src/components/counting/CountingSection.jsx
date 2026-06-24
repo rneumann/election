@@ -167,7 +167,7 @@ const CountingSection = ({
 
       // Generate filename with election name
       const timestamp = new Date().toISOString().split('T')[0];
-      link.download = `Amtliches_Ergebnis_${electionName || resultId.substring(0, 8)}_${timestamp}.xlsx`;
+      link.download = `Amtliches_Ergebnis_${electionName || resultId.substring(0, 8)}_${timestamp}.pdf`;
 
       // Trigger download
       document.body.appendChild(link);
